@@ -43,12 +43,13 @@ const AIToolCenter: React.FC = () => {
   };
 
   const runTool = async () => {
+    if (!selectedTool) return;
     setLoading(true);
     try {
-      const data = await generateAIToolContent(selectedTool!.id, formData);
+      const data = await generateAIToolContent(selectedTool.id, formData);
       setResult(data);
     } catch (e) {
-      console.error(e);
+      console.error("Tool execution failed:", e);
     } finally {
       setLoading(false);
     }
@@ -78,17 +79,17 @@ const AIToolCenter: React.FC = () => {
                 {/* Dynamic Form Generation */}
                 {['unit-planner', 'rubric-maker', 'worksheet-maker', 'game-generator', 'progression-builder'].includes(selectedTool.id) && (
                   <>
-                    <input className="w-full bg-slate-50 border p-4 rounded-xl font-bold" placeholder="Focus Topic (e.g. Cricket)" onChange={e => setFormData({...formData, topic: e.target.value, sport: e.target.value, skill: e.target.value})} />
-                    <input className="w-full bg-slate-50 border p-4 rounded-xl font-bold" placeholder="Grade/Class (e.g. 8)" onChange={e => setFormData({...formData, grade: e.target.value})} />
+                    <input className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Focus Topic (e.g. Cricket)" onChange={e => setFormData({...formData, topic: e.target.value, sport: e.target.value, skill: e.target.value})} />
+                    <input className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Grade/Class (e.g. 8)" onChange={e => setFormData({...formData, grade: e.target.value})} />
                     {selectedTool.id === 'unit-planner' && (
-                      <select className="w-full bg-slate-50 border p-4 rounded-xl font-bold" onChange={e => setFormData({...formData, duration: e.target.value})}>
+                      <select className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" onChange={e => setFormData({...formData, duration: e.target.value})}>
                         <option value="">Duration</option>
                         <option value="2">2 Weeks</option>
                         <option value="4">4 Weeks</option>
                         <option value="6">6 Weeks</option>
                       </select>
                     )}
-                    <select className="w-full bg-slate-50 border p-4 rounded-xl font-bold" onChange={e => setFormData({...formData, board: e.target.value})}>
+                    <select className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" onChange={e => setFormData({...formData, board: e.target.value})}>
                       {Object.values(BoardType).map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </>
@@ -154,24 +155,24 @@ const AIToolCenter: React.FC = () => {
                 {/* Specialized UI Renderers */}
                 <div className="space-y-8">
                   {/* Unit Planner Renderer */}
-                  {selectedTool.id === 'unit-planner' && result.weeklyBreakdown && (
+                  {selectedTool.id === 'unit-planner' && result?.weeklyBreakdown && (
                     <div className="space-y-8">
                       <div className="bg-blue-600 rounded-3xl p-8 text-white shadow-xl">
-                        <h4 className="text-3xl font-black tracking-tighter mb-2">{result.unitTitle}</h4>
-                        <p className="text-blue-100 font-bold uppercase tracking-widest text-xs">Timeline: {result.duration}</p>
+                        <h4 className="text-3xl font-black tracking-tighter mb-2">{result.unitTitle || "Unit Overview"}</h4>
+                        <p className="text-blue-100 font-bold uppercase tracking-widest text-xs">Timeline: {result.duration || formData.duration + " Weeks"}</p>
                       </div>
                       <div className="grid grid-cols-1 gap-6">
-                        {result.weeklyBreakdown.map((week: any) => (
-                          <div key={week.week} className="bg-slate-50 rounded-3xl p-8 border border-slate-100 flex items-start space-x-6 hover:shadow-md transition-shadow">
+                        {result.weeklyBreakdown?.map((week: any, idx: number) => (
+                          <div key={idx} className="bg-slate-50 rounded-3xl p-8 border border-slate-100 flex items-start space-x-6 hover:shadow-md transition-shadow">
                             <div className="bg-white w-14 h-14 rounded-2xl flex flex-col items-center justify-center border shadow-sm flex-shrink-0">
                               <span className="text-[10px] font-black text-slate-400 uppercase">Week</span>
-                              <span className="text-xl font-black text-indigo-600">{week.week}</span>
+                              <span className="text-xl font-black text-indigo-600">{week.week || idx + 1}</span>
                             </div>
                             <div className="flex-1">
                               <h5 className="text-xl font-black text-slate-800 mb-2">{week.focus}</h5>
                               <p className="text-slate-600 font-medium mb-4 text-sm leading-relaxed">{week.keyLearning}</p>
                               <div className="flex flex-wrap gap-2">
-                                {week.suggestedDrills.map((drill: string, i: number) => (
+                                {week.suggestedDrills?.map((drill: string, i: number) => (
                                   <span key={i} className="bg-white border border-slate-200 text-indigo-600 text-[10px] font-black px-3 py-1.5 rounded-full shadow-sm">
                                     {drill}
                                   </span>
@@ -185,26 +186,26 @@ const AIToolCenter: React.FC = () => {
                   )}
 
                   {/* Rubric Maker Renderer */}
-                  {selectedTool.id === 'rubric-maker' && result.categories && (
+                  {selectedTool.id === 'rubric-maker' && result?.categories && (
                     <div className="space-y-6">
                       <div className="bg-purple-600 p-6 rounded-3xl text-white mb-6">
-                        <h4 className="text-2xl font-black">Skills Rubric: {result.topic}</h4>
+                        <h4 className="text-2xl font-black">Skills Rubric: {result.topic || formData.topic}</h4>
                       </div>
                       <div className="overflow-x-auto rounded-[2rem] border border-slate-100">
                         <table className="w-full text-left">
                           <thead>
                             <tr className="bg-slate-50 border-b">
                               <th className="p-6 text-[10px] font-black uppercase text-slate-400">Assessment Criteria</th>
-                              {result.categories[0]?.levels.map((level: any, i: number) => (
+                              {result.categories[0]?.levels?.map((level: any, i: number) => (
                                 <th key={i} className="p-6 text-[10px] font-black uppercase text-indigo-600">{level.name}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
-                            {result.categories.map((cat: any, i: number) => (
+                            {result.categories?.map((cat: any, i: number) => (
                               <tr key={i} className="border-b hover:bg-slate-50 transition-colors">
                                 <td className="p-6 font-black text-slate-800 text-sm w-1/4">{cat.name}</td>
-                                {cat.levels.map((level: any, li: number) => (
+                                {cat.levels?.map((level: any, li: number) => (
                                   <td key={li} className="p-6 text-xs text-slate-500 leading-relaxed font-medium">{level.description}</td>
                                 ))}
                               </tr>
@@ -216,9 +217,9 @@ const AIToolCenter: React.FC = () => {
                   )}
 
                   {/* Game Generator Renderer */}
-                  {selectedTool.id === 'game-generator' && result.games && (
+                  {selectedTool.id === 'game-generator' && result?.games && (
                     <div className="grid grid-cols-1 gap-6">
-                      {result.games.map((game: any, i: number) => (
+                      {result.games?.map((game: any, i: number) => (
                         <div key={i} className="bg-orange-50 rounded-[2.5rem] p-8 border border-orange-100 relative group overflow-hidden">
                           <div className="relative z-10">
                             <div className="flex justify-between items-start mb-6">
@@ -226,7 +227,7 @@ const AIToolCenter: React.FC = () => {
                               <Gamepad2 className="text-orange-200 group-hover:text-orange-400 transition-colors" size={32} />
                             </div>
                             <div className="space-y-4 mb-8">
-                              {game.rules.map((rule: string, ri: number) => (
+                              {game.rules?.map((rule: string, ri: number) => (
                                 <div key={ri} className="flex items-start space-x-3 text-orange-900 font-medium text-sm">
                                   <span className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 flex-shrink-0" />
                                   <span>{rule}</span>
@@ -234,7 +235,7 @@ const AIToolCenter: React.FC = () => {
                               ))}
                             </div>
                             <div className="flex flex-wrap gap-2">
-                              {game.equipment.map((item: string, ei: number) => (
+                              {game.equipment?.map((item: string, ei: number) => (
                                 <span key={ei} className="bg-white border border-orange-200 text-orange-600 text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-wider shadow-sm">
                                   {item}
                                 </span>
@@ -247,7 +248,7 @@ const AIToolCenter: React.FC = () => {
                   )}
 
                   {/* Round Robin Tournament Renderer */}
-                  {selectedTool.id === 'round-robin' && result.rounds && (
+                  {selectedTool.id === 'round-robin' && result?.rounds && (
                     <div className="space-y-8">
                       <div className="bg-pink-600 p-8 rounded-[2.5rem] text-white flex items-center justify-between">
                         <div>
@@ -257,13 +258,13 @@ const AIToolCenter: React.FC = () => {
                         <Trophy size={48} className="text-pink-300" />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {result.rounds.map((round: any) => (
-                          <div key={round.round || round.roundNumber} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                        {result.rounds?.map((round: any, idx: number) => (
+                          <div key={idx} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
                             <div className="flex items-center space-x-2 mb-6 border-b border-slate-50 pb-4">
-                              <span className="bg-pink-100 text-pink-600 font-black text-[10px] px-3 py-1 rounded-full uppercase">Round {round.round || round.roundNumber}</span>
+                              <span className="bg-pink-100 text-pink-600 font-black text-[10px] px-3 py-1 rounded-full uppercase">Round {round.round || round.roundNumber || idx + 1}</span>
                             </div>
                             <div className="space-y-3">
-                              {round.matches.map((match: string, mi: number) => (
+                              {round.matches?.map((match: string, mi: number) => (
                                 <div key={mi} className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between border border-transparent hover:border-pink-200 transition-all">
                                   <span className="text-sm font-bold text-slate-700">{match}</span>
                                   <div className="w-10 h-6 bg-white border border-slate-200 rounded-lg" />
@@ -284,31 +285,31 @@ const AIToolCenter: React.FC = () => {
                       </div>
                       <div className="bg-emerald-50 p-12 rounded-[3rem] border-2 border-emerald-100 min-h-[300px] flex items-center justify-center text-center">
                         <p className="text-2xl font-medium text-emerald-900 leading-relaxed italic max-w-2xl">
-                          "{result.comment}"
+                          "{result?.comment || "No comment generated."}"
                         </p>
                       </div>
                     </div>
                   )}
 
                   {/* Worksheet Maker Renderer */}
-                  {selectedTool.id === 'worksheet-maker' && result.content && (
+                  {selectedTool.id === 'worksheet-maker' && result?.content && (
                     <div className="bg-white border-2 border-slate-200 rounded-[3rem] overflow-hidden shadow-2xl">
                       <div className="bg-slate-100 p-10 border-b flex justify-between items-center">
-                        <h4 className="text-3xl font-black text-slate-800 tracking-tighter">{result.title}</h4>
+                        <h4 className="text-3xl font-black text-slate-800 tracking-tighter">{result.title || formData.topic + " Worksheet"}</h4>
                         <div className="text-right">
                           <p className="text-xs font-black text-slate-400 uppercase">Student Name: _________________</p>
                           <p className="text-xs font-black text-slate-400 uppercase mt-2">Class/Sec: _________________</p>
                         </div>
                       </div>
                       <div className="p-10 space-y-12">
-                        {result.content.map((sec: any, i: number) => (
+                        {result.content?.map((sec: any, i: number) => (
                           <div key={i} className="space-y-6">
                             <h5 className="text-lg font-black text-slate-900 uppercase tracking-tight border-b-2 border-slate-800 pb-2 flex items-center">
                               <BookOpen size={20} className="mr-2 text-indigo-600" />
                               Section {i+1}: {sec.sectionTitle}
                             </h5>
                             <div className="space-y-10">
-                              {sec.questions.map((q: any, qi: number) => (
+                              {sec.questions?.map((q: any, qi: number) => (
                                 <div key={qi} className="space-y-4">
                                   <p className="font-bold text-slate-800">{qi+1}. {q.question}</p>
                                   {q.options ? (
@@ -350,7 +351,7 @@ const AIToolCenter: React.FC = () => {
                         <div className="bg-indigo-900 p-8 rounded-[2.5rem] rounded-tr-none text-white max-w-[85%] shadow-2xl">
                           <h5 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-4">India PE Connect Expert Advice</h5>
                           <div className="prose prose-invert max-w-none text-indigo-50 leading-loose">
-                            {result.response || result.advice}
+                            {result?.response || result?.advice || "Consulting coaches..."}
                           </div>
                         </div>
                       </div>

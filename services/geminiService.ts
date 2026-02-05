@@ -5,13 +5,29 @@ import { BoardType, LessonPlan } from "../types";
 // Always use { apiKey: process.env.API_KEY } directly
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+/**
+ * Utility to safely parse JSON from model responses, 
+ * stripping potential Markdown code blocks.
+ */
+const safeParseJson = (text: string | undefined): any => {
+  if (!text) return {};
+  try {
+    // Remove markdown code blocks if present
+    const cleanJson = text.replace(/```json\n?/, '').replace(/```\n?/, '').trim();
+    return JSON.parse(cleanJson);
+  } catch (e) {
+    console.error("Failed to parse AI JSON response:", e, text);
+    return {};
+  }
+};
+
 export const generateLessonPlan = async (
   board: BoardType,
   grade: string,
   sport: string,
   topic: string
 ): Promise<LessonPlan> => {
-  const model = ai.models.generateContent({
+  const model = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Create an elite Physical Education lesson plan for ${board} Grade ${grade}, focusing on ${sport}: ${topic}. 
                
@@ -75,8 +91,7 @@ export const generateLessonPlan = async (
     }
   });
 
-  const response = await model;
-  return JSON.parse(response.text || '{}') as LessonPlan;
+  return safeParseJson(model.text);
 };
 
 export const generateAIToolContent = async (toolId: string, params: any) => {
@@ -236,14 +251,13 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
       schema = { type: Type.OBJECT, properties: { response: { type: Type.STRING } } };
   }
 
-  const model = ai.models.generateContent({
+  const model = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: prompt,
     config: { responseMimeType: "application/json", responseSchema: schema }
   });
 
-  const res = await model;
-  return JSON.parse(res.text || '{}');
+  return safeParseJson(model.text);
 };
 
 export const generateLessonDiagram = async (prompt: string, context: string = 'general') => {
@@ -288,7 +302,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
       }
     }
   });
-  return JSON.parse(response.text || '{}');
+  return safeParseJson(response.text);
 };
 
 export const getStateRegulationInsights = async (state: string, board: BoardType) => {
