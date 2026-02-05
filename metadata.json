@@ -1,0 +1,7 @@
+{
+  "name": "India PE Connect",
+  "description": "A comprehensive networking and resource platform for Physical Education teachers across India, featuring curriculum-aligned lesson planning and community collaboration for CBSE, ICSE, and State Boards.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
