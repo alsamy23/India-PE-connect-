@@ -15,13 +15,13 @@ import {
   TrendingUp,
   Wrench
 } from 'lucide-react';
-import Dashboard from './components/Dashboard';
-import CurriculumHub from './components/CurriculumHub';
-import AIPlanner from './components/AIPlanner';
-import Networking from './components/Networking';
-import SkillMastery from './components/SkillMastery';
-import ComplianceAdvisor from './components/ComplianceAdvisor';
-import AIToolCenter from './components/AIToolCenter';
+import Dashboard from './components/Dashboard.tsx';
+import CurriculumHub from './components/CurriculumHub.tsx';
+import AIPlanner from './components/AIPlanner.tsx';
+import Networking from './components/Networking.tsx';
+import SkillMastery from './components/SkillMastery.tsx';
+import ComplianceAdvisor from './components/ComplianceAdvisor.tsx';
+import AIToolCenter from './components/AIToolCenter.tsx';
 
 type Tab = 'dashboard' | 'curriculum' | 'planner' | 'networking' | 'skillmastery' | 'compliance' | 'tools';
 

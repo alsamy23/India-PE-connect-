@@ -5,8 +5,8 @@ import {
   Dumbbell, Microscope, MessageSquare, Target, Split, Layout, ChevronLeft, Zap, Loader2, Download, Printer, CheckCircle2,
   Trophy, BookOpen, Layers, Info, AlertCircle, Sparkles
 } from 'lucide-react';
-import { generateAIToolContent } from '../services/geminiService';
-import { BoardType } from '../types';
+import { generateAIToolContent } from '../services/geminiService.ts';
+import { BoardType } from '../types.ts';
 
 interface Tool {
   id: string;
@@ -97,21 +97,21 @@ const AIToolCenter: React.FC = () => {
 
                 {selectedTool.id === 'round-robin' && (
                   <>
-                    <input type="number" className="w-full bg-slate-50 border p-4 rounded-xl font-bold" placeholder="Number of Teams" onChange={e => setFormData({...formData, teams: e.target.value})} />
-                    <input type="number" className="w-full bg-slate-50 border p-4 rounded-xl font-bold" placeholder="Available Areas/Courts" onChange={e => setFormData({...formData, courts: e.target.value})} />
+                    <input type="number" className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Number of Teams" onChange={e => setFormData({...formData, teams: e.target.value})} />
+                    <input type="number" className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Available Areas/Courts" onChange={e => setFormData({...formData, courts: e.target.value})} />
                   </>
                 )}
 
                 {selectedTool.id === 'report-writer' && (
                   <>
-                    <input className="w-full bg-slate-50 border p-4 rounded-xl font-bold" placeholder="Student Name" onChange={e => setFormData({...formData, name: e.target.value})} />
-                    <textarea className="w-full bg-slate-50 border p-4 rounded-xl h-24 font-medium" placeholder="Main Strengths..." onChange={e => setFormData({...formData, strengths: e.target.value})} />
-                    <textarea className="w-full bg-slate-50 border p-4 rounded-xl h-24 font-medium" placeholder="Areas to Improve..." onChange={e => setFormData({...formData, improvements: e.target.value})} />
+                    <input className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Student Name" onChange={e => setFormData({...formData, name: e.target.value})} />
+                    <textarea className="w-full bg-slate-50 border p-4 rounded-xl h-24 font-medium outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Main Strengths..." onChange={e => setFormData({...formData, strengths: e.target.value})} />
+                    <textarea className="w-full bg-slate-50 border p-4 rounded-xl h-24 font-medium outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Areas to Improve..." onChange={e => setFormData({...formData, improvements: e.target.value})} />
                   </>
                 )}
 
                 {selectedTool.id === 'ask-advisor' && (
-                  <textarea className="w-full bg-slate-50 border p-4 rounded-xl h-40 font-medium" placeholder="Ask anything about PE teaching..." onChange={e => setFormData({...formData, query: e.target.value})} />
+                  <textarea className="w-full bg-slate-50 border p-4 rounded-xl h-40 font-medium outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ask anything about PE teaching..." onChange={e => setFormData({...formData, query: e.target.value})} />
                 )}
 
                 <button 
@@ -268,62 +268,6 @@ const AIToolCenter: React.FC = () => {
                                 <div key={mi} className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between border border-transparent hover:border-pink-200 transition-all">
                                   <span className="text-sm font-bold text-slate-700">{match}</span>
                                   <div className="w-10 h-6 bg-white border border-slate-200 rounded-lg" />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Report Writer Renderer */}
-                  {selectedTool.id === 'report-writer' && (
-                    <div className="relative">
-                      <div className="absolute -top-4 -left-4 p-4 bg-emerald-500 text-white rounded-2xl shadow-xl">
-                        <FileSpreadsheet size={24} />
-                      </div>
-                      <div className="bg-emerald-50 p-12 rounded-[3rem] border-2 border-emerald-100 min-h-[300px] flex items-center justify-center text-center">
-                        <p className="text-2xl font-medium text-emerald-900 leading-relaxed italic max-w-2xl">
-                          "{result?.comment || "No comment generated."}"
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Worksheet Maker Renderer */}
-                  {selectedTool.id === 'worksheet-maker' && result?.content && (
-                    <div className="bg-white border-2 border-slate-200 rounded-[3rem] overflow-hidden shadow-2xl">
-                      <div className="bg-slate-100 p-10 border-b flex justify-between items-center">
-                        <h4 className="text-3xl font-black text-slate-800 tracking-tighter">{result.title || formData.topic + " Worksheet"}</h4>
-                        <div className="text-right">
-                          <p className="text-xs font-black text-slate-400 uppercase">Student Name: _________________</p>
-                          <p className="text-xs font-black text-slate-400 uppercase mt-2">Class/Sec: _________________</p>
-                        </div>
-                      </div>
-                      <div className="p-10 space-y-12">
-                        {result.content?.map((sec: any, i: number) => (
-                          <div key={i} className="space-y-6">
-                            <h5 className="text-lg font-black text-slate-900 uppercase tracking-tight border-b-2 border-slate-800 pb-2 flex items-center">
-                              <BookOpen size={20} className="mr-2 text-indigo-600" />
-                              Section {i+1}: {sec.sectionTitle}
-                            </h5>
-                            <div className="space-y-10">
-                              {sec.questions?.map((q: any, qi: number) => (
-                                <div key={qi} className="space-y-4">
-                                  <p className="font-bold text-slate-800">{qi+1}. {q.question}</p>
-                                  {q.options ? (
-                                    <div className="grid grid-cols-2 gap-4 pl-4">
-                                      {q.options.map((opt: string, oi: number) => (
-                                        <div key={oi} className="flex items-center space-x-3 text-sm text-slate-600">
-                                          <div className="w-4 h-4 rounded-full border border-slate-400" />
-                                          <span>{opt}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <div className="h-24 w-full border-b border-dashed border-slate-300 ml-4" />
-                                  )}
                                 </div>
                               ))}
                             </div>

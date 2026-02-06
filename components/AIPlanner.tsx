@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { Sparkles, Loader2, Download, Printer, RotateCcw, CheckCircle2, Image as ImageIcon, Clock, BookOpen, Target, GraduationCap } from 'lucide-react';
-import { BoardType, LessonPlan } from '../types';
-import { generateLessonPlan, generateLessonDiagram } from '../services/geminiService';
+import { BoardType, LessonPlan } from '../types.ts';
+import { generateLessonPlan, generateLessonDiagram } from '../services/geminiService.ts';
 
 const AIPlanner: React.FC = () => {
   const [loading, setLoading] = useState(false);

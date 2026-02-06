@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { Target, Search, Loader2, ChevronRight, BookOpen, Layers, Zap } from 'lucide-react';
-import { generateSkillProgression, generateLessonDiagram } from '../services/geminiService';
-import { SkillProgression } from '../types';
+import { generateSkillProgression, generateLessonDiagram } from '../services/geminiService.ts';
+import { SkillProgression } from '../types.ts';
 
 const SkillMastery: React.FC = () => {
   const [sport, setSport] = useState('Cricket');
@@ -16,7 +16,7 @@ const SkillMastery: React.FC = () => {
       const data = await generateSkillProgression(sport, skill);
       
       // Generate diagrams for each phase
-      const phasesWithImages = await Promise.all(data.phases.map(async (phase) => {
+      const phasesWithImages = await Promise.all(data.phases.map(async (phase: any) => {
         const url = await generateLessonDiagram(phase.diagramPrompt, 'skill');
         return { ...phase, diagramUrl: url };
       }));
