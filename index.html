@@ -10,6 +10,14 @@
         body { font-family: 'Inter', sans-serif; }
         /* Prevent layout shift before React hydration */
         #root:empty { min-height: 100vh; background: #f8fafc; }
+        
+        @keyframes pulse-subtle {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        .animate-pulse-subtle {
+          animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
     </style>
 <script type="importmap">
 {

@@ -1,8 +1,14 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { BoardType, LessonPlan } from "../types.ts";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Helper to initialize AI client only when needed to ensure API key is available
+const getAI = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY is not configured in environment variables.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 const safeParseJson = (text: string | undefined): any => {
   if (!text) return {};
@@ -21,6 +27,7 @@ export const generateLessonPlan = async (
   sport: string,
   topic: string
 ): Promise<LessonPlan> => {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Create an elite Physical Education lesson plan for ${board} Grade ${grade}, focusing on ${sport}: ${topic}. 
@@ -89,6 +96,7 @@ export const generateLessonPlan = async (
 };
 
 export const generateAIToolContent = async (toolId: string, params: any) => {
+  const ai = getAI();
   let prompt = "";
   let schema: any = { type: Type.OBJECT, properties: {} };
 
@@ -184,6 +192,7 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
 };
 
 export const generateLessonDiagram = async (prompt: string, context: string = 'general') => {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: {
@@ -199,6 +208,7 @@ export const generateLessonDiagram = async (prompt: string, context: string = 'g
 };
 
 export const generateSkillProgression = async (sport: string, skill: string) => {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Technical mastery path for ${sport}: ${skill}. 4 phases.`,
@@ -229,6 +239,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
 };
 
 export const getStateRegulationInsights = async (state: string, board: BoardType) => {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Physical Education marks/grading and contact hours for ${state} ${board}. Summarize latest guidelines.`,

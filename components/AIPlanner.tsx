@@ -1,11 +1,11 @@
-
 import React, { useState } from 'react';
-import { Sparkles, Loader2, Download, Printer, RotateCcw, CheckCircle2, Image as ImageIcon, Clock, BookOpen, Target, GraduationCap } from 'lucide-react';
+import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle } from 'lucide-react';
 import { BoardType, LessonPlan } from '../types.ts';
 import { generateLessonPlan, generateLessonDiagram } from '../services/geminiService.ts';
 
 const AIPlanner: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [board, setBoard] = useState<BoardType>(BoardType.CBSE);
   const [grade, setGrade] = useState('9');
   const [sport, setSport] = useState('Basketball');
@@ -14,6 +14,7 @@ const AIPlanner: React.FC = () => {
 
   const handleGenerate = async () => {
     setLoading(true);
+    setError(null);
     try {
       const generated = await generateLessonPlan(board, grade, sport, topic);
       // Generate three diagrams as requested: Warmup, Explanation, and Game
@@ -28,8 +29,9 @@ const AIPlanner: React.FC = () => {
         explanationDiagramUrl: explanationUrl,
         gameDiagramUrl: gameUrl 
       });
-    } catch (error) {
-      console.error(error);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Something went wrong during generation. Please check your API key.");
     } finally {
       setLoading(false);
     }
@@ -39,7 +41,13 @@ const AIPlanner: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pb-20">
       <div className="lg:col-span-4 space-y-8">
         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 sticky top-8">
-          <h3 className="font-black text-2xl text-slate-800 mb-8 tracking-tighter uppercase">Lesson Architect</h3>
+          <div className="flex items-center space-x-3 mb-8">
+            <div className="p-3 bg-indigo-100 rounded-2xl text-indigo-600">
+              <Sparkles size={24} />
+            </div>
+            <h3 className="font-black text-2xl text-slate-800 tracking-tighter uppercase">Lesson Architect</h3>
+          </div>
+          
           <div className="space-y-5">
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Curriculum Board</label>
@@ -61,7 +69,19 @@ const AIPlanner: React.FC = () => {
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Sport Focus</label>
               <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 font-bold" value={sport} onChange={e => setSport(e.target.value)} />
             </div>
-            <button onClick={handleGenerate} disabled={loading} className="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center space-x-2 disabled:opacity-50">
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Topic/Skill</label>
+              <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 font-bold" value={topic} onChange={e => setTopic(e.target.value)} />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-start space-x-3 text-red-600 text-xs font-bold leading-relaxed">
+                <AlertCircle size={16} className="shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button onClick={handleGenerate} disabled={loading} className="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center space-x-2 disabled:opacity-50">
               {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={20} />}
               <span>{loading ? 'Designing...' : 'Build Pro Visual Plan'}</span>
             </button>
@@ -71,16 +91,28 @@ const AIPlanner: React.FC = () => {
 
       <div className="lg:col-span-8">
         {!plan && !loading ? (
-          <div className="bg-white border-4 border-dashed border-slate-100 rounded-[3rem] h-full min-h-[600px] flex flex-col items-center justify-center p-12 text-center">
-            <ImageIcon className="text-slate-100 w-32 h-32 mb-10" />
+          <div className="bg-white border-4 border-dashed border-slate-100 rounded-[3rem] h-full min-h-[600px] flex flex-col items-center justify-center p-12 text-center group">
+            <div className="relative mb-10">
+              <div className="absolute inset-0 bg-indigo-50 rounded-full scale-150 blur-2xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
+              <ImageIcon className="relative text-indigo-100 w-32 h-32 group-hover:text-indigo-200 transition-colors" />
+            </div>
             <h3 className="text-3xl font-black text-slate-800 mb-4 tracking-tighter">Connected Visual Resource</h3>
-            <p className="text-slate-400 max-w-sm font-medium leading-relaxed">Generated plans include triple-diagram layouts (Warmup, Theory, Game) aligned with NEP & state frameworks.</p>
+            <p className="text-slate-400 max-w-sm font-medium leading-relaxed mb-8">Generated plans include triple-diagram layouts (Warmup, Theory, Game) aligned with NEP & state frameworks.</p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button onClick={handleGenerate} className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm flex items-center space-x-2 shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all">
+                <PlayCircle size={18} />
+                <span>Generate First Lesson</span>
+              </button>
+            </div>
           </div>
         ) : loading ? (
-          <div className="bg-white rounded-[3rem] h-full flex flex-col items-center justify-center p-20">
-            <div className="w-20 h-20 border-8 border-indigo-50 border-t-indigo-600 rounded-full animate-spin mb-10"></div>
+          <div className="bg-white rounded-[3rem] h-full min-h-[600px] flex flex-col items-center justify-center p-20 text-center">
+            <div className="relative mb-10">
+              <div className="w-24 h-24 border-8 border-indigo-50 border-t-indigo-600 rounded-full animate-spin"></div>
+              <Sparkles className="absolute inset-0 m-auto text-indigo-600 animate-pulse" size={32} />
+            </div>
             <h3 className="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tighter">Drafting Triple-Diagram Plan</h3>
-            <p className="text-slate-400 font-bold animate-pulse">Consulting board-specific frameworks...</p>
+            <p className="text-slate-400 font-bold animate-pulse">Consulting board-specific frameworks and generating technical diagrams...</p>
           </div>
         ) : (
           <div className="space-y-10 animate-in fade-in slide-in-from-bottom-10 duration-700">
@@ -110,7 +142,7 @@ const AIPlanner: React.FC = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                     <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                       <p className="text-slate-600 font-medium leading-relaxed italic">
-                        {plan.activities.find(a => a.time.includes('5'))?.description}
+                        {plan.activities.find(a => a.time.includes('5'))?.description || plan.activities[0]?.description}
                       </p>
                     </div>
                     {plan.warmupDiagramUrl && (
@@ -132,11 +164,11 @@ const AIPlanner: React.FC = () => {
                     <div className="space-y-4">
                       <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100">
                          <p className="text-indigo-900 font-medium leading-relaxed">
-                            {plan.activities.find(a => a.time.includes('10'))?.description}
+                            {plan.activities.find(a => a.time.includes('10'))?.description || plan.activities[1]?.description}
                          </p>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                         {plan.activities.find(a => a.time.includes('10'))?.coachingCues.map((cue, i) => (
+                         {(plan.activities.find(a => a.time.includes('10'))?.coachingCues || plan.activities[1]?.coachingCues || []).map((cue, i) => (
                            <span key={i} className="bg-indigo-600 text-white font-black text-[10px] px-3 py-1.5 rounded-full uppercase">" {cue} "</span>
                          ))}
                       </div>
