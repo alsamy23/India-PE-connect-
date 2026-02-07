@@ -1,18 +1,12 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { BoardType, LessonPlan } from "../types";
+import { BoardType, LessonPlan } from "../types.ts";
 
-// Always use { apiKey: process.env.API_KEY } directly
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
-/**
- * Utility to safely parse JSON from model responses, 
- * stripping potential Markdown code blocks.
- */
 const safeParseJson = (text: string | undefined): any => {
   if (!text) return {};
   try {
-    // Remove markdown code blocks if present
     const cleanJson = text.replace(/```json\n?/, '').replace(/```\n?/, '').trim();
     return JSON.parse(cleanJson);
   } catch (e) {
@@ -27,7 +21,7 @@ export const generateLessonPlan = async (
   sport: string,
   topic: string
 ): Promise<LessonPlan> => {
-  const model = await ai.models.generateContent({
+  const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Create an elite Physical Education lesson plan for ${board} Grade ${grade}, focusing on ${sport}: ${topic}. 
                
@@ -91,7 +85,7 @@ export const generateLessonPlan = async (
     }
   });
 
-  return safeParseJson(model.text);
+  return safeParseJson(response.text);
 };
 
 export const generateAIToolContent = async (toolId: string, params: any) => {
@@ -121,73 +115,6 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
         }
       };
       break;
-
-    case 'worksheet-maker':
-      prompt = `Create an educational worksheet for Grade ${params.grade} ${params.board} PE about ${params.topic}. Include MCQs and reflective questions.`;
-      schema = {
-        type: Type.OBJECT,
-        properties: {
-          title: { type: Type.STRING },
-          content: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                sectionTitle: { type: Type.STRING },
-                questions: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      question: { type: Type.STRING },
-                      type: { type: Type.STRING },
-                      options: { type: Type.ARRAY, items: { type: Type.STRING } }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      };
-      break;
-
-    case 'adapted-pe':
-      prompt = `Suggest modifications for ${params.activity} for students with ${params.disability} to ensure inclusion.`;
-      schema = {
-        type: Type.OBJECT,
-        properties: {
-          modifications: { type: Type.ARRAY, items: { type: Type.STRING } },
-          safetyConsiderations: { type: Type.STRING }
-        }
-      };
-      break;
-
-    case 'differentiator':
-      prompt = `Provide 3 levels of challenge (Beginner, Intermediate, Advanced) for this PE activity: ${params.activity}.`;
-      schema = {
-        type: Type.OBJECT,
-        properties: {
-          beginner: { type: Type.STRING },
-          intermediate: { type: Type.STRING },
-          advanced: { type: Type.STRING }
-        }
-      };
-      break;
-
-    case 'sports-science':
-      prompt = `Create a hands-on lab activity for students to learn about ${params.concept} through physical movement. Suitable for Grade ${params.grade}.`;
-      schema = {
-        type: Type.OBJECT,
-        properties: {
-          activityName: { type: Type.STRING },
-          scienceConcept: { type: Type.STRING },
-          procedure: { type: Type.ARRAY, items: { type: Type.STRING } },
-          discussionQuestions: { type: Type.ARRAY, items: { type: Type.STRING } }
-        }
-      };
-      break;
-
     case 'rubric-maker':
       prompt = `Generate a 4-level assessment rubric for ${params.topic} for ${params.board} curriculum, Grade ${params.grade}.`;
       schema = {
@@ -207,7 +134,6 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
         }
       };
       break;
-
     case 'game-generator':
       prompt = `Suggest 5 PE games for ${params.skill} for Grade ${params.grade}. Indian context.`;
       schema = {
@@ -227,12 +153,10 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
         }
       };
       break;
-
     case 'report-writer':
       prompt = `Write a feedback comment for student ${params.name}. Strengths: ${params.strengths}. Goal: ${params.improvements}.`;
       schema = { type: Type.OBJECT, properties: { comment: { type: Type.STRING } } };
       break;
-
     case 'round-robin':
       prompt = `Schedule for ${params.teams} teams on ${params.courts} courts.`;
       schema = {
@@ -245,19 +169,18 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
         }
       };
       break;
-
     default:
       prompt = `As a ConnectedPE expert, advise on: ${params.query}`;
       schema = { type: Type.OBJECT, properties: { response: { type: Type.STRING } } };
   }
 
-  const model = await ai.models.generateContent({
+  const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: prompt,
     config: { responseMimeType: "application/json", responseSchema: schema }
   });
 
-  return safeParseJson(model.text);
+  return safeParseJson(response.text);
 };
 
 export const generateLessonDiagram = async (prompt: string, context: string = 'general') => {
