@@ -4,21 +4,15 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
+    // This allows the app to use process.env.API_KEY just like a standard Node app
     'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
-  },
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'lucide-react', 'recharts']
-        }
-      }
-    }
   },
   server: {
     port: 3000,
     host: true
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false
   }
 });
