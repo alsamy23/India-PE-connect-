@@ -1,250 +1,365 @@
-import React, { useState } from 'react';
-import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target } from 'lucide-react';
-import { BoardType, LessonPlan } from '../types.ts';
+
+import React, { useState, useRef } from 'react';
+import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target, User, CalendarDays, BookOpen, PenTool, Languages } from 'lucide-react';
+import { BoardType, LessonPlan, Language } from '../types.ts';
 import { generateLessonPlan, generateLessonDiagram } from '../services/geminiService.ts';
+
+declare var html2pdf: any;
 
 const AIPlanner: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const [teacherName, setTeacherName] = useState('Mr. Coach');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [board, setBoard] = useState<BoardType>(BoardType.CBSE);
-  const [grade, setGrade] = useState('9');
-  const [sport, setSport] = useState('Cricket');
-  const [topic, setTopic] = useState('Batting Technique');
+  const [grade, setGrade] = useState('6');
+  const [sport, setSport] = useState('Football');
+  const [topic, setTopic] = useState('Dribbling and Passing');
+  const [duration, setDuration] = useState('40 min');
+  const [language, setLanguage] = useState<Language>('English');
+  
   const [plan, setPlan] = useState<LessonPlan | null>(null);
 
   const handleGenerate = async () => {
     setLoading(true);
+    setLoadingStep(`Generating in ${language}...`);
     setError(null);
     try {
-      const generated = await generateLessonPlan(board, grade, sport, topic);
-      // Generate diagrams as requested
-      const [warmupUrl, explanationUrl, gameUrl] = await Promise.all([
-        generateLessonDiagram(generated.warmupDiagramPrompt, 'warmup'),
-        generateLessonDiagram(generated.explanationDiagramPrompt, 'technical-demo'),
-        generateLessonDiagram(generated.gameDiagramPrompt, 'full-field')
-      ]);
+      const generated = await generateLessonPlan(
+        board, 
+        grade, 
+        sport, 
+        topic, 
+        teacherName, 
+        duration, 
+        date,
+        language
+      );
+      
       setPlan({ 
         ...generated, 
+        period: "1",
+        termWeek: "Term 1 / Wk 2",
+        teacher: teacherName,
+        date: date,
+        duration: duration
+      });
+
+      setLoadingStep('Visualizing Drills...');
+      
+      // Parallel generation for speed
+      const [warmupUrl, explanationUrl, gameUrl] = await Promise.all([
+        generateLessonDiagram(generated.warmupDiagramPrompt, 'warmup drill'),
+        generateLessonDiagram(generated.explanationDiagramPrompt, 'technical skill demonstration'),
+        generateLessonDiagram(generated.gameDiagramPrompt, 'small sided game')
+      ]);
+      
+      setPlan(prev => prev ? ({ 
+        ...prev, 
         warmupDiagramUrl: warmupUrl, 
         explanationDiagramUrl: explanationUrl,
         gameDiagramUrl: gameUrl 
-      });
+      }) : null);
+
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "The AI Service is currently unavailable. Please check your Vercel Environment Variables (API_KEY).");
+      setError(err.message || "The AI Service failed to respond correctly. Please try again.");
     } finally {
       setLoading(false);
+      setLoadingStep('');
     }
+  };
+
+  const handleExportPdf = () => {
+    if (!contentRef.current) return;
+    const opt = {
+      margin: 10,
+      filename: `LessonPlan_${sport}_${grade}_${language}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+    html2pdf().set(opt).from(contentRef.current).save();
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-      {/* Sidebar Controls */}
-      <div className="lg:col-span-4 space-y-8 animate-slide-up">
-        <div className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-indigo-100/50 border border-slate-100 sticky top-8">
-          <div className="flex items-center space-x-4 mb-10">
-            <div className="p-4 bg-indigo-600 rounded-3xl text-white shadow-xl shadow-indigo-200 rotate-2">
-              <Sparkles size={28} />
+      <div className="lg:col-span-4 space-y-8 animate-slide-up print:hidden">
+        <div className="bg-white p-8 rounded-[2rem] shadow-xl shadow-indigo-100/50 border border-slate-100 sticky top-8">
+          <div className="flex items-center space-x-4 mb-8">
+            <div className="p-3 bg-indigo-600 rounded-2xl text-white shadow-lg shadow-indigo-200 rotate-2">
+              <Sparkles size={24} />
             </div>
             <div>
-              <h3 className="font-black text-2xl text-slate-800 tracking-tighter uppercase leading-none">Architect</h3>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Lesson Designer</p>
+              <h3 className="font-black text-xl text-slate-800 tracking-tighter uppercase leading-none">Lesson Architect</h3>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Daily Plan Generator</p>
             </div>
           </div>
           
-          <div className="space-y-6">
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Board Context</label>
-              <select 
-                className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-slate-700 transition-all appearance-none cursor-pointer" 
-                value={board} 
-                onChange={e => setBoard(e.target.value as BoardType)}
-              >
-                {Object.values(BoardType).map(b => <option key={b} value={b}>{b} Curriculum</option>)}
-              </select>
+          <div className="space-y-5">
+             {/* Language Selector */}
+            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                <label className="flex items-center text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-2 px-1">
+                    <Languages size={12} className="mr-1" /> Output Language
+                </label>
+                <select 
+                    className="w-full bg-white border border-indigo-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-900 text-sm"
+                    value={language}
+                    onChange={e => setLanguage(e.target.value as Language)}
+                >
+                    <option value="English">English</option>
+                    <option value="Hindi">Hindi (हिंदी)</option>
+                    <option value="Marathi">Marathi (मराठी)</option>
+                    <option value="Tamil">Tamil (தமிழ்)</option>
+                    <option value="Bengali">Bengali (বাংলা)</option>
+                </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+               <div className="group">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Teacher</label>
+                <input type="text" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm" value={teacherName} onChange={e => setTeacherName(e.target.value)} />
+               </div>
+               <div className="group">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Date</label>
+                <input type="date" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm" value={date} onChange={e => setDate(e.target.value)} />
+               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="group">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Grade</label>
-                <input type="text" className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-slate-700 transition-all" value={grade} onChange={e => setGrade(e.target.value)} />
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Board</label>
+                <select 
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm"
+                  value={board}
+                  onChange={e => setBoard(e.target.value as BoardType)}
+                >
+                  {Object.values(BoardType).map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
               </div>
-              <div className="group opacity-50">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Time</label>
-                <input type="text" readOnly className="w-full bg-slate-100 border border-slate-100 rounded-[1.5rem] px-6 py-4 text-slate-500 font-bold" value="45 Mins" />
+              <div className="group">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Grade</label>
+                <select 
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm"
+                  value={grade}
+                  onChange={e => setGrade(e.target.value)}
+                >
+                  {[...Array(12)].map((_, i) => <option key={i} value={String(i + 1)}>{i + 1}</option>)}
+                </select>
               </div>
             </div>
 
             <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Sport / Activity</label>
-              <input type="text" className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-slate-700 transition-all" value={sport} onChange={e => setSport(e.target.value)} />
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Sport / Activity</label>
+              <input type="text" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm" value={sport} onChange={e => setSport(e.target.value)} />
             </div>
 
             <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Focus Topic</label>
-              <input type="text" className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-slate-700 transition-all" value={topic} onChange={e => setTopic(e.target.value)} />
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Specific Topic</label>
+              <input type="text" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm" value={topic} onChange={e => setTopic(e.target.value)} />
             </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-100 p-6 rounded-3xl flex items-start space-x-3 text-red-600 text-xs font-bold leading-relaxed animate-in fade-in zoom-in">
-                <AlertCircle size={20} className="shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
 
             <button 
               onClick={handleGenerate} 
               disabled={loading} 
-              className="w-full py-6 bg-indigo-600 text-white rounded-[2rem] font-black shadow-2xl shadow-indigo-600/30 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center space-x-3 disabled:opacity-50 disabled:scale-100"
+              className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={24} />}
-              <span className="text-lg tracking-tight uppercase">{loading ? 'Synthesizing...' : 'Build Visual Plan'}</span>
+              {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={20} />}
+              <span className="text-sm uppercase tracking-wider">{loading ? loadingStep || 'Processing...' : 'Generate Plan'}</span>
             </button>
+            
+            {error && (
+              <div className="p-4 bg-red-50 text-red-600 rounded-xl text-xs font-bold flex items-start space-x-2">
+                <AlertCircle size={16} className="flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Main View Area */}
-      <div className="lg:col-span-8 min-h-[700px]">
-        {!plan && !loading ? (
-          <div className="bg-white border-4 border-dashed border-slate-100 rounded-[4rem] h-full flex flex-col items-center justify-center p-16 text-center group transition-all hover:border-indigo-100">
-            <div className="relative mb-12">
-              <div className="absolute inset-0 bg-indigo-500 rounded-full scale-150 blur-[100px] opacity-10 group-hover:opacity-30 transition-opacity"></div>
-              <div className="relative w-40 h-40 bg-slate-50 rounded-[3rem] flex items-center justify-center border-2 border-slate-100 group-hover:rotate-3 transition-transform">
-                <ImageIcon className="text-slate-200 w-20 h-20 group-hover:text-indigo-200 transition-colors" />
-              </div>
-            </div>
-            <h3 className="text-4xl font-black text-slate-800 mb-6 tracking-tighter leading-tight max-w-sm">
-              Your Professional <span className="text-indigo-600 underline decoration-indigo-200 decoration-8 underline-offset-4">Visual Resource</span>
-            </h3>
-            <p className="text-slate-400 max-w-md font-bold leading-relaxed mb-10 text-lg">
-              Plans include board-aligned timing, technical coaching cues, and AI-generated triple diagrams for class deployment.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-lg">
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-                <ClipboardList className="mx-auto text-slate-300 mb-2" size={20} />
-                <p className="text-[10px] font-black text-slate-400 uppercase">NEP Standards</p>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-                <Layers className="mx-auto text-slate-300 mb-2" size={20} />
-                <p className="text-[10px] font-black text-slate-400 uppercase">3 Diagrams</p>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-                <Clock className="mx-auto text-slate-300 mb-2" size={20} />
-                <p className="text-[10px] font-black text-slate-400 uppercase">Strict Timing</p>
-              </div>
-            </div>
-          </div>
-        ) : loading ? (
-          <div className="bg-white rounded-[4rem] h-full flex flex-col items-center justify-center p-24 text-center border border-slate-100 shadow-sm">
-            <div className="relative mb-12">
-              <div className="w-32 h-32 border-[12px] border-slate-50 border-t-indigo-600 rounded-full animate-spin"></div>
-              <Sparkles className="absolute inset-0 m-auto text-indigo-600 animate-pulse" size={48} />
-            </div>
-            <h3 className="text-3xl font-black text-slate-800 mb-4 uppercase tracking-tighter">Drafting Plan...</h3>
-            <div className="space-y-3">
-               <p className="text-slate-500 font-bold uppercase tracking-widest text-xs animate-pulse">Mapping {board} Framework...</p>
-               <p className="text-slate-400 font-medium text-sm">Synthesizing technical diagrams for {sport}...</p>
-            </div>
-          </div>
-        ) : (
-          <div className="animate-in fade-in slide-in-from-bottom-12 duration-1000">
-            <div className="bg-white rounded-[4rem] shadow-2xl shadow-indigo-900/10 overflow-hidden border border-slate-100 mb-12">
-              {/* Header Gradient */}
-              <div className="bg-gradient-to-br from-indigo-600 via-indigo-900 to-slate-950 p-12 text-white relative">
-                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start gap-8">
-                  <div>
-                    <div className="flex items-center space-x-3 mb-6">
-                      <span className="bg-orange-500 text-white font-black text-[10px] px-6 py-2 rounded-full uppercase tracking-widest shadow-xl shadow-orange-600/30">Official {board} Format</span>
-                      <span className="bg-white/10 text-indigo-100 font-black text-[10px] px-6 py-2 rounded-full uppercase tracking-widest backdrop-blur-md">Grade {plan.grade}</span>
+        <div className="lg:col-span-8">
+           {!plan ? (
+             <div className="bg-white border-4 border-dashed border-slate-100 rounded-[2.5rem] h-full min-h-[600px] flex flex-col items-center justify-center p-12 text-center opacity-50">
+               <div className="w-24 h-24 bg-slate-50 rounded-3xl flex items-center justify-center mb-6">
+                 <PenTool size={32} className="text-slate-300" />
+               </div>
+               <h3 className="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">Lesson Canvas</h3>
+               <p className="text-slate-400 font-medium">Your generated plan will appear here.</p>
+             </div>
+           ) : (
+             <div className="bg-white rounded-[2.5rem] p-12 shadow-sm border border-slate-100 animate-in fade-in slide-in-from-bottom-8 duration-700">
+               <div className="flex justify-between items-center mb-10 pb-6 border-b border-slate-100 print:hidden">
+                 <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Plan Preview</h2>
+                 <div className="flex space-x-3">
+                    <button onClick={() => {setPlan(null); setLanguage('English');}} className="p-3 text-slate-400 hover:text-indigo-600 font-bold flex items-center space-x-2">
+                       <RotateCcw size={16} /> <span>Reset</span>
+                    </button>
+                    <button onClick={handleExportPdf} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold flex items-center space-x-2 shadow-lg hover:bg-indigo-700 transition-all">
+                       <Download size={18} /> <span>Download PDF</span>
+                    </button>
+                 </div>
+               </div>
+
+               {/* Printable Area */}
+               <div ref={contentRef} className="space-y-8 text-slate-900" id="print-area">
+                  <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-8">
+                    <div>
+                      <h1 className="text-4xl font-black uppercase tracking-tighter mb-2">{sport}</h1>
+                      <p className="text-xl text-slate-600 font-medium">{topic}</p>
                     </div>
-                    <h2 className="text-5xl font-black mb-6 tracking-tighter leading-none">{plan.title}</h2>
-                    <div className="flex items-center space-x-10 text-indigo-100 text-sm font-bold uppercase tracking-widest">
-                       <span className="flex items-center"><Target size={18} className="mr-3 text-orange-400"/> {plan.sport}</span>
-                       <span className="flex items-center"><Clock size={18} className="mr-3 text-orange-400"/> 45 Minute Class</span>
+                    <div className="text-right">
+                       <div className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Grade {grade}</div>
+                       <div className="text-lg font-black">{board} Curriculum</div>
                     </div>
                   </div>
-                  <div className="flex space-x-3">
-                    <button className="p-4 bg-white/10 hover:bg-white/20 rounded-3xl transition-all shadow-xl backdrop-blur-md"><Printer size={24}/></button>
-                    <button className="p-4 bg-white/10 hover:bg-white/20 rounded-3xl transition-all shadow-xl backdrop-blur-md"><Download size={24}/></button>
-                  </div>
-                </div>
-                {/* Visual Accent */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-[150px] opacity-20 -mr-20 -mt-20 pointer-events-none"></div>
-              </div>
 
-              <div className="p-12 space-y-24">
-                {/* 1. WARM UP SECTION */}
-                <section>
-                  <div className="flex items-center space-x-4 mb-10">
-                    <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 font-black text-xl shadow-inner">1</div>
-                    <h4 className="text-3xl font-black text-slate-800 uppercase tracking-tighter leading-none">The Warm-up (05')</h4>
+                  <div className="grid grid-cols-4 gap-4 mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-100 print:bg-transparent print:border-slate-300">
+                     <div>
+                       <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Date</span>
+                       <span className="font-bold">{plan.date}</span>
+                     </div>
+                     <div>
+                       <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Duration</span>
+                       <span className="font-bold">{plan.duration}</span>
+                     </div>
+                     <div>
+                       <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Teacher</span>
+                       <span className="font-bold">{plan.teacher}</span>
+                     </div>
+                     <div>
+                       <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Period</span>
+                       <span className="font-bold">{plan.period}</span>
+                     </div>
                   </div>
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-                    <div className="bg-slate-50 p-10 rounded-[3rem] border border-slate-100 flex flex-col justify-center">
-                      <p className="text-slate-600 font-bold text-lg leading-relaxed italic">
-                        {plan.activities.find(a => a.time.includes('5'))?.description || plan.activities[0]?.description}
-                      </p>
-                    </div>
-                    {plan.warmupDiagramUrl && (
-                      <div className="bg-white p-3 rounded-[3rem] shadow-2xl border border-slate-50 group hover:scale-[1.02] transition-transform">
-                         <img src={plan.warmupDiagramUrl} alt="Warmup Diagram" className="w-full rounded-[2.5rem] shadow-inner" />
-                         <div className="py-4 text-center">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Deployment Visualization: Warm-up</p>
-                         </div>
-                      </div>
-                    )}
-                  </div>
-                </section>
 
-                {/* 2. THE GAME SECTION */}
-                <section>
-                   <div className="bg-slate-900 rounded-[4rem] p-12 text-white shadow-3xl shadow-slate-900/20 relative overflow-hidden">
-                    <div className="relative z-10">
-                      <div className="flex items-center space-x-4 mb-12">
-                         <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-xl">3</div>
-                         <h4 className="text-4xl font-black uppercase tracking-tighter leading-none">Game Play: {plan.suggestedGame.name}</h4>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 items-start">
-                        <div className="space-y-8">
-                           <div className="space-y-4">
-                             <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Rules of Engagement</p>
-                             {plan.suggestedGame.rules.map((rule, i) => (
-                               <div key={i} className="flex items-start space-x-4 bg-white/5 p-6 rounded-3xl border border-white/10 hover:bg-white/10 transition-colors">
-                                 <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 mt-0.5">{i+1}</span>
-                                 <span className="text-lg font-bold leading-tight">{rule}</span>
-                                </div>
-                             ))}
+                  {/* Learning Objectives */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                     <div className="space-y-4">
+                        <h4 className="font-black text-indigo-600 uppercase tracking-widest text-sm border-b pb-2">Learning Objectives</h4>
+                        <div className="space-y-3">
+                           <div className="flex items-start">
+                             <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                             <p className="text-sm"><strong>Know:</strong> {plan.objectives.know}</p>
                            </div>
-                           <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
-                              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-4">Tactical Setup</p>
-                              <p className="text-lg font-bold leading-relaxed">{plan.suggestedGame.setup}</p>
+                           <div className="flex items-start">
+                             <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                             <p className="text-sm"><strong>Understand:</strong> {plan.objectives.understand}</p>
+                           </div>
+                           <div className="flex items-start">
+                             <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                             <p className="text-sm"><strong>Apply:</strong> {plan.objectives.beAbleTo}</p>
                            </div>
                         </div>
-                        {plan.gameDiagramUrl && (
-                          <div className="bg-white p-3 rounded-[3rem] shadow-3xl">
-                             <img src={plan.gameDiagramUrl} alt="Game Diagram" className="w-full rounded-[2.5rem]" />
-                             <p className="text-center text-[10px] font-black text-slate-400 mt-6 uppercase tracking-widest">Master Field Layout</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {/* Visual Accent */}
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px] -ml-20 -mb-20"></div>
+                     </div>
+                     <div className="space-y-4">
+                        <h4 className="font-black text-emerald-600 uppercase tracking-widest text-sm border-b pb-2">Success Criteria</h4>
+                        <div className="space-y-3">
+                           <div className="flex items-start">
+                             <Target size={14} className="mt-1 mr-3 text-emerald-500 flex-shrink-0" />
+                             <p className="text-sm"><strong>All:</strong> {plan.successCriteria.all}</p>
+                           </div>
+                           <div className="flex items-start">
+                             <Target size={14} className="mt-1 mr-3 text-emerald-500 flex-shrink-0" />
+                             <p className="text-sm"><strong>Most:</strong> {plan.successCriteria.most}</p>
+                           </div>
+                           <div className="flex items-start">
+                             <Target size={14} className="mt-1 mr-3 text-emerald-500 flex-shrink-0" />
+                             <p className="text-sm"><strong>Some:</strong> {plan.successCriteria.some}</p>
+                           </div>
+                        </div>
+                     </div>
                   </div>
-                </section>
 
-                <div className="flex justify-center pt-12">
-                  <button onClick={() => setPlan(null)} className="px-12 py-6 bg-slate-50 text-slate-400 font-black rounded-[2.5rem] border-2 border-slate-100 hover:text-indigo-600 hover:border-indigo-200 transition-all flex items-center space-x-4 text-sm uppercase tracking-widest group">
-                    <RotateCcw size={20} className="group-hover:rotate-180 transition-transform duration-700" />
-                    <span>Construct New Visual Resource</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+                  {/* Lesson Phases */}
+                  <div className="space-y-6">
+                    {/* Starter */}
+                    <div className="border-l-4 border-indigo-500 pl-6 py-2">
+                       <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-black text-slate-800 text-lg">1. Starter Activity</h4>
+                          <span className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-black rounded-full uppercase">{plan.starter.time}</span>
+                       </div>
+                       <p className="font-bold text-slate-700 mb-1">{plan.starter.title}</p>
+                       <p className="text-slate-600 text-sm mb-4 leading-relaxed">{plan.starter.description}</p>
+                       {plan.warmupDiagramUrl && (
+                         <div className="w-48 h-32 bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
+                           <img src={plan.warmupDiagramUrl} className="w-full h-full object-cover" alt="Warmup" />
+                         </div>
+                       )}
+                    </div>
+
+                    {/* Main */}
+                    <div className="border-l-4 border-orange-500 pl-6 py-2">
+                       <div className="flex justify-between items-center mb-4">
+                          <h4 className="font-black text-slate-800 text-lg">2. Main Activities</h4>
+                          <span className="px-3 py-1 bg-orange-50 text-orange-700 text-xs font-black rounded-full uppercase">{plan.mainActivity.time}</span>
+                       </div>
+                       
+                       <div className="space-y-6">
+                         {plan.mainActivity?.activities?.map((act, i) => (
+                           <div key={i} className="bg-slate-50 p-5 rounded-2xl print:bg-transparent print:p-0 print:mb-4">
+                              <h5 className="font-bold text-slate-800 mb-2 flex items-center">
+                                <span className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs mr-2">{i+1}</span>
+                                {act.title}
+                              </h5>
+                              <p className="text-slate-600 text-sm mb-3 leading-relaxed">{act.description}</p>
+                              <div>
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Coaching Points</span>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {act.coachingPoints?.map((cp, cpi) => (
+                                    <span key={cpi} className="px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-600">{cp}</span>
+                                  ))}
+                                </div>
+                              </div>
+                           </div>
+                         ))}
+                       </div>
+                       
+                       <div className="flex gap-4 mt-4">
+                          {plan.explanationDiagramUrl && (
+                            <div className="w-1/2 h-40 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 relative">
+                              <span className="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-bold px-2 py-1 rounded">Technical</span>
+                              <img src={plan.explanationDiagramUrl} className="w-full h-full object-cover" alt="Drill" />
+                            </div>
+                          )}
+                          {plan.gameDiagramUrl && (
+                            <div className="w-1/2 h-40 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 relative">
+                               <span className="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-bold px-2 py-1 rounded">Game</span>
+                              <img src={plan.gameDiagramUrl} className="w-full h-full object-cover" alt="Game" />
+                            </div>
+                          )}
+                       </div>
+                    </div>
+
+                    {/* Plenary */}
+                    <div className="border-l-4 border-emerald-500 pl-6 py-2">
+                       <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-black text-slate-800 text-lg">3. Plenary & Cooling Down</h4>
+                          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-black rounded-full uppercase">{plan.plenary.time}</span>
+                       </div>
+                       <p className="font-bold text-slate-700 mb-1">{plan.plenary.title}</p>
+                       <p className="text-slate-600 text-sm leading-relaxed">{plan.plenary.description}</p>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="grid grid-cols-2 gap-8 pt-8 border-t border-slate-200 mt-8">
+                     <div>
+                       <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Differentiation (SEN/High Ability)</h5>
+                       <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg">{plan.differentiation}</p>
+                     </div>
+                     <div>
+                       <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Assessment Opportunities</h5>
+                       <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg">{plan.criticalThinking}</p>
+                     </div>
+                  </div>
+               </div>
+             </div>
+           )}
+        </div>
       </div>
     </div>
   );

@@ -7,7 +7,11 @@ import {
   Video, 
   Calendar,
   ChevronRight,
-  Trophy
+  Trophy,
+  Sparkles,
+  Zap,
+  BookOpen,
+  ArrowRight
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -23,7 +27,42 @@ const data = [
 
 const Dashboard: React.FC = () => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 animate-slide-up">
+      {/* Hero Section */}
+      <div className="relative bg-indigo-900 rounded-[3rem] overflow-hidden p-8 md:p-12 text-white shadow-2xl">
+        <div className="relative z-10 max-w-3xl">
+          <div className="inline-flex items-center space-x-2 bg-indigo-800/50 border border-indigo-700 rounded-full px-4 py-1.5 mb-6 backdrop-blur-sm">
+            <Sparkles size={14} className="text-orange-400" />
+            <span className="text-[10px] font-black uppercase tracking-widest">AI-Powered for PE Teachers</span>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter leading-none">
+            Plan Smarter. <span className="text-orange-400">Teach Better.</span>
+          </h1>
+          <p className="text-indigo-100 text-lg mb-10 leading-relaxed font-medium">
+            The all-in-one platform built exclusively for Physical Education teachers. Generate lesson plans, access expert courses, and transform your teaching — all in one place.
+          </p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
+            {[
+              { label: '13 AI planning tools', icon: Zap },
+              { label: 'Expert-led PD courses', icon: BookOpen },
+              { label: 'Downloadable resources', icon: FileText },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center space-x-3 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="p-2 bg-indigo-700/50 rounded-lg">
+                  <item.icon size={18} className="text-orange-400" />
+                </div>
+                <span className="text-xs font-bold">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Decorative elements */}
+        <div className="absolute -right-20 -bottom-20 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px]"></div>
+        <div className="absolute right-0 top-0 w-64 h-64 bg-orange-400/10 rounded-full blur-[80px]"></div>
+      </div>
+
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[

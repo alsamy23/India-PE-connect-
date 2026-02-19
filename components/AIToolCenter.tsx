@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   Calendar, FileSpreadsheet, FileText, Gamepad2, Users, Accessibility, 
   Dumbbell, Microscope, MessageSquare, Target, Split, Layout, ChevronLeft, Zap, Loader2, Download, Printer, CheckCircle2,
-  Trophy, BookOpen, Layers, Info, AlertCircle, Sparkles
+  Trophy, BookOpen, Layers, Info, AlertCircle, Sparkles, ClipboardCheck, BookMarked, List
 } from 'lucide-react';
 import { generateAIToolContent } from '../services/geminiService.ts';
 import { BoardType } from '../types.ts';
@@ -28,6 +28,8 @@ const tools: Tool[] = [
   { id: 'progression-builder', name: 'Progression Builder', description: 'Technical skill mastery pathways with cues.', icon: Dumbbell, color: 'bg-cyan-500' },
   { id: 'sports-science', name: 'Sports Science', description: 'Experiential learning connecting PE with science.', icon: Microscope, color: 'bg-yellow-500' },
   { id: 'ask-advisor', name: 'Ask ConnectedPE', description: 'Get tailored advice on any PE teaching query.', icon: MessageSquare, color: 'bg-slate-700' },
+  { id: 'lesson-observer', name: 'Lesson Observator', description: 'Generate constructive peer-feedback forms.', icon: ClipboardCheck, color: 'bg-teal-500' },
+  { id: 'policy-writer', name: 'PE Policy Writer', description: 'Draft school-wide PE and safety policies.', icon: BookMarked, color: 'bg-indigo-800' },
 ];
 
 const AIToolCenter: React.FC = () => {
@@ -76,51 +78,14 @@ const AIToolCenter: React.FC = () => {
               <p className="text-slate-400 text-sm font-medium mb-8">{selectedTool.description}</p>
 
               <div className="space-y-4">
-                {/* Dynamic Form Generation */}
-                {['unit-planner', 'rubric-maker', 'worksheet-maker', 'game-generator', 'progression-builder'].includes(selectedTool.id) && (
-                  <>
-                    <input className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Focus Topic (e.g. Cricket)" onChange={e => setFormData({...formData, topic: e.target.value, sport: e.target.value, skill: e.target.value})} />
-                    <input className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Grade/Class (e.g. 8)" onChange={e => setFormData({...formData, grade: e.target.value})} />
-                    {selectedTool.id === 'unit-planner' && (
-                      <select className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" onChange={e => setFormData({...formData, duration: e.target.value})}>
-                        <option value="">Duration</option>
-                        <option value="2">2 Weeks</option>
-                        <option value="4">4 Weeks</option>
-                        <option value="6">6 Weeks</option>
-                      </select>
-                    )}
-                    <select className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" onChange={e => setFormData({...formData, board: e.target.value})}>
-                      {Object.values(BoardType).map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                  </>
-                )}
-
-                {selectedTool.id === 'round-robin' && (
-                  <>
-                    <input type="number" className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Number of Teams" onChange={e => setFormData({...formData, teams: e.target.value})} />
-                    <input type="number" className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Available Areas/Courts" onChange={e => setFormData({...formData, courts: e.target.value})} />
-                  </>
-                )}
-
-                {selectedTool.id === 'report-writer' && (
-                  <>
-                    <input className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Student Name" onChange={e => setFormData({...formData, name: e.target.value})} />
-                    <textarea className="w-full bg-slate-50 border p-4 rounded-xl h-24 font-medium outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Main Strengths..." onChange={e => setFormData({...formData, strengths: e.target.value})} />
-                    <textarea className="w-full bg-slate-50 border p-4 rounded-xl h-24 font-medium outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Areas to Improve..." onChange={e => setFormData({...formData, improvements: e.target.value})} />
-                  </>
-                )}
-
-                {selectedTool.id === 'ask-advisor' && (
-                  <textarea className="w-full bg-slate-50 border p-4 rounded-xl h-40 font-medium outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ask anything about PE teaching..." onChange={e => setFormData({...formData, query: e.target.value})} />
-                )}
-
+                <input className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none" placeholder="Topic / Skill / Focus" onChange={e => setFormData({...formData, topic: e.target.value})} />
                 <button 
                   onClick={runTool}
                   disabled={loading}
-                  className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/20 hover:scale-[1.02] transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+                  className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center space-x-2"
                 >
                   {loading ? <Loader2 className="animate-spin" /> : <Zap size={20} />}
-                  <span>{loading ? 'Synthesizing...' : 'Build Pro Resource'}</span>
+                  <span>{loading ? 'Processing...' : 'Build Resource'}</span>
                 </button>
               </div>
             </div>
@@ -130,200 +95,49 @@ const AIToolCenter: React.FC = () => {
             {!result && !loading ? (
               <div className="bg-white border-4 border-dashed border-slate-100 rounded-[2.5rem] h-full min-h-[500px] flex flex-col items-center justify-center p-12 text-center">
                 <selectedTool.icon size={64} className="text-slate-100 mb-6" />
-                <h3 className="text-xl font-black text-slate-800 mb-2 tracking-tighter uppercase">Input Required</h3>
-                <p className="text-slate-400 font-medium">Complete the form on the left to generate your {selectedTool.name}.</p>
+                <h3 className="text-xl font-black text-slate-800 mb-2 uppercase tracking-tighter">Input Required</h3>
               </div>
             ) : loading ? (
               <div className="bg-white rounded-[2.5rem] h-full flex flex-col items-center justify-center p-12">
                 <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
-                <p className="text-slate-500 font-black tracking-widest text-sm uppercase">Curating High-Performance Content...</p>
+                <p className="text-slate-500 font-black tracking-widest text-sm uppercase">Synthesizing Content...</p>
               </div>
             ) : (
               <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 min-h-full animate-in zoom-in-95">
-                {/* Result Header */}
-                <div className="flex justify-between items-center mb-10 pb-6 border-b border-slate-50">
-                  <div>
-                    <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">{selectedTool.name} Output</h3>
-                    <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest mt-1">Ready for Print/Export</p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-indigo-600 transition-colors"><Printer size={20}/></button>
-                    <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-indigo-600 transition-colors"><Download size={20}/></button>
-                  </div>
+                <div className="flex justify-between items-center mb-8 pb-6 border-b border-slate-100">
+                  <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">{result.title || selectedTool.name}</h3>
                 </div>
-
-                {/* Specialized UI Renderers */}
+                
                 <div className="space-y-8">
-                  {/* Unit Planner Renderer */}
-                  {selectedTool.id === 'unit-planner' && result?.weeklyBreakdown && (
-                    <div className="space-y-8">
-                      <div className="bg-blue-600 rounded-3xl p-8 text-white shadow-xl">
-                        <h4 className="text-3xl font-black tracking-tighter mb-2">{result.unitTitle || "Unit Overview"}</h4>
-                        <p className="text-blue-100 font-bold uppercase tracking-widest text-xs">Timeline: {result.duration || formData.duration + " Weeks"}</p>
-                      </div>
-                      <div className="grid grid-cols-1 gap-6">
-                        {result.weeklyBreakdown?.map((week: any, idx: number) => (
-                          <div key={idx} className="bg-slate-50 rounded-3xl p-8 border border-slate-100 flex items-start space-x-6 hover:shadow-md transition-shadow">
-                            <div className="bg-white w-14 h-14 rounded-2xl flex flex-col items-center justify-center border shadow-sm flex-shrink-0">
-                              <span className="text-[10px] font-black text-slate-400 uppercase">Week</span>
-                              <span className="text-xl font-black text-indigo-600">{week.week || idx + 1}</span>
-                            </div>
-                            <div className="flex-1">
-                              <h5 className="text-xl font-black text-slate-800 mb-2">{week.focus}</h5>
-                              <p className="text-slate-600 font-medium mb-4 text-sm leading-relaxed">{week.keyLearning}</p>
-                              <div className="flex flex-wrap gap-2">
-                                {week.suggestedDrills?.map((drill: string, i: number) => (
-                                  <span key={i} className="bg-white border border-slate-200 text-indigo-600 text-[10px] font-black px-3 py-1.5 rounded-full shadow-sm">
-                                    {drill}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
+                  <div className="prose max-w-none text-slate-600 leading-loose font-medium">
+                    {result.content}
+                  </div>
+
+                  {result.items && result.items.length > 0 && (
+                    <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                      <h4 className="flex items-center text-sm font-black text-indigo-900 uppercase tracking-widest mb-4">
+                        <List size={16} className="mr-2 text-indigo-500" /> Key Items
+                      </h4>
+                      <ul className="space-y-3">
+                        {result.items.map((item: string, idx: number) => (
+                          <li key={idx} className="flex items-start text-slate-700 font-medium text-sm">
+                            <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            {item}
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     </div>
                   )}
 
-                  {/* Rubric Maker Renderer */}
-                  {selectedTool.id === 'rubric-maker' && result?.categories && (
-                    <div className="space-y-6">
-                      <div className="bg-purple-600 p-6 rounded-3xl text-white mb-6">
-                        <h4 className="text-2xl font-black">Skills Rubric: {result.topic || formData.topic}</h4>
-                      </div>
-                      <div className="overflow-x-auto rounded-[2rem] border border-slate-100">
-                        <table className="w-full text-left">
-                          <thead>
-                            <tr className="bg-slate-50 border-b">
-                              <th className="p-6 text-[10px] font-black uppercase text-slate-400">Assessment Criteria</th>
-                              {result.categories[0]?.levels?.map((level: any, i: number) => (
-                                <th key={i} className="p-6 text-[10px] font-black uppercase text-indigo-600">{level.name}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {result.categories?.map((cat: any, i: number) => (
-                              <tr key={i} className="border-b hover:bg-slate-50 transition-colors">
-                                <td className="p-6 font-black text-slate-800 text-sm w-1/4">{cat.name}</td>
-                                {cat.levels?.map((level: any, li: number) => (
-                                  <td key={li} className="p-6 text-xs text-slate-500 leading-relaxed font-medium">{level.description}</td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                  {result.summary && (
+                    <div className="bg-indigo-900 text-white p-6 rounded-2xl flex items-start space-x-4">
+                      <Sparkles className="flex-shrink-0 text-orange-400" />
+                      <div>
+                        <h4 className="font-bold text-sm uppercase tracking-wider mb-1 text-indigo-200">AI Summary</h4>
+                        <p className="text-sm opacity-90">{result.summary}</p>
                       </div>
                     </div>
                   )}
-
-                  {/* Game Generator Renderer */}
-                  {selectedTool.id === 'game-generator' && result?.games && (
-                    <div className="grid grid-cols-1 gap-6">
-                      {result.games?.map((game: any, i: number) => (
-                        <div key={i} className="bg-orange-50 rounded-[2.5rem] p-8 border border-orange-100 relative group overflow-hidden">
-                          <div className="relative z-10">
-                            <div className="flex justify-between items-start mb-6">
-                              <h5 className="text-2xl font-black text-orange-600">{i+1}. {game.name}</h5>
-                              <Gamepad2 className="text-orange-200 group-hover:text-orange-400 transition-colors" size={32} />
-                            </div>
-                            <div className="space-y-4 mb-8">
-                              {game.rules?.map((rule: string, ri: number) => (
-                                <div key={ri} className="flex items-start space-x-3 text-orange-900 font-medium text-sm">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 flex-shrink-0" />
-                                  <span>{rule}</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {game.equipment?.map((item: string, ei: number) => (
-                                <span key={ei} className="bg-white border border-orange-200 text-orange-600 text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                                  {item}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Round Robin Tournament Renderer */}
-                  {selectedTool.id === 'round-robin' && result?.rounds && (
-                    <div className="space-y-8">
-                      <div className="bg-pink-600 p-8 rounded-[2.5rem] text-white flex items-center justify-between">
-                        <div>
-                          <h4 className="text-3xl font-black tracking-tighter">Tournament Bracket</h4>
-                          <p className="text-pink-100 text-sm font-bold uppercase tracking-widest mt-1">Balanced Competition Logic</p>
-                        </div>
-                        <Trophy size={48} className="text-pink-300" />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {result.rounds?.map((round: any, idx: number) => (
-                          <div key={idx} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                            <div className="flex items-center space-x-2 mb-6 border-b border-slate-50 pb-4">
-                              <span className="bg-pink-100 text-pink-600 font-black text-[10px] px-3 py-1 rounded-full uppercase">Round {round.round || round.roundNumber || idx + 1}</span>
-                            </div>
-                            <div className="space-y-3">
-                              {round.matches?.map((match: string, mi: number) => (
-                                <div key={mi} className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between border border-transparent hover:border-pink-200 transition-all">
-                                  <span className="text-sm font-bold text-slate-700">{match}</span>
-                                  <div className="w-10 h-6 bg-white border border-slate-200 rounded-lg" />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* AI Advisor Renderer */}
-                  {selectedTool.id === 'ask-advisor' && (
-                    <div className="space-y-6">
-                      <div className="flex items-start space-x-4">
-                        <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 shadow-sm">
-                          <Users size={24} />
-                        </div>
-                        <div className="bg-slate-50 p-6 rounded-3xl rounded-tl-none border border-slate-100 max-w-[80%]">
-                          <p className="text-slate-600 font-medium">"{formData.query}"</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start space-x-4 flex-row-reverse space-x-reverse">
-                        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-200">
-                          <Sparkles size={24} />
-                        </div>
-                        <div className="bg-indigo-900 p-8 rounded-[2.5rem] rounded-tr-none text-white max-w-[85%] shadow-2xl">
-                          <h5 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-4">India PE Connect Expert Advice</h5>
-                          <div className="prose prose-invert max-w-none text-indigo-50 leading-loose">
-                            {result?.response || result?.advice || "Consulting coaches..."}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Fallback for general text responses */}
-                  {!['unit-planner', 'rubric-maker', 'game-generator', 'round-robin', 'report-writer', 'worksheet-maker', 'ask-advisor'].includes(selectedTool.id) && (
-                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
-                      <div className="flex items-center space-x-2 mb-6">
-                        <Info className="text-indigo-600" size={20} />
-                        <h4 className="font-black text-slate-800 uppercase tracking-tighter">Processed Analysis</h4>
-                      </div>
-                      <div className="prose max-w-none text-slate-600 leading-loose font-medium">
-                        {typeof result === 'string' ? result : (
-                          <pre className="whitespace-pre-wrap font-sans text-sm">
-                            {JSON.stringify(result, null, 2)}
-                          </pre>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Print Notice */}
-                <div className="mt-12 bg-slate-50 rounded-2xl p-4 flex items-center justify-center space-x-2 text-slate-400">
-                  <AlertCircle size={14} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Designed for professional classroom use</span>
                 </div>
               </div>
             )}
@@ -343,7 +157,7 @@ const AIToolCenter: React.FC = () => {
           </div>
           <h2 className="text-5xl font-black mb-6 tracking-tighter leading-none">FREE Professional PE Suite.</h2>
           <p className="text-indigo-200 text-lg mb-0 leading-relaxed font-medium">
-            Inspired by premium platforms like ConnectedPE, now available free for the Indian physical education community.
+            13 High-Impact tools inspired by global best practices, optimized for the Indian curriculum.
           </p>
         </div>
         <Layers className="absolute -right-20 -bottom-20 w-96 h-96 text-white/5 rotate-12" />

@@ -6,6 +6,8 @@ export enum BoardType {
   IB = 'IB'
 }
 
+export type Language = 'English' | 'Hindi' | 'Marathi' | 'Tamil' | 'Bengali';
+
 export interface TeacherProfile {
   id: string;
   name: string;
@@ -17,34 +19,66 @@ export interface TeacherProfile {
 }
 
 export interface LessonPlan {
-  title: string;
+  // Header Info
+  teacher: string;
+  subject: string;
   grade: string;
-  sport: string;
-  objectives: string[];
+  date: string;
+  topic: string;
+  period: string;
+  termWeek: string;
   duration: string;
-  activities: {
-    time: string;
-    description: string;
-    equipment: string[];
-    coachingCues: string[];
-  }[];
-  suggestedGame: {
-    name: string;
-    rules: string[];
-    setup: string;
+
+  // Framework
+  sen: {
+    wave1: string;
+    wave2: string;
+    wave3: string;
   };
+  objectives: {
+    know: string;
+    understand: string;
+    beAbleTo: string;
+  };
+  successCriteria: {
+    all: string;
+    most: string;
+    some: string;
+  };
+
+  // Structure
+  starter: {
+    time: string;
+    title: string;
+    description: string;
+  };
+  mainActivity: {
+    time: string;
+    activities: {
+      title: string;
+      description: string;
+      coachingPoints: string[];
+    }[];
+  };
+  plenary: {
+    time: string;
+    title: string;
+    description: string;
+  };
+
+  // Footer Info
+  homework: string;
+  collaboration: string;
+  differentiation: string;
+  criticalThinking: string;
+
+  // Visuals
   warmupDiagramPrompt: string;
   warmupDiagramUrl?: string;
   explanationDiagramPrompt: string;
   explanationDiagramUrl?: string;
   gameDiagramPrompt: string;
   gameDiagramUrl?: string;
-  assessmentRubric?: {
-    criteria: string;
-    beginner: string;
-    intermediate: string;
-    advanced: string;
-  }[];
 }
 
 export interface UnitPlan {
@@ -66,6 +100,17 @@ export interface Rubric {
       name: string;
       description: string;
     }[];
+  }[];
+}
+
+export interface TheoryContent {
+  title: string;
+  contentType: 'Notes' | 'MCQ' | 'CaseStudy';
+  content: string;
+  questions: {
+    question: string;
+    answer: string;
+    type: string;
   }[];
 }
 
@@ -91,4 +136,48 @@ export interface SkillProgression {
     diagramPrompt: string;
     diagramUrl?: string;
   }[];
+}
+
+export interface YearlyPlan {
+  grade: string;
+  board: string;
+  academicYear: string;
+  duration: string;
+  generatedDate: string;
+  terms: {
+    termName: string;
+    months: {
+      monthName: string;
+      weeks: {
+        weekNumber: number;
+        status: 'Instructional' | 'Holiday' | 'Exam' | 'Event';
+        dates: string;
+        topic: string;
+        details: string;
+      }[];
+    }[];
+  }[];
+}
+
+export interface FitnessAssessment {
+  studentName: string;
+  age: number;
+  gender: 'Male' | 'Female';
+  tests: {
+    testName: string;
+    score: string;
+    percentile: string;
+    rating: 'Needs Improvement' | 'Average' | 'Good' | 'Excellent' | 'Elite';
+    recommendation: string;
+  }[];
+  overallSummary: string;
+}
+
+export interface BiomechanicsConcept {
+  concept: string;
+  sportApplication: string;
+  explanation: string;
+  analogy: string;
+  diagramPrompt: string;
+  diagramUrl?: string;
 }

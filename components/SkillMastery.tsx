@@ -12,9 +12,22 @@ const SkillMastery: React.FC = () => {
 
   const handleGenerate = async () => {
     setLoading(true);
+    setProgression(null);
     try {
       const data = await generateSkillProgression(sport, skill);
       
+      // Defensive check to prevent crash if AI returns malformed data
+      if (!data || !data.phases || !Array.isArray(data.phases)) {
+        console.warn("AI returned invalid progression structure", data);
+        // Set a partial state or handle error appropriately
+        setProgression({ 
+          skillName: data?.skillName || skill, 
+          level: data?.level || 'Beginner', 
+          phases: [] 
+        });
+        return;
+      }
+
       // Generate diagrams for each phase
       const phasesWithImages = await Promise.all(data.phases.map(async (phase: any) => {
         const url = await generateLessonDiagram(phase.diagramPrompt, 'skill');
@@ -24,6 +37,7 @@ const SkillMastery: React.FC = () => {
       setProgression({ ...data, phases: phasesWithImages });
     } catch (e) {
       console.error(e);
+      alert("Failed to generate progression. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -83,7 +97,7 @@ const SkillMastery: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {progression.phases.map((phase, idx) => (
+            {progression.phases?.map((phase, idx) => (
               <div key={idx} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col hover:shadow-xl transition-all border-b-4 border-b-indigo-500">
                 <div className="flex justify-between items-start mb-4">
                   <span className="bg-indigo-50 text-indigo-700 font-black text-xs px-3 py-1 rounded-full uppercase">Phase 0{idx+1}</span>
@@ -104,7 +118,7 @@ const SkillMastery: React.FC = () => {
                 <div className="flex-grow space-y-4">
                   <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mastery Drills</h5>
                   <div className="space-y-2">
-                    {phase.drills.map((drill, dIdx) => (
+                    {phase.drills?.map((drill, dIdx) => (
                       <div key={dIdx} className="flex items-start space-x-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-xl">
                         <ChevronRight size={14} className="mt-0.5 text-indigo-400 flex-shrink-0" />
                         <span>{drill}</span>
