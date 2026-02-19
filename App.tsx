@@ -13,13 +13,15 @@ import {
   TrendingUp,
   Wrench,
   Wifi,
-  WifiOff,
   AlertTriangle,
   CalendarRange,
   GraduationCap,
   Trophy,
   Microscope,
-  Book
+  Book,
+  Activity,
+  Network,
+  Award
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import CurriculumHub from './components/CurriculumHub.tsx';
@@ -33,6 +35,7 @@ import TheoryHub from './components/TheoryHub.tsx';
 import KheloIndia from './components/KheloIndia.tsx';
 import Biomechanics from './components/Biomechanics.tsx';
 import RulesBot from './components/RulesBot.tsx';
+import Disclaimer from './components/Disclaimer.tsx';
 
 type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules';
 
@@ -40,6 +43,13 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'missing'>('checking');
+  
+  // Static Profile Data (Read-Only)
+  const userProfile = {
+    name: "L. Samy",
+    role: "Founder & Director",
+    org: "India PE Connect"
+  };
 
   useEffect(() => {
     // Check if API key is injected correctly
@@ -66,12 +76,12 @@ const App: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-inter">
       {/* Mobile Header */}
       <header className="md:hidden bg-indigo-900 text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
         <div className="flex items-center space-x-2">
-          <Dumbbell className="w-8 h-8 text-orange-400" />
-          <span className="font-black text-lg tracking-tighter uppercase">India PE</span>
+          <Activity className="w-8 h-8 text-orange-400" />
+          <span className="font-black text-lg tracking-tighter uppercase">India PE Connect</span>
         </div>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/10 rounded-xl">
           {isSidebarOpen ? <X /> : <Menu />}
@@ -86,12 +96,15 @@ const App: React.FC = () => {
         print:hidden
       `}>
         <div className="p-8 hidden md:flex items-center space-x-4">
-          <div className="p-3 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl shadow-2xl shadow-orange-600/20 rotate-3">
-            <Dumbbell className="w-8 h-8 text-white" />
+          <div className="relative">
+             <div className="p-3 bg-white rounded-2xl shadow-2xl shadow-orange-600/20 rotate-3 z-10 relative">
+               <Network className="w-8 h-8 text-indigo-700" />
+             </div>
+             <div className="absolute inset-0 bg-orange-500 rounded-2xl -rotate-6 opacity-50 blur-sm"></div>
           </div>
           <div>
-            <h1 className="font-black text-2xl leading-none uppercase tracking-tighter">India PE</h1>
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Connect Platform</p>
+            <h1 className="font-black text-xl leading-none uppercase tracking-tighter">India PE<br/><span className="text-orange-400">Connect</span> Platform</h1>
+            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Community Edition</p>
           </div>
         </div>
 
@@ -145,25 +158,26 @@ const App: React.FC = () => {
           ))}
         </nav>
 
-        {/* Profile Footer */}
+        {/* Profile Footer - Static/Read-Only */}
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-900/80 backdrop-blur-xl border-t border-slate-800">
-          <div className="bg-slate-800/50 rounded-[2rem] p-4 flex items-center space-x-4">
+          <div className="w-full bg-slate-800/50 rounded-[2rem] p-4 flex items-center space-x-4">
             <div className="relative">
-              <img src="https://picsum.photos/seed/coach/100" className="w-12 h-12 rounded-2xl border-2 border-indigo-500/30 object-cover" alt="Coach" />
+              <div className="w-12 h-12 bg-indigo-600 rounded-2xl border-2 border-indigo-500/30 flex items-center justify-center text-white font-black text-lg">
+                {userProfile.name.charAt(0)}
+              </div>
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full"></div>
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-black truncate leading-none mb-1">Coach Rajesh</p>
-              <div className="flex items-center text-[10px] text-slate-500 font-bold">
-                <TrendingUp size={10} className="mr-1 text-emerald-500" /> VERCEL PRO ACCESS
-              </div>
+            <div className="overflow-hidden text-left flex-1">
+              <p className="text-sm font-black truncate leading-none mb-1 text-white">{userProfile.name}</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase truncate">{userProfile.role}</p>
             </div>
+            <Award size={16} className="text-orange-500" />
           </div>
         </div>
       </aside>
 
       {/* Content Area */}
-      <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white">
+      <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-20">
         <div className="max-w-7xl mx-auto p-6 md:p-12 min-h-full print:p-0">
           {activeTab === 'dashboard' && <Dashboard />}
           {activeTab === 'yearly' && <YearlyPlanner />}
@@ -178,9 +192,11 @@ const App: React.FC = () => {
           {activeTab === 'biomechanics' && <Biomechanics />}
           {activeTab === 'rules' && <RulesBot />}
         </div>
+        <Disclaimer />
       </main>
     </div>
   );
 };
 
 export default App;
+    

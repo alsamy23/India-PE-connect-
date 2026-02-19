@@ -8,25 +8,66 @@ import {
   MessageCircle,
   MoreVertical,
   Filter,
-  CheckCircle2
+  CheckCircle2,
+  Edit2,
+  Plus,
+  X
 } from 'lucide-react';
 import { BoardType, TeacherProfile } from '../types';
 
 const Networking: React.FC = () => {
   const [activeBoard, setActiveBoard] = useState<BoardType | 'All'>('All');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<Partial<TeacherProfile> | null>(null);
 
-  const teachers: TeacherProfile[] = [
+  // Initial Dummy Data
+  const [teachers, setTeachers] = useState<TeacherProfile[]>([
+    { id: '0', name: 'L. Samy', location: 'India', board: BoardType.CBSE, specialization: ['Physical Education', 'Sports Management'], experience: 20, avatar: 'https://ui-avatars.com/api/?name=L+Samy&background=6366f1&color=fff&size=200' },
     { id: '1', name: 'Dr. Manish Pandey', location: 'Ahmedabad, Gujarat', board: BoardType.CBSE, specialization: ['Yoga', 'Athletics'], experience: 15, avatar: 'https://picsum.photos/seed/mp/200' },
     { id: '2', name: 'Priya Sundaram', location: 'Chennai, Tamil Nadu', board: BoardType.STATE, specialization: ['Kho-Kho', 'Nutrition'], experience: 8, avatar: 'https://picsum.photos/seed/ps/200' },
     { id: '3', name: 'Vikram Singh', location: 'Chandigarh, Punjab', board: BoardType.ICSE, specialization: ['Hockey', 'Gymnastics'], experience: 12, avatar: 'https://picsum.photos/seed/vs/200' },
     { id: '4', name: 'Anjali Gupta', location: 'Delhi, NCR', board: BoardType.CBSE, specialization: ['Basketball', 'Wellness'], experience: 5, avatar: 'https://picsum.photos/seed/ag/200' },
     { id: '5', name: 'Rahul Bose', location: 'Kolkata, WB', board: BoardType.STATE, specialization: ['Football', 'Cricket'], experience: 20, avatar: 'https://picsum.photos/seed/rb/200' },
     { id: '6', name: 'Sonia Williams', location: 'Mumbai, MH', board: BoardType.IB, specialization: ['Swim', 'Personal Training'], experience: 10, avatar: 'https://picsum.photos/seed/sw/200' },
-  ];
+  ]);
 
   const filtered = activeBoard === 'All' 
     ? teachers 
     : teachers.filter(t => t.board === activeBoard);
+
+  const handleEdit = (profile: TeacherProfile) => {
+    setEditingProfile(profile);
+    setShowEditModal(true);
+  };
+
+  const handleAddNew = () => {
+    setEditingProfile({
+      id: Date.now().toString(),
+      name: '',
+      location: '',
+      board: BoardType.CBSE,
+      specialization: [],
+      experience: 0,
+      avatar: `https://picsum.photos/seed/${Date.now()}/200`
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProfile || !editingProfile.name) return;
+
+    // Check if updating existing or adding new
+    const existingIndex = teachers.findIndex(t => t.id === editingProfile.id);
+    if (existingIndex >= 0) {
+      const updated = [...teachers];
+      updated[existingIndex] = editingProfile as TeacherProfile;
+      setTeachers(updated);
+    } else {
+      setTeachers([editingProfile as TeacherProfile, ...teachers]);
+    }
+    setShowEditModal(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -40,7 +81,7 @@ const Networking: React.FC = () => {
             className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
           />
         </div>
-        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 items-center">
           {['All', ...Object.values(BoardType)].map(b => (
             <button
               key={b}
@@ -54,8 +95,11 @@ const Networking: React.FC = () => {
               {b}
             </button>
           ))}
-          <button className="p-3 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100">
-            <Filter size={18} />
+          <button 
+            onClick={handleAddNew}
+            className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold flex items-center space-x-1 hover:bg-emerald-600 transition-colors whitespace-nowrap"
+          >
+            <Plus size={16} /> <span>Add Member</span>
           </button>
         </div>
       </div>
@@ -64,9 +108,14 @@ const Networking: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map(teacher => (
           <div key={teacher.id} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 relative group hover:shadow-xl hover:border-indigo-100 transition-all">
-            <button className="absolute top-6 right-6 text-slate-300 hover:text-slate-600 transition-colors">
-              <MoreVertical size={20} />
-            </button>
+            <div className="absolute top-6 right-6 flex space-x-2">
+               <button 
+                 onClick={() => handleEdit(teacher)}
+                 className="text-slate-300 hover:text-indigo-600 transition-colors p-1 bg-white rounded-full border border-transparent hover:border-indigo-100"
+               >
+                  <Edit2 size={16} />
+               </button>
+            </div>
             
             <div className="flex flex-col items-center text-center">
               <div className="relative mb-4">
@@ -126,6 +175,7 @@ const Networking: React.FC = () => {
         </div>
         <div className="space-y-4">
           {[
+            { user: 'L. Samy', action: 'welcomed new members to', target: 'India PE Connect', time: '1h ago' },
             { user: 'Rahul Bose', action: 'shared a new drill for', target: 'Under-14 Football coaching', time: '2h ago' },
             { user: 'Priya Sundaram', action: 'started a discussion on', target: 'Yoga in State Board schools', time: '5h ago' },
             { user: 'Dr. Manish Pandey', action: 'updated his profile', target: 'Ahmedabad PE Network', time: '1d ago' },
@@ -144,6 +194,83 @@ const Networking: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && editingProfile && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl relative">
+            <button 
+              onClick={() => setShowEditModal(false)}
+              className="absolute top-6 right-6 p-2 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <h2 className="text-2xl font-black text-slate-800 mb-6">
+               {teachers.find(t => t.id === editingProfile.id) ? 'Edit Profile' : 'Add New Member'}
+            </h2>
+
+            <form onSubmit={handleSave} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Name</label>
+                  <input 
+                    type="text" required
+                    value={editingProfile.name}
+                    onChange={(e) => setEditingProfile({...editingProfile, name: e.target.value})}
+                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Experience (Yrs)</label>
+                  <input 
+                    type="number" 
+                    value={editingProfile.experience}
+                    onChange={(e) => setEditingProfile({...editingProfile, experience: parseInt(e.target.value) || 0})}
+                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Location</label>
+                <input 
+                  type="text" 
+                  value={editingProfile.location}
+                  onChange={(e) => setEditingProfile({...editingProfile, location: e.target.value})}
+                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                 <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Board</label>
+                    <select 
+                      value={editingProfile.board}
+                      onChange={(e) => setEditingProfile({...editingProfile, board: e.target.value as BoardType})}
+                      className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold"
+                    >
+                      {Object.values(BoardType).map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                 </div>
+                 <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Specialization (comma sep)</label>
+                    <input 
+                      type="text" 
+                      value={editingProfile.specialization?.join(', ')}
+                      onChange={(e) => setEditingProfile({...editingProfile, specialization: e.target.value.split(',').map(s => s.trim())})}
+                      className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold"
+                    />
+                 </div>
+              </div>
+
+              <button type="submit" className="w-full py-4 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition-all shadow-lg mt-4">
+                Save Details
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

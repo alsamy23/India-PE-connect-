@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Activity, Trophy, ChevronRight, Calculator, RefreshCw, Loader2, Award, ClipboardList } from 'lucide-react';
+import { Activity, Trophy, ChevronRight, Calculator, RefreshCw, Loader2, Award, ClipboardList, AlertCircle } from 'lucide-react';
 import { evaluateKheloIndiaScores } from '../services/geminiService.ts';
 import { FitnessAssessment } from '../types.ts';
 
@@ -8,6 +8,7 @@ const KheloIndia: React.FC = () => {
   const [age, setAge] = useState('12');
   const [gender, setGender] = useState('Male');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FitnessAssessment | null>(null);
 
   // Default battery tests
@@ -23,23 +24,35 @@ const KheloIndia: React.FC = () => {
     const newTests = [...tests];
     newTests[index].value = val;
     setTests(newTests);
+    setError(null);
   };
 
   const calculate = async () => {
+    // Basic validation
+    const hasData = tests.some(t => t.value.trim() !== '');
+    if (!hasData) {
+      setError("Please enter results for at least one test to calculate scores.");
+      return;
+    }
+
     setLoading(true);
+    setError(null);
     try {
       const data = await evaluateKheloIndiaScores(age, gender, tests);
+      if (!data || !data.tests || data.tests.length === 0) {
+        throw new Error("Received empty analysis.");
+      }
       setResult(data);
     } catch (e) {
       console.error(e);
-      alert('Assessment failed. Please try again.');
+      setError('Assessment failed. The AI could not process the data. Please ensure values are clear (e.g. "8.5s" or "12cm").');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in">
+    <div className="space-y-8 animate-in fade-in pb-20">
       <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-[2.5rem] p-10 text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10">
           <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter">Khelo India Assessment</h2>
@@ -88,6 +101,13 @@ const KheloIndia: React.FC = () => {
               ))}
             </div>
 
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold flex items-start">
+                 <AlertCircle size={16} className="mr-2 flex-shrink-0" />
+                 {error}
+              </div>
+            )}
+
             <button 
               onClick={calculate}
               disabled={loading}
@@ -101,7 +121,7 @@ const KheloIndia: React.FC = () => {
 
         <div className="lg:col-span-8">
           {!result ? (
-            <div className="bg-white border-4 border-dashed border-slate-100 rounded-[2.5rem] h-full flex flex-col items-center justify-center p-12 text-center text-slate-400">
+            <div className="bg-white border-4 border-dashed border-slate-100 rounded-[2.5rem] h-full flex flex-col items-center justify-center p-12 text-center text-slate-400 min-h-[400px]">
                <Activity size={48} className="mb-4 text-slate-200" />
                <p className="font-bold">Enter test data to see performance analysis.</p>
             </div>

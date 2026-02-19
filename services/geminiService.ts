@@ -134,10 +134,10 @@ export const generateLessonPlan = async (
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.0-flash-exp',
     contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}.`,
     config: {
-      systemInstruction: `Create a comprehensive lesson plan. Translate content to ${language}.`,
+      systemInstruction: `Create a comprehensive lesson plan. Translate content to ${language}. Ensure NO fields are empty strings. Populate with realistic drills and data.`,
       responseMimeType: "application/json",
       responseSchema: schema
     }
@@ -204,13 +204,14 @@ export const generateYearlyPlan = async (
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-2.0-flash-exp',
     contents: `Yearly PE Plan. Grade: ${grade}, Board: ${board}, Lang: ${language}. Start: ${startDate}. Terms: 2. Focus1: ${term1Focus}. Focus2: ${term2Focus}. Holidays: ${safeCalendarText}`,
     config: {
       systemInstruction: `Generate strictly valid JSON. 
       Output Language: ${language} (translate Topic and Details).
       Structure: terms[] -> months[] -> weeks[].
-      Constraint: 2 terms, Concise (max 5 words per detail).`,
+      Constraint: 2 terms, Concise (max 5 words per detail).
+      ENSURE DATA IS POPULATED. Do not return empty arrays.`,
       responseMimeType: "application/json",
       responseSchema: schema
     }
@@ -256,10 +257,10 @@ export const generateTheoryContent = async (grade: string, topic: string, board:
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.0-flash-exp',
     contents: `PE Theory Content. Grade ${grade} ${board}. Topic: ${topic}. Type: ${contentType}. Language: ${language}.`,
     config: { 
-      systemInstruction: `Output valid JSON. Content Language: ${language}.`,
+      systemInstruction: `Output valid JSON. Content Language: ${language}. Ensure content is detailed and questions are relevant.`,
       responseMimeType: "application/json",
       responseSchema: schema
     }
@@ -270,7 +271,6 @@ export const generateTheoryContent = async (grade: string, topic: string, board:
 export const generateAIToolContent = async (toolId: string, params: any) => {
   const ai = getAI();
   
-  // Generic schema for all tool outputs to ensure they display correctly in the new UI
   const schema: Schema = {
     type: Type.OBJECT,
     properties: {
@@ -287,9 +287,10 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `PE Tool ${toolId}: ${JSON.stringify(params)}`,
+    model: 'gemini-2.0-flash-exp',
+    contents: `PE Tool ${toolId}. Parameters: ${JSON.stringify(params)}.`,
     config: { 
+      systemInstruction: "You are a PE Expert. Generate high-quality, actionable content. Do not return empty fields. If specific data is missing, generate realistic examples.",
       responseMimeType: "application/json",
       responseSchema: schema
     }
@@ -337,9 +338,10 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.0-flash-exp',
     contents: `Skill progression: ${sport} - ${skill}`,
     config: { 
+      systemInstruction: "Generate a detailed 3-4 phase skill progression. Ensure diagrams prompts are descriptive. Drills must be actionable.",
       responseMimeType: "application/json",
       responseSchema: schema
     }
@@ -350,7 +352,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
 export const getStateRegulationInsights = async (state: string, board: BoardType) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.0-flash-exp',
     contents: `PE regulations for ${state} ${board}. Marks, Hours, Curriculum.`,
   });
   return response.text;
@@ -391,12 +393,16 @@ export const evaluateKheloIndiaScores = async (
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.0-flash-exp',
     contents: `Assess fitness based on Khelo India Norms. 
     Student: Age ${age}, ${gender}.
-    Tests: ${JSON.stringify(tests)}.`,
+    Tests Provided: ${JSON.stringify(tests)}.`,
     config: {
-      systemInstruction: "You are a Khelo India Assessor. Compare scores to national norms for age/gender. Output JSON with ratings (Needs Improvement, Average, Good, Excellent, Elite) and specific recommendations.",
+      systemInstruction: `You are a Khelo India Assessor. 
+      Task: Compare scores to Indian National Fitness Protocols.
+      CRITICAL: If test scores are missing or empty in the input, ESTIMATE typical scores for a student of this age/gender who is 'Average' and label them as (Estimated).
+      Output JSON must be fully populated. Do not return empty strings for recommendations or ratings.
+      Calculate percentiles strictly.`,
       responseMimeType: "application/json",
       responseSchema: schema
     }
@@ -424,7 +430,7 @@ export const explainBiomechanics = async (
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.0-flash-exp',
     contents: `Explain biomechanics concept '${concept}' in '${sport}'. Language: ${language}.`,
     config: {
       systemInstruction: `Output JSON. Explanation must be simple for school students. Include a visual analogy description. Language: ${language}.`,
@@ -438,7 +444,7 @@ export const explainBiomechanics = async (
 export const getSportsRule = async (sport: string, query: string, language: Language) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.0-flash-exp',
     contents: `Rule Check: ${sport}. Question: ${query}. Language: ${language}`,
     config: {
       systemInstruction: `You are an expert official for Indian Sports (Kabaddi, Kho-Kho, Cricket, Football). Provide specific rule numbers if possible. Keep it concise. Language: ${language}.`,

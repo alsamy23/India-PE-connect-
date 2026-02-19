@@ -44,8 +44,6 @@ const Dashboard: React.FC = () => {
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
             {[
-              { label: '13 AI planning tools', icon: Zap },
-              { label: 'Expert-led PD courses', icon: BookOpen },
               { label: 'Downloadable resources', icon: FileText },
             ].map((item, i) => (
               <div key={i} className="flex items-center space-x-3 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
@@ -151,3 +149,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+    

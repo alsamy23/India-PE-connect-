@@ -27,7 +27,7 @@ const tools: Tool[] = [
   { id: 'differentiator', name: 'Differentiated Instruction', description: 'Tailored modifications for all skill levels.', icon: Target, color: 'bg-red-500' },
   { id: 'progression-builder', name: 'Progression Builder', description: 'Technical skill mastery pathways with cues.', icon: Dumbbell, color: 'bg-cyan-500' },
   { id: 'sports-science', name: 'Sports Science', description: 'Experiential learning connecting PE with science.', icon: Microscope, color: 'bg-yellow-500' },
-  { id: 'ask-advisor', name: 'Ask ConnectedPE', description: 'Get tailored advice on any PE teaching query.', icon: MessageSquare, color: 'bg-slate-700' },
+  { id: 'ask-advisor', name: 'Connected India PE', description: 'Get tailored advice on any PE teaching query.', icon: MessageSquare, color: 'bg-slate-700' },
   { id: 'lesson-observer', name: 'Lesson Observator', description: 'Generate constructive peer-feedback forms.', icon: ClipboardCheck, color: 'bg-teal-500' },
   { id: 'policy-writer', name: 'PE Policy Writer', description: 'Draft school-wide PE and safety policies.', icon: BookMarked, color: 'bg-indigo-800' },
 ];
@@ -183,3 +183,4 @@ const AIToolCenter: React.FC = () => {
 };
 
 export default AIToolCenter;
+    
