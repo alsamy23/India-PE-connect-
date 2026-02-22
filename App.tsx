@@ -53,7 +53,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Check if API key is injected correctly
-    if (process.env.API_KEY && process.env.API_KEY.length > 10) {
+    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
       setApiStatus('ok');
     } else {
       setApiStatus('missing');

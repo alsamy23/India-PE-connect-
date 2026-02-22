@@ -4,8 +4,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    // This allows the app to use process.env.API_KEY just like a standard Node app
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
+    'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY)
   },
   server: {
     port: 3000,

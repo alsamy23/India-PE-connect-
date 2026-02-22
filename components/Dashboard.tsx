@@ -8,10 +8,7 @@ import {
   Calendar,
   ChevronRight,
   Trophy,
-  Sparkles,
-  Zap,
-  BookOpen,
-  ArrowRight
+  Sparkles
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -42,18 +39,7 @@ const Dashboard: React.FC = () => {
             The all-in-one platform built exclusively for Physical Education teachers. Generate lesson plans, access expert courses, and transform your teaching — all in one place.
           </p>
           
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
-            {[
-              { label: 'Downloadable resources', icon: FileText },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center space-x-3 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
-                <div className="p-2 bg-indigo-700/50 rounded-lg">
-                  <item.icon size={18} className="text-orange-400" />
-                </div>
-                <span className="text-xs font-bold">{item.label}</span>
-              </div>
-            ))}
-          </div>
+
         </div>
         
         {/* Decorative elements */}
