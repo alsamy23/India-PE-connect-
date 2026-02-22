@@ -75,14 +75,22 @@ const YearlyPlanner: React.FC = () => {
       alert("Error: Print area not found.");
       return;
     }
+
+    // @ts-ignore
+    if (typeof html2pdf === 'undefined') {
+      alert("PDF library is still loading. Please try again in a moment.");
+      return;
+    }
+
     const opt = {
       margin: 10,
       filename: `PE_Yearly_Plan_Grade${grade}_${board}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { scale: 2 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
+    // @ts-ignore
     html2pdf().set(opt).from(contentRef.current).save();
   };
 
@@ -107,7 +115,7 @@ const YearlyPlanner: React.FC = () => {
       </style>
       </head>
       <body>
-        <h1>PE Yearly Architect - Grade ${plan.grade} (${plan.board})</h1>
+        <h1>PE Yearly Planner - Grade ${plan.grade} (${plan.board})</h1>
         <p>Academic Year: ${plan.academicYear} | Sessions: ${frequency}/week | Duration: ${plan.duration}</p>
         <p>Generated on: ${plan.generatedDate}</p>
     `;
@@ -197,7 +205,7 @@ const YearlyPlanner: React.FC = () => {
     <div className="space-y-8 animate-slide-up pb-20">
       <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 print:shadow-none print:p-0">
         <div className="flex justify-between items-center mb-8 print:hidden">
-          <h2 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Yearly Architect</h2>
+          <h2 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Yearly Planner</h2>
           {step === 4 && (
              <button onClick={() => {setStep(1); setPlan(null);}} className="flex items-center space-x-2 text-slate-400 font-bold hover:text-indigo-600 transition-colors">
                 <RotateCcw size={18} />
@@ -297,7 +305,7 @@ const YearlyPlanner: React.FC = () => {
 
                 <div ref={contentRef} className="print:p-4">
                   <div className="hidden print:block mb-8 border-b-2 border-slate-900 pb-4">
-                    <h1 className="text-2xl font-black uppercase tracking-tighter">PE Yearly Architect: Grade {plan.grade}</h1>
+                    <h1 className="text-2xl font-black uppercase tracking-tighter">PE Yearly Planner: Grade {plan.grade}</h1>
                     <p className="font-bold text-slate-500">{plan.board} | Academic Year: {plan.academicYear}</p>
                   </div>
 

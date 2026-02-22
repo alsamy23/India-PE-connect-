@@ -11,10 +11,12 @@
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
+    "@tailwindcss/vite": "^4.2.0",
     "lucide-react": "^0.463.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "recharts": "^2.13.0"
+    "recharts": "^2.13.0",
+    "tailwindcss": "^4.2.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

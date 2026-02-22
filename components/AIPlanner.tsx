@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target, User, CalendarDays, BookOpen, PenTool, Languages } from 'lucide-react';
+import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target, User, CalendarDays, BookOpen, PenTool, Languages, FileText } from 'lucide-react';
 import { BoardType, LessonPlan, Language } from '../types.ts';
 import { generateLessonPlan, generateLessonDiagram } from '../services/geminiService.ts';
 
@@ -75,6 +75,13 @@ const AIPlanner: React.FC = () => {
 
   const handleExportPdf = () => {
     if (!contentRef.current) return;
+    
+    // @ts-ignore
+    if (typeof html2pdf === 'undefined') {
+      alert("PDF library is still loading. Please try again in a moment.");
+      return;
+    }
+
     const opt = {
       margin: 10,
       filename: `LessonPlan_${sport}_${grade}_${language}.pdf`,
@@ -83,7 +90,81 @@ const AIPlanner: React.FC = () => {
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
+    // @ts-ignore
     html2pdf().set(opt).from(contentRef.current).save();
+  };
+
+  const handleExportWord = () => {
+    if (!plan) return;
+    
+    let html = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>
+      <head><meta charset='utf-8'><title>PE Lesson Plan</title>
+      <style>
+        body { font-family: Calibri, Arial, sans-serif; }
+        h1 { color: #1e3a8a; text-transform: uppercase; }
+        h2 { color: #4f46e5; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }
+        .section-title { font-weight: bold; color: #1e3a8a; text-transform: uppercase; font-size: 14px; margin-top: 20px; border-bottom: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 12px; }
+        th { background-color: #f3f4f6; font-weight: bold; }
+        .label { font-size: 10px; color: #666; text-transform: uppercase; }
+      </style>
+      </head>
+      <body>
+        <h1>${sport}: ${plan.topic}</h1>
+        <p><b>Grade:</b> ${grade} | <b>Board:</b> ${board} | <b>Teacher:</b> ${plan.teacher}</p>
+        <p><b>Date:</b> ${plan.date} | <b>Duration:</b> ${plan.duration} | <b>Period:</b> ${plan.period}</p>
+        
+        <div class="section-title">Learning Objectives</div>
+        <ul>
+          <li><b>Know:</b> ${plan.objectives.know}</li>
+          <li><b>Understand:</b> ${plan.objectives.understand}</li>
+          <li><b>Apply:</b> ${plan.objectives.beAbleTo}</li>
+        </ul>
+
+        <div class="section-title">Success Criteria</div>
+        <ul>
+          <li><b>All:</b> ${plan.successCriteria.all}</li>
+          <li><b>Most:</b> ${plan.successCriteria.most}</li>
+          <li><b>Some:</b> ${plan.successCriteria.some}</li>
+        </ul>
+
+        <div class="section-title">Equipment & Safety</div>
+        <p><b>Equipment:</b> ${plan.equipment?.join(', ')}</p>
+        <p><b>Teaching Aids:</b> ${plan.teachingAids?.join(', ')}</p>
+        <p><b>Safety:</b> ${plan.safety?.join(', ')}</p>
+        <p><b>Vocabulary:</b> ${plan.keyVocabulary?.join(', ')}</p>
+
+        <div class="section-title">1. Starter Activity (${plan.starter.time})</div>
+        <p><b>${plan.starter.title}</b></p>
+        <p>${plan.starter.description}</p>
+
+        <div class="section-title">2. Main Activities (${plan.mainActivity.time})</div>
+        ${plan.mainActivity.activities.map((act, i) => `
+          <p><b>${i+1}. ${act.title}</b></p>
+          <p>${act.description}</p>
+          <p><i>Coaching Points: ${act.coachingPoints.join(', ')}</i></p>
+        `).join('')}
+
+        <div class="section-title">3. Plenary & Cooling Down (${plan.plenary.time})</div>
+        <p><b>${plan.plenary.title}</b></p>
+        <p>${plan.plenary.description}</p>
+
+        <div class="section-title">Differentiation & Assessment</div>
+        <p><b>Differentiation:</b> ${plan.differentiation}</p>
+        <p><b>Assessment:</b> ${plan.criticalThinking}</p>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `LessonPlan_${sport}_${grade}.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -95,7 +176,7 @@ const AIPlanner: React.FC = () => {
               <Sparkles size={24} />
             </div>
             <div>
-              <h3 className="font-black text-xl text-slate-800 tracking-tighter uppercase leading-none">Lesson Architect</h3>
+              <h3 className="font-black text-xl text-slate-800 tracking-tighter uppercase leading-none">Lesson Planner</h3>
               <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Daily Plan Generator</p>
             </div>
           </div>
@@ -180,10 +261,11 @@ const AIPlanner: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
 
-        <div className="lg:col-span-8">
+      <div className="lg:col-span-8">
            {!plan ? (
-             <div className="bg-white border-4 border-dashed border-slate-100 rounded-[2.5rem] h-full min-h-[600px] flex flex-col items-center justify-center p-12 text-center opacity-50">
+             <div className="bg-white border-4 border-dashed border-slate-100 rounded-[2.5rem] h-full min-h-[600px] flex flex-col items-center justify-center p-12 text-center">
                <div className="w-24 h-24 bg-slate-50 rounded-3xl flex items-center justify-center mb-6">
                  <PenTool size={32} className="text-slate-300" />
                </div>
@@ -198,8 +280,11 @@ const AIPlanner: React.FC = () => {
                     <button onClick={() => {setPlan(null); setLanguage('English');}} className="p-3 text-slate-400 hover:text-indigo-600 font-bold flex items-center space-x-2">
                        <RotateCcw size={16} /> <span>Reset</span>
                     </button>
-                    <button onClick={handleExportPdf} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold flex items-center space-x-2 shadow-lg hover:bg-indigo-700 transition-all">
-                       <Download size={18} /> <span>Download PDF</span>
+                    <button onClick={handleExportWord} className="bg-blue-50 text-blue-700 px-6 py-3 rounded-xl font-bold flex items-center space-x-2 hover:bg-blue-100 transition-all">
+                       <FileText size={18} /> <span>Word</span>
+                     </button>
+                     <button onClick={handleExportPdf} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold flex items-center space-x-2 shadow-lg hover:bg-indigo-700 transition-all">
+                        <Download size={18} /> <span>PDF</span>
                     </button>
                  </div>
                </div>
@@ -209,7 +294,11 @@ const AIPlanner: React.FC = () => {
                   <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-8">
                     <div>
                       <h1 className="text-4xl font-black uppercase tracking-tighter mb-2">{sport}</h1>
-                      <p className="text-xl text-slate-600 font-medium">{topic}</p>
+                      <input 
+                        className="text-xl text-slate-600 font-medium bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-500 outline-none w-full"
+                        value={plan.topic}
+                        onChange={(e) => setPlan({...plan, topic: e.target.value})}
+                      />
                     </div>
                     <div className="text-right">
                        <div className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Grade {grade}</div>
@@ -233,6 +322,36 @@ const AIPlanner: React.FC = () => {
                      <div>
                        <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Period</span>
                        <span className="font-bold">{plan.period}</span>
+                     </div>
+                  </div>
+
+                  {/* Equipment & Safety */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                     <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <h4 className="font-black text-slate-800 uppercase tracking-widest text-xs mb-3">Equipment & Teaching Aids</h4>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                           {plan.equipment?.map((item, i) => (
+                             <span key={i} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600">{item}</span>
+                           ))}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                           {plan.teachingAids?.map((item, i) => (
+                             <span key={i} className="px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-lg text-xs font-bold text-indigo-600">{item}</span>
+                           ))}
+                        </div>
+                     </div>
+                     <div className="bg-red-50 p-6 rounded-2xl border border-red-100">
+                        <h4 className="font-black text-red-800 uppercase tracking-widest text-xs mb-3">Safety & Vocabulary</h4>
+                        <ul className="list-disc list-inside space-y-1 mb-4">
+                           {plan.safety?.map((item, i) => (
+                             <li key={i} className="text-xs font-bold text-red-700">{item}</li>
+                           ))}
+                        </ul>
+                        <div className="flex flex-wrap gap-2">
+                           {plan.keyVocabulary?.map((item, i) => (
+                             <span key={i} className="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-black uppercase tracking-tighter text-slate-500">{item}</span>
+                           ))}
+                        </div>
                      </div>
                   </div>
 
@@ -361,8 +480,7 @@ const AIPlanner: React.FC = () => {
            )}
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 export default AIPlanner;

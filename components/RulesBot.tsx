@@ -27,7 +27,7 @@ const RulesBot: React.FC = () => {
 
     try {
       const response = await getSportsRule(sport, userMsg, language);
-      setMessages(prev => [...prev, {role: 'bot', text: response}]);
+      setMessages(prev => [...prev, {role: 'bot', text: response || "I couldn't find information on that rule."}]);
     } catch (e) {
       setMessages(prev => [...prev, {role: 'bot', text: "Sorry, I couldn't verify that rule right now."}]);
     } finally {

@@ -53,7 +53,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Check if API key is injected correctly
-    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
+    const key = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    if (key && key.length > 10) {
       setApiStatus('ok');
     } else {
       setApiStatus('missing');
@@ -62,8 +63,8 @@ const App: React.FC = () => {
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { id: 'yearly', name: 'Yearly Architect', icon: CalendarRange },
-    { id: 'planner', name: 'Lesson Architect', icon: Sparkles },
+    { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange },
+    { id: 'planner', name: 'Lesson Planner', icon: Sparkles },
     { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, isNew: true },
     { id: 'biomechanics', name: 'Visual Physics', icon: Microscope, isNew: true },
     { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true },
@@ -100,7 +101,7 @@ const App: React.FC = () => {
              <div className="p-3 bg-white rounded-2xl shadow-2xl shadow-orange-600/20 rotate-3 z-10 relative">
                <Network className="w-8 h-8 text-indigo-700" />
              </div>
-             <div className="absolute inset-0 bg-orange-500 rounded-2xl -rotate-6 opacity-50 blur-sm"></div>
+             <div className="absolute inset-0 bg-orange-500 rounded-2xl -rotate-6 opacity-50"></div>
           </div>
           <div>
             <h1 className="font-black text-xl leading-none uppercase tracking-tighter">India PE<br/><span className="text-orange-400">Connect</span> Platform</h1>
@@ -117,7 +118,7 @@ const App: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-500">Config Required</p>
-                <p className="text-[9px] text-slate-400 font-medium">Add API_KEY to Vercel</p>
+                <p className="text-[9px] text-slate-400 font-medium">Add GEMINI_API_KEY to environment</p>
               </div>
             </div>
           ) : (

@@ -13,7 +13,7 @@ const ComplianceAdvisor: React.FC = () => {
   const handleAnalyze = async () => {
     setLoading(true);
     const text = await getStateRegulationInsights(state, board);
-    setInsights(text);
+    setInsights(text || "No insights found.");
     setLoading(false);
   };
 

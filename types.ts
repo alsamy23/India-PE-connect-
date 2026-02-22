@@ -30,6 +30,10 @@ export interface LessonPlan {
   duration: string;
 
   // Framework
+  equipment: string[];
+  teachingAids: string[];
+  safety: string[];
+  keyVocabulary: string[];
   sen: {
     wave1: string;
     wave2: string;
