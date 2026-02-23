@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target, User, CalendarDays, BookOpen, PenTool, Languages, FileText } from 'lucide-react';
 import { BoardType, LessonPlan, Language } from '../types.ts';
-import { generateLessonPlan, generateLessonDiagram } from '../services/aiService.ts';
+import { generateLessonPlan, generateLessonDiagram } from '../services/geminiService.ts';
 
 declare var html2pdf: any;
 

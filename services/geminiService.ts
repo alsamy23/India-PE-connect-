@@ -3,7 +3,7 @@ import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { BoardType, LessonPlan, YearlyPlan, TheoryContent, Language, FitnessAssessment, BiomechanicsConcept } from "../types.ts";
 
 const getAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "AIzaSyDfoKoXzixyFvPrB5kOlNmWhSdJ011SGfg";
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
   if (!apiKey) {
     throw new Error("Gemini API key is not configured. Please add GEMINI_API_KEY or API_KEY to your environment.");
   }
@@ -20,17 +20,6 @@ const safeParseJson = (text: string | undefined): any => {
   } catch (e) {
     const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      // Brute force repair for truncated arrays
-      const openBrackets = (cleanText.match(/\[/g) || []).length;
-      const closeBrackets = (cleanText.match(/\]/g) || []).length;
-      const openBraces = (cleanText.match(/\{/g) || []).length;
-      const closeBraces = (cleanText.match(/\}/g) || []).length;
-      
-      let repaired = cleanText;
-      for(let i=0; i < (openBraces - closeBraces); i++) repaired += "}";
-      for(let i=0; i < (openBrackets - closeBrackets); i++) repaired += "]";
-      
-      try { return JSON.parse(repaired); } catch(err) {}
       throw new Error("The AI response was malformed. Please try again.");
     }
     
@@ -138,7 +127,7 @@ export const generateLessonPlan = async (
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}, Duration: ${duration}.`,
     config: {
       systemInstruction: `You are an expert Physical Education Curriculum Designer and Teacher's Assistant. 
@@ -220,7 +209,7 @@ export const generateYearlyPlan = async (
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: `Yearly PE Plan. Grade: ${grade}, Board: ${board}, Lang: ${language}. Start: ${startDate}. Terms: 2. Focus1: ${term1Focus}. Focus2: ${term2Focus}. Holidays: ${safeCalendarText}`,
     config: {
       systemInstruction: `Generate strictly valid JSON. 
@@ -273,7 +262,7 @@ export const generateTheoryContent = async (grade: string, topic: string, board:
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: `PE Theory Content. Grade ${grade} ${board}. Topic: ${topic}. Type: ${contentType}. Language: ${language}.`,
     config: { 
       systemInstruction: `Output valid JSON. Content Language: ${language}. Ensure content is detailed and questions are relevant.`,
@@ -303,7 +292,7 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: `PE Tool ${toolId}. Parameters: ${JSON.stringify(params)}.`,
     config: { 
       systemInstruction: "You are a PE Expert. Generate high-quality, actionable content. Do not return empty fields. If specific data is missing, generate realistic examples.",
@@ -354,7 +343,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: `Skill progression: ${sport} - ${skill}`,
     config: { 
       systemInstruction: "Generate a detailed 3-4 phase skill progression. Ensure diagrams prompts are descriptive. Drills must be actionable.",
@@ -368,7 +357,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
 export const getStateRegulationInsights = async (state: string, board: BoardType) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: `PE regulations for ${state} ${board}. Marks, Hours, Curriculum.`,
   });
   return response.text;
@@ -409,7 +398,7 @@ export const evaluateKheloIndiaScores = async (
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: `Assess fitness based on Khelo India Norms. 
     Student: Age ${age}, ${gender}.
     Tests Provided: ${JSON.stringify(tests)}.`,
@@ -446,7 +435,7 @@ export const explainBiomechanics = async (
   };
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: `Explain biomechanics concept '${concept}' in '${sport}'. Language: ${language}.`,
     config: {
       systemInstruction: `Output JSON. Explanation must be simple for school students. Include a visual analogy description. Language: ${language}.`,
@@ -460,7 +449,7 @@ export const explainBiomechanics = async (
 export const getSportsRule = async (sport: string, query: string, language: Language) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: `Rule Check: ${sport}. Question: ${query}. Language: ${language}`,
     config: {
       systemInstruction: `You are an expert official for Indian Sports (Kabaddi, Kho-Kho, Cricket, Football). Provide specific rule numbers if possible. Keep it concise. Language: ${language}.`,

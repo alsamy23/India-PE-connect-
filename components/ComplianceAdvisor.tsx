@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Search, Info, CheckCircle2, AlertCircle, FileText, Loader2 } from 'lucide-react';
 import { BoardType } from '../types.ts';
-import { getStateRegulationInsights } from '../services/aiService.ts';
+import { getStateRegulationInsights } from '../services/geminiService.ts';
 
 const ComplianceAdvisor: React.FC = () => {
   const [state, setState] = useState('Maharashtra');
