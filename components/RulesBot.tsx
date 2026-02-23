@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, Book, User, Bot, Loader2 } from 'lucide-react';
-import { getSportsRule } from '../services/geminiService.ts';
+import { getSportsRule } from '../services/aiService.ts';
 import { Language } from '../types.ts';
 
 const RulesBot: React.FC = () => {

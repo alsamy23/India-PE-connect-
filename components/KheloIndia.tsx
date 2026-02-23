@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Activity, Trophy, ChevronRight, Calculator, RefreshCw, Loader2, Award, ClipboardList, AlertCircle } from 'lucide-react';
-import { evaluateKheloIndiaScores } from '../services/geminiService.ts';
+import { evaluateKheloIndiaScores } from '../services/aiService.ts';
 import { FitnessAssessment } from '../types.ts';
 
 const KheloIndia: React.FC = () => {

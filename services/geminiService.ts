@@ -3,7 +3,7 @@ import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { BoardType, LessonPlan, YearlyPlan, TheoryContent, Language, FitnessAssessment, BiomechanicsConcept } from "../types.ts";
 
 const getAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "AIzaSyDfoKoXzixyFvPrB5kOlNmWhSdJ011SGfg";
   if (!apiKey) {
     throw new Error("Gemini API key is not configured. Please add GEMINI_API_KEY or API_KEY to your environment.");
   }
@@ -48,8 +48,8 @@ export const generateLessonPlan = async (
   sport: string,
   topic: string,
   teacherName: string,
-  durationStr: string,
-  dateStr: string,
+  duration: string,
+  date: string,
   language: Language
 ): Promise<LessonPlan> => {
   const ai = getAI();
@@ -139,7 +139,7 @@ export const generateLessonPlan = async (
 
   const response = await ai.models.generateContent({
     model: 'gemini-3.1-pro-preview',
-    contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}, Duration: ${duration}, Period: ${period}.`,
+    contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}, Duration: ${duration}.`,
     config: {
       systemInstruction: `You are an expert Physical Education Curriculum Designer and Teacher's Assistant. 
       Create a highly professional, structured PE lesson plan for a ${duration} session. 

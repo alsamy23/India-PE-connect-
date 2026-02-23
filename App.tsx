@@ -21,7 +21,9 @@ import {
   Book,
   Activity,
   Network,
-  Award
+  Award,
+  Settings,
+  Cpu
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import CurriculumHub from './components/CurriculumHub.tsx';
@@ -36,6 +38,7 @@ import KheloIndia from './components/KheloIndia.tsx';
 import Biomechanics from './components/Biomechanics.tsx';
 import RulesBot from './components/RulesBot.tsx';
 import Disclaimer from './components/Disclaimer.tsx';
+import { getAIProvider, setAIProvider, AIProvider } from './services/aiService.ts';
 
 type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules';
 
@@ -43,6 +46,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'missing'>('checking');
+  const [aiProvider, setAiProviderState] = useState<AIProvider>(getAIProvider());
   
   // Static Profile Data (Read-Only)
   const userProfile = {
@@ -53,13 +57,28 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Check if API key is injected correctly
-    const key = process.env.GEMINI_API_KEY || process.env.API_KEY;
-    if (key && key.length > 10) {
-      setApiStatus('ok');
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "AIzaSyDfoKoXzixyFvPrB5kOlNmWhSdJ011SGfg";
+    const deepseekKey = process.env.DEEPSEEK_API_KEY || import.meta.env.VITE_DEEPSEEK_API_KEY || "sk-c3acef363cba436a980889127b10b316";
+    
+    if (aiProvider === 'gemini') {
+      if (geminiKey && geminiKey.length > 10) {
+        setApiStatus('ok');
+      } else {
+        setApiStatus('missing');
+      }
     } else {
-      setApiStatus('missing');
+      if (deepseekKey && deepseekKey.length > 10) {
+        setApiStatus('ok');
+      } else {
+        setApiStatus('missing');
+      }
     }
-  }, []);
+  }, [aiProvider]);
+
+  const handleProviderChange = (provider: AIProvider) => {
+    setAIProvider(provider);
+    setAiProviderState(provider);
+  };
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
@@ -109,6 +128,26 @@ const App: React.FC = () => {
           </div>
         </div>
 
+        {/* AI Provider Selector */}
+        <div className="mx-6 mb-4">
+          <div className="bg-slate-800/50 rounded-2xl p-1 flex">
+            <button 
+              onClick={() => handleProviderChange('gemini')}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-xl transition-all ${aiProvider === 'gemini' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              <Sparkles size={14} />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Gemini</span>
+            </button>
+            <button 
+              onClick={() => handleProviderChange('deepseek')}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-xl transition-all ${aiProvider === 'deepseek' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              <Cpu size={14} />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Deepseek</span>
+            </button>
+          </div>
+        </div>
+
         {/* API Status Badge */}
         <div className="mx-6 mb-4">
           {apiStatus === 'missing' ? (
@@ -118,7 +157,7 @@ const App: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-500">Config Required</p>
-                <p className="text-[9px] text-slate-400 font-medium">Add GEMINI_API_KEY to environment</p>
+                <p className="text-[9px] text-slate-400 font-medium">Add {aiProvider === 'gemini' ? 'GEMINI_API_KEY' : 'DEEPSEEK_API_KEY'} to environment</p>
               </div>
             </div>
           ) : (
@@ -128,7 +167,7 @@ const App: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">AI Active</p>
-                <p className="text-[9px] text-slate-400 font-medium">Gemini Pro connected</p>
+                <p className="text-[9px] text-slate-400 font-medium">{aiProvider === 'gemini' ? 'Gemini Pro' : 'Deepseek Chat'} connected</p>
               </div>
             </div>
           )}

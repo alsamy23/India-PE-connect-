@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Microscope, Loader2, PlayCircle, Image as ImageIcon, BookOpen } from 'lucide-react';
-import { explainBiomechanics, generateLessonDiagram } from '../services/geminiService.ts';
+import { explainBiomechanics, generateLessonDiagram } from '../services/aiService.ts';
 import { BiomechanicsConcept, Language } from '../types.ts';
 
 const Biomechanics: React.FC = () => {

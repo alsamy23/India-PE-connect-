@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BookOpen, HelpCircle, FileText, Loader2, Download, CheckCircle2, AlertTriangle, GraduationCap, Languages } from 'lucide-react';
 import { BoardType, TheoryContent, Language } from '../types.ts';
-import { generateTheoryContent } from '../services/geminiService.ts';
+import { generateTheoryContent } from '../services/aiService.ts';
 
 const TheoryHub: React.FC = () => {
   const [grade, setGrade] = useState('12');

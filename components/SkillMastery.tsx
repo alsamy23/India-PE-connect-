@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Target, Search, Loader2, ChevronRight, BookOpen, Layers, Zap } from 'lucide-react';
-import { generateSkillProgression, generateLessonDiagram } from '../services/geminiService.ts';
+import { generateSkillProgression, generateLessonDiagram } from '../services/aiService.ts';
 import { SkillProgression } from '../types.ts';
 
 const SkillMastery: React.FC = () => {

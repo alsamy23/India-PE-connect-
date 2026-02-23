@@ -5,7 +5,7 @@ import {
   Dumbbell, Microscope, MessageSquare, Target, Split, Layout, ChevronLeft, Zap, Loader2, Download, Printer, CheckCircle2,
   Trophy, BookOpen, Layers, Info, AlertCircle, Sparkles, ClipboardCheck, BookMarked, List
 } from 'lucide-react';
-import { generateAIToolContent } from '../services/geminiService.ts';
+import { generateAIToolContent } from '../services/aiService.ts';
 import { BoardType } from '../types.ts';
 
 interface Tool {

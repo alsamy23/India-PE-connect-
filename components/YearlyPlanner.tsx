@@ -19,7 +19,7 @@ import {
   Languages
 } from 'lucide-react';
 import { BoardType, YearlyPlan, Language } from '../types.ts';
-import { generateYearlyPlan } from '../services/geminiService.ts';
+import { generateYearlyPlan } from '../services/aiService.ts';
 
 declare var html2pdf: any;
 
