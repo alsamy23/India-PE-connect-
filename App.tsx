@@ -43,6 +43,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'missing'>('checking');
+  const [apiSource, setApiSource] = useState<string>('');
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   
   // Static Profile Data (Read-Only)
@@ -58,9 +59,11 @@ const App: React.FC = () => {
       const data = await response.json();
       if (data.status === 'ok') {
         setApiStatus('ok');
+        setApiSource(data.source || 'Environment');
         setIsKeyDialogOpen(false);
       } else {
         setApiStatus('missing');
+        setApiSource('');
         // Check if we need to open the key selection dialog
         if (window.aistudio) {
           const hasKey = await window.aistudio.hasSelectedApiKey();
@@ -194,7 +197,7 @@ const App: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">AI Active</p>
-                <p className="text-[9px] text-slate-400 font-medium">Gemini Pro connected</p>
+                <p className="text-[9px] text-slate-400 font-medium">Source: {apiSource}</p>
               </div>
             </div>
           )}

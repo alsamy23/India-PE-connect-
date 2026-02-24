@@ -37,6 +37,9 @@ const Dashboard: React.FC<{ apiStatus?: 'checking' | 'ok' | 'missing' }> = ({ ap
               <p className="text-sm text-orange-700 font-bold max-w-md leading-relaxed">
                 Your API key is missing or not yet detected. To enable AI lesson planning, please click "Connect Now" or add <code className="bg-orange-200/50 px-1 rounded text-orange-900">GEMINI_API_KEY</code> to your environment.
               </p>
+              <p className="text-[10px] text-orange-600 font-bold mt-2 uppercase tracking-widest">
+                Note: If using Vercel, ensure variables are added to the project settings and the app is redeployed.
+              </p>
             </div>
           </div>
           <div className="relative z-10 flex flex-col sm:flex-row gap-3">
@@ -45,6 +48,12 @@ const Dashboard: React.FC<{ apiStatus?: 'checking' | 'ok' | 'missing' }> = ({ ap
               className="px-10 py-4 bg-orange-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-orange-700 transition-all shadow-xl shadow-orange-600/30 active:scale-95"
             >
               Connect Now
+            </button>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-8 py-4 bg-white text-orange-600 border-2 border-orange-200 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-orange-50 transition-all active:scale-95"
+            >
+              Refresh
             </button>
           </div>
           

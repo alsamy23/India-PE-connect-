@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
+import "dotenv/config";
 
 async function startServer() {
   const app = express();
@@ -11,26 +12,39 @@ async function startServer() {
   // Secure Gemini API Initialization (Server-side only)
   const getAI = () => {
     // Check multiple possible environment variable names for maximum compatibility
-    const apiKey = process.env.GEMINI_API_KEY || 
-                   process.env.API_KEY || 
-                   process.env.VITE_GEMINI_API_KEY;
-                   
-    if (!apiKey || apiKey.trim() === "") {
-      return null;
+    const sources = [
+      { name: "GEMINI_API_KEY", value: process.env.GEMINI_API_KEY },
+      { name: "API_KEY", value: process.env.API_KEY },
+      { name: "VITE_GEMINI_API_KEY", value: process.env.VITE_GEMINI_API_KEY }
+    ];
+
+    const found = sources.find(s => s.value && s.value.trim() !== "");
+    
+    if (!found || !found.value) {
+      console.log("Gemini API Key: Not found in any environment variable.");
+      return { ai: null, source: "none" };
     }
-    return new GoogleGenAI({ apiKey: apiKey.trim() });
+
+    console.log(`Gemini API Key: Found in ${found.name}`);
+    return { 
+      ai: new GoogleGenAI({ apiKey: found.value.trim() }), 
+      source: found.name 
+    };
   };
 
   // API Routes
   app.get("/api/health", (req, res) => {
-    const ai = getAI();
-    res.json({ status: ai ? "ok" : "missing" });
+    const { ai, source } = getAI();
+    res.json({ 
+      status: ai ? "ok" : "missing",
+      source: source
+    });
   });
 
   app.post("/api/ai/generate", async (req, res) => {
     try {
       const { model, contents, config } = req.body;
-      const ai = getAI();
+      const { ai } = getAI();
       
       if (!ai) {
         return res.status(500).json({ error: "Gemini API key not configured on server." });
