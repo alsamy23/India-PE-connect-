@@ -246,7 +246,7 @@ const App: React.FC = () => {
       {/* Content Area */}
       <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-20">
         <div className="max-w-7xl mx-auto p-6 md:p-12 min-h-full print:p-0">
-          {activeTab === 'dashboard' && <Dashboard />}
+          {activeTab === 'dashboard' && <Dashboard apiStatus={apiStatus} />}
           {activeTab === 'yearly' && <YearlyPlanner />}
           {activeTab === 'tools' && <AIToolCenter />}
           {activeTab === 'theory' && <TheoryHub />}

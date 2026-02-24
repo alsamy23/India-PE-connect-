@@ -10,11 +10,15 @@ async function startServer() {
 
   // Secure Gemini API Initialization (Server-side only)
   const getAI = () => {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-    if (!apiKey) {
+    // Check multiple possible environment variable names for maximum compatibility
+    const apiKey = process.env.GEMINI_API_KEY || 
+                   process.env.API_KEY || 
+                   process.env.VITE_GEMINI_API_KEY;
+                   
+    if (!apiKey || apiKey.trim() === "") {
       return null;
     }
-    return new GoogleGenAI({ apiKey });
+    return new GoogleGenAI({ apiKey: apiKey.trim() });
   };
 
   // API Routes
