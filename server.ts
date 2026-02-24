@@ -71,11 +71,17 @@ async function startServer() {
   app.post("/api/ai/generate", async (req, res) => {
     try {
       const { model, contents, config } = req.body;
-      const { ai } = getAI();
+      const { ai, source } = getAI();
       
       if (!ai) {
-        return res.status(500).json({ error: "Gemini API key not configured on server." });
+        console.error("AI Generation Error: No API key found in environment.");
+        return res.status(500).json({ 
+          error: "Gemini API key not configured on server. Please ensure GEMINI_API_KEY is set.",
+          source: "server_config"
+        });
       }
+
+      console.log(`AI Request: Model=${model || "gemini-3-flash-preview"}, Source=${source}`);
 
       const response = await ai.models.generateContent({
         model: model || "gemini-3-flash-preview",
@@ -85,24 +91,35 @@ async function startServer() {
 
       res.json(response);
     } catch (error: any) {
-      console.error("AI Generation Error:", error);
+      console.error("AI Generation Error Detail:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       
       // Handle specific invalid key error
-      if (error.message?.includes("API key not valid") || error.message?.includes("INVALID_ARGUMENT")) {
+      const errorMessage = error.message || "";
+      if (errorMessage.includes("API key not valid") || errorMessage.includes("INVALID_ARGUMENT") || errorMessage.includes("401")) {
         return res.status(401).json({ 
-          error: "The selected API key is invalid. Please select a valid key from a paid Google Cloud project.",
-          code: "API_KEY_INVALID"
+          error: "The API key is invalid or unauthorized. Please check your Google Cloud project billing and API restrictions.",
+          code: "API_KEY_INVALID",
+          detail: errorMessage
         });
       }
 
-      if (error.message?.includes("Requested entity was not found")) {
+      if (errorMessage.includes("Requested entity was not found") || errorMessage.includes("404")) {
         return res.status(404).json({
-          error: "API key session expired or not found. Please re-select your API key.",
-          code: "API_KEY_NOT_FOUND"
+          error: "The requested model or resource was not found. This might be a region restriction or invalid model name.",
+          code: "MODEL_NOT_FOUND",
+          detail: errorMessage
         });
       }
 
-      res.status(500).json({ error: error.message || "Internal Server Error" });
+      res.status(500).json({ 
+        error: errorMessage || "Internal Server Error during AI generation",
+        code: "AI_GEN_ERROR",
+        detail: error.toString()
+      });
     }
   });
 

@@ -36,22 +36,26 @@ const AIToolCenter: React.FC = () => {
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<any>({});
 
   const handleToolClick = (tool: Tool) => {
     setSelectedTool(tool);
     setResult(null);
+    setError(null);
     setFormData({});
   };
 
   const runTool = async () => {
     if (!selectedTool) return;
     setLoading(true);
+    setError(null);
     try {
       const data = await generateAIToolContent(selectedTool.id, formData);
       setResult(data);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Tool execution failed:", e);
+      setError(e.message || "Failed to generate tool content. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -92,6 +96,21 @@ const AIToolCenter: React.FC = () => {
           </div>
 
           <div className="lg:col-span-8">
+            {error && (
+              <div className="bg-red-50 border-2 border-red-200 rounded-[2.5rem] p-8 mb-8 flex items-start space-x-4 text-red-700 animate-in zoom-in-95">
+                <AlertCircle className="flex-shrink-0 mt-1" />
+                <div>
+                  <h4 className="font-black text-lg uppercase tracking-tight mb-1">Generation Failed</h4>
+                  <p className="text-sm font-medium opacity-80">{error}</p>
+                  <button 
+                    onClick={runTool}
+                    className="mt-4 px-6 py-2 bg-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-colors"
+                  >
+                    Retry Generation
+                  </button>
+                </div>
+              </div>
+            )}
             {!result && !loading ? (
               <div className="bg-white border-4 border-dashed border-slate-100 rounded-[2.5rem] h-full min-h-[500px] flex flex-col items-center justify-center p-12 text-center">
                 <selectedTool.icon size={64} className="text-slate-100 mb-6" />

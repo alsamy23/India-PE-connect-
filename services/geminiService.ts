@@ -16,18 +16,21 @@ const callAIBase = async (payload: any, retries = 2) => {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      let errorData: any = { error: "Unknown server error" };
+      let errorData: any = null;
+      let responseText = "";
       try {
-        const text = await response.text();
-        if (text) {
-          errorData = JSON.parse(text);
+        responseText = await response.text();
+        if (responseText) {
+          errorData = JSON.parse(responseText);
         }
       } catch (e) {
-        console.error("Could not parse error response", e);
+        console.error("Could not parse error response as JSON", e);
       }
       
+      const errorMessage = errorData?.error || errorData?.message || responseText || `Server returned ${response.status}: ${response.statusText}`;
+      
       // If key is invalid or not found, prompt user to re-select
-      if (errorData.code === "API_KEY_INVALID" || errorData.code === "API_KEY_NOT_FOUND") {
+      if (errorData?.code === "API_KEY_INVALID" || errorData?.code === "API_KEY_NOT_FOUND" || response.status === 401) {
         if (window.aistudio) {
           await window.aistudio.openSelectKey();
           // After opening, retry once more
@@ -38,7 +41,7 @@ const callAIBase = async (payload: any, retries = 2) => {
       if (retries > 0 && response.status >= 500) {
         return callAIBase(payload, retries - 1);
       }
-      throw new Error(errorData.error || `Server returned ${response.status}: ${response.statusText}`);
+      throw new Error(errorMessage);
     }
     
     const text = await response.text();
@@ -47,7 +50,8 @@ const callAIBase = async (payload: any, retries = 2) => {
     try {
       return JSON.parse(text);
     } catch (e) {
-      throw new Error("Server returned invalid JSON response.");
+      console.error("JSON Parse Error on Response:", text);
+      throw new Error(`Server returned invalid JSON response: ${text.substring(0, 100)}`);
     }
   } catch (error: any) {
     clearTimeout(timeoutId);

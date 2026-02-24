@@ -15,6 +15,7 @@ import {
   Wifi,
   AlertTriangle,
   CalendarRange,
+  RotateCcw,
   GraduationCap,
   Trophy,
   Microscope,
@@ -46,6 +47,7 @@ const App: React.FC = () => {
   const [apiSource, setApiSource] = useState<string>('');
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   
   // Static Profile Data (Read-Only)
@@ -108,6 +110,7 @@ const App: React.FC = () => {
 
   const handleTestConnection = async () => {
     setIsTesting(true);
+    setGlobalError(null);
     try {
       const response = await fetch('/api/ai/test');
       
@@ -125,12 +128,23 @@ const App: React.FC = () => {
         alert("Success: " + data.message);
         checkApiStatus();
       } else {
-        alert("Error: " + (data.error || "Unknown error"));
+        const err = data.error || "Unknown error";
+        setGlobalError(err);
+        alert("Error: " + err);
       }
     } catch (error: any) {
+      setGlobalError(error.message);
       alert("Test failed: " + error.message);
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  const handleResetKey = async () => {
+    if (window.aistudio) {
+      // There isn't a direct 'clear' but we can re-open or just refresh
+      await window.aistudio.openSelectKey();
+      checkApiStatus();
     }
   };
 
@@ -205,16 +219,38 @@ const App: React.FC = () => {
 
         {/* API Status Badge - Hidden as requested */}
         <div className="mx-6 mb-4">
-          {apiStatus === 'ok' && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 flex items-center space-x-3">
-              <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-500 animate-pulse">
-                <Wifi size={16} />
+          {apiStatus === 'ok' ? (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-500 animate-pulse">
+                  <Wifi size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">AI Active</p>
+                  <p className="text-[9px] text-slate-400 font-medium">Source: {apiSource}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">AI Active</p>
-                <p className="text-[9px] text-slate-400 font-medium">Source: {apiSource}</p>
-              </div>
+              <button 
+                onClick={handleResetKey}
+                className="p-1.5 hover:bg-emerald-500/20 rounded-lg text-emerald-500 transition-colors"
+                title="Change API Key"
+              >
+                <RotateCcw size={14} />
+              </button>
             </div>
+          ) : (
+            <button 
+              onClick={handleSelectKey}
+              className="w-full bg-slate-800 border border-slate-700 rounded-2xl p-3 flex items-center space-x-3 hover:bg-slate-700 transition-colors group"
+            >
+              <div className="p-2 bg-slate-700 rounded-xl text-slate-400 group-hover:text-white transition-colors">
+                <ShieldCheck size={16} />
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-white">AI Offline</p>
+                <p className="text-[9px] text-slate-500 font-medium">Click to connect</p>
+              </div>
+            </button>
           )}
         </div>
 
@@ -263,6 +299,23 @@ const App: React.FC = () => {
 
       {/* Content Area */}
       <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-20">
+        {globalError && (
+          <div className="max-w-7xl mx-auto px-6 pt-6 md:px-12">
+            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 flex items-center space-x-4 text-red-700">
+              <AlertTriangle className="flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-black uppercase tracking-tight">System Error Detected</p>
+                <p className="text-xs font-medium opacity-80">{globalError}</p>
+              </div>
+              <button 
+                onClick={() => setGlobalError(null)}
+                className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
         <div className="max-w-7xl mx-auto p-6 md:p-12 min-h-full print:p-0">
           {activeTab === 'dashboard' && (
             <Dashboard 
