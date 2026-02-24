@@ -3,9 +3,14 @@ import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { BoardType, LessonPlan, YearlyPlan, TheoryContent, Language, FitnessAssessment, BiomechanicsConcept } from "../types.ts";
 
 const getAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = 
+    import.meta.env.VITE_GEMINI_API_KEY || 
+    import.meta.env.VITE_API_KEY || 
+    process.env.GEMINI_API_KEY || 
+    process.env.API_KEY;
+    
   if (!apiKey) {
-    throw new Error("Gemini API key is not configured. Please add GEMINI_API_KEY or API_KEY to your environment.");
+    throw new Error("Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your environment variables.");
   }
   return new GoogleGenAI({ apiKey });
 };

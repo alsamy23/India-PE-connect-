@@ -53,7 +53,12 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Check if API key is injected correctly
-    const key = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    const key = 
+      import.meta.env.VITE_GEMINI_API_KEY || 
+      import.meta.env.VITE_API_KEY || 
+      process.env.GEMINI_API_KEY || 
+      process.env.API_KEY;
+      
     if (key && key.length > 10) {
       setApiStatus('ok');
     } else {
@@ -118,7 +123,7 @@ const App: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-500">Config Required</p>
-                <p className="text-[9px] text-slate-400 font-medium">Add GEMINI_API_KEY to environment</p>
+                <p className="text-[9px] text-slate-400 font-medium">Add VITE_GEMINI_API_KEY to environment</p>
               </div>
             </div>
           ) : (
