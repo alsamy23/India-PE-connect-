@@ -33,13 +33,34 @@ const Dashboard: React.FC = () => {
             <span className="text-[10px] font-black uppercase tracking-widest">AI-Powered for PE Teachers</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter leading-none">
-            Plan Smarter. <span className="text-orange-400">Teach Better.</span>
+            Plan Smarter. <span className="text-orange-400">Teach Better.</span> <br/>
+            <span className="text-indigo-300">Lead Stronger.</span>
           </h1>
-          <p className="text-indigo-100 text-lg mb-10 leading-relaxed font-medium">
-            The all-in-one platform built exclusively for Physical Education teachers. Generate lesson plans, access expert courses, and transform your teaching — all in one place.
+          <p className="text-indigo-100 text-lg mb-8 leading-relaxed font-medium">
+            SmartPE India is the first integrated digital platform built exclusively for Physical Education professionals in India.
           </p>
           
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+            {[
+              "Create curriculum-aligned lesson plans in minutes.",
+              "Access expert-led PE certification courses.",
+              "Track student fitness and assessment data effortlessly.",
+              "Collaborate with a growing national PE community."
+            ].map((feature, i) => (
+              <div key={i} className="flex items-start space-x-3 group">
+                <div className="mt-1 p-1 bg-orange-400 rounded-full group-hover:scale-110 transition-transform">
+                  <Sparkles size={10} className="text-indigo-900" />
+                </div>
+                <p className="text-sm text-indigo-50 font-medium">{feature}</p>
+              </div>
+            ))}
+          </div>
 
+          <div className="inline-block px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl">
+            <p className="text-sm font-bold tracking-wide text-orange-400 uppercase">
+              Less paperwork. More performance. Greater impact.
+            </p>
+          </div>
         </div>
         
         {/* Decorative elements */}

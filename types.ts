@@ -185,3 +185,12 @@ export interface BiomechanicsConcept {
   diagramPrompt: string;
   diagramUrl?: string;
 }
+
+declare global {
+  interface Window {
+    aistudio?: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
+}

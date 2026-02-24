@@ -1,6 +1,6 @@
 {
-  "name": "India PE Connect",
-  "description": "A comprehensive networking and resource platform for Physical Education teachers across India, featuring curriculum-aligned lesson planning and community collaboration for CBSE, ICSE, and State Boards.",
+  "name": "SmartPE India",
+  "description": "The ultimate AI-powered hub for Physical Education teachers in India. Plan smarter, teach better, and lead stronger with curriculum-aligned resources, automated lesson planning, and fitness assessment tools.",
   "requestFramePermissions": [
     "camera"
   ]

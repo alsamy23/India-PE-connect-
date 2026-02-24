@@ -43,28 +43,52 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'missing'>('checking');
+  const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   
   // Static Profile Data (Read-Only)
   const userProfile = {
     name: "L. Samy",
     role: "Founder & Director",
-    org: "India PE Connect"
+    org: "SmartPE India"
+  };
+
+  const checkApiStatus = async () => {
+    try {
+      const response = await fetch('/api/health');
+      const data = await response.json();
+      if (data.status === 'ok') {
+        setApiStatus('ok');
+        setIsKeyDialogOpen(false);
+      } else {
+        setApiStatus('missing');
+        // Check if we need to open the key selection dialog
+        if (window.aistudio) {
+          const hasKey = await window.aistudio.hasSelectedApiKey();
+          if (!hasKey) {
+            setIsKeyDialogOpen(true);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Health check failed:", error);
+      setApiStatus('missing');
+    }
   };
 
   useEffect(() => {
-    // Check if API key is injected correctly
-    const key = 
-      import.meta.env.VITE_GEMINI_API_KEY || 
-      import.meta.env.VITE_API_KEY || 
-      process.env.GEMINI_API_KEY || 
-      process.env.API_KEY;
-      
-    if (key && key.length > 10) {
-      setApiStatus('ok');
-    } else {
-      setApiStatus('missing');
-    }
+    checkApiStatus();
   }, []);
+
+  const handleSelectKey = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      // After opening, we assume success and try to proceed
+      setApiStatus('ok');
+      setIsKeyDialogOpen(false);
+      // Re-check health after a short delay to be sure
+      setTimeout(checkApiStatus, 2000);
+    }
+  };
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
@@ -83,11 +107,45 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-inter">
+      {/* API Key Selection Modal */}
+      {isKeyDialogOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-slide-up">
+            <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 mb-6">
+              <ShieldCheck size={32} />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Secure API Access</h2>
+            <p className="text-slate-500 mb-6 leading-relaxed">
+              To enable AI-powered lesson planning and fitness assessments, please select a valid Gemini API key from your Google Cloud project.
+            </p>
+            <div className="bg-slate-50 rounded-2xl p-4 mb-8 border border-slate-100">
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Requirements</p>
+              <ul className="text-xs text-slate-600 space-y-2 font-medium">
+                <li className="flex items-center space-x-2">
+                  <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
+                  <span>Paid Google Cloud Project</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
+                  <span><a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="text-indigo-600 underline">Billing enabled</a></span>
+                </li>
+              </ul>
+            </div>
+            <button 
+              onClick={handleSelectKey}
+              className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20"
+            >
+              Select API Key
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Header */}
       <header className="md:hidden bg-indigo-900 text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
         <div className="flex items-center space-x-2">
           <Activity className="w-8 h-8 text-orange-400" />
-          <span className="font-black text-lg tracking-tighter uppercase">India PE Connect</span>
+          <span className="font-black text-lg tracking-tighter uppercase">SmartPE India</span>
         </div>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/10 rounded-xl">
           {isSidebarOpen ? <X /> : <Menu />}
@@ -104,28 +162,31 @@ const App: React.FC = () => {
         <div className="p-8 hidden md:flex items-center space-x-4">
           <div className="relative">
              <div className="p-3 bg-white rounded-2xl shadow-2xl shadow-orange-600/20 rotate-3 z-10 relative">
-               <Network className="w-8 h-8 text-indigo-700" />
+               <Activity className="w-8 h-8 text-indigo-700" />
              </div>
              <div className="absolute inset-0 bg-orange-500 rounded-2xl -rotate-6 opacity-50"></div>
           </div>
           <div>
-            <h1 className="font-black text-xl leading-none uppercase tracking-tighter">India PE<br/><span className="text-orange-400">Connect</span> Platform</h1>
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Community Edition</p>
+            <h1 className="font-black text-xl leading-none uppercase tracking-tighter">SmartPE<br/><span className="text-orange-400">India</span></h1>
+            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Plan Smarter. Teach Better. Lead Stronger.</p>
           </div>
         </div>
 
         {/* API Status Badge */}
         <div className="mx-6 mb-4">
           {apiStatus === 'missing' ? (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex items-center space-x-3">
-              <div className="p-2 bg-amber-500/20 rounded-xl text-amber-500">
+            <button 
+              onClick={handleSelectKey}
+              className="w-full bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex items-center space-x-3 hover:bg-amber-500/20 transition-colors group"
+            >
+              <div className="p-2 bg-amber-500/20 rounded-xl text-amber-500 group-hover:scale-110 transition-transform">
                 <AlertTriangle size={16} />
               </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-amber-500">Config Required</p>
-                <p className="text-[9px] text-slate-400 font-medium">Add VITE_GEMINI_API_KEY to environment</p>
+              <div className="text-left">
+                <p className="text-[10px] font-black uppercase tracking-widest text-amber-500">Action Required</p>
+                <p className="text-[9px] text-slate-400 font-medium">Click to select API Key</p>
               </div>
-            </div>
+            </button>
           ) : (
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 flex items-center space-x-3">
               <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-500 animate-pulse">

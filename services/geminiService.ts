@@ -1,18 +1,46 @@
 
-import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { BoardType, LessonPlan, YearlyPlan, TheoryContent, Language, FitnessAssessment, BiomechanicsConcept } from "../types.ts";
 
-const getAI = () => {
-  const apiKey = 
-    import.meta.env.VITE_GEMINI_API_KEY || 
-    import.meta.env.VITE_API_KEY || 
-    process.env.GEMINI_API_KEY || 
-    process.env.API_KEY;
+const callAIBase = async (payload: any, retries = 2) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+  try {
+    const response = await fetch("/api/ai/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
     
-  if (!apiKey) {
-    throw new Error("Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your environment variables.");
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      
+      // If key is invalid or not found, prompt user to re-select
+      if (errorData.code === "API_KEY_INVALID" || errorData.code === "API_KEY_NOT_FOUND") {
+        if (window.aistudio) {
+          await window.aistudio.openSelectKey();
+          // After opening, retry once more
+          return callAIBase(payload, 0);
+        }
+      }
+
+      if (retries > 0 && response.status >= 500) {
+        return callAIBase(payload, retries - 1);
+      }
+      throw new Error(errorData.error || "Failed to generate content from server.");
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (retries > 0 && error.name !== 'AbortError') {
+      return callAIBase(payload, retries - 1);
+    }
+    throw error;
   }
-  return new GoogleGenAI({ apiKey });
 };
 
 const safeParseJson = (text: string | undefined): any => {
@@ -46,96 +74,96 @@ export const generateLessonPlan = async (
   date: string,
   language: Language
 ): Promise<LessonPlan> => {
-  const ai = getAI();
-  
-  const schema: Schema = {
-    type: Type.OBJECT,
+  const schema = {
+    type: "OBJECT",
     properties: {
-      teacher: { type: Type.STRING },
-      subject: { type: Type.STRING },
-      grade: { type: Type.STRING },
-      date: { type: Type.STRING },
-      topic: { type: Type.STRING },
-      period: { type: Type.STRING },
-      termWeek: { type: Type.STRING },
-      duration: { type: Type.STRING },
-      equipment: { type: Type.ARRAY, items: { type: Type.STRING } },
-      teachingAids: { type: Type.ARRAY, items: { type: Type.STRING } },
-      safety: { type: Type.ARRAY, items: { type: Type.STRING } },
-      keyVocabulary: { type: Type.ARRAY, items: { type: Type.STRING } },
+      teacher: { type: "STRING" },
+      subject: { type: "STRING" },
+      grade: { type: "STRING" },
+      date: { type: "STRING" },
+      topic: { type: "STRING" },
+      period: { type: "STRING" },
+      termWeek: { type: "STRING" },
+      duration: { type: "STRING" },
+      equipment: { type: "ARRAY", items: { type: "STRING" } },
+      teachingAids: { type: "ARRAY", items: { type: "STRING" } },
+      safety: { type: "ARRAY", items: { type: "STRING" } },
+      keyVocabulary: { type: "ARRAY", items: { type: "STRING" } },
       sen: {
-        type: Type.OBJECT,
+        type: "OBJECT",
         properties: {
-          wave1: { type: Type.STRING },
-          wave2: { type: Type.STRING },
-          wave3: { type: Type.STRING }
+          wave1: { type: "STRING" },
+          wave2: { type: "STRING" },
+          wave3: { type: "STRING" }
         }
       },
       objectives: {
-        type: Type.OBJECT,
+        type: "OBJECT",
         properties: {
-          know: { type: Type.STRING },
-          understand: { type: Type.STRING },
-          beAbleTo: { type: Type.STRING }
+          know: { type: "STRING" },
+          understand: { type: "STRING" },
+          beAbleTo: { type: "STRING" }
         }
       },
       successCriteria: {
-        type: Type.OBJECT,
+        type: "OBJECT",
         properties: {
-          all: { type: Type.STRING },
-          most: { type: Type.STRING },
-          some: { type: Type.STRING }
+          all: { type: "STRING" },
+          most: { type: "STRING" },
+          some: { type: "STRING" }
         }
       },
       starter: {
-        type: Type.OBJECT,
+        type: "OBJECT",
         properties: {
-          time: { type: Type.STRING },
-          title: { type: Type.STRING },
-          description: { type: Type.STRING }
+          time: { type: "STRING" },
+          title: { type: "STRING" },
+          description: { type: "STRING" }
         }
       },
       mainActivity: {
-        type: Type.OBJECT,
+        type: "OBJECT",
         properties: {
-          time: { type: Type.STRING },
+          time: { type: "STRING" },
           activities: {
-            type: Type.ARRAY,
+            type: "ARRAY",
             items: {
-              type: Type.OBJECT,
+              type: "OBJECT",
               properties: {
-                title: { type: Type.STRING },
-                description: { type: Type.STRING },
-                coachingPoints: { type: Type.ARRAY, items: { type: Type.STRING } }
+                title: { type: "STRING" },
+                description: { type: "STRING" },
+                coachingPoints: { type: "ARRAY", items: { type: "STRING" } }
               }
             }
           }
         }
       },
       plenary: {
-        type: Type.OBJECT,
+        type: "OBJECT",
         properties: {
-          time: { type: Type.STRING },
-          title: { type: Type.STRING },
-          description: { type: Type.STRING }
+          time: { type: "STRING" },
+          title: { type: "STRING" },
+          description: { type: "STRING" }
         }
       },
-      homework: { type: Type.STRING },
-      collaboration: { type: Type.STRING },
-      differentiation: { type: Type.STRING },
-      criticalThinking: { type: Type.STRING },
-      warmupDiagramPrompt: { type: Type.STRING },
-      explanationDiagramPrompt: { type: Type.STRING },
-      gameDiagramPrompt: { type: Type.STRING }
+      homework: { type: "STRING" },
+      collaboration: { type: "STRING" },
+      differentiation: { type: "STRING" },
+      criticalThinking: { type: "STRING" },
+      warmupDiagramPrompt: { type: "STRING" },
+      explanationDiagramPrompt: { type: "STRING" },
+      gameDiagramPrompt: { type: "STRING" }
     },
     required: ["objectives", "starter", "mainActivity", "plenary", "warmupDiagramPrompt", "explanationDiagramPrompt"]
   };
 
-  const response = await ai.models.generateContent({
+  const response = await callAIBase({
     model: 'gemini-3-flash-preview',
     contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}, Duration: ${duration}.`,
     config: {
+      thinkingConfig: { thinkingLevel: "LOW" },
       systemInstruction: `You are an expert Physical Education Curriculum Designer and Teacher's Assistant. 
+      Be decisive and do not ask for clarification.
       Create a highly professional, structured PE lesson plan for a ${duration} session. 
       Format:
       1. Objectives: Clear Psychomotor (Know), Cognitive (Understand), and Affective (Apply) goals.
@@ -166,37 +194,36 @@ export const generateYearlyPlan = async (
   duration: string,
   language: Language
 ): Promise<YearlyPlan> => {
-  const ai = getAI();
   const safeCalendarText = calendarText ? calendarText.substring(0, 1500) : "No calendar.";
   
-  const schema: Schema = {
-    type: Type.OBJECT,
+  const schema = {
+    type: "OBJECT",
     properties: {
-      grade: { type: Type.STRING },
-      board: { type: Type.STRING },
-      academicYear: { type: Type.STRING },
+      grade: { type: "STRING" },
+      board: { type: "STRING" },
+      academicYear: { type: "STRING" },
       terms: {
-        type: Type.ARRAY,
+        type: "ARRAY",
         items: {
-          type: Type.OBJECT,
+          type: "OBJECT",
           properties: {
-            termName: { type: Type.STRING },
+            termName: { type: "STRING" },
             months: {
-              type: Type.ARRAY,
+              type: "ARRAY",
               items: {
-                type: Type.OBJECT,
+                type: "OBJECT",
                 properties: {
-                  monthName: { type: Type.STRING },
+                  monthName: { type: "STRING" },
                   weeks: {
-                    type: Type.ARRAY,
+                    type: "ARRAY",
                     items: {
-                      type: Type.OBJECT,
+                      type: "OBJECT",
                       properties: {
-                        weekNumber: { type: Type.NUMBER },
-                        status: { type: Type.STRING, enum: ['Instructional', 'Holiday', 'Exam', 'Event'] },
-                        dates: { type: Type.STRING },
-                        topic: { type: Type.STRING },
-                        details: { type: Type.STRING }
+                        weekNumber: { type: "NUMBER" },
+                        status: { type: "STRING", enum: ['Instructional', 'Holiday', 'Exam', 'Event'] },
+                        dates: { type: "STRING" },
+                        topic: { type: "STRING" },
+                        details: { type: "STRING" }
                       },
                       required: ["weekNumber", "status", "topic", "details"]
                     }
@@ -213,11 +240,13 @@ export const generateYearlyPlan = async (
     required: ["terms", "academicYear"]
   };
 
-  const response = await ai.models.generateContent({
+  const response = await callAIBase({
     model: 'gemini-3-flash-preview',
     contents: `Yearly PE Plan. Grade: ${grade}, Board: ${board}, Lang: ${language}. Start: ${startDate}. Terms: 2. Focus1: ${term1Focus}. Focus2: ${term2Focus}. Holidays: ${safeCalendarText}`,
     config: {
+      thinkingConfig: { thinkingLevel: "LOW" },
       systemInstruction: `Generate strictly valid JSON. 
+      Be decisive and do not ask for clarification.
       Output Language: ${language} (translate Topic and Details).
       Structure: terms[] -> months[] -> weeks[].
       Constraint: 2 terms, Concise (max 5 words per detail).
@@ -242,22 +271,20 @@ export const generateYearlyPlan = async (
 };
 
 export const generateTheoryContent = async (grade: string, topic: string, board: BoardType, contentType: string, language: Language): Promise<TheoryContent> => {
-  const ai = getAI();
-
-  const schema: Schema = {
-    type: Type.OBJECT,
+  const schema = {
+    type: "OBJECT",
     properties: {
-      title: { type: Type.STRING },
-      contentType: { type: Type.STRING },
-      content: { type: Type.STRING },
+      title: { type: "STRING" },
+      contentType: { type: "STRING" },
+      content: { type: "STRING" },
       questions: {
-        type: Type.ARRAY,
+        type: "ARRAY",
         items: {
-          type: Type.OBJECT,
+          type: "OBJECT",
           properties: {
-            question: { type: Type.STRING },
-            answer: { type: Type.STRING },
-            type: { type: Type.STRING }
+            question: { type: "STRING" },
+            answer: { type: "STRING" },
+            type: { type: "STRING" }
           },
           required: ["question", "answer"]
         }
@@ -266,41 +293,45 @@ export const generateTheoryContent = async (grade: string, topic: string, board:
     required: ["title", "content", "questions"]
   };
 
-  const response = await ai.models.generateContent({
+  const isCBSE12 = board === 'CBSE' && (grade === '12' || grade === 'Class 12');
+  const contextUrl = "https://www.failures.in/p/physical-education-class-12-notes-pdf.html";
+
+  const response = await callAIBase({
     model: 'gemini-3-flash-preview',
-    contents: `PE Theory Content. Grade ${grade} ${board}. Topic: ${topic}. Type: ${contentType}. Language: ${language}.`,
+    contents: `PE Theory Content. Grade ${grade} ${board}. Topic: ${topic}. Type: ${contentType}. Language: ${language}.${isCBSE12 ? ` Use context from ${contextUrl}` : ''}`,
     config: { 
-      systemInstruction: `Output valid JSON. Content Language: ${language}. Ensure content is detailed and questions are relevant.`,
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `Output valid JSON. Be decisive and do not ask for clarification. Content Language: ${language}. Ensure content is detailed and questions are relevant. ${isCBSE12 ? `IMPORTANT: Prioritize and summarize information from ${contextUrl} for this CBSE Class 12 request.` : ''}`,
       responseMimeType: "application/json",
-      responseSchema: schema
+      responseSchema: schema,
+      tools: isCBSE12 ? [{ urlContext: {} }] : undefined
     }
   });
   return safeParseJson(response.text);
 };
 
 export const generateAIToolContent = async (toolId: string, params: any) => {
-  const ai = getAI();
-  
-  const schema: Schema = {
-    type: Type.OBJECT,
+  const schema = {
+    type: "OBJECT",
     properties: {
-      title: { type: Type.STRING, description: "Title of the generated resource" },
-      content: { type: Type.STRING, description: "Main content, explanation or description" },
+      title: { type: "STRING", description: "Title of the generated resource" },
+      content: { type: "STRING", description: "Main content, explanation or description" },
       items: { 
-        type: Type.ARRAY, 
-        items: { type: Type.STRING },
+        type: "ARRAY", 
+        items: { type: "STRING" },
         description: "List of key points, drill steps, or specific items"
       },
-      summary: { type: Type.STRING, description: "Brief summary or conclusion" }
+      summary: { type: "STRING", description: "Brief summary or conclusion" }
     },
     required: ["title", "content"]
   };
 
-  const response = await ai.models.generateContent({
+  const response = await callAIBase({
     model: 'gemini-3-flash-preview',
     contents: `PE Tool ${toolId}. Parameters: ${JSON.stringify(params)}.`,
     config: { 
-      systemInstruction: "You are a PE Expert. Generate high-quality, actionable content. Do not return empty fields. If specific data is missing, generate realistic examples.",
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: "You are a PE Expert. Be decisive and do not ask for clarification. Generate high-quality, actionable content. Do not return empty fields. If specific data is missing, generate realistic examples.",
       responseMimeType: "application/json",
       responseSchema: schema
     }
@@ -309,9 +340,8 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
 };
 
 export const generateLessonDiagram = async (prompt: string, context: string = 'general') => {
-  const ai = getAI();
   try {
-    const response = await ai.models.generateContent({
+    const response = await callAIBase({
       model: 'gemini-2.5-flash-image',
       contents: { parts: [{ text: `Minimalist sports coaching diagram. Whiteboard style. No text. ${context}: ${prompt}` }] }
     });
@@ -323,22 +353,20 @@ export const generateLessonDiagram = async (prompt: string, context: string = 'g
 };
 
 export const generateSkillProgression = async (sport: string, skill: string) => {
-  const ai = getAI();
-  
-  const schema: Schema = {
-    type: Type.OBJECT,
+  const schema = {
+    type: "OBJECT",
     properties: {
-      skillName: { type: Type.STRING },
-      level: { type: Type.STRING },
+      skillName: { type: "STRING" },
+      level: { type: "STRING" },
       phases: {
-        type: Type.ARRAY,
+        type: "ARRAY",
         items: {
-          type: Type.OBJECT,
+          type: "OBJECT",
           properties: {
-            phaseName: { type: Type.STRING },
-            drills: { type: Type.ARRAY, items: { type: Type.STRING } },
-            technicalFocus: { type: Type.STRING },
-            diagramPrompt: { type: Type.STRING }
+            phaseName: { type: "STRING" },
+            drills: { type: "ARRAY", items: { type: "STRING" } },
+            technicalFocus: { type: "STRING" },
+            diagramPrompt: { type: "STRING" }
           },
           required: ["phaseName", "drills", "technicalFocus", "diagramPrompt"]
         }
@@ -347,11 +375,12 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
     required: ["skillName", "phases"]
   };
 
-  const response = await ai.models.generateContent({
+  const response = await callAIBase({
     model: 'gemini-3-flash-preview',
     contents: `Skill progression: ${sport} - ${skill}`,
     config: { 
-      systemInstruction: "Generate a detailed 3-4 phase skill progression. Ensure diagrams prompts are descriptive. Drills must be actionable.",
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: "Be decisive and do not ask for clarification. Generate a detailed 3-4 phase skill progression. Ensure diagrams prompts are descriptive. Drills must be actionable.",
       responseMimeType: "application/json",
       responseSchema: schema
     }
@@ -360,40 +389,36 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
 };
 
 export const getStateRegulationInsights = async (state: string, board: BoardType) => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
+  const response = await callAIBase({
     model: 'gemini-3-flash-preview',
     contents: `PE regulations for ${state} ${board}. Marks, Hours, Curriculum.`,
+    config: { thinkingConfig: { thinkingLevel: "LOW" } }
   });
   return response.text;
 };
-
-// --- NEW FEATURES ---
 
 export const evaluateKheloIndiaScores = async (
   age: string,
   gender: string,
   tests: { name: string; value: string }[]
 ): Promise<FitnessAssessment> => {
-  const ai = getAI();
-  
-  const schema: Schema = {
-    type: Type.OBJECT,
+  const schema = {
+    type: "OBJECT",
     properties: {
-      studentName: { type: Type.STRING },
-      age: { type: Type.NUMBER },
-      gender: { type: Type.STRING },
-      overallSummary: { type: Type.STRING },
+      studentName: { type: "STRING" },
+      age: { type: "NUMBER" },
+      gender: { type: "STRING" },
+      overallSummary: { type: "STRING" },
       tests: {
-        type: Type.ARRAY,
+        type: "ARRAY",
         items: {
-          type: Type.OBJECT,
+          type: "OBJECT",
           properties: {
-            testName: { type: Type.STRING },
-            score: { type: Type.STRING },
-            percentile: { type: Type.STRING },
-            rating: { type: Type.STRING, enum: ['Needs Improvement', 'Average', 'Good', 'Excellent', 'Elite'] },
-            recommendation: { type: Type.STRING },
+            testName: { type: "STRING" },
+            score: { type: "STRING" },
+            percentile: { type: "STRING" },
+            rating: { type: "STRING", enum: ['Needs Improvement', 'Average', 'Good', 'Excellent', 'Elite'] },
+            recommendation: { type: "STRING" },
           },
           required: ["testName", "score", "percentile", "rating", "recommendation"]
         }
@@ -402,13 +427,15 @@ export const evaluateKheloIndiaScores = async (
     required: ["studentName", "age", "gender", "tests", "overallSummary"]
   };
 
-  const response = await ai.models.generateContent({
+  const response = await callAIBase({
     model: 'gemini-3-flash-preview',
     contents: `Assess fitness based on Khelo India Norms. 
     Student: Age ${age}, ${gender}.
     Tests Provided: ${JSON.stringify(tests)}.`,
     config: {
+      thinkingConfig: { thinkingLevel: "LOW" },
       systemInstruction: `You are a Khelo India Assessor. 
+      Be decisive and do not ask for clarification.
       Task: Compare scores to Indian National Fitness Protocols.
       CRITICAL: If test scores are missing or empty in the input, ESTIMATE typical scores for a student of this age/gender who is 'Average' and label them as (Estimated).
       Output JSON must be fully populated. Do not return empty strings for recommendations or ratings.
@@ -425,25 +452,24 @@ export const explainBiomechanics = async (
   concept: string,
   language: Language
 ): Promise<BiomechanicsConcept> => {
-  const ai = getAI();
-  
-  const schema: Schema = {
-    type: Type.OBJECT,
+  const schema = {
+    type: "OBJECT",
     properties: {
-      concept: { type: Type.STRING },
-      sportApplication: { type: Type.STRING },
-      explanation: { type: Type.STRING },
-      analogy: { type: Type.STRING },
-      diagramPrompt: { type: Type.STRING }
+      concept: { type: "STRING" },
+      sportApplication: { type: "STRING" },
+      explanation: { type: "STRING" },
+      analogy: { type: "STRING" },
+      diagramPrompt: { type: "STRING" }
     },
     required: ["concept", "explanation", "analogy", "diagramPrompt"]
   };
 
-  const response = await ai.models.generateContent({
+  const response = await callAIBase({
     model: 'gemini-3-flash-preview',
     contents: `Explain biomechanics concept '${concept}' in '${sport}'. Language: ${language}.`,
     config: {
-      systemInstruction: `Output JSON. Explanation must be simple for school students. Include a visual analogy description. Language: ${language}.`,
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `Output JSON. Be decisive and do not ask for clarification. Explanation must be simple for school students. Include a visual analogy description. Language: ${language}.`,
       responseMimeType: "application/json",
       responseSchema: schema
     }
@@ -452,12 +478,12 @@ export const explainBiomechanics = async (
 };
 
 export const getSportsRule = async (sport: string, query: string, language: Language) => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
+  const response = await callAIBase({
     model: 'gemini-3-flash-preview',
     contents: `Rule Check: ${sport}. Question: ${query}. Language: ${language}`,
     config: {
-      systemInstruction: `You are an expert official for Indian Sports (Kabaddi, Kho-Kho, Cricket, Football). Provide specific rule numbers if possible. Keep it concise. Language: ${language}.`,
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `You are an expert official for Indian Sports (Kabaddi, Kho-Kho, Cricket, Football). Be decisive and do not ask for clarification. Provide specific rule numbers if possible. Keep it concise. Language: ${language}.`,
     }
   });
   return response.text;
