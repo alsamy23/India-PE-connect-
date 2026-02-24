@@ -2,10 +2,13 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import "dotenv/config";
+import path from "path";
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  console.log(`Starting server in ${process.env.NODE_ENV || 'development'} mode`);
 
   app.use(express.json());
 
@@ -34,12 +37,16 @@ async function startServer() {
 
   // API Routes
   app.get("/api/health", (req, res) => {
-    const { ai, source } = getAI();
-    res.json({ 
-      status: ai ? "ok" : "missing",
-      source: source,
-      envKeys: Object.keys(process.env).filter(k => k.includes("API_KEY") || k.includes("GEMINI"))
-    });
+    try {
+      const { ai, source } = getAI();
+      res.json({ 
+        status: ai ? "ok" : "missing",
+        source: source,
+        envKeys: Object.keys(process.env).filter(k => k.includes("API_KEY") || k.includes("GEMINI"))
+      });
+    } catch (err: any) {
+      res.status(500).json({ status: "error", message: err.message });
+    }
   });
 
   app.get("/api/ai/test", async (req, res) => {
@@ -53,7 +60,8 @@ async function startServer() {
       });
       res.json({ message: response.text });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error("Test Error:", error);
+      res.status(500).json({ error: error.message || "Test failed" });
     }
   });
 
@@ -95,6 +103,15 @@ async function startServer() {
     }
   });
 
+  // Global error handler for API routes to prevent HTML responses
+  app.use("/api", (err: any, req: any, res: any, next: any) => {
+    console.error("API Error:", err);
+    res.status(err.status || 500).json({
+      error: err.message || "Internal Server Error",
+      path: req.path
+    });
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -103,9 +120,11 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static("dist"));
+    // In production, serve from dist
+    const distPath = path.resolve("dist");
+    app.use(express.static(distPath));
     app.get("*", (req, res) => {
-      res.sendFile("dist/index.html", { root: "." });
+      res.sendFile(path.join(distPath, "index.html"));
     });
   }
 

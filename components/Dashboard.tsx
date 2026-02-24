@@ -30,52 +30,6 @@ const Dashboard: React.FC<{
 }> = ({ apiStatus, debugInfo, onTestConnection, isTesting }) => {
   return (
     <div className="space-y-10 animate-slide-up">
-      {/* API Setup Alert */}
-      {apiStatus === 'missing' && (
-        <div className="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between shadow-xl shadow-orange-200/20 relative overflow-hidden">
-          <div className="relative z-10 flex items-center space-x-6 mb-6 md:mb-0">
-            <div className="p-4 bg-orange-500 rounded-[1.5rem] text-white shadow-lg shadow-orange-500/40 animate-pulse">
-              <Sparkles size={32} />
-            </div>
-            <div>
-              <h3 className="font-black text-2xl text-orange-900 uppercase tracking-tight leading-none mb-2">AI Activation Required</h3>
-              <p className="text-sm text-orange-700 font-bold max-w-md leading-relaxed">
-                Your API key is missing or not yet detected. To enable AI lesson planning, please click "Connect Now" or add <code className="bg-orange-200/50 px-1 rounded text-orange-900">GEMINI_API_KEY</code> to your environment.
-              </p>
-              <p className="text-[10px] text-orange-600 font-bold mt-2 uppercase tracking-widest">
-                Note: If using Vercel, ensure variables are added to the project settings and the app is redeployed.
-              </p>
-              {debugInfo && (
-                <div className="mt-4 p-3 bg-white/50 rounded-xl border border-orange-200 text-[10px] font-mono text-orange-800">
-                  <p className="font-bold mb-1 uppercase">Server Debug Info:</p>
-                  <pre className="whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="relative z-10 flex flex-col sm:flex-row gap-3">
-            <button 
-              onClick={onTestConnection}
-              disabled={isTesting}
-              className={`px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-95 ${
-                isTesting ? 'bg-orange-300 cursor-not-allowed' : 'bg-white text-orange-600 border-2 border-orange-200 hover:bg-orange-50'
-              }`}
-            >
-              {isTesting ? 'Testing...' : 'Test Connection'}
-            </button>
-            <button 
-              onClick={() => (window as any).aistudio?.openSelectKey()}
-              className="px-10 py-4 bg-orange-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-orange-700 transition-all shadow-xl shadow-orange-600/30 active:scale-95"
-            >
-              Connect Now
-            </button>
-          </div>
-          
-          {/* Decorative background pattern */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-200/20 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-        </div>
-      )}
-
       {/* Hero Section */}
       <div className="relative bg-indigo-900 rounded-[3rem] overflow-hidden p-8 md:p-12 text-white shadow-2xl">
         <div className="relative z-10 max-w-3xl">

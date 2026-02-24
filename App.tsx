@@ -58,6 +58,15 @@ const App: React.FC = () => {
   const checkApiStatus = async () => {
     try {
       const response = await fetch('/api/health');
+      
+      // Check if response is actually JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error("Health check returned non-JSON response:", await response.text());
+        setApiStatus('missing');
+        return;
+      }
+
       const data = await response.json();
       if (data.status === 'ok') {
         setApiStatus('ok');
@@ -101,6 +110,12 @@ const App: React.FC = () => {
     setIsTesting(true);
     try {
       const response = await fetch('/api/ai/test');
+      
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server returned non-JSON response. This usually means the API route is not being hit correctly.");
+      }
+
       const data = await response.json();
       if (data.message) {
         alert("Success: " + data.message);
@@ -132,7 +147,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-inter">
-      {/* API Key Selection Modal */}
+      {/* API Key Selection Modal - Only shown if explicitly needed */}
       {isKeyDialogOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
           <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-slide-up">
@@ -141,21 +156,8 @@ const App: React.FC = () => {
             </div>
             <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Secure API Access</h2>
             <p className="text-slate-500 mb-6 leading-relaxed">
-              To enable AI-powered lesson planning and fitness assessments, please select a valid Gemini API key from your Google Cloud project.
+              To enable AI-powered lesson planning, please select a valid Gemini API key.
             </p>
-            <div className="bg-slate-50 rounded-2xl p-4 mb-8 border border-slate-100">
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Requirements</p>
-              <ul className="text-xs text-slate-600 space-y-2 font-medium">
-                <li className="flex items-center space-x-2">
-                  <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
-                  <span>Paid Google Cloud Project</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
-                  <span><a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="text-indigo-600 underline">Billing enabled</a></span>
-                </li>
-              </ul>
-            </div>
             <button 
               onClick={handleSelectKey}
               className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20"
@@ -197,22 +199,9 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* API Status Badge */}
+        {/* API Status Badge - Hidden as requested */}
         <div className="mx-6 mb-4">
-          {apiStatus === 'missing' ? (
-            <button 
-              onClick={handleSelectKey}
-              className="w-full bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex items-center space-x-3 hover:bg-amber-500/20 transition-colors group"
-            >
-              <div className="p-2 bg-amber-500/20 rounded-xl text-amber-500 group-hover:scale-110 transition-transform">
-                <AlertTriangle size={16} />
-              </div>
-              <div className="text-left">
-                <p className="text-[10px] font-black uppercase tracking-widest text-amber-500">Action Required</p>
-                <p className="text-[9px] text-slate-400 font-medium">Click to select API Key</p>
-              </div>
-            </button>
-          ) : (
+          {apiStatus === 'ok' && (
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 flex items-center space-x-3">
               <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-500 animate-pulse">
                 <Wifi size={16} />
