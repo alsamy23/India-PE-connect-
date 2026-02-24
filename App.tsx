@@ -44,6 +44,8 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'missing'>('checking');
   const [apiSource, setApiSource] = useState<string>('');
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [isTesting, setIsTesting] = useState(false);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   
   // Static Profile Data (Read-Only)
@@ -60,10 +62,12 @@ const App: React.FC = () => {
       if (data.status === 'ok') {
         setApiStatus('ok');
         setApiSource(data.source || 'Environment');
+        setDebugInfo(data);
         setIsKeyDialogOpen(false);
       } else {
         setApiStatus('missing');
         setApiSource('');
+        setDebugInfo(data);
         // Check if we need to open the key selection dialog
         if (window.aistudio) {
           const hasKey = await window.aistudio.hasSelectedApiKey();
@@ -90,6 +94,24 @@ const App: React.FC = () => {
       setIsKeyDialogOpen(false);
       // Re-check health after a short delay to be sure
       setTimeout(checkApiStatus, 2000);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    try {
+      const response = await fetch('/api/ai/test');
+      const data = await response.json();
+      if (data.message) {
+        alert("Success: " + data.message);
+        checkApiStatus();
+      } else {
+        alert("Error: " + (data.error || "Unknown error"));
+      }
+    } catch (error: any) {
+      alert("Test failed: " + error.message);
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -249,7 +271,14 @@ const App: React.FC = () => {
       {/* Content Area */}
       <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-20">
         <div className="max-w-7xl mx-auto p-6 md:p-12 min-h-full print:p-0">
-          {activeTab === 'dashboard' && <Dashboard apiStatus={apiStatus} />}
+          {activeTab === 'dashboard' && (
+            <Dashboard 
+              apiStatus={apiStatus} 
+              debugInfo={debugInfo}
+              onTestConnection={handleTestConnection}
+              isTesting={isTesting}
+            />
+          )}
           {activeTab === 'yearly' && <YearlyPlanner />}
           {activeTab === 'tools' && <AIToolCenter />}
           {activeTab === 'theory' && <TheoryHub />}

@@ -22,7 +22,12 @@ const data = [
   { name: 'Sun', connections: 10 },
 ];
 
-const Dashboard: React.FC<{ apiStatus?: 'checking' | 'ok' | 'missing' }> = ({ apiStatus }) => {
+const Dashboard: React.FC<{ 
+  apiStatus?: 'checking' | 'ok' | 'missing',
+  debugInfo?: any,
+  onTestConnection?: () => Promise<void>,
+  isTesting?: boolean
+}> = ({ apiStatus, debugInfo, onTestConnection, isTesting }) => {
   return (
     <div className="space-y-10 animate-slide-up">
       {/* API Setup Alert */}
@@ -40,20 +45,29 @@ const Dashboard: React.FC<{ apiStatus?: 'checking' | 'ok' | 'missing' }> = ({ ap
               <p className="text-[10px] text-orange-600 font-bold mt-2 uppercase tracking-widest">
                 Note: If using Vercel, ensure variables are added to the project settings and the app is redeployed.
               </p>
+              {debugInfo && (
+                <div className="mt-4 p-3 bg-white/50 rounded-xl border border-orange-200 text-[10px] font-mono text-orange-800">
+                  <p className="font-bold mb-1 uppercase">Server Debug Info:</p>
+                  <pre className="whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
+                </div>
+              )}
             </div>
           </div>
           <div className="relative z-10 flex flex-col sm:flex-row gap-3">
+            <button 
+              onClick={onTestConnection}
+              disabled={isTesting}
+              className={`px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-95 ${
+                isTesting ? 'bg-orange-300 cursor-not-allowed' : 'bg-white text-orange-600 border-2 border-orange-200 hover:bg-orange-50'
+              }`}
+            >
+              {isTesting ? 'Testing...' : 'Test Connection'}
+            </button>
             <button 
               onClick={() => (window as any).aistudio?.openSelectKey()}
               className="px-10 py-4 bg-orange-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-orange-700 transition-all shadow-xl shadow-orange-600/30 active:scale-95"
             >
               Connect Now
-            </button>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-8 py-4 bg-white text-orange-600 border-2 border-orange-200 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-orange-50 transition-all active:scale-95"
-            >
-              Refresh
             </button>
           </div>
           

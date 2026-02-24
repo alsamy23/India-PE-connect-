@@ -37,8 +37,24 @@ async function startServer() {
     const { ai, source } = getAI();
     res.json({ 
       status: ai ? "ok" : "missing",
-      source: source
+      source: source,
+      envKeys: Object.keys(process.env).filter(k => k.includes("API_KEY") || k.includes("GEMINI"))
     });
+  });
+
+  app.get("/api/ai/test", async (req, res) => {
+    try {
+      const { ai } = getAI();
+      if (!ai) return res.status(401).json({ error: "No API key found" });
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: "Say 'Connection Successful'"
+      });
+      res.json({ message: response.text });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   app.post("/api/ai/generate", async (req, res) => {
