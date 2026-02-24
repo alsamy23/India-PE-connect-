@@ -59,15 +59,21 @@ const App: React.FC = () => {
     try {
       const response = await fetch('/api/health');
       
-      // Check if response is actually JSON
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        console.error("Health check returned non-JSON response:", await response.text());
+        const text = await response.text();
+        console.error("Health check returned non-JSON response:", text);
         setApiStatus('missing');
+        setDebugInfo({ error: "Server returned non-JSON", detail: text.substring(0, 100) });
         return;
       }
 
-      const data = await response.json();
+      const text = await response.text();
+      if (!text) {
+        throw new Error("Empty response from server");
+      }
+      
+      const data = JSON.parse(text);
       if (data.status === 'ok') {
         setApiStatus('ok');
         setApiSource(data.source || 'Environment');
@@ -77,17 +83,11 @@ const App: React.FC = () => {
         setApiStatus('missing');
         setApiSource('');
         setDebugInfo(data);
-        // Check if we need to open the key selection dialog
-        if (window.aistudio) {
-          const hasKey = await window.aistudio.hasSelectedApiKey();
-          if (!hasKey) {
-            setIsKeyDialogOpen(true);
-          }
-        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Health check failed:", error);
       setApiStatus('missing');
+      setDebugInfo({ error: error.message });
     }
   };
 
@@ -113,10 +113,14 @@ const App: React.FC = () => {
       
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server returned non-JSON response. This usually means the API route is not being hit correctly.");
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response: ${text.substring(0, 50)}...`);
       }
 
-      const data = await response.json();
+      const text = await response.text();
+      if (!text) throw new Error("Empty response from server");
+      
+      const data = JSON.parse(text);
       if (data.message) {
         alert("Success: " + data.message);
         checkApiStatus();

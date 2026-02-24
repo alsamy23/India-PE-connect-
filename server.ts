@@ -28,9 +28,12 @@ async function startServer() {
       return { ai: null, source: "none" };
     }
 
+    // Sanitize: remove quotes or whitespace that might have been pasted accidentally
+    const cleanKey = found.value.trim().replace(/^["']|["']$/g, '');
+
     console.log(`Gemini API Key: Found in ${found.name}`);
     return { 
-      ai: new GoogleGenAI({ apiKey: found.value.trim() }), 
+      ai: new GoogleGenAI({ apiKey: cleanKey }), 
       source: found.name 
     };
   };
@@ -103,6 +106,14 @@ async function startServer() {
     }
   });
 
+  // Global 404 handler for API routes
+  app.use("/api/*", (req, res) => {
+    res.status(404).json({ 
+      error: "API Route not found", 
+      path: req.originalUrl 
+    });
+  });
+
   // Global error handler for API routes to prevent HTML responses
   app.use("/api", (err: any, req: any, res: any, next: any) => {
     console.error("API Error:", err);
@@ -121,7 +132,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     // In production, serve from dist
-    const distPath = path.resolve("dist");
+    const distPath = path.resolve(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));

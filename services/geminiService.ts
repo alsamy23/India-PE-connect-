@@ -16,7 +16,15 @@ const callAIBase = async (payload: any, retries = 2) => {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorData = await response.json();
+      let errorData: any = { error: "Unknown server error" };
+      try {
+        const text = await response.text();
+        if (text) {
+          errorData = JSON.parse(text);
+        }
+      } catch (e) {
+        console.error("Could not parse error response", e);
+      }
       
       // If key is invalid or not found, prompt user to re-select
       if (errorData.code === "API_KEY_INVALID" || errorData.code === "API_KEY_NOT_FOUND") {
@@ -30,10 +38,17 @@ const callAIBase = async (payload: any, retries = 2) => {
       if (retries > 0 && response.status >= 500) {
         return callAIBase(payload, retries - 1);
       }
-      throw new Error(errorData.error || "Failed to generate content from server.");
+      throw new Error(errorData.error || `Server returned ${response.status}: ${response.statusText}`);
     }
     
-    return await response.json();
+    const text = await response.text();
+    if (!text) throw new Error("Empty response from server.");
+    
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      throw new Error("Server returned invalid JSON response.");
+    }
   } catch (error: any) {
     clearTimeout(timeoutId);
     if (retries > 0 && error.name !== 'AbortError') {
