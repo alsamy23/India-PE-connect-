@@ -35,7 +35,9 @@ const getAI = () => {
 };
 
 // API Routes
-app.get("/api/health", (req, res) => {
+const apiRouter = express.Router();
+
+apiRouter.get("/health", (req, res) => {
   try {
     const { ai, source } = getAI();
     res.json({ 
@@ -48,7 +50,7 @@ app.get("/api/health", (req, res) => {
   }
 });
 
-app.get("/api/ai/test", async (req, res) => {
+apiRouter.get("/ai/test", async (req, res) => {
   try {
     const { ai } = getAI();
     if (!ai) return res.status(401).json({ error: "No API key found" });
@@ -64,7 +66,7 @@ app.get("/api/ai/test", async (req, res) => {
   }
 });
 
-app.post("/api/ai/generate", async (req, res) => {
+apiRouter.post("/ai/generate", async (req, res) => {
   try {
     const { model, contents, config } = req.body;
     const { ai, source } = getAI();
@@ -118,6 +120,10 @@ app.post("/api/ai/generate", async (req, res) => {
     });
   }
 });
+
+// Mount the router on both /api and / for maximum compatibility
+app.use("/api", apiRouter);
+app.use("/", apiRouter);
 
 // Global 404 handler for API routes
 app.use("/api/*", (req, res) => {

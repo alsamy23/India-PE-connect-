@@ -248,7 +248,9 @@ const App: React.FC = () => {
               </div>
               <div className="text-left">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-white">AI Offline</p>
-                <p className="text-[9px] text-slate-500 font-medium">Click to connect</p>
+                <p className="text-[9px] text-slate-500 font-medium">
+                  {!window.aistudio ? 'API Key Required in Vercel' : 'Click to connect'}
+                </p>
               </div>
             </button>
           )}
