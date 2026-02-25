@@ -45,14 +45,24 @@ const callAIBase = async (payload: any, retries = 2) => {
     }
     
     const text = await response.text();
-    if (!text) throw new Error("Empty response from server.");
+    if (!text) {
+      console.error("Empty response body from /api/ai/generate");
+      throw new Error("Empty response from server.");
+    }
     
+    let parsed;
     try {
-      return JSON.parse(text);
+      parsed = JSON.parse(text);
     } catch (e) {
       console.error("JSON Parse Error on Response:", text);
       throw new Error(`Server returned invalid JSON response: ${text.substring(0, 100)}`);
     }
+
+    if (!parsed.text && parsed.candidates) {
+      console.warn("Response has candidates but no text property. This usually means the model blocked the response or returned an unexpected structure.", parsed);
+    }
+
+    return parsed;
   } catch (error: any) {
     clearTimeout(timeoutId);
     if (retries > 0 && error.name !== 'AbortError') {

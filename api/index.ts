@@ -83,7 +83,11 @@ apiRouter.post("/ai/generate", async (req, res) => {
       config
     });
 
-    res.json(response);
+    // Explicitly include the text property as it might be a getter not included in JSON.stringify
+    res.json({
+      ...response,
+      text: response.text
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message || "AI generation failed" });
   }
