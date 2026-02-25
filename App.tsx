@@ -57,25 +57,31 @@ const App: React.FC = () => {
     org: "SmartPE India"
   };
 
-  const checkApiStatus = async () => {
+  const checkApiStatus = async (retryCount = 0) => {
     try {
+      console.log("Checking API health...");
       const response = await fetch('/api/health');
       
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text();
         console.error("Health check returned non-JSON response:", text);
+        
+        // If we get HTML, it might be Vite still starting up. Retry once.
+        if (retryCount < 3) {
+          console.log(`Retrying health check (${retryCount + 1}/3)...`);
+          setTimeout(() => checkApiStatus(retryCount + 1), 2000);
+          return;
+        }
+        
         setApiStatus('missing');
         setDebugInfo({ error: "Server returned non-JSON", detail: text.substring(0, 100) });
         return;
       }
 
-      const text = await response.text();
-      if (!text) {
-        throw new Error("Empty response from server");
-      }
+      const data = await response.json();
+      console.log("API Health Data:", data);
       
-      const data = JSON.parse(text);
       if (data.status === 'ok') {
         setApiStatus('ok');
         setApiSource(data.source || 'Environment');
@@ -85,19 +91,47 @@ const App: React.FC = () => {
         setApiStatus('missing');
         setApiSource('');
         setDebugInfo(data);
+        
+        // If we are in AI Studio and key is missing, we can try to prompt
+        if (window.aistudio && retryCount === 0) {
+           // Don't auto-open, but maybe show a hint
+           console.warn("AI Key missing in environment. User may need to select a key.");
+        }
       }
     } catch (error: any) {
       console.error("Health check failed:", error);
-      setApiStatus('missing');
-      setDebugInfo({ error: error.message });
+      if (retryCount < 3) {
+        setTimeout(() => checkApiStatus(retryCount + 1), 2000);
+      } else {
+        setApiStatus('missing');
+        setDebugInfo({ error: error.message });
+      }
     }
   };
 
   useEffect(() => {
     checkApiStatus();
-  }, []);
+    
+    // Periodically check if key was selected if we're still missing it
+    const interval = setInterval(async () => {
+      if (apiStatus === 'missing' && window.aistudio) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        if (hasKey) {
+          checkApiStatus();
+        }
+      }
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [apiStatus]);
 
   const handleSelectKey = async () => {
+    if (window.aistudio) {
+      setIsKeyDialogOpen(true);
+    }
+  };
+
+  const triggerKeySelector = async () => {
     if (window.aistudio) {
       await window.aistudio.openSelectKey();
       // After opening, we assume success and try to proceed
@@ -165,23 +199,61 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-inter">
-      {/* API Key Selection Modal - Only shown if explicitly needed */}
+      {/* API Key Selection Modal - Enhanced with instructions */}
       {isKeyDialogOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-slide-up">
-            <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 mb-6">
-              <ShieldCheck size={32} />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-slate-100 animate-slide-up">
+            <div className="flex justify-between items-start mb-8">
+              <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
+                <ShieldCheck size={32} />
+              </div>
+              <button onClick={() => setIsKeyDialogOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400">
+                <X size={20} />
+              </button>
             </div>
-            <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Secure API Access</h2>
-            <p className="text-slate-500 mb-6 leading-relaxed">
-              To enable AI-powered lesson planning, please select a valid Gemini API key.
+            
+            <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">AI Setup Guide</h2>
+            
+            <div className="space-y-6 mb-8">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-sm font-bold text-slate-900 mb-2 flex items-center">
+                  <span className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] mr-2">1</span>
+                  Option A: Quick Selection
+                </p>
+                <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                  Best for users with a Google Cloud project. Click below to choose your key.
+                </p>
+                <button 
+                  onClick={triggerKeySelector}
+                  className="w-full py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
+                >
+                  Open Key Selector
+                </button>
+                <p className="text-[10px] text-slate-400 mt-2 italic">
+                  Note: Requires a project with billing enabled for some models.
+                </p>
+              </div>
+
+              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                <p className="text-sm font-bold text-emerald-900 mb-2 flex items-center">
+                  <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[10px] mr-2">2</span>
+                  Option B: Manual Setup (Recommended)
+                </p>
+                <p className="text-xs text-emerald-700 mb-3 leading-relaxed">
+                  If the selector fails, you can add your key manually:
+                </p>
+                <ol className="text-[11px] text-emerald-600 space-y-1.5 list-decimal ml-4 font-medium">
+                  <li>Find the <b>Environment Variables</b> section in the AI Studio sidebar.</li>
+                  <li>Add a new variable named <b>GEMINI_API_KEY</b>.</li>
+                  <li>Paste your API key as the value.</li>
+                  <li>The app will detect it automatically in 5-10 seconds.</li>
+                </ol>
+              </div>
+            </div>
+
+            <p className="text-center text-[11px] text-slate-400 font-medium">
+              Need a key? Get one at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-600 underline">aistudio.google.com</a>
             </p>
-            <button 
-              onClick={handleSelectKey}
-              className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20"
-            >
-              Select API Key
-            </button>
           </div>
         </div>
       )}

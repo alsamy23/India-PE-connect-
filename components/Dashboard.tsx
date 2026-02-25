@@ -8,7 +8,8 @@ import {
   Calendar,
   ChevronRight,
   Trophy,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -45,6 +46,29 @@ const Dashboard: React.FC<{
             SmartPE India is the first integrated digital platform built exclusively for Physical Education professionals in India.
           </p>
           
+          {apiStatus !== 'ok' && (
+            <div className="mb-8 p-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-[2rem] animate-pulse">
+              <div className="flex items-center space-x-3 mb-3">
+                <AlertTriangle className="text-orange-400" size={20} />
+                <h4 className="font-black text-sm uppercase tracking-widest">AI Connection Required</h4>
+              </div>
+              <p className="text-xs text-indigo-200 mb-4 font-medium">
+                To unlock AI lesson planning and fitness assessments, please configure your Gemini API key.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button 
+                  onClick={() => (window as any).aistudio?.openSelectKey()}
+                  className="px-5 py-2.5 bg-orange-400 text-indigo-900 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-300 transition-all"
+                >
+                  Connect Now
+                </button>
+                <div className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-indigo-300">
+                  Or add <code className="text-white">GEMINI_API_KEY</code> to Env Variables
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
             {[
               "Create curriculum-aligned lesson plans in minutes.",
