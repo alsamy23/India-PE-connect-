@@ -3,7 +3,7 @@ import { BoardType, LessonPlan, YearlyPlan, TheoryContent, Language, FitnessAsse
 
 const callAIBase = async (payload: any, retries = 2) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+  const timeoutId = setTimeout(() => controller.abort(), 90000); // Increased to 90s for complex plans
 
   try {
     const response = await fetch("/api/ai/generate", {
@@ -16,6 +16,7 @@ const callAIBase = async (payload: any, retries = 2) => {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      // ... existing error handling ...
       let errorData: any = null;
       let responseText = "";
       try {
@@ -29,11 +30,9 @@ const callAIBase = async (payload: any, retries = 2) => {
       
       const errorMessage = errorData?.error || errorData?.message || responseText || `Server returned ${response.status}: ${response.statusText}`;
       
-      // If key is invalid or not found, prompt user to re-select
       if (errorData?.code === "API_KEY_INVALID" || errorData?.code === "API_KEY_NOT_FOUND" || response.status === 401) {
         if (window.aistudio) {
           await window.aistudio.openSelectKey();
-          // After opening, retry once more
           return callAIBase(payload, 0);
         }
       }
@@ -59,13 +58,18 @@ const callAIBase = async (payload: any, retries = 2) => {
     }
 
     if (!parsed.text && parsed.candidates) {
-      console.warn("Response has candidates but no text property. This usually means the model blocked the response or returned an unexpected structure.", parsed);
+      console.warn("Response has candidates but no text property.", parsed);
     }
 
     return parsed;
   } catch (error: any) {
     clearTimeout(timeoutId);
-    if (retries > 0 && error.name !== 'AbortError') {
+    
+    if (error.name === 'AbortError') {
+      throw new Error("The AI took too long to respond (Timeout). Please try a simpler request or check your internet connection.");
+    }
+
+    if (retries > 0) {
       return callAIBase(payload, retries - 1);
     }
     throw error;
