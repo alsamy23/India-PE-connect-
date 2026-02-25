@@ -59,7 +59,7 @@ apiRouter.get("/ai/test", async (req, res) => {
     if (!ai) return res.status(401).json({ error: "No API key found" });
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: "Say 'Connection Successful'"
     });
     res.json({ message: response.text });
@@ -78,7 +78,7 @@ apiRouter.post("/ai/generate", async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: model || "gemini-3-flash-preview",
+      model: model || "gemini-1.5-flash",
       contents,
       config
     });
