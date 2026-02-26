@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { Target, Search, Loader2, ChevronRight, BookOpen, Layers, Zap } from 'lucide-react';
+import { Target, Search, Loader2, ChevronRight, BookOpen, Layers, Zap, Save, CheckCircle2 } from 'lucide-react';
 import { generateSkillProgression, generateLessonDiagram } from '../services/geminiService.ts';
+import { storageService } from '../services/storageService.ts';
 import { SkillProgression } from '../types.ts';
 
 const SkillMastery: React.FC = () => {
@@ -9,6 +10,19 @@ const SkillMastery: React.FC = () => {
   const [skill, setSkill] = useState('Front Foot Drive');
   const [loading, setLoading] = useState(false);
   const [progression, setProgression] = useState<SkillProgression | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const handleSaveToHistory = () => {
+    if (!progression) return;
+    storageService.saveItem({
+      type: 'Skill',
+      title: `${progression.skillName} Mastery`,
+      content: progression,
+      metadata: { sport, skill, level: progression.level }
+    });
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 3000);
+  };
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -94,6 +108,17 @@ const SkillMastery: React.FC = () => {
               <h3 className="text-2xl font-black text-slate-800">{progression.skillName} Mastery Path</h3>
               <p className="text-slate-500 text-sm font-medium uppercase tracking-widest">Level: {progression.level}</p>
             </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button 
+              onClick={handleSaveToHistory}
+              disabled={isSaved}
+              className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center space-x-2 border ${isSaved ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+            >
+              {isSaved ? <CheckCircle2 size={16} /> : <Save size={16} />}
+              <span>{isSaved ? 'Saved to History' : 'Save to History'}</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

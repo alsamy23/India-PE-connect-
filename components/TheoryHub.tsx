@@ -16,10 +16,12 @@ import {
   Zap,
   Target,
   Search,
-  ShieldCheck
+  ShieldCheck,
+  Save
 } from 'lucide-react';
 import { BoardType, TheoryContent, Language } from '../types.ts';
 import { generateTheoryContent, generateMindMap } from '../services/geminiService.ts';
+import { storageService } from '../services/storageService.ts';
 
 const CHAPTERS_11 = [
   "Changing Trends & Career in Physical Education",
@@ -60,6 +62,19 @@ const TheoryHub: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TheoryContent | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const handleSaveToHistory = () => {
+    if (!result) return;
+    storageService.saveItem({
+      type: 'Theory',
+      title: `${result.title} (${contentType})`,
+      content: result,
+      metadata: { grade, board, chapter: selectedChapter, topic: selectedBranch?.title, contentType }
+    });
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 3000);
+  };
 
   const chapters = grade === '11' ? CHAPTERS_11 : CHAPTERS_12;
 
@@ -414,6 +429,15 @@ const TheoryHub: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex space-x-2">
+                    <button 
+                      onClick={handleSaveToHistory}
+                      disabled={isSaved}
+                      className={`p-3 rounded-xl transition-all flex items-center space-x-2 ${isSaved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-400 hover:text-rose-600'}`}
+                      title="Save to History"
+                    >
+                      {isSaved ? <CheckCircle2 size={20} /> : <Save size={20} />}
+                      {isSaved && <span className="text-[10px] font-black uppercase tracking-widest">Saved</span>}
+                    </button>
                     <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors">
                       <Share2 size={20} />
                     </button>

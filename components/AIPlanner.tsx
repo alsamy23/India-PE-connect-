@@ -1,8 +1,9 @@
 
 import React, { useState, useRef } from 'react';
-import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target, User, CalendarDays, BookOpen, PenTool, Languages, FileText } from 'lucide-react';
+import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target, User, CalendarDays, BookOpen, PenTool, Languages, FileText, Save, CheckCircle2 } from 'lucide-react';
 import { BoardType, LessonPlan, Language } from '../types.ts';
 import { generateLessonPlan, generateLessonDiagram } from '../services/geminiService.ts';
+import { storageService } from '../services/storageService.ts';
 
 declare var html2pdf: any;
 
@@ -22,6 +23,19 @@ const AIPlanner: React.FC = () => {
   const [language, setLanguage] = useState<Language>('English');
   
   const [plan, setPlan] = useState<LessonPlan | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const handleSaveToHistory = () => {
+    if (!plan) return;
+    storageService.saveItem({
+      type: 'Lesson Plan',
+      title: `${sport} - ${topic} (Grade ${grade})`,
+      content: plan,
+      metadata: { sport, grade, topic, date }
+    });
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 3000);
+  };
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -277,6 +291,14 @@ const AIPlanner: React.FC = () => {
                <div className="flex justify-between items-center mb-10 pb-6 border-b border-slate-100 print:hidden">
                  <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Plan Preview</h2>
                  <div className="flex space-x-3">
+                    <button 
+                      onClick={handleSaveToHistory}
+                      disabled={isSaved}
+                      className={`px-6 py-3 rounded-xl font-bold flex items-center space-x-2 transition-all shadow-lg ${isSaved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
+                    >
+                      {isSaved ? <CheckCircle2 size={18} /> : <Save size={18} />}
+                      <span>{isSaved ? 'Saved' : 'Save'}</span>
+                    </button>
                     <button onClick={() => {setPlan(null); setLanguage('English');}} className="p-3 text-slate-400 hover:text-indigo-600 font-bold flex items-center space-x-2">
                        <RotateCcw size={16} /> <span>Reset</span>
                     </button>

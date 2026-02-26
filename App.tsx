@@ -20,10 +20,7 @@ import {
   Trophy,
   Microscope,
   Book,
-  Activity,
-  Network,
-  Award,
-  Globe
+  Activity
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import CurriculumHub from './components/CurriculumHub.tsx';
@@ -37,11 +34,10 @@ import TheoryHub from './components/TheoryHub.tsx';
 import KheloIndia from './components/KheloIndia.tsx';
 import Biomechanics from './components/Biomechanics.tsx';
 import RulesBot from './components/RulesBot.tsx';
+import FitnessTests from './components/FitnessTests.tsx';
 import Disclaimer from './components/Disclaimer.tsx';
 
-import CommunityPlanner from './components/CommunityPlanner.tsx';
-
-type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'community';
+type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'fitness';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -191,10 +187,10 @@ const App: React.FC = () => {
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { id: 'community', name: 'Community Planner', icon: Globe, isNew: true },
     { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange },
     { id: 'planner', name: 'Lesson Planner', icon: Sparkles },
-    { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, isNew: true },
+    { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true },
+    { id: 'khelo', name: 'Khelo India Battery', icon: Trophy },
     { id: 'biomechanics', name: 'Visual Physics', icon: Microscope, isNew: true },
     { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true },
     { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap },
@@ -373,7 +369,7 @@ const App: React.FC = () => {
               <p className="text-sm font-black truncate leading-none mb-1 text-white">{userProfile.name}</p>
               <p className="text-[10px] text-slate-500 font-bold uppercase truncate">{userProfile.role}</p>
             </div>
-            <Award size={16} className="text-orange-500" />
+            <Trophy size={16} className="text-orange-500" />
           </div>
         </div>
       </aside>
@@ -412,13 +408,13 @@ const App: React.FC = () => {
           {activeTab === 'theory' && <TheoryHub />}
           {activeTab === 'curriculum' && <CurriculumHub />}
           {activeTab === 'planner' && <AIPlanner />}
-          {activeTab === 'community' && <CommunityPlanner />}
           {activeTab === 'skillmastery' && <SkillMastery />}
           {activeTab === 'compliance' && <ComplianceAdvisor />}
           {activeTab === 'networking' && <Networking />}
           {activeTab === 'khelo' && <KheloIndia />}
           {activeTab === 'biomechanics' && <Biomechanics />}
           {activeTab === 'rules' && <RulesBot />}
+          {activeTab === 'fitness' && <FitnessTests />}
         </div>
         <Disclaimer />
       </main>

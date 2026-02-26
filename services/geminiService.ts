@@ -489,6 +489,59 @@ export const getStateRegulationInsights = async (state: string, board: BoardType
   return response.text;
 };
 
+export const evaluateFitnessTests = async (
+  age: string,
+  gender: string,
+  category: string,
+  testName: string,
+  value: string
+): Promise<FitnessAssessment> => {
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      studentName: { type: "STRING" },
+      age: { type: "NUMBER" },
+      gender: { type: "STRING" },
+      overallSummary: { type: "STRING" },
+      tests: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            testName: { type: "STRING" },
+            score: { type: "STRING" },
+            percentile: { type: "STRING" },
+            rating: { type: "STRING", enum: ['Needs Improvement', 'Average', 'Good', 'Excellent', 'Elite'] },
+            recommendation: { type: "STRING" },
+          },
+          required: ["testName", "score", "percentile", "rating", "recommendation"]
+        }
+      }
+    },
+    required: ["studentName", "age", "gender", "tests", "overallSummary"]
+  };
+
+  const response = await callAIBase({
+    model: 'gemini-flash-latest',
+    contents: `Assess fitness test result. 
+    Category: ${category}.
+    Test: ${testName}.
+    Result: ${value}.
+    Student: Age ${age}, ${gender}.`,
+    config: {
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `You are a professional Sports Scientist and Fitness Assessor. 
+      Be decisive and do not ask for clarification.
+      Task: Compare the provided test result to international standard norms (e.g. ACSM, NSCA).
+      Output JSON must be fully populated.
+      Calculate percentile and rating strictly based on standard age/gender norms.`,
+      responseMimeType: "application/json",
+      responseSchema: schema
+    }
+  });
+  return safeParseJson(response.text);
+};
+
 export const evaluateKheloIndiaScores = async (
   age: string,
   gender: string,
