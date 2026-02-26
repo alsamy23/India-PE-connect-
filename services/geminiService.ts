@@ -28,14 +28,16 @@ const callAIBase = async (payload: any, retries = 2) => {
         console.error("Could not parse error response as JSON", e);
       }
       
-      const errorMessage = errorData?.error || errorData?.message || responseText || `Server returned ${response.status}: ${response.statusText}`;
+      const errorMessage = typeof errorData?.error === 'string' ? errorData.error : (errorData?.error?.message || errorData?.message || responseText || `Server returned ${response.status}: ${response.statusText}`);
       
       // Handle Quota Exceeded (429)
-      if (response.status === 429) {
+      const isQuotaError = response.status === 429 || errorMessage.includes("429") || errorMessage.includes("RESOURCE_EXHAUSTED");
+      if (isQuotaError) {
         throw new Error("AI Quota Exceeded: You've reached the daily limit for the free version of Gemini. Please try again in a few hours or use a different API key with a paid project.");
       }
 
-      if (errorData?.code === "API_KEY_INVALID" || errorData?.code === "API_KEY_NOT_FOUND" || response.status === 401) {
+      const isInvalidKeyError = response.status === 401 || response.status === 400 || errorMessage.includes("API_KEY_INVALID") || errorMessage.includes("API key not valid");
+      if (isInvalidKeyError) {
         if (window.aistudio) {
           await window.aistudio.openSelectKey();
           return callAIBase(payload, 0);
@@ -308,6 +310,49 @@ export const generateYearlyPlan = async (
   };
 };
 
+export const generateMindMap = async (grade: string, chapter: string, board: BoardType): Promise<{
+  center: string;
+  branches: {
+    title: string;
+    description: string;
+    subTopics?: string[];
+  }[];
+}> => {
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      center: { type: "STRING" },
+      branches: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            title: { type: "STRING" },
+            description: { type: "STRING" },
+            subTopics: { type: "ARRAY", items: { type: "STRING" } }
+          },
+          required: ["title", "description"]
+        }
+      }
+    },
+    required: ["center", "branches"]
+  };
+
+  const response = await callAIBase({
+    model: 'gemini-flash-latest',
+    contents: `Generate a comprehensive mind map structure for CBSE Class ${grade} Physical Education Chapter: ${chapter}. 
+    Include ALL major topics and sub-topics from the latest 2025-2026 CBSE curriculum and NCERT textbook.
+    Provide 6-8 main branches with clear, academic titles and brief descriptions.`,
+    config: {
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: "You are a CBSE Physical Education Subject Matter Expert. Generate a structured, hierarchical mind map in JSON format. Ensure full coverage of the specified chapter according to the 2025-26 syllabus.",
+      responseMimeType: "application/json",
+      responseSchema: schema
+    }
+  });
+  return safeParseJson(response.text);
+};
+
 export const generateTheoryContent = async (grade: string, topic: string, board: BoardType, contentType: string, language: Language): Promise<TheoryContent> => {
   const schema = {
     type: "OBJECT",
@@ -339,7 +384,16 @@ export const generateTheoryContent = async (grade: string, topic: string, board:
     contents: `PE Theory Content. Grade ${grade} ${board}. Topic: ${topic}. Type: ${contentType}. Language: ${language}.${isCBSE12 ? ` Use context from ${contextUrl}` : ''}`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
-      systemInstruction: `Output valid JSON. Be decisive and do not ask for clarification. Content Language: ${language}. Ensure content is detailed and questions are relevant. ${isCBSE12 ? `IMPORTANT: Prioritize and summarize information from ${contextUrl} for this CBSE Class 12 request.` : ''}`,
+      systemInstruction: `You are an expert CBSE PE Teacher. Output valid JSON. 
+      Content Language: ${language}. 
+      
+      GUIDELINES:
+      1. Reference: Strictly follow NCERT and CBSE 2025-26 curriculum.
+      2. Style: For 'Notes', use the "shortest way for math-like understanding" - very logical, bulleted, and precise. Avoid fluff.
+      3. Case Studies: For 'CaseStudy', follow the latest board sample paper patterns (2024-25/2025-26). Include a scenario followed by 3-4 analytical questions.
+      4. MCQs: Ensure options are challenging and follow board patterns.
+      
+      ${isCBSE12 ? `IMPORTANT: Prioritize and summarize information from ${contextUrl} for this CBSE Class 12 request.` : ''}`,
       responseMimeType: "application/json",
       responseSchema: schema,
       tools: isCBSE12 ? [{ urlContext: {} }] : undefined

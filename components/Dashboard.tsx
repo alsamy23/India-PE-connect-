@@ -9,7 +9,9 @@ import {
   ChevronRight,
   Trophy,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  GraduationCap,
+  ArrowRight
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -27,8 +29,9 @@ const Dashboard: React.FC<{
   apiStatus?: 'checking' | 'ok' | 'missing',
   debugInfo?: any,
   onTestConnection?: () => Promise<void>,
-  isTesting?: boolean
-}> = ({ apiStatus, debugInfo, onTestConnection, isTesting }) => {
+  isTesting?: boolean,
+  onNavigate?: (tab: any) => void
+}> = ({ apiStatus, debugInfo, onTestConnection, isTesting, onNavigate }) => {
   return (
     <div className="space-y-10 animate-slide-up">
       {/* Hero Section */}
@@ -46,49 +49,23 @@ const Dashboard: React.FC<{
             SmartPE India is the first integrated digital platform built exclusively for Physical Education professionals in India.
           </p>
           
-          {apiStatus !== 'ok' && (
-            <div className="mb-8 p-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-[2rem] animate-pulse">
-              <div className="flex items-center space-x-3 mb-3">
-                <AlertTriangle className="text-orange-400" size={20} />
-                <h4 className="font-black text-sm uppercase tracking-widest">AI Connection Required</h4>
-              </div>
-              <p className="text-xs text-indigo-200 mb-4 font-medium">
-                To unlock AI lesson planning and fitness assessments, please configure your Gemini API key.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <button 
-                  onClick={() => (window as any).aistudio?.openSelectKey()}
-                  className="px-5 py-2.5 bg-orange-400 text-indigo-900 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-300 transition-all"
-                >
-                  Connect Now
-                </button>
-                <div className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-indigo-300">
-                  Or add <code className="text-white">GEMINI_API_KEY</code> to Env Variables
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-            {[
-              "Create curriculum-aligned lesson plans in minutes.",
-              "Access expert-led PE certification courses.",
-              "Track student fitness and assessment data effortlessly.",
-              "Collaborate with a growing national PE community."
-            ].map((feature, i) => (
-              <div key={i} className="flex items-start space-x-3 group">
-                <div className="mt-1 p-1 bg-orange-400 rounded-full group-hover:scale-110 transition-transform">
-                  <Sparkles size={10} className="text-indigo-900" />
-                </div>
-                <p className="text-sm text-indigo-50 font-medium">{feature}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="inline-block px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl">
-            <p className="text-sm font-bold tracking-wide text-orange-400 uppercase">
-              Less paperwork. More performance. Greater impact.
-            </p>
+          <div className="flex flex-wrap gap-4">
+             <button 
+                onClick={() => onNavigate?.('theory')}
+                className="px-8 py-4 bg-orange-400 text-indigo-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-300 transition-all flex items-center space-x-2 shadow-xl shadow-orange-500/20"
+              >
+                <GraduationCap size={18} />
+                <span>Theory Master (CBSE)</span>
+                <ArrowRight size={16} />
+              </button>
+              
+              <button 
+                onClick={() => onNavigate?.('planner')}
+                className="px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20 transition-all flex items-center space-x-2"
+              >
+                <Sparkles size={18} />
+                <span>AI Lesson Planner</span>
+              </button>
           </div>
         </div>
         
@@ -96,6 +73,26 @@ const Dashboard: React.FC<{
         <div className="absolute -right-20 -bottom-20 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px]"></div>
         <div className="absolute right-0 top-0 w-64 h-64 bg-orange-400/10 rounded-full blur-[80px]"></div>
       </div>
+
+      {apiStatus !== 'ok' && (
+        <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center space-x-4">
+            <div className="p-4 bg-orange-50 text-orange-500 rounded-2xl">
+              <AlertTriangle size={32} />
+            </div>
+            <div>
+              <h4 className="font-black text-lg text-slate-800 uppercase tracking-tight">AI Connection Required</h4>
+              <p className="text-sm text-slate-400 font-medium">Configure your Gemini API key to unlock full AI capabilities.</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => (window as any).aistudio?.openSelectKey()}
+            className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all"
+          >
+            Connect Now
+          </button>
+        </div>
+      )}
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

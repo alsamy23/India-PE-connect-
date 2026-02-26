@@ -193,7 +193,7 @@ const App: React.FC = () => {
     { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, isNew: true },
     { id: 'biomechanics', name: 'Visual Physics', icon: Microscope, isNew: true },
     { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true },
-    { id: 'theory', name: 'Theory Master', icon: GraduationCap },
+    { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap },
     { id: 'tools', name: 'AI Tool Center', icon: Wrench },
     { id: 'skillmastery', name: 'Skill Progressions', icon: Target },
     { id: 'compliance', name: 'State Compliance', icon: ShieldCheck },
@@ -401,6 +401,7 @@ const App: React.FC = () => {
               debugInfo={debugInfo}
               onTestConnection={handleTestConnection}
               isTesting={isTesting}
+              onNavigate={setActiveTab}
             />
           )}
           {activeTab === 'yearly' && <YearlyPlanner />}

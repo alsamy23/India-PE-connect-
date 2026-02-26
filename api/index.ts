@@ -116,7 +116,7 @@ apiRouter.post("/ai/generate", async (req, res) => {
       lastError = error;
       const errorMsg = error.message || "";
       const isQuotaError = errorMsg.includes("429") || error.status === 429 || errorMsg.includes("RESOURCE_EXHAUSTED");
-      const isInvalidKeyError = errorMsg.includes("400") || error.status === 400 || errorMsg.includes("API_KEY_INVALID");
+      const isInvalidKeyError = errorMsg.includes("400") || error.status === 400 || errorMsg.includes("API_KEY_INVALID") || errorMsg.includes("API key not valid");
 
       // If it's a quota error or invalid key, try the next key
       if (isQuotaError || isInvalidKeyError) {
