@@ -13,26 +13,45 @@ const PORT = 3000;
 app.use(express.json());
 
 // Secure Gemini API Initialization (Server-side only)
-const getAI = () => {
-  const sources = [
-    { name: "GEMINI_API_KEY", value: process.env.GEMINI_API_KEY },
-    { name: "API_KEY", value: process.env.API_KEY },
-    { name: "VITE_GEMINI_API_KEY", value: process.env.VITE_GEMINI_API_KEY }
-  ];
-
-  const found = sources.find(s => s.value && s.value.trim() !== "");
+const getAllKeys = () => {
+  const keys: string[] = [];
   
-  if (!found || !found.value) {
+  // Check standard names
+  const standardNames = ["GEMINI_API_KEY", "API_KEY", "VITE_GEMINI_API_KEY"];
+  standardNames.forEach(name => {
+    const val = process.env[name];
+    if (val && val.trim() !== "") {
+      keys.push(val.trim().replace(/^["']|["']$/g, ''));
+    }
+  });
+
+  // Check numbered keys (GEMINI_KEY_1, GEMINI_KEY_2, etc.)
+  for (let i = 1; i <= 10; i++) {
+    const key = process.env[`GEMINI_KEY_${i}`];
+    if (key && key.trim() !== "") {
+      keys.push(key.trim().replace(/^["']|["']$/g, ''));
+    }
+  }
+
+  // Remove duplicates
+  return [...new Set(keys)];
+};
+
+const getAI = (specificKey?: string) => {
+  const keys = getAllKeys();
+  
+  if (keys.length === 0) {
     console.warn("No Gemini API key found in environment variables.");
     return { ai: null, source: "none" };
   }
 
-  const cleanKey = found.value.trim().replace(/^["']|["']$/g, '');
-  console.log(`Using API key from ${found.name} (starts with ${cleanKey.substring(0, 4)}...)`);
+  const keyToUse = specificKey || keys[Math.floor(Math.random() * keys.length)];
+  const source = specificKey ? "Rotated Key" : "Random Key";
   
   return { 
-    ai: new GoogleGenAI({ apiKey: cleanKey }), 
-    source: found.name 
+    ai: new GoogleGenAI({ apiKey: keyToUse }), 
+    source: source,
+    key: keyToUse
   };
 };
 
@@ -69,28 +88,48 @@ apiRouter.get("/ai/test", async (req, res) => {
 });
 
 apiRouter.post("/ai/generate", async (req, res) => {
-  try {
-    const { model, contents, config } = req.body;
-    const { ai } = getAI();
-    
-    if (!ai) {
-      return res.status(500).json({ error: "Gemini API key not configured." });
-    }
-
-    const response = await ai.models.generateContent({
-      model: model || "gemini-1.5-flash",
-      contents,
-      config
-    });
-
-    // Explicitly include the text property as it might be a getter not included in JSON.stringify
-    res.json({
-      ...response,
-      text: response.text
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || "AI generation failed" });
+  const { model, contents, config } = req.body;
+  const keys = getAllKeys();
+  
+  if (keys.length === 0) {
+    return res.status(500).json({ error: "Gemini API key not configured." });
   }
+
+  // Shuffle keys to try them in random order
+  const shuffledKeys = [...keys].sort(() => Math.random() - 0.5);
+  let lastError: any = null;
+
+  for (const key of shuffledKeys) {
+    try {
+      const ai = new GoogleGenAI({ apiKey: key });
+      const response = await ai.models.generateContent({
+        model: model || "gemini-1.5-flash",
+        contents,
+        config
+      });
+
+      return res.json({
+        ...response,
+        text: response.text
+      });
+    } catch (error: any) {
+      lastError = error;
+      const errorMsg = error.message || "";
+      const isQuotaError = errorMsg.includes("429") || error.status === 429 || errorMsg.includes("RESOURCE_EXHAUSTED");
+      const isInvalidKeyError = errorMsg.includes("400") || error.status === 400 || errorMsg.includes("API_KEY_INVALID");
+
+      // If it's a quota error or invalid key, try the next key
+      if (isQuotaError || isInvalidKeyError) {
+        const reason = isQuotaError ? "quota limit" : "invalid key error";
+        console.warn(`Key starting with ${key.substring(0, 4)} hit ${reason}. Trying next key...`);
+        continue;
+      }
+      // For other critical errors, break and return
+      break;
+    }
+  }
+
+  res.status(500).json({ error: lastError?.message || "AI generation failed after trying all keys" });
 });
 
 // Mount API routes

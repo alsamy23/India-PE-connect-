@@ -22,7 +22,8 @@ import {
   Book,
   Activity,
   Network,
-  Award
+  Award,
+  Globe
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import CurriculumHub from './components/CurriculumHub.tsx';
@@ -38,7 +39,9 @@ import Biomechanics from './components/Biomechanics.tsx';
 import RulesBot from './components/RulesBot.tsx';
 import Disclaimer from './components/Disclaimer.tsx';
 
-type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules';
+import CommunityPlanner from './components/CommunityPlanner.tsx';
+
+type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'community';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -184,6 +187,7 @@ const App: React.FC = () => {
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
+    { id: 'community', name: 'Community Planner', icon: Globe, isNew: true },
     { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange },
     { id: 'planner', name: 'Lesson Planner', icon: Sparkles },
     { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, isNew: true },
@@ -404,6 +408,7 @@ const App: React.FC = () => {
           {activeTab === 'theory' && <TheoryHub />}
           {activeTab === 'curriculum' && <CurriculumHub />}
           {activeTab === 'planner' && <AIPlanner />}
+          {activeTab === 'community' && <CommunityPlanner />}
           {activeTab === 'skillmastery' && <SkillMastery />}
           {activeTab === 'compliance' && <ComplianceAdvisor />}
           {activeTab === 'networking' && <Networking />}
