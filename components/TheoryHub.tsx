@@ -15,7 +15,8 @@ import {
   ChevronRight,
   Zap,
   Target,
-  Search
+  Search,
+  ShieldCheck
 } from 'lucide-react';
 import { BoardType, TheoryContent, Language } from '../types.ts';
 import { generateTheoryContent, generateMindMap } from '../services/geminiService.ts';
@@ -256,7 +257,7 @@ const TheoryHub: React.FC = () => {
                     onClick={() => (window as any).aistudio?.openSelectKey()}
                     className="px-8 py-4 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center space-x-2"
                   >
-                    <GraduationCap size={16} />
+                    <ShieldCheck size={16} />
                     <span>Connect AI</span>
                   </button>
                 </div>
@@ -395,7 +396,7 @@ const TheoryHub: React.FC = () => {
                     onClick={() => (window as any).aistudio?.openSelectKey()}
                     className="px-8 py-4 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center space-x-2"
                   >
-                    <GraduationCap size={16} />
+                    <ShieldCheck size={16} />
                     <span>Connect AI</span>
                   </button>
                 </div>

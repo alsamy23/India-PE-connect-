@@ -46,7 +46,7 @@ type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 's
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'missing'>('checking');
+  const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'missing' | 'quota'>('checking');
   const [apiSource, setApiSource] = useState<string>('');
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [isTesting, setIsTesting] = useState(false);
@@ -90,6 +90,10 @@ const App: React.FC = () => {
         setApiSource(data.source || 'Environment');
         setDebugInfo(data);
         setIsKeyDialogOpen(false);
+      } else if (data.status === 'error' && (data.message?.includes('429') || data.message?.includes('quota'))) {
+        setApiStatus('quota');
+        setApiSource('');
+        setDebugInfo(data);
       } else {
         setApiStatus('missing');
         setApiSource('');
@@ -293,41 +297,40 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* API Status Badge - Hidden as requested */}
+        {/* API Status Badge - Interactive */}
         <div className="mx-6 mb-4">
           {apiStatus === 'ok' ? (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 flex items-center justify-between">
+            <button 
+              onClick={() => setIsKeyDialogOpen(true)}
+              className="w-full bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 flex items-center justify-between hover:bg-emerald-500/20 transition-all group"
+            >
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-500 animate-pulse">
-                  <Wifi size={16} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">AI Active</p>
-                  <p className="text-[9px] text-slate-400 font-medium">Source: {apiSource}</p>
-                </div>
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">AI Connected</span>
               </div>
-              <button 
-                onClick={handleResetKey}
-                className="p-1.5 hover:bg-emerald-500/20 rounded-lg text-emerald-500 transition-colors"
-                title="Change API Key"
-              >
-                <RotateCcw size={14} />
-              </button>
-            </div>
+              <Wifi size={12} className="text-emerald-500 group-hover:scale-110 transition-transform" />
+            </button>
+          ) : apiStatus === 'quota' ? (
+            <button 
+              onClick={() => setIsKeyDialogOpen(true)}
+              className="w-full bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex items-center justify-between hover:bg-amber-500/20 transition-all group"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.6)]"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Quota Exceeded</span>
+              </div>
+              <AlertTriangle size={12} className="text-amber-500 group-hover:scale-110 transition-transform" />
+            </button>
           ) : (
             <button 
-              onClick={handleSelectKey}
-              className="w-full bg-slate-800 border border-slate-700 rounded-2xl p-3 flex items-center space-x-3 hover:bg-slate-700 transition-colors group"
+              onClick={() => setIsKeyDialogOpen(true)}
+              className="w-full bg-rose-500/10 border border-rose-500/20 rounded-2xl p-3 flex items-center justify-between hover:bg-rose-500/20 transition-all group"
             >
-              <div className="p-2 bg-slate-700 rounded-xl text-slate-400 group-hover:text-white transition-colors">
-                <ShieldCheck size={16} />
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">AI Disconnected</span>
               </div>
-              <div className="text-left">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-white">AI Offline</p>
-                <p className="text-[9px] text-slate-500 font-medium">
-                  {!window.aistudio ? 'API Key Required in Vercel' : 'Click to connect'}
-                </p>
-              </div>
+              <AlertTriangle size={12} className="text-rose-500 group-hover:scale-110 transition-transform" />
             </button>
           )}
         </div>

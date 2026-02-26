@@ -26,7 +26,7 @@ const data = [
 ];
 
 const Dashboard: React.FC<{ 
-  apiStatus?: 'checking' | 'ok' | 'missing',
+  apiStatus?: 'checking' | 'ok' | 'missing' | 'quota',
   debugInfo?: any,
   onTestConnection?: () => Promise<void>,
   isTesting?: boolean,
