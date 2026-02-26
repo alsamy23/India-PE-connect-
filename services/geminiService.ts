@@ -196,7 +196,7 @@ export const generateLessonPlan = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-flash-latest',
     contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}, Duration: ${duration}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -279,7 +279,7 @@ export const generateYearlyPlan = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-flash-latest',
     contents: `Yearly PE Plan. Grade: ${grade}, Board: ${board}, Lang: ${language}. Start: ${startDate}. Terms: 2. Focus1: ${term1Focus}. Focus2: ${term2Focus}. Holidays: ${safeCalendarText}`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -335,7 +335,7 @@ export const generateTheoryContent = async (grade: string, topic: string, board:
   const contextUrl = "https://www.failures.in/p/physical-education-class-12-notes-pdf.html";
 
   const response = await callAIBase({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-flash-latest',
     contents: `PE Theory Content. Grade ${grade} ${board}. Topic: ${topic}. Type: ${contentType}. Language: ${language}.${isCBSE12 ? ` Use context from ${contextUrl}` : ''}`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -365,7 +365,7 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
   };
 
   const response = await callAIBase({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-flash-latest',
     contents: `PE Tool ${toolId}. Parameters: ${JSON.stringify(params)}.`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -414,7 +414,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
   };
 
   const response = await callAIBase({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-flash-latest',
     contents: `Skill progression: ${sport} - ${skill}`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -428,7 +428,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
 
 export const getStateRegulationInsights = async (state: string, board: BoardType) => {
   const response = await callAIBase({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-flash-latest',
     contents: `PE regulations for ${state} ${board}. Marks, Hours, Curriculum.`,
     config: { thinkingConfig: { thinkingLevel: "LOW" } }
   });
@@ -466,7 +466,7 @@ export const evaluateKheloIndiaScores = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-flash-latest',
     contents: `Assess fitness based on Khelo India Norms. 
     Student: Age ${age}, ${gender}.
     Tests Provided: ${JSON.stringify(tests)}.`,
@@ -503,7 +503,7 @@ export const explainBiomechanics = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-flash-latest',
     contents: `Explain biomechanics concept '${concept}' in '${sport}'. Language: ${language}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -517,7 +517,7 @@ export const explainBiomechanics = async (
 
 export const getSportsRule = async (sport: string, query: string, language: Language) => {
   const response = await callAIBase({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-flash-latest',
     contents: `Rule Check: ${sport}. Question: ${query}. Language: ${language}`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
