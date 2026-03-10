@@ -1,5 +1,4 @@
 import express from "express";
-import { GoogleGenAI } from "@google/genai";
 import "dotenv/config";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -9,167 +8,184 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3000;
+app.use(express.json({ limit: "10mb" }));
 
-app.use(express.json());
+const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_MODEL = "claude-sonnet-4-20250514";
 
-// Secure Gemini API Initialization (Server-side only)
-const getAllKeys = () => {
-  const keys: string[] = [];
-  
-  // Check standard names
-  const standardNames = ["GEMINI_API_KEY", "API_KEY", "VITE_GEMINI_API_KEY"];
-  standardNames.forEach(name => {
-    const val = process.env[name];
-    if (val && val.trim() !== "") {
-      keys.push(val.trim().replace(/^["']|["']$/g, ''));
-    }
+// ── Non-streaming call (used internally) ─────────────────────────────────
+const callClaude = async (systemPrompt: string, userPrompt: string): Promise<string> => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set in Vercel Environment Variables.");
+
+  const response = await fetch(ANTHROPIC_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    }),
   });
 
-  // Check numbered keys (GEMINI_KEY_1, GEMINI_KEY_2, etc.)
-  for (let i = 1; i <= 10; i++) {
-    const key = process.env[`GEMINI_KEY_${i}`];
-    if (key && key.trim() !== "") {
-      keys.push(key.trim().replace(/^["']|["']$/g, ''));
-    }
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Anthropic API error ${response.status}: ${errText}`);
   }
-
-  // Remove duplicates
-  return [...new Set(keys)];
+  const data: any = await response.json();
+  return data?.content?.[0]?.text || "";
 };
 
-const getAI = (specificKey?: string) => {
-  const keys = getAllKeys();
-  
-  if (keys.length === 0) {
-    console.warn("No Gemini API key found in environment variables.");
-    return { ai: null, source: "none" };
-  }
-
-  const keyToUse = specificKey || keys[Math.floor(Math.random() * keys.length)];
-  const source = specificKey ? "Rotated Key" : "Random Key";
-  
-  return { 
-    ai: new GoogleGenAI({ apiKey: keyToUse }), 
-    source: source,
-    key: keyToUse
-  };
+// ── Extract prompt from Gemini-style body ──────────────────────────────────
+const extractPrompt = (contents: any): string => {
+  if (typeof contents === "string") return contents;
+  if (contents?.parts) return contents.parts.map((p: any) => p.text || "").join("\n");
+  if (Array.isArray(contents))
+    return contents.map((c: any) =>
+      typeof c === "string" ? c : c.parts ? c.parts.map((p: any) => p.text || "").join("\n") : ""
+    ).join("\n");
+  return "";
 };
 
-// API Routes
+// ── Routes ──────────────────────────────────────────────────────────────────
 const apiRouter = express.Router();
 
-apiRouter.get("/health", (req, res) => {
+apiRouter.get("/health", (_req, res) => {
+  const hasKey = !!process.env.ANTHROPIC_API_KEY;
+  res.json({ status: hasKey ? "ok" : "missing_key", provider: "claude", model: ANTHROPIC_MODEL, hasKey });
+});
+
+apiRouter.get("/ai/test", async (_req, res) => {
   try {
-    const { ai, source } = getAI();
-    res.json({ 
-      status: ai ? "ok" : "missing",
-      source: source,
-      env: process.env.NODE_ENV,
-      hasKey: !!ai
-    });
+    const text = await callClaude("You are a helpful assistant.", "Say exactly: Claude Connection Successful");
+    return res.json({ message: text, provider: "claude" });
   } catch (err: any) {
-    res.status(500).json({ status: "error", message: err.message });
+    return res.status(500).json({ error: err.message });
   }
 });
 
-apiRouter.get("/ai/test", async (req, res) => {
-  try {
-    const { ai } = getAI();
-    if (!ai) return res.status(401).json({ error: "No API key found" });
-    
-    const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
-      contents: "Say 'Connection Successful'"
+// ── Streaming generate endpoint ──────────────────────────────────────────────
+apiRouter.post("/ai/generate", async (req: express.Request, res: express.Response) => {
+  const { contents, config } = req.body;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    return res.status(500).json({
+      error: "ANTHROPIC_API_KEY is not set. Please add it in Vercel → Settings → Environment Variables.",
     });
-    res.json({ message: response.text });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || "Test failed" });
-  }
-});
-
-apiRouter.post("/ai/generate", async (req, res) => {
-  const { model, contents, config } = req.body;
-  const keys = getAllKeys();
-  
-  if (keys.length === 0) {
-    return res.status(500).json({ error: "Gemini API key not configured." });
   }
 
-  // Shuffle keys to try them in random order
-  const shuffledKeys = [...keys].sort(() => Math.random() - 0.5);
-  let lastError: any = null;
+  const userPrompt = extractPrompt(contents);
+  const systemBase = config?.systemInstruction || "You are a helpful Physical Education assistant for Indian teachers.";
+  const expectJson = config?.responseMimeType === "application/json";
 
-  for (const key of shuffledKeys) {
+  const systemPrompt = expectJson
+    ? systemBase + "\n\nCRITICAL: Respond ONLY with a valid JSON object. No explanation, no markdown code fences (```), no extra text. Just raw JSON starting with { and ending with }."
+    : systemBase;
+
+  // Use streaming for all requests
+  const wantsStream = req.headers["accept"] === "text/event-stream";
+
+  if (wantsStream) {
+    // SSE streaming mode
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
     try {
-      const ai = new GoogleGenAI({ apiKey: key });
-      const response = await ai.models.generateContent({
-        model: model || "gemini-flash-latest",
-        contents,
-        config
+      const upstream = await fetch(ANTHROPIC_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: ANTHROPIC_MODEL,
+          max_tokens: 4096,
+          stream: true,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userPrompt }],
+        }),
       });
 
-      return res.json({
-        ...response,
-        text: response.text
-      });
-    } catch (error: any) {
-      lastError = error;
-      const errorMsg = error.message || "";
-      const isQuotaError = errorMsg.includes("429") || error.status === 429 || errorMsg.includes("RESOURCE_EXHAUSTED");
-      const isInvalidKeyError = errorMsg.includes("400") || error.status === 400 || errorMsg.includes("API_KEY_INVALID") || errorMsg.includes("API key not valid");
-
-      // If it's a quota error or invalid key, try the next key
-      if (isQuotaError || isInvalidKeyError) {
-        const reason = isQuotaError ? "quota limit" : "invalid key error";
-        console.warn(`Key starting with ${key.substring(0, 4)} hit ${reason}. Trying next key...`);
-        continue;
+      if (!upstream.ok) {
+        const errText = await upstream.text();
+        res.write(`data: ${JSON.stringify({ error: `Anthropic API error ${upstream.status}: ${errText}` })}\n\n`);
+        res.end();
+        return;
       }
-      // For other critical errors, break and return
-      break;
+
+      const reader = upstream.body!.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(jsonStr);
+              if (parsed.type === "content_block_delta" && parsed.delta?.text) {
+                fullText += parsed.delta.text;
+                res.write(`data: ${JSON.stringify({ delta: parsed.delta.text, text: fullText })}\n\n`);
+              }
+            } catch (_) {}
+          }
+        }
+      }
+
+      res.write(`data: ${JSON.stringify({ done: true, text: fullText, provider: "claude" })}\n\n`);
+      res.end();
+    } catch (err: any) {
+      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.end();
+    }
+  } else {
+    // Regular JSON mode (for JSON/structured outputs)
+    try {
+      const text = await callClaude(systemPrompt, userPrompt);
+      return res.json({ text, provider: "claude", model: ANTHROPIC_MODEL });
+    } catch (err: any) {
+      console.error("Claude API error:", err.message);
+      return res.status(500).json({ error: err.message || "AI generation failed." });
     }
   }
-
-  res.status(500).json({ error: lastError?.message || "AI generation failed after trying all keys" });
 });
 
-// Mount API routes
 app.use("/api", apiRouter);
 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
-    console.log("Starting in development mode with Vite middleware...");
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
-      server: { 
-        middlewareMode: true,
-        hmr: { port: 24679 } // Use a different port for HMR to avoid conflicts
-      },
+      server: { middlewareMode: true, hmr: { port: 24679 } },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    console.log("Starting in production mode...");
     const distPath = path.resolve(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get(/.*/, (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+    app.get(/.*/, (_req, res) => res.sendFile(path.join(distPath, "index.html")));
   }
-
-  // Error handler for API
-  app.use("/api", (req, res) => {
-    res.status(404).json({ error: "API endpoint not found" });
-  });
 
   if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`✅ Server on http://localhost:${PORT} — AI: Claude ${ANTHROPIC_MODEL}`);
     });
   }
 }
 
-startServer().catch(err => {
-  console.error("Failed to start server:", err);
-});
-
+startServer().catch(console.error);
 export default app;
