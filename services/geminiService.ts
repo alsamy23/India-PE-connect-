@@ -167,13 +167,170 @@ Output language: ${language}. 2 terms. Populate all arrays fully.`,
 };
 
 // ── Mind Map ─────────────────────────────────────────────────────────────────
+// ── CBSE 2025-26 Exact Curriculum Data from Official PDF ──────────────────
+const CBSE_CURRICULUM: Record<string, Record<string, string[]>> = {
+  "11": {
+    "Changing Trends & Career in Physical Education": [
+      "Concept, Aims & Objectives of Physical Education",
+      "Development of Physical Education in India – Post Independence",
+      "Changing Trends in Sports – playing surface, wearable gear, sports equipment, technological advancements",
+      "Career options in Physical Education",
+      "Khelo-India Program and Fit-India Program"
+    ],
+    "Olympic Value Education": [
+      "Olympism – Concept and Olympics Values (Excellence, Friendship & Respect)",
+      "Olympic Value Education – Joy of Effort, Fair Play, Respect for Others, Pursuit of Excellence, Balance Among Body, Will & Mind",
+      "Ancient and Modern Olympics",
+      "Olympics – Symbols, Motto, Flag, Oath, and Anthem",
+      "Olympic Movement Structure – IOC, NOC, IFS, Other members"
+    ],
+    "Yoga": [
+      "Meaning and importance of Yoga",
+      "Introduction to Astanga Yoga",
+      "Yogic Kriyas (Shat Karma)",
+      "Pranayama and its types",
+      "Active Lifestyle and stress management through Yoga"
+    ],
+    "Physical Education & Sports for CWSN": [
+      "Concept of Disability and Disorder",
+      "Types of Disability, its causes & nature (Intellectual disability, Physical disability)",
+      "Disability Etiquette",
+      "Aim and objectives of Adaptive Physical Education",
+      "Role of various professionals for CWSN (Counselor, Occupational Therapist, Physiotherapist, PE Teacher, Speech Therapist, Special Educator)"
+    ],
+    "Physical Fitness, Wellness": [
+      "Meaning & importance of Wellness, Health, and Physical Fitness",
+      "Components/Dimensions of Wellness, Health, and Physical Fitness",
+      "Traditional Sports & Regional Games for promoting wellness",
+      "Leadership through Physical Activity and Sports",
+      "Introduction to First Aid – PRICE"
+    ],
+    "Test, Measurements & Evaluation": [
+      "Define Test, Measurements and Evaluation",
+      "Importance of Test, Measurements and Evaluation in Sports",
+      "Calculation of BMI, Waist-Hip Ratio, Skin fold measurement (3-site)",
+      "Somato Types (Endomorphy, Mesomorphy & Ectomorphy)",
+      "Measurements of health-related fitness – BMI computation"
+    ],
+    "Fundamentals of Anatomy and Physiology in Sports": [
+      "Definition and importance of Anatomy and Physiology in Exercise and Sports",
+      "Functions of Skeletal System, Classification of Bones, and Types of Joints",
+      "Properties and Functions of Muscles",
+      "Structure and Functions of Circulatory System and Heart",
+      "Structure and Functions of Respiratory System"
+    ],
+    "Fundamentals of Kinesiology and Biomechanics in Sports": [
+      "Definition and Importance of Kinesiology and Biomechanics in Sports",
+      "Principles of Biomechanics",
+      "Kinetics and Kinematics in Sports",
+      "Types of Body Movements – Flexion, Extension, Abduction, Adduction, Rotation, Circumduction, Supination & Pronation",
+      "Axis and Planes – Concept and its application in body movements"
+    ],
+    "Psychology and Sports": [
+      "Definition & Importance of Psychology in Physical Education & Sports",
+      "Developmental Characteristics at Different Stages of Development",
+      "Adolescent Problems & their Management",
+      "Team Cohesion and Sports",
+      "Psychological Attributes: Attention, Resilience, Mental Toughness"
+    ],
+    "Training & Doping in Sports": [
+      "Concept and Principles of Sports Training",
+      "Training Load: Over Load, Adaptation, and Recovery",
+      "Warming-up & Limbering Down – Types, Method & Importance",
+      "Concept of Skill, Technique, Tactics & Strategies",
+      "Concept of Doping and its disadvantages"
+    ]
+  },
+  "12": {
+    "Management of Sporting Events": [
+      "Functions of Sports Events Management (Planning, Organising, Staffing, Directing & Controlling)",
+      "Various Committees & their Responsibilities (pre, during & post)",
+      "Fixtures and their Procedures – Knock-Out (Bye & Seeding) & League (Staircase, Cyclic, Tabular method) and Combination tournaments",
+      "Intramural & Extramural tournaments – Meaning, Objectives & Its Significance",
+      "Community sports program (Sports Day, Health Run, Run for Fun, Run for Specific Cause & Run for Unity)"
+    ],
+    "Children and Women in Sports": [
+      "Exercise guidelines of WHO for different age groups",
+      "Common postural deformities – knock knees, flat foot, round shoulders, Lordosis, Kyphosis, Scoliosis, bow legs and corrective measures",
+      "Women's participation in Sports – Physical, Psychological, and social benefits",
+      "Special consideration (menarche and menstrual dysfunction)",
+      "Female athlete triad (osteoporosis, amenorrhea, eating disorders)"
+    ],
+    "Yoga as Preventive measure for Lifestyle Disease": [
+      "Obesity – Asanas: Tadasana, Katichakrasana, Pavanmuktasana, Matsayasana, Halasana, Pachimottanasana, Ardha-Matsyendrasana, Dhanurasana, Ushtrasana, Suryabedhan pranayama",
+      "Diabetes – Asanas: Katichakrasana, Pavanmuktasana, Bhujangasana, Shalabhasana, Dhanurasana, Suptavajarasana, Paschimottanasana, ArdhaMastendrasan, Mandukasana, Gomukasana, Yogmudra, Ushtrasana, Kapalabhati",
+      "Asthma – Asanas: Tadasana, Urdhwahastottansana, UttanMandukasana, Bhujangasana, Dhanurasana, Ushtrasana, Vakrasana, Kapalbhati, Gomukhasana, Matsyaasana, Anuloma-Viloma",
+      "Hypertension – Asanas: Tadasana, Katichakransan, Uttanpadasana, Ardha Halasana, Sarala Matyasana, Gomukhasana, UttanMandukasana, Vakrasana, Bhujangasana, Makarasana, Shavasana",
+      "Back Pain and Arthritis – Asanas: Tadasana, Urdhawahastootansana, ArdhChakrasana, Ushtrasana, Vakrasana, Sarala Maysyendrsana, Bhujangasana, Gomukhasana, Bhadrasana, Makarasana, NadiShodhanapranayama"
+    ],
+    "Physical Education & Sports for (CWSN)": [
+      "Organisations promoting Disability Sports (Special Olympics, Paralympics, Deaflympics)",
+      "Concept of Classification and Divisioning in Sports",
+      "Concept of Inclusion in sports, its need, and Implementation",
+      "Advantages of Physical Activities for children with special needs",
+      "Strategies to make Physical Activities accessible for children with special needs"
+    ],
+    "Sports & Nutrition": [
+      "Concept of balanced diet and nutrition",
+      "Macro and Micro Nutrients: Food sources & functions",
+      "Nutritive & Non-Nutritive Components of Diet",
+      "Eating for Weight control – A Healthy Weight, The Pitfalls of Dieting, Food Intolerance, and Food Myths",
+      "Importance of Diet in Sports – Pre, During and Post competition Requirements"
+    ],
+    "Test and Measurement in Sports": [
+      "Fitness Test – SAI Khelo India Fitness Test in school (Age group 5-8 years/class 1-3: BMI, Flamingo Balance Test, Plate Tapping Test; Age group 9-18yrs/class 4-12: BMI, 50mt Speed test, 600mt Run/Walk, Sit & Reach, Strength Test)",
+      "Measurement of Cardio-Vascular Fitness – Harvard Step Test",
+      "Computing Basal Metabolic Rate (BMR)",
+      "Rikli & Jones – Senior Citizen Fitness Test (Chair Stand, Arm Curl, Chair Sit & Reach, Back Scratch, Eight Foot Up & Go, Six-Minute Walk Test)",
+      "Johnsen-Methney Test of Motor Educability (Front Roll, Back Roll, Jumping Half-Turn, Jumping full-turn)"
+    ],
+    "Physiology & Injuries in Sport": [
+      "Physiological factors determining components of physical fitness",
+      "Effect of exercise on the Muscular System",
+      "Effect of exercise on the Cardio-Respiratory System",
+      "Physiological changes due to aging",
+      "Sports injuries: Classification – Soft Tissue Injuries (Abrasion, Contusion, Laceration, Incision, Sprain & Strain), Bone & Joint Injuries (Dislocation, Fractures – Green Stick, Comminuted, Transverse, Oblique & Impacted)"
+    ],
+    "Biomechanics and Sports": [
+      "Newton\'s Law of Motion & its application in sports",
+      "Types of Levers and their application in Sports",
+      "Equilibrium – Dynamic & Static and Centre of Gravity and its application in sports",
+      "Friction & Sports",
+      "Projectile in Sports"
+    ],
+    "Psychology and Sports": [
+      "Personality; its definition & types (Jung Classification & Big Five Theory)",
+      "Motivation, its type & techniques",
+      "Exercise Adherence: Reasons, Benefits & Strategies for Enhancing it",
+      "Meaning, Concept & Types of Aggressions in Sports",
+      "Psychological Attributes in Sports – Self-Esteem, Mental Imagery, Self-Talk, Goal Setting"
+    ],
+    "Training in Sports": [
+      "Concept of Talent Identification and Talent Development in Sports",
+      "Introduction to Sports Training Cycle – Micro, Meso, Macro Cycle",
+      "Types & Methods to Develop – Strength, Endurance, and Speed",
+      "Types & Methods to Develop – Flexibility and Coordinative Ability",
+      "Circuit Training – Introduction & its importance"
+    ]
+  }
+};
+
 export const generateMindMap = async (grade: string, chapter: string, board: BoardType) => {
+  // Get exact topics from official CBSE 2025-26 curriculum
+  const gradeKey = grade === "11" ? "11" : "12";
+  const exactTopics = CBSE_CURRICULUM[gradeKey]?.[chapter] || [];
+  const topicsContext = exactTopics.length > 0
+    ? `EXACT TOPICS from CBSE 2025-26 official curriculum for this chapter:\n${exactTopics.map((t, i) => `${i+1}. ${t}`).join("\n")}`
+    : `Chapter: ${chapter}`;
+
   const response = await callAIBase({
     model: "claude-sonnet",
-    contents: `Mind map for CBSE Class ${grade} PE Chapter: ${chapter}. Board: ${board}.`,
+    contents: `Generate detailed mind map for CBSE Class ${grade} PE Chapter: "${chapter}".\n\n${topicsContext}`,
     config: {
-      systemInstruction: `Return JSON: { center: string, branches: [{ title, description, subTopics?: string[] }] }
-6-8 main branches. Follow NCERT 2025-26 curriculum.`,
+      systemInstruction: `You are a CBSE Physical Education expert. Return JSON: { center: string, branches: [{ title, description, subTopics?: string[] }] }
+CRITICAL: Use EXACTLY the topics listed above — these are from the official CBSE 2025-26 curriculum PDF.
+Each topic from the list must become one branch. Add 2-4 specific subTopics per branch based on that topic.
+Do NOT invent topics not in the curriculum. Be accurate and exam-focused.`,
       responseMimeType: "application/json",
     },
   });
@@ -184,12 +341,30 @@ export const generateMindMap = async (grade: string, chapter: string, board: Boa
 export const generateTheoryContent = async (
   grade: string, topic: string, board: BoardType, contentType: string, language: Language
 ): Promise<TheoryContent> => {
+  // Get exact curriculum context for this topic
+  const gradeKey = grade === "11" ? "11" : "12";
+  let exactContext = "";
+  for (const [chapter, topics] of Object.entries(CBSE_CURRICULUM[gradeKey] || {})) {
+    const match = (topics as string[]).find(t => t.toLowerCase().includes(topic.toLowerCase()) || topic.toLowerCase().includes(chapter.toLowerCase().split(" ")[0]));
+    if (match || chapter.toLowerCase().includes(topic.toLowerCase().split(" ")[0])) {
+      exactContext = `This topic is from Chapter: "${chapter}"\nExact curriculum topics: ${(topics as string[]).join("; ")}`;
+      break;
+    }
+  }
+
   const response = await callAIBase({
     model: "claude-sonnet",
-    contents: `PE Theory Content. Grade ${grade} ${board}. Topic: ${topic}. Type: ${contentType}. Language: ${language}.`,
+    contents: `CBSE Class ${grade} PE ${contentType}: "${topic}". Language: ${language}.${exactContext ? "\n\nCurriculum Context: " + exactContext : ""}`,
     config: {
-      systemInstruction: `Expert CBSE PE Teacher. Return JSON: { title, contentType, content, questions: [{ question, answer, type }] }
-Content Language: ${language}. Follow NCERT 2025-26. For Notes: bulleted, logical. For MCQ: challenging board-pattern options. For CaseStudy: scenario + 3-4 analytical questions.`,
+      systemInstruction: `Expert CBSE PE Teacher (2025-26 syllabus). Return JSON: { title, contentType, content, questions: [{ question, answer, type }] }
+STRICT RULES:
+- Follow CBSE 2025-26 official curriculum EXACTLY
+- Content Language: ${language}
+- For Notes: Use exam-focused bullet points, define key terms, include mark-wise important points (1-mark, 3-mark, 5-mark patterns)
+- For MCQ: 5 questions, 4 options each, include answers, follow CBSE board exam pattern
+- For CaseStudy: Real scenario + 4 analytical questions as per latest CBSE board paper pattern (2024-25/2025-26)
+- Include weightage marks for the topic if known
+- Be 100% accurate to NCERT textbook content`,
       responseMimeType: "application/json",
     },
   });
