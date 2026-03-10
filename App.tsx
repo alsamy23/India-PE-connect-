@@ -22,7 +22,10 @@ import {
   Microscope,
   Book,
   Activity,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  Zap,
+  Mail
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import CurriculumHub from './components/CurriculumHub.tsx';
