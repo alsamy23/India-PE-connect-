@@ -16,11 +16,13 @@ import {
   AlertTriangle,
   CalendarRange,
   RotateCcw,
+  Loader2,
   GraduationCap,
   Trophy,
   Microscope,
   Book,
-  Activity
+  Activity,
+  AlertCircle
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import CurriculumHub from './components/CurriculumHub.tsx';
@@ -36,13 +38,18 @@ import Biomechanics from './components/Biomechanics.tsx';
 import RulesBot from './components/RulesBot.tsx';
 import FitnessTests from './components/FitnessTests.tsx';
 import Disclaimer from './components/Disclaimer.tsx';
+import ReportCard from './components/ReportCard.tsx';
+import SubstitutePlan from './components/SubstitutePlan.tsx';
+import SportsDayPlanner from './components/SportsDayPlanner.tsx';
+import ParentCommunication from './components/ParentCommunication.tsx';
 
-type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'fitness';
+type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'fitness' | 'reportcard' | 'substitute' | 'sportsday' | 'parentcomms';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'missing' | 'quota'>('checking');
+  const [aiProviders, setAiProviders] = useState<{ gemini: boolean, groq: boolean }>({ gemini: false, groq: false });
   const [apiSource, setApiSource] = useState<string>('');
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [isTesting, setIsTesting] = useState(false);
@@ -59,14 +66,13 @@ const App: React.FC = () => {
   const checkApiStatus = async (retryCount = 0) => {
     try {
       console.log("Checking API health...");
-      const response = await fetch('/api/health');
+      const response = await fetch(`/api/health?t=${Date.now()}`); // Cache busting
+      const text = await response.text();
       
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
         console.error("Health check returned non-JSON response:", text);
         
-        // If we get HTML, it might be Vite still starting up. Retry once.
         if (retryCount < 3) {
           console.log(`Retrying health check (${retryCount + 1}/3)...`);
           setTimeout(() => checkApiStatus(retryCount + 1), 2000);
@@ -78,28 +84,38 @@ const App: React.FC = () => {
         return;
       }
 
-      const data = await response.json();
+      const data = JSON.parse(text);
       console.log("API Health Data:", data);
       
       if (data.status === 'ok') {
         setApiStatus('ok');
-        setApiSource(data.source || 'Environment');
+        setAiProviders({ gemini: data.hasKey || false, groq: false });
+        setApiSource('Claude');
         setDebugInfo(data);
-        setIsKeyDialogOpen(false);
-      } else if (data.status === 'error' && (data.message?.includes('429') || data.message?.includes('quota'))) {
+        // If we were missing a key and now have one, close the dialog
+        if (isKeyDialogOpen && data.hasKey) {
+          setIsKeyDialogOpen(false);
+        }
+      } else if (data.status === 'error' && (data.message?.toLowerCase().includes('429') || data.message?.toLowerCase().includes('quota'))) {
         setApiStatus('quota');
+        setAiProviders({ gemini: false, groq: false });
         setApiSource('');
+        setDebugInfo(data);
+      } else if (data.status === 'error' && (
+        data.message?.toLowerCase().includes('expired') || 
+        data.message?.toLowerCase().includes('renew') || 
+        data.message?.toLowerCase().includes('invalid') ||
+        data.message?.toLowerCase().includes('not valid')
+      )) {
+        setApiStatus('missing'); 
+        setAiProviders({ gemini: false, groq: false });
+        setApiSource('Expired Key');
         setDebugInfo(data);
       } else {
         setApiStatus('missing');
+        setAiProviders({ gemini: false, groq: false });
         setApiSource('');
         setDebugInfo(data);
-        
-        // If we are in AI Studio and key is missing, we can try to prompt
-        if (window.aistudio && retryCount === 0) {
-           // Don't auto-open, but maybe show a hint
-           console.warn("AI Key missing in environment. User may need to select a key.");
-        }
       }
     } catch (error: any) {
       console.error("Health check failed:", error);
@@ -115,7 +131,7 @@ const App: React.FC = () => {
   useEffect(() => {
     checkApiStatus();
     
-    // Periodically check if key was selected if we're still missing it
+    // Check if key was selected if we're still missing it, but less frequently
     const interval = setInterval(async () => {
       if (apiStatus === 'missing' && window.aistudio) {
         const hasKey = await window.aistudio.hasSelectedApiKey();
@@ -123,26 +139,24 @@ const App: React.FC = () => {
           checkApiStatus();
         }
       }
-    }, 5000);
+    }, 10000); // 10 seconds is enough
     
     return () => clearInterval(interval);
-  }, [apiStatus]);
+  }, []); // Only run once on mount
 
   const handleSelectKey = async () => {
     if (window.aistudio) {
-      setIsKeyDialogOpen(true);
+      await window.aistudio.openSelectKey();
+      // Assume success as per guidelines
+      setApiStatus('ok');
+      setIsKeyDialogOpen(false);
+      // Re-check health after a short delay to be sure
+      setTimeout(checkApiStatus, 3000);
     }
   };
 
   const triggerKeySelector = async () => {
-    if (window.aistudio) {
-      await window.aistudio.openSelectKey();
-      // After opening, we assume success and try to proceed
-      setApiStatus('ok');
-      setIsKeyDialogOpen(false);
-      // Re-check health after a short delay to be sure
-      setTimeout(checkApiStatus, 2000);
-    }
+    await handleSelectKey();
   };
 
   const handleTestConnection = async () => {
@@ -150,14 +164,13 @@ const App: React.FC = () => {
     setGlobalError(null);
     try {
       const response = await fetch('/api/ai/test');
+      const text = await response.text();
       
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
         throw new Error(`Server returned non-JSON response: ${text.substring(0, 50)}...`);
       }
 
-      const text = await response.text();
       if (!text) throw new Error("Empty response from server");
       
       const data = JSON.parse(text);
@@ -198,6 +211,10 @@ const App: React.FC = () => {
     { id: 'skillmastery', name: 'Skill Progressions', icon: Target },
     { id: 'compliance', name: 'State Compliance', icon: ShieldCheck },
     { id: 'curriculum', name: 'Library Hub', icon: BookOpen },
+    { id: 'reportcard', name: 'Report Card Generator', icon: FileText, isNew: true },
+    { id: 'substitute', name: 'Substitute Plan', icon: Zap, isNew: true },
+    { id: 'sportsday', name: 'Sports Day Planner', icon: Trophy, isNew: true },
+    { id: 'parentcomms', name: 'Parent Letters', icon: Mail, isNew: true },
     { id: 'networking', name: 'Coach Community', icon: Users },
   ];
 
@@ -219,39 +236,71 @@ const App: React.FC = () => {
             <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">AI Setup Guide</h2>
             
             <div className="space-y-6 mb-8">
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <p className="text-sm font-bold text-slate-900 mb-2 flex items-center">
-                  <span className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] mr-2">1</span>
-                  Option A: Quick Selection
+              <div className="p-5 bg-indigo-50 rounded-3xl border-2 border-indigo-100 shadow-sm">
+                <p className="text-sm font-black text-indigo-900 mb-3 flex items-center">
+                  <span className="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-xs mr-3 shadow-lg shadow-indigo-200">1</span>
+                  Option A: Paid Gemini Key (Primary)
                 </p>
-                <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                  Best for users with a Google Cloud project. Click below to choose your key.
+                <p className="text-xs text-indigo-700 mb-5 leading-relaxed font-medium">
+                  The standard AI engine. If you see "Expired Key" or "Quota" errors, click below to renew, select, or upgrade to a key from a paid project.
                 </p>
                 <button 
                   onClick={triggerKeySelector}
-                  className="w-full py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
+                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center space-x-3"
                 >
-                  Open Key Selector
+                  <Sparkles size={18} />
+                  <span>Renew / Upgrade to Paid Key</span>
                 </button>
-                <p className="text-[10px] text-slate-400 mt-2 italic">
-                  Note: Requires a project with billing enabled for some models.
-                </p>
               </div>
 
-              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                <p className="text-sm font-bold text-emerald-900 mb-2 flex items-center">
-                  <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[10px] mr-2">2</span>
-                  Option B: Manual Setup (Recommended)
+              <div className="p-5 bg-orange-50 rounded-3xl border-2 border-orange-100 shadow-sm">
+                <p className="text-sm font-black text-orange-900 mb-3 flex items-center">
+                  <span className="w-8 h-8 bg-orange-600 text-white rounded-xl flex items-center justify-center text-xs mr-3 shadow-lg shadow-orange-200">2</span>
+                  Option B: Groq Key (Recommended Fallback)
                 </p>
-                <p className="text-xs text-emerald-700 mb-3 leading-relaxed">
-                  If the selector fails, you can add your key manually:
+                <div className="mb-4 p-3 bg-white/80 rounded-2xl border border-orange-200">
+                  <p className="text-[11px] text-orange-800 font-black flex items-center mb-1">
+                    <AlertCircle size={14} className="mr-2" />
+                    GETTING A "NO PAID PROJECT" ERROR?
+                  </p>
+                  <p className="text-[10px] text-orange-700 leading-tight">
+                    If Gemini shows a "No Paid Project" error, skip it! Use Groq instead—it's free, 10x faster, and doesn't require a paid Google account.
+                  </p>
+                </div>
+                <p className="text-xs text-orange-800 mb-4 leading-relaxed font-medium">
+                  <b>Best for speed!</b> Groq works when Gemini is busy or restricted.
                 </p>
-                <ol className="text-[11px] text-emerald-600 space-y-1.5 list-decimal ml-4 font-medium">
-                  <li>Find the <b>Environment Variables</b> section in the AI Studio sidebar.</li>
-                  <li>Add a new variable named <b>GEMINI_API_KEY</b>.</li>
-                  <li>Paste your API key as the value.</li>
-                  <li>The app will detect it automatically in 5-10 seconds.</li>
-                </ol>
+                <div className="bg-white/50 p-4 rounded-2xl mb-5 space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-5 h-5 bg-orange-200 text-orange-700 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">1</div>
+                    <p className="text-[11px] text-orange-700 font-bold">Get a free key at <a href="https://console.groq.com/" target="_blank" rel="noopener noreferrer" className="underline decoration-2 underline-offset-2">console.groq.com</a></p>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-5 h-5 bg-orange-200 text-orange-700 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">2</div>
+                    <p className="text-[11px] text-orange-700 font-bold">In the <b>AI Studio sidebar</b> (left), click the <b>Environment Variables</b> icon.</p>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-5 h-5 bg-orange-200 text-orange-700 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">3</div>
+                    <p className="text-[11px] text-orange-700 font-bold">Add Name: <code className="bg-orange-100 px-1.5 py-0.5 rounded text-orange-900">GROQ_API_KEY</code> and paste your key.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={handleTestConnection}
+                    disabled={isTesting}
+                    className="py-3 bg-white border-2 border-orange-200 text-orange-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-100 transition-all flex items-center justify-center space-x-2"
+                  >
+                    {isTesting ? <Loader2 className="animate-spin" size={14} /> : <RotateCcw size={14} />}
+                    <span>{isTesting ? 'Verifying...' : 'Verify'}</span>
+                  </button>
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="py-3 bg-orange-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all flex items-center justify-center space-x-2"
+                  >
+                    <RotateCcw size={14} />
+                    <span>Force Refresh</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -302,7 +351,14 @@ const App: React.FC = () => {
             >
               <div className="flex items-center space-x-3">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">AI Connected</span>
+                <div className="flex flex-col items-start">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">AI Connected</span>
+                  <div className="flex items-center space-x-1">
+                    {aiProviders.gemini && <span className="text-[8px] font-bold text-indigo-400 uppercase">Claude AI</span>}
+                    
+                    
+                  </div>
+                </div>
               </div>
               <Wifi size={12} className="text-emerald-500 group-hover:scale-110 transition-transform" />
             </button>
@@ -382,7 +438,13 @@ const App: React.FC = () => {
               <AlertTriangle className="flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-sm font-black uppercase tracking-tight">System Error Detected</p>
-                <p className="text-xs font-medium opacity-80">{globalError}</p>
+                <p className="text-xs font-medium opacity-80 mb-2">{globalError}</p>
+                <button 
+                  onClick={() => setIsKeyDialogOpen(true)}
+                  className="px-4 py-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+                >
+                  Setup AI / Fix Connection
+                </button>
               </div>
               <button 
                 onClick={() => setGlobalError(null)}
@@ -415,6 +477,10 @@ const App: React.FC = () => {
           {activeTab === 'biomechanics' && <Biomechanics />}
           {activeTab === 'rules' && <RulesBot />}
           {activeTab === 'fitness' && <FitnessTests />}
+          {activeTab === 'reportcard' && <ReportCard />}
+          {activeTab === 'substitute' && <SubstitutePlan />}
+          {activeTab === 'sportsday' && <SportsDayPlanner />}
+          {activeTab === 'parentcomms' && <ParentCommunication />}
         </div>
         <Disclaimer />
       </main>
