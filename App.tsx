@@ -25,7 +25,8 @@ import {
   AlertCircle,
   FileText,
   Zap,
-  Mail
+  Mail,
+  MessageSquare
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import CurriculumHub from './components/CurriculumHub.tsx';
@@ -45,6 +46,8 @@ import ReportCard from './components/ReportCard.tsx';
 import SubstitutePlan from './components/SubstitutePlan.tsx';
 import SportsDayPlanner from './components/SportsDayPlanner.tsx';
 import ParentCommunication from './components/ParentCommunication.tsx';
+import Logo from './components/Logo.tsx';
+import FeedbackModal from './components/FeedbackModal.tsx';
 
 type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'fitness' | 'reportcard' | 'substitute' | 'sportsday' | 'parentcomms';
 
@@ -58,6 +61,7 @@ const App: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   
   // Static Profile Data (Read-Only)
   const userProfile = {
@@ -316,9 +320,8 @@ const App: React.FC = () => {
 
       {/* Mobile Header */}
       <header className="md:hidden bg-indigo-900 text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
-        <div className="flex items-center space-x-2">
-          <Activity className="w-8 h-8 text-orange-400" />
-          <span className="font-black text-lg tracking-tighter uppercase">SmartPE India</span>
+        <div className="flex items-center">
+          <Logo size={36} showText={true} />
         </div>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/10 rounded-xl">
           {isSidebarOpen ? <X /> : <Menu />}
@@ -332,17 +335,8 @@ const App: React.FC = () => {
         border-r border-slate-800
         print:hidden
       `}>
-        <div className="p-8 hidden md:flex items-center space-x-4">
-          <div className="relative">
-             <div className="p-3 bg-white rounded-2xl shadow-2xl shadow-orange-600/20 rotate-3 z-10 relative">
-               <Activity className="w-8 h-8 text-indigo-700" />
-             </div>
-             <div className="absolute inset-0 bg-orange-500 rounded-2xl -rotate-6 opacity-50"></div>
-          </div>
-          <div>
-            <h1 className="font-black text-xl leading-none uppercase tracking-tighter">SmartPE<br/><span className="text-orange-400">India</span></h1>
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Plan Smarter. Teach Better. Lead Stronger.</p>
-          </div>
+        <div className="p-6 hidden md:flex items-center">
+          <Logo size={52} showText={true} />
         </div>
 
         {/* API Status Badge - Interactive */}
@@ -416,6 +410,16 @@ const App: React.FC = () => {
         </nav>
 
         {/* Profile Footer - Static/Read-Only */}
+        {/* Feedback Button */}
+        <div className="px-4 mb-2">
+          <button
+            onClick={() => setIsFeedbackOpen(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 rounded-2xl text-indigo-300 text-xs font-black uppercase tracking-widest transition-all hover:scale-[1.02]"
+          >
+            <MessageSquare size={14} />
+            Feedback & Support
+          </button>
+        </div>
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-900/80 backdrop-blur-xl border-t border-slate-800">
           <div className="w-full bg-slate-800/50 rounded-[2rem] p-4 flex items-center space-x-4">
             <div className="relative">
@@ -485,9 +489,10 @@ const App: React.FC = () => {
           {activeTab === 'sportsday' && <SportsDayPlanner />}
           {activeTab === 'parentcomms' && <ParentCommunication />}
         </div>
-        <Disclaimer />
+        <Disclaimer onFeedback={() => setIsFeedbackOpen(true)} />
       </main>
     </div>
+      {isFeedbackOpen && <FeedbackModal onClose={() => setIsFeedbackOpen(false)} />}
   );
 };
 
