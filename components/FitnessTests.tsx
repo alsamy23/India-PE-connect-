@@ -55,6 +55,7 @@ const FITNESS_CATEGORIES: Category[] = [
     tests: [
       { id: 'pushup_1min', name: 'Push-Up Test (1 Minute)', unit: 'reps', description: 'Maximum push-ups in one minute.' },
       { id: 'situp_1min', name: 'Sit-Up Test (1 Minute)', unit: 'reps', description: 'Maximum sit-ups in one minute.' },
+      { id: 'situp_30sec', name: 'Sit-Up Test (30 Seconds)', unit: 'reps', description: 'Maximum sit-ups in 30 seconds.' },
       { id: 'squat_1min', name: 'Squat Test (1 Minute)', unit: 'reps', description: 'Maximum bodyweight squats in one minute.' },
       { id: 'plank', name: 'Plank Hold', unit: 'min:sec', description: 'Hold a forearm plank for as long as possible.' }
     ]

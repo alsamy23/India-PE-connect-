@@ -101,13 +101,21 @@ const AIToolCenter: React.FC = () => {
                 <AlertCircle className="flex-shrink-0 mt-1" />
                 <div>
                   <h4 className="font-black text-lg uppercase tracking-tight mb-1">Generation Failed</h4>
-                  <p className="text-sm font-medium opacity-80">{error}</p>
-                  <button 
-                    onClick={runTool}
-                    className="mt-4 px-6 py-2 bg-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-colors"
-                  >
-                    Retry Generation
-                  </button>
+                  <p className="text-sm font-medium opacity-80 mb-4">{error}</p>
+                  <div className="flex flex-wrap gap-3">
+                    <button 
+                      onClick={runTool}
+                      className="px-6 py-2 bg-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-colors"
+                    >
+                      Retry Generation
+                    </button>
+                    <button 
+                      onClick={() => (window as any).aistudio?.openSelectKey()}
+                      className="px-6 py-2 bg-white text-red-600 border-2 border-red-100 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-50 transition-colors"
+                    >
+                      Fix AI Connection
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

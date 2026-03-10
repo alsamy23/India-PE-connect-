@@ -17,10 +17,14 @@ import {
   BookOpen,
   Target,
   Wrench,
-  Book
+  Book,
+  Activity,
+  Loader2,
+  RotateCcw
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { storageService, SavedItem } from '../services/storageService.ts';
+import Logo from './Logo.tsx';
 
 const data = [
   { name: 'Mon', connections: 4 },
@@ -57,6 +61,7 @@ const Dashboard: React.FC<{
       case 'Theory': return <GraduationCap className="text-rose-500" />;
       case 'Skill': return <Target className="text-emerald-500" />;
       case 'Rule': return <Book className="text-amber-500" />;
+      case 'Tool': return <Activity className="text-indigo-600" />;
       default: return <Wrench className="text-slate-500" />;
     }
   };
@@ -74,7 +79,7 @@ const Dashboard: React.FC<{
             <span className="text-indigo-300">Lead Stronger.</span>
           </h1>
           <p className="text-indigo-100 text-lg mb-8 leading-relaxed font-medium">
-            SmartPE India is the first integrated digital platform built exclusively for Physical Education professionals in India.
+            India's first AI-powered platform built exclusively for Physical Education teachers. Plan lessons, assess students, and connect with PE teachers across India — all for FREE.
           </p>
           
           <div className="flex flex-wrap gap-4">
@@ -113,12 +118,22 @@ const Dashboard: React.FC<{
               <p className="text-sm text-slate-400 font-medium">Configure your Gemini API key to unlock full AI capabilities.</p>
             </div>
           </div>
-          <button 
-            onClick={() => (window as any).aistudio?.openSelectKey()}
-            className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all"
-          >
-            Connect Now
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button 
+              onClick={() => (window as any).aistudio?.openSelectKey()}
+              className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all"
+            >
+              Connect / Upgrade AI
+            </button>
+            <button 
+              onClick={() => onTestConnection?.()}
+              disabled={isTesting}
+              className="px-8 py-4 bg-white border-2 border-slate-100 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center space-x-2"
+            >
+              {isTesting ? <Loader2 className="animate-spin" size={16} /> : <RotateCcw size={16} />}
+              <span>{isTesting ? 'Testing...' : 'Refresh Connection'}</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -193,6 +208,7 @@ const Dashboard: React.FC<{
                     if (item.type === 'Lesson Plan') onNavigate?.('planner');
                     if (item.type === 'Theory') onNavigate?.('theory');
                     if (item.type === 'Skill') onNavigate?.('skillmastery');
+                    if (item.type === 'Tool') onNavigate?.('fitness');
                   }}
                 >
                   <div className="flex items-center space-x-3">
