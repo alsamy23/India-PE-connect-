@@ -14,7 +14,7 @@ const Disclaimer: React.FC<{ onFeedback?: () => void }> = ({ onFeedback }) => {
             <strong className="text-white">SmartPE India</strong> is an independent educational tool and is{' '}
             <span className="text-orange-400 font-bold">NOT affiliated</span> with CBSE, NCERT, Khelo India or Ministry of Sports.
             AI content should be verified before use in schools. |{' '}
-            <a href="mailto:alsamy36@gmail.com" className="text-indigo-400 underline hover:text-indigo-300 font-bold">alsamy36@gmail.com</a>
+            <a href="mailto:smartpeindia3@gmail.com" className="text-indigo-400 underline hover:text-indigo-300 font-bold">smartpeindia3@gmail.com</a>
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -27,7 +27,7 @@ const Disclaimer: React.FC<{ onFeedback?: () => void }> = ({ onFeedback }) => {
             </button>
           )}
           <a
-            href="mailto:alsamy36@gmail.com"
+            href="mailto:smartpeindia3@gmail.com"
             className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors"
           >
             <Mail size={12} /> Write to Us

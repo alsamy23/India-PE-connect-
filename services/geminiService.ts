@@ -51,7 +51,7 @@ export const callAIStream = async (
 };
 
 // ── Regular (non-streaming) call for JSON responses ───────────────────────
-const callAIBase = async (payload: any, retries = 2): Promise<any> => {
+export const callAIBase = async (payload: any, retries = 2): Promise<any> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);
 

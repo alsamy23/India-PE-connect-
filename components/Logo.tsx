@@ -54,8 +54,8 @@ const Logo: React.FC<{ size?: number; showText?: boolean }> = ({ size = 48, show
           <span className="font-bold text-orange-400 tracking-widest uppercase" style={{ fontSize: size * 0.18 }}>
             INDIA
           </span>
-          <span className="text-indigo-300 font-semibold uppercase tracking-widest" style={{ fontSize: size * 0.12 }}>
-            Empowering Coaches
+          <span className="text-indigo-300 font-semibold uppercase tracking-widest" style={{ fontSize: size * 0.10 }}>
+            Empower PE Teacher &amp; Coaches
           </span>
         </div>
       )}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, MessageSquare, Star, Send, CheckCircle2, Mail, AlertTriangle, Lightbulb, Bug, Heart } from 'lucide-react';
 
-const FEEDBACK_EMAIL = 'alsamy36@gmail.com';
+const FEEDBACK_EMAIL = 'smartpeindia3@gmail.com';
 
 type FeedbackType = 'suggestion' | 'bug' | 'compliment' | 'complaint';
 

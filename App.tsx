@@ -26,13 +26,16 @@ import {
   FileText,
   Zap,
   Mail,
-  MessageSquare
+  MessageSquare,
+  Timer,
+  Shuffle,
+  HelpCircle,
+  HeartPulse
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import CurriculumHub from './components/CurriculumHub.tsx';
 import AIPlanner from './components/AIPlanner.tsx';
 import YearlyPlanner from './components/YearlyPlanner.tsx';
-import Networking from './components/Networking.tsx';
 import SkillMastery from './components/SkillMastery.tsx';
 import ComplianceAdvisor from './components/ComplianceAdvisor.tsx';
 import AIToolCenter from './components/AIToolCenter.tsx';
@@ -46,10 +49,13 @@ import ReportCard from './components/ReportCard.tsx';
 import SubstitutePlan from './components/SubstitutePlan.tsx';
 import SportsDayPlanner from './components/SportsDayPlanner.tsx';
 import ParentCommunication from './components/ParentCommunication.tsx';
+import ConnectedPEWidgets from './components/ConnectedPEWidgets.tsx';
+import { WarmupGenerator, SportsQuiz, InjuryFirstAid, WhatsAppSummary } from './components/NewAITools.tsx';
+import StudentManagement from './components/StudentManagement.tsx';
 import Logo from './components/Logo.tsx';
 import FeedbackModal from './components/FeedbackModal.tsx';
 
-type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'fitness' | 'reportcard' | 'substitute' | 'sportsday' | 'parentcomms';
+type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'fitness' | 'reportcard' | 'substitute' | 'sportsday' | 'parentcomms' | 'pewidgets' | 'warmup' | 'sportsquiz' | 'firstaid' | 'lessonsummary' | 'students';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -209,20 +215,28 @@ const App: React.FC = () => {
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange },
     { id: 'planner', name: 'Lesson Planner', icon: Sparkles },
-    { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true },
+    { id: 'fitness', name: 'Fitness Tests', icon: Activity },
     { id: 'khelo', name: 'Khelo India Battery', icon: Trophy },
-    { id: 'biomechanics', name: 'Visual Physics', icon: Microscope, isNew: true },
-    { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true },
+    { id: 'biomechanics', name: 'Visual Physics', icon: Microscope },
+    { id: 'rules', name: 'Game Rules Bot', icon: Book },
     { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap },
     { id: 'tools', name: 'AI Tool Center', icon: Wrench },
     { id: 'skillmastery', name: 'Skill Progressions', icon: Target },
     { id: 'compliance', name: 'State Compliance', icon: ShieldCheck },
     { id: 'curriculum', name: 'Library Hub', icon: BookOpen },
-    { id: 'reportcard', name: 'Report Card Generator', icon: FileText, isNew: true },
-    { id: 'substitute', name: 'Substitute Plan', icon: Zap, isNew: true },
-    { id: 'sportsday', name: 'Sports Day Planner', icon: Trophy, isNew: true },
-    { id: 'parentcomms', name: 'Parent Letters', icon: Mail, isNew: true },
-    { id: 'networking', name: 'Coach Community', icon: Users },
+    { id: 'reportcard', name: 'Report Card Generator', icon: FileText },
+    { id: 'substitute', name: 'Substitute Plan', icon: Zap },
+    { id: 'sportsday', name: 'Sports Day Planner', icon: Trophy },
+    { id: 'parentcomms', name: 'Parent Letters', icon: Mail },
+    // ── Student Management ────────────────────────────────
+    { id: 'students', name: 'Student Management', icon: Users, isNew: true },
+    // ── New AI tools ──────────────────────────────────────
+    { id: 'warmup', name: 'Warm-Up Generator', icon: HeartPulse, isNew: true },
+    { id: 'sportsquiz', name: 'Sports Quiz', icon: HelpCircle, isNew: true },
+    { id: 'lessonsummary', name: 'Lesson Summary', icon: MessageSquare, isNew: true },
+    { id: 'firstaid', name: 'Injury First Aid', icon: Activity, isNew: true },
+    // ── ConnectedPE Widgets ────────────────────────────────
+    { id: 'pewidgets', name: 'PE Classroom Widgets', icon: Timer, isNew: true },
   ];
 
   return (
@@ -423,8 +437,8 @@ const App: React.FC = () => {
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
               Suggestions / Complaints?
             </p>
-            <a href="mailto:alsamy36@gmail.com" className="text-xs text-indigo-400 hover:text-indigo-300 font-black tracking-wider transition-colors inline-block mt-1">
-              alsamy36@gmail.com
+            <a href="mailto:smartpeindia3@gmail.com" className="text-xs text-indigo-400 hover:text-indigo-300 font-black tracking-wider transition-colors inline-block mt-1">
+              smartpeindia3@gmail.com
             </a>
           </div>
         </div>
@@ -470,6 +484,23 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
+        {/* Global Back Navigation Bar - visible on all pages except dashboard */}
+        {activeTab !== 'dashboard' && (
+          <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-3 flex items-center justify-between print:hidden">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className="flex items-center space-x-2 text-slate-600 hover:text-indigo-600 font-black uppercase tracking-widest text-xs transition-colors group"
+            >
+              <div className="w-8 h-8 bg-slate-100 group-hover:bg-indigo-100 rounded-xl flex items-center justify-center transition-colors">
+                <LayoutDashboard size={16} className="group-hover:text-indigo-600 transition-colors" />
+              </div>
+              <span>Back to Dashboard</span>
+            </button>
+            <span className="text-xs font-black text-slate-400 uppercase tracking-widest hidden sm:block">
+              {navigation.find(n => n.id === activeTab)?.name || ''}
+            </span>
+          </div>
+        )}
         <div className="max-w-7xl mx-auto p-6 md:p-12 min-h-full print:p-0">
           {activeTab === 'dashboard' && (
             <Dashboard 
@@ -487,7 +518,6 @@ const App: React.FC = () => {
           {activeTab === 'planner' && <AIPlanner />}
           {activeTab === 'skillmastery' && <SkillMastery />}
           {activeTab === 'compliance' && <ComplianceAdvisor />}
-          {activeTab === 'networking' && <Networking />}
           {activeTab === 'khelo' && <KheloIndia />}
           {activeTab === 'biomechanics' && <Biomechanics />}
           {activeTab === 'rules' && <RulesBot />}
@@ -496,6 +526,12 @@ const App: React.FC = () => {
           {activeTab === 'substitute' && <SubstitutePlan />}
           {activeTab === 'sportsday' && <SportsDayPlanner />}
           {activeTab === 'parentcomms' && <ParentCommunication />}
+          {activeTab === 'warmup' && <WarmupGenerator />}
+          {activeTab === 'sportsquiz' && <SportsQuiz />}
+          {activeTab === 'lessonsummary' && <WhatsAppSummary />}
+          {activeTab === 'firstaid' && <InjuryFirstAid />}
+          {activeTab === 'pewidgets' && <ConnectedPEWidgets />}
+          {activeTab === 'students' && <StudentManagement />}
         </div>
         <Disclaimer onFeedback={() => setIsFeedbackOpen(true)} />
       </main>

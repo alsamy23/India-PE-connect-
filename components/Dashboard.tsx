@@ -20,7 +20,10 @@ import {
   Book,
   Activity,
   Loader2,
-  RotateCcw
+  RotateCcw,
+  MessageCircle,
+  HeartPulse,
+  Timer
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { storageService, SavedItem } from '../services/storageService.ts';
@@ -93,11 +96,20 @@ const Dashboard: React.FC<{
               </button>
               
               <button 
-                onClick={() => onNavigate?.('planner')}
+                onClick={() => onNavigate?.('students')}
+                className="px-8 py-4 bg-emerald-400 text-indigo-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-300 transition-all flex items-center space-x-2 shadow-xl shadow-emerald-500/20"
+              >
+                <Users size={18} />
+                <span>Student Management</span>
+                <ArrowRight size={16} />
+              </button>
+              
+              <button 
+                onClick={() => onNavigate?.('pewidgets')}
                 className="px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20 transition-all flex items-center space-x-2"
               >
-                <Sparkles size={18} />
-                <span>AI Lesson Planner</span>
+                <Timer size={18} />
+                <span>Classroom Widgets</span>
               </button>
           </div>
         </div>
@@ -136,6 +148,30 @@ const Dashboard: React.FC<{
           </div>
         </div>
       )}
+
+      {/* New Tools Quick Launch */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { id: 'warmup', name: 'Warm-Up', desc: '5-Min routines', icon: HeartPulse, color: 'hover:border-rose-300 hover:bg-rose-50' },
+          { id: 'lessonsummary', name: 'WA Summary', desc: 'Lesson recaps', icon: MessageCircle, color: 'hover:border-emerald-300 hover:bg-emerald-50' },
+          { id: 'sportsquiz', name: 'Sports Quiz', desc: 'Instant MCQs', icon: Activity, color: 'hover:border-indigo-300 hover:bg-indigo-50' },
+          { id: 'firstaid', name: 'First Aid', desc: 'PE injury guide', icon: GraduationCap, color: 'hover:border-red-300 hover:bg-red-50' },
+        ].map(tool => (
+          <button 
+            key={tool.id}
+            onClick={() => onNavigate?.(tool.id as any)}
+            className={`bg-white p-6 rounded-3xl border border-slate-100 shadow-sm transition-all flex items-center gap-4 group ${tool.color}`}
+          >
+            <div className="p-3 bg-slate-50 rounded-2xl group-hover:scale-110 transition-transform">
+              <tool.icon size={24} className="text-slate-600" />
+            </div>
+            <div className="text-left">
+              <p className="font-black text-slate-800 text-sm tracking-tight">{tool.name}</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{tool.desc}</p>
+            </div>
+          </button>
+        ))}
+      </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
