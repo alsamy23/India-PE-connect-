@@ -76,6 +76,46 @@ const TheoryHub: React.FC = () => {
     setTimeout(() => setIsSaved(false), 3000);
   };
 
+  const handleDownload = () => {
+    if (!result) return;
+    
+    let text = `${result.title}\n`;
+    text += `CBSE Class ${grade} PE • ${selectedChapter}\n`;
+    text += `Type: ${contentType}\n`;
+    text += `-------------------------------------------\n\n`;
+    
+    if (result.content) {
+      text += `NOTES:\n${result.content}\n\n`;
+    }
+    
+    if (result.questions && result.questions.length > 0) {
+      text += `QUESTIONS & ASSESSMENT:\n`;
+      result.questions.forEach((q, i) => {
+        text += `${i + 1}. ${q.question}\n`;
+        if (q.options) {
+          q.options.forEach((opt, oi) => {
+            text += `   ${String.fromCharCode(65 + oi)}) ${opt}\n`;
+          });
+        }
+        text += `   Answer: ${q.answer}\n\n`;
+      });
+    }
+    
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${result.title.replace(/\s+/g, '_')}_Class${grade}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   const chapters = grade === '11' ? CHAPTERS_11 : CHAPTERS_12;
 
   const handleChapterSelect = async (chapter: string) => {
@@ -438,10 +478,21 @@ const TheoryHub: React.FC = () => {
                       {isSaved ? <CheckCircle2 size={20} /> : <Save size={20} />}
                       {isSaved && <span className="text-[10px] font-black uppercase tracking-widest">Saved</span>}
                     </button>
+                    <button 
+                      onClick={handleDownload}
+                      className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors"
+                      title="Download as Text File"
+                    >
+                      <Download size={20} />
+                    </button>
                     <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors">
                       <Share2 size={20} />
                     </button>
-                    <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors">
+                    <button 
+                      onClick={handlePrint}
+                      className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors"
+                      title="Print Notes"
+                    >
                       <Printer size={20} />
                     </button>
                   </div>

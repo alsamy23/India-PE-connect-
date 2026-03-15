@@ -347,19 +347,37 @@ export const generateTheoryContent = async (
   
   const isFullChapter = topic.startsWith("Full Chapter: ");
   const cleanTopic = isFullChapter ? topic.replace("Full Chapter: ", "").trim() : topic;
+  const lowerTopic = cleanTopic.toLowerCase();
 
-  for (const [chapter, topics] of Object.entries(CBSE_CURRICULUM[gradeKey] || {})) {
-    if (isFullChapter) {
-        if (chapter.toLowerCase() === cleanTopic.toLowerCase()) {
-            exactContext = `This is a request for the full chapter: "${chapter}".\nGenerate comprehensive content covering ALL these exact curriculum topics: ${(topics as string[]).join("; ")}`;
-            break;
-        }
-    } else {
-        const match = (topics as string[]).find(t => t.toLowerCase().includes(cleanTopic.toLowerCase()) || cleanTopic.toLowerCase().includes(chapter.toLowerCase().split(" ")[0]));
-        if (match || chapter.toLowerCase().includes(cleanTopic.toLowerCase().split(" ")[0])) {
-          exactContext = `This specific topic is from Chapter: "${chapter}"\nThe exact curriculum topic is: ${match || cleanTopic}. Related topics in this chapter: ${(topics as string[]).join("; ")}`;
-          break;
-        }
+  // 1. Try EXACT Chapter Match first
+  for (const chapter of Object.keys(CBSE_CURRICULUM[gradeKey] || {})) {
+    if (chapter.toLowerCase() === lowerTopic) {
+      exactContext = `This is a request for the full chapter: "${chapter}".\nGenerate comprehensive content covering ALL these exact curriculum topics: ${CBSE_CURRICULUM[gradeKey][chapter].join("; ")}`;
+      break;
+    }
+  }
+
+  // 2. Try partial match if not found
+  if (!exactContext) {
+    for (const [chapter, topics] of Object.entries(CBSE_CURRICULUM[gradeKey] || {})) {
+      const chapterLower = chapter.toLowerCase();
+      
+      // Check if topic is a specific sub-topic in this chapter
+      const matchedTopic = (topics as string[]).find(t => {
+        const tLower = t.toLowerCase();
+        return tLower === lowerTopic || tLower.includes(lowerTopic);
+      });
+
+      if (matchedTopic) {
+        exactContext = `This specific topic is "${matchedTopic}" from Chapter: "${chapter}".\nEnsure content is strictly as per NCERT Class ${grade} textbook for this section.`;
+        break;
+      }
+
+      // Check if topic is part of chapter name (but avoid generic "Sports" collision)
+      if (lowerTopic.length > 5 && chapterLower.includes(lowerTopic)) {
+        exactContext = `This pertains to Chapter: "${chapter}".\nGenerate content based on these exact curriculum topics: ${(topics as string[]).join("; ")}`;
+        break;
+      }
     }
   }
 
@@ -367,15 +385,17 @@ export const generateTheoryContent = async (
     model: "claude-sonnet",
     contents: `CBSE Class ${grade} PE ${contentType}: "${topic}". Language: ${language}.${exactContext ? "\n\nCurriculum Context: " + exactContext : ""}`,
     config: {
-      systemInstruction: `Expert CBSE PE Teacher (2025-26 syllabus). Return JSON: { title, contentType, content, questions: [{ question, options: string[], answer, type }] }
-STRICT RULES:
-- Follow CBSE 2025-26 official curriculum EXACTLY
+      systemInstruction: `You are an expert CBSE Physical Education Teacher specializing in current NCERT textbook content (2025-26 session).
+Return JSON: { title, contentType, content, questions: [{ question, options: string[], answer, type }] }
+
+STRICT NCERT RULES:
+- Use EXACT definitions and terminology from the latest NCERT Physical Education textbook for Class ${grade}.
+- Follow the official CBSE 2025-26 curriculum structure.
 - Content Language: ${language}
-- For Notes: Use exam-focused bullet points, define key terms, include mark-wise important points (1-mark, 3-mark, 5-mark patterns). Differentiate the content clearly for the specific chapter/topic provided in the prompt. Do not provide generic definitions across all chapters.
-- For MCQ: 5 questions, 4 options each (MUST be an array of strings in 'options'), include the correct answer in 'answer', follow CBSE board exam pattern
-- For CaseStudy: Real scenario + 4 analytical questions as per latest CBSE board paper pattern (2024-25/2025-26)
-- Include weightage marks for the topic if known
-- Be 100% accurate to NCERT textbook content`,
+- For Notes: Provide high-quality, exam-ready notes. Use structured bullet points, include headers for sub-topics, and highlight key "Board Exam Tips".
+- For MCQ: 5 high-order thinking questions (CBSE pattern), 4 options each, provide clear correct answers.
+- For CaseStudy: A realistic sports scenario followed by 4 analytical questions.
+- Maintain 100% academic integrity to NCERT source material.`,
       responseMimeType: "application/json",
     },
   });
@@ -395,9 +415,16 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
   return safeParseJson(response.text);
 };
 
-// ── Lesson Diagram (stub — Claude doesn't generate images) ───────────────────
-export const generateLessonDiagram = async (_prompt: string, _context = "general") => {
-  return undefined; // Image generation not available without Gemini
+// ── Lesson Diagram — using Pollinations.ai for prompt-based visuals ───────────
+export const generateLessonDiagram = async (prompt: string, _context = "general") => {
+  if (!prompt) return undefined;
+  
+  // Enhance the prompt for educational physics diagrams
+  const educationalPrompt = `${prompt}, educational physics diagram for sports biomechanics, clear and precise, professional illustration, scientific diagram style, high resolution`;
+  
+  // Using pollinations.ai for free, prompt-based image generation
+  const encodedPrompt = encodeURIComponent(educationalPrompt);
+  return `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true`;
 };
 
 // ── Skill Progression ─────────────────────────────────────────────────────────

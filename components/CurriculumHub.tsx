@@ -6,37 +6,37 @@ const resources = [
   {
     id: '1', title: 'CBSE Physical Education Curriculum 2024-25 (Class 9-10)',
     board: BoardType.CBSE, grade: '9-10', date: 'Mar 2024', type: 'PDF',
-    downloadUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain24/SecondaryNew/PhysicalEducation_Secondary_2024.pdf',
-    viewUrl: 'https://cbseacademic.nic.in/curriculum_2024.html',
+    downloadUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain25/SecondaryNew/PhysicalEducation_Secondary_2024-25.pdf',
+    viewUrl: 'https://cbseacademic.nic.in/curriculum_2025.html',
   },
   {
     id: '2', title: 'CBSE Physical Education Curriculum 2024-25 (Class 11-12)',
     board: BoardType.CBSE, grade: '11-12', date: 'Mar 2024', type: 'PDF',
-    downloadUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain24/SeniorSecondaryNew/PhysicalEducation_SeniorSecondary_2024.pdf',
-    viewUrl: 'https://cbseacademic.nic.in/curriculum_2024.html',
+    downloadUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain25/SeniorSecondaryNew/PhysicalEducation_SeniorSecondary_2024-25.pdf',
+    viewUrl: 'https://cbseacademic.nic.in/curriculum_2025.html',
   },
   {
     id: '3', title: 'NCERT Health & Physical Education Textbook Class 11',
     board: BoardType.CBSE, grade: '11', date: 'Jan 2024', type: 'PDF',
-    downloadUrl: 'https://ncert.nic.in/textbook.php?kehp1=0-10',
+    downloadUrl: 'https://ncert.nic.in/pdf/publication/textbook/Class11/kehp1/kehp1full.pdf',
     viewUrl: 'https://ncert.nic.in/textbook.php?kehp1=0-10',
   },
   {
     id: '4', title: 'NCERT Health & Physical Education Textbook Class 12',
     board: BoardType.CBSE, grade: '12', date: 'Jan 2024', type: 'PDF',
-    downloadUrl: 'https://ncert.nic.in/textbook.php?lehp1=0-10',
+    downloadUrl: 'https://ncert.nic.in/pdf/publication/textbook/Class12/lehp1/lehp1full.pdf',
     viewUrl: 'https://ncert.nic.in/textbook.php?lehp1=0-10',
   },
   {
     id: '5', title: 'NCERT Health & Physical Education Class 9',
     board: BoardType.CBSE, grade: '9', date: 'Dec 2023', type: 'PDF',
-    downloadUrl: 'https://ncert.nic.in/textbook.php?iehp1=0-9',
+    downloadUrl: 'https://ncert.nic.in/pdf/publication/textbook/Class9/iehp1/iehp1full.pdf',
     viewUrl: 'https://ncert.nic.in/textbook.php?iehp1=0-9',
   },
   {
     id: '6', title: 'NCERT Health & Physical Education Class 10',
     board: BoardType.CBSE, grade: '10', date: 'Dec 2023', type: 'PDF',
-    downloadUrl: 'https://ncert.nic.in/textbook.php?jehp1=0-9',
+    downloadUrl: 'https://ncert.nic.in/pdf/publication/textbook/Class10/jehp1/jehp1full.pdf',
     viewUrl: 'https://ncert.nic.in/textbook.php?jehp1=0-9',
   },
   {
@@ -72,7 +72,7 @@ const resources = [
   {
     id: '12', title: 'National Curriculum Framework for School Education',
     board: BoardType.STATE, grade: 'All', date: 'Jun 2024', type: 'PDF',
-    downloadUrl: 'https://ncfserver.ncert.nic.in/pdf/ncf/NCF-SE-Pre-Draft.pdf',
+    downloadUrl: 'https://ncert.nic.in/pdf/ncf/NCF-SE-Pre-Draft.pdf',
     viewUrl: 'https://ncert.nic.in/NCF-SE.php',
   },
 ];
