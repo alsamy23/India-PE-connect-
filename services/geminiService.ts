@@ -344,11 +344,22 @@ export const generateTheoryContent = async (
   // Get exact curriculum context for this topic
   const gradeKey = grade === "11" ? "11" : "12";
   let exactContext = "";
+  
+  const isFullChapter = topic.startsWith("Full Chapter: ");
+  const cleanTopic = isFullChapter ? topic.replace("Full Chapter: ", "").trim() : topic;
+
   for (const [chapter, topics] of Object.entries(CBSE_CURRICULUM[gradeKey] || {})) {
-    const match = (topics as string[]).find(t => t.toLowerCase().includes(topic.toLowerCase()) || topic.toLowerCase().includes(chapter.toLowerCase().split(" ")[0]));
-    if (match || chapter.toLowerCase().includes(topic.toLowerCase().split(" ")[0])) {
-      exactContext = `This topic is from Chapter: "${chapter}"\nExact curriculum topics: ${(topics as string[]).join("; ")}`;
-      break;
+    if (isFullChapter) {
+        if (chapter.toLowerCase() === cleanTopic.toLowerCase()) {
+            exactContext = `This is a request for the full chapter: "${chapter}".\nGenerate comprehensive content covering ALL these exact curriculum topics: ${(topics as string[]).join("; ")}`;
+            break;
+        }
+    } else {
+        const match = (topics as string[]).find(t => t.toLowerCase().includes(cleanTopic.toLowerCase()) || cleanTopic.toLowerCase().includes(chapter.toLowerCase().split(" ")[0]));
+        if (match || chapter.toLowerCase().includes(cleanTopic.toLowerCase().split(" ")[0])) {
+          exactContext = `This specific topic is from Chapter: "${chapter}"\nThe exact curriculum topic is: ${match || cleanTopic}. Related topics in this chapter: ${(topics as string[]).join("; ")}`;
+          break;
+        }
     }
   }
 
@@ -356,12 +367,12 @@ export const generateTheoryContent = async (
     model: "claude-sonnet",
     contents: `CBSE Class ${grade} PE ${contentType}: "${topic}". Language: ${language}.${exactContext ? "\n\nCurriculum Context: " + exactContext : ""}`,
     config: {
-      systemInstruction: `Expert CBSE PE Teacher (2025-26 syllabus). Return JSON: { title, contentType, content, questions: [{ question, answer, type }] }
+      systemInstruction: `Expert CBSE PE Teacher (2025-26 syllabus). Return JSON: { title, contentType, content, questions: [{ question, options: string[], answer, type }] }
 STRICT RULES:
 - Follow CBSE 2025-26 official curriculum EXACTLY
 - Content Language: ${language}
-- For Notes: Use exam-focused bullet points, define key terms, include mark-wise important points (1-mark, 3-mark, 5-mark patterns)
-- For MCQ: 5 questions, 4 options each, include answers, follow CBSE board exam pattern
+- For Notes: Use exam-focused bullet points, define key terms, include mark-wise important points (1-mark, 3-mark, 5-mark patterns). Differentiate the content clearly for the specific chapter/topic provided in the prompt. Do not provide generic definitions across all chapters.
+- For MCQ: 5 questions, 4 options each (MUST be an array of strings in 'options'), include the correct answer in 'answer', follow CBSE board exam pattern
 - For CaseStudy: Real scenario + 4 analytical questions as per latest CBSE board paper pattern (2024-25/2025-26)
 - Include weightage marks for the topic if known
 - Be 100% accurate to NCERT textbook content`,

@@ -115,6 +115,7 @@ export interface TheoryContent {
     question: string;
     answer: string;
     type: string;
+    options?: string[];
   }[];
 }
 

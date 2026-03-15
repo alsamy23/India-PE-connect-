@@ -226,7 +226,8 @@ const App: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-inter">
+    <>
+      <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-inter">
       {/* API Key Selection Modal - Enhanced with instructions */}
       {isKeyDialogOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
@@ -409,7 +410,6 @@ const App: React.FC = () => {
           ))}
         </nav>
 
-        {/* Profile Footer - Static/Read-Only */}
         {/* Feedback Button */}
         <div className="px-4 mb-2">
           <button
@@ -419,8 +419,16 @@ const App: React.FC = () => {
             <MessageSquare size={14} />
             Feedback & Support
           </button>
+          <div className="mt-4 text-center pb-2">
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+              Suggestions / Complaints?
+            </p>
+            <a href="mailto:alsamy36@gmail.com" className="text-xs text-indigo-400 hover:text-indigo-300 font-black tracking-wider transition-colors inline-block mt-1">
+              alsamy36@gmail.com
+            </a>
+          </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-900/80 backdrop-blur-xl border-t border-slate-800">
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-slate-900/80 backdrop-blur-xl border-t border-slate-800">
           <div className="w-full bg-slate-800/50 rounded-[2rem] p-4 flex items-center space-x-4">
             <div className="relative">
               <div className="w-12 h-12 bg-indigo-600 rounded-2xl border-2 border-indigo-500/30 flex items-center justify-center text-white font-black text-lg">
@@ -493,6 +501,7 @@ const App: React.FC = () => {
       </main>
     </div>
       {isFeedbackOpen && <FeedbackModal onClose={() => setIsFeedbackOpen(false)} />}
+    </>
   );
 };
 

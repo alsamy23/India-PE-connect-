@@ -471,6 +471,15 @@ const TheoryHub: React.FC = () => {
                               </span>
                               <div className="flex-1 space-y-4">
                                 <p className="font-bold text-slate-800 text-lg leading-tight">{q.question}</p>
+                                {q.options && q.options.length > 0 && (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 mt-2">
+                                    {q.options.map((opt, oIdx) => (
+                                      <div key={oIdx} className="p-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700">
+                                        <span className="mr-2 font-black text-slate-400">{String.fromCharCode(65 + oIdx)}.</span> {opt}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                                 <div className="p-5 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
                                   <p className="text-sm text-emerald-700 font-bold">
                                     <span className="text-[10px] uppercase tracking-widest opacity-60 block mb-1">Correct Answer / Explanation</span>
