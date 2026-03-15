@@ -62,13 +62,26 @@ const Biomechanics: React.FC = () => {
               </div>
            </div>
            
-           <div className="bg-slate-100 rounded-[2.5rem] p-4 flex items-center justify-center border border-slate-200">
+           <div className="bg-slate-100 rounded-[2.5rem] p-4 flex items-center justify-center border border-slate-200 overflow-hidden min-h-[300px]">
              {result.diagramUrl ? (
-               <img src={result.diagramUrl} alt="Biomechanics Diagram" className="rounded-2xl shadow-lg w-full h-auto object-cover" />
+               <div className="relative w-full h-full flex items-center justify-center">
+                 <img 
+                   src={result.diagramUrl} 
+                   alt="Biomechanics Diagram" 
+                   className="rounded-2xl shadow-lg w-full h-auto object-contain max-h-[500px]" 
+                   onError={(e) => {
+                     // If image fails, try a fallback or just show the icon
+                     (e.target as HTMLImageElement).src = `https://image.pollinations.ai/prompt/${encodeURIComponent(result.concept + ' educational diagram')}?width=800&height=800&seed=42`;
+                   }}
+                 />
+                 <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-black uppercase text-slate-500 shadow-sm border border-white/50">
+                    Physics Visualization
+                 </div>
+               </div>
              ) : (
                <div className="text-center text-slate-400">
                  <ImageIcon size={48} className="mx-auto mb-2" />
-                 <p>Visualizing...</p>
+                 <p>Visualizing Physics...</p>
                </div>
              )}
            </div>

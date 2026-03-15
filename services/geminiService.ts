@@ -386,16 +386,17 @@ export const generateTheoryContent = async (
     contents: `CBSE Class ${grade} PE ${contentType}: "${topic}". Language: ${language}.${exactContext ? "\n\nCurriculum Context: " + exactContext : ""}`,
     config: {
       systemInstruction: `You are an expert CBSE Physical Education Teacher specializing in current NCERT textbook content (2025-26 session).
-Return JSON: { title, contentType, content, questions: [{ question, options: string[], answer, type }] }
+Return JSON: { "title": string, "contentType": string, "content": string, "questions": [{ "question": string, "options": string[], "answer": string, "type": string }] }
 
-STRICT NCERT RULES:
-- Use EXACT definitions and terminology from the latest NCERT Physical Education textbook for Class ${grade}.
-- Follow the official CBSE 2025-26 curriculum structure.
+CRITICAL RULES:
+- "content" MUST be a single string. Use \n for newlines.
+- Do NOT return "content" as an object or array.
+- Use EXACT terminology from the latest NCERT Physical Education textbook for Class ${grade}.
 - Content Language: ${language}
-- For Notes: Provide high-quality, exam-ready notes. Use structured bullet points, include headers for sub-topics, and highlight key "Board Exam Tips".
-- For MCQ: 5 high-order thinking questions (CBSE pattern), 4 options each, provide clear correct answers.
-- For CaseStudy: A realistic sports scenario followed by 4 analytical questions.
-- Maintain 100% academic integrity to NCERT source material.`,
+- For Notes: Provide high-quality, exam-ready notes with structured bullet points and headers.
+- For MCQ: 5 questions (CBSE pattern), 4 options each, provide clear string answers.
+- For CaseStudy: A realistic scenario followed by 4 questions.
+- Maintain 100% academic integrity to NCERT material.`,
       responseMimeType: "application/json",
     },
   });
@@ -415,16 +416,17 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
   return safeParseJson(response.text);
 };
 
-// ── Lesson Diagram — using Pollinations.ai for prompt-based visuals ───────────
+// ── Lesson Diagram — using image.pollinations.ai ───────────────────────────
 export const generateLessonDiagram = async (prompt: string, _context = "general") => {
   if (!prompt) return undefined;
   
-  // Enhance the prompt for educational physics diagrams
-  const educationalPrompt = `${prompt}, educational physics diagram for sports biomechanics, clear and precise, professional illustration, scientific diagram style, high resolution`;
+  // Clean and shorten the prompt for better stability
+  const cleanPrompt = prompt.toString().replace(/[^\w\s,]/gi, '').substring(0, 500);
+  const educationalPrompt = `${cleanPrompt}, educational physics diagram, sports biomechanics, professional illustration, scientific style`;
   
-  // Using pollinations.ai for free, prompt-based image generation
+  // Using image.pollinations.ai for more direct image generation
   const encodedPrompt = encodeURIComponent(educationalPrompt);
-  return `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true`;
+  return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 1000)}`;
 };
 
 // ── Skill Progression ─────────────────────────────────────────────────────────

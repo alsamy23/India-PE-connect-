@@ -464,7 +464,7 @@ const TheoryHub: React.FC = () => {
                       {contentType === 'Notes' ? <FileText size={24} /> : <HelpCircle size={24} />}
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-slate-800 tracking-tight">{result.title}</h3>
+                      <h3 className="text-2xl font-black text-slate-800 tracking-tight">{String(result.title)}</h3>
                       <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">CBSE Class {grade} • {selectedChapter}</p>
                     </div>
                   </div>
@@ -501,7 +501,7 @@ const TheoryHub: React.FC = () => {
                 <div className="prose prose-slate max-w-none">
                   {result.content && (
                     <div className="mb-12 text-slate-600 font-medium leading-relaxed whitespace-pre-wrap bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
-                      {result.content}
+                      {typeof result.content === 'string' ? result.content : JSON.stringify(result.content, null, 2)}
                     </div>
                   )}
 
@@ -521,12 +521,12 @@ const TheoryHub: React.FC = () => {
                                 {idx + 1}
                               </span>
                               <div className="flex-1 space-y-4">
-                                <p className="font-bold text-slate-800 text-lg leading-tight">{q.question}</p>
+                                <p className="font-bold text-slate-800 text-lg leading-tight">{String(q.question)}</p>
                                 {q.options && q.options.length > 0 && (
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 mt-2">
                                     {q.options.map((opt, oIdx) => (
                                       <div key={oIdx} className="p-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700">
-                                        <span className="mr-2 font-black text-slate-400">{String.fromCharCode(65 + oIdx)}.</span> {opt}
+                                        <span className="mr-2 font-black text-slate-400">{String.fromCharCode(65 + oIdx)}.</span> {String(opt)}
                                       </div>
                                     ))}
                                   </div>
@@ -534,7 +534,7 @@ const TheoryHub: React.FC = () => {
                                 <div className="p-5 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
                                   <p className="text-sm text-emerald-700 font-bold">
                                     <span className="text-[10px] uppercase tracking-widest opacity-60 block mb-1">Correct Answer / Explanation</span>
-                                    {q.answer}
+                                    {typeof q.answer === 'string' ? q.answer : JSON.stringify(q.answer)}
                                   </p>
                                 </div>
                               </div>
