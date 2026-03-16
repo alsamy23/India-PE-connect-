@@ -137,6 +137,7 @@ export interface QuestionPaper {
   testType: string;
   timeAllowed: string;
   maxMarks: number;
+  generalInstructions: string[];
   sections: {
     sectionId: string;
     instructions: string;

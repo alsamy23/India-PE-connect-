@@ -619,28 +619,38 @@ export const generateQuestionPaper = async (
     contents: `Generate a CBSE ${grade} PE ${testType} for these chapters: ${chapters.join(', ')}. Language: ${language}.`,
     config: {
       systemInstruction: `You are an expert CBSE Physical Education Teacher (NCERT 2025-26). 
-Generate a ${maxMarks}-mark question paper in JSON format: { title, grade, testType, timeAllowed, maxMarks, sections: [...] }.
+Generate a ${maxMarks}-mark question paper in JSON format: { title, grade, testType, timeAllowed, maxMarks, generalInstructions: [], sections: [...] }.
 
-STRUCTURE RULES:
-For 70 Marks: 
+GENERAL INSTRUCTIONS FOR ALL PAPERS:
+1. The question paper consists of 15 questions (for 35m) or 37 questions (for 70m).
+2. All questions are compulsory.
+
+STRUCTURE FOR 35 MARKS (15 Questions Total):
+- generalInstructions: [
+    "The question paper consists of 15 questions.",
+    "All questions are compulsory.",
+    "Question 1 – 6 carry 1 mark.",
+    "Question 7 and 8 carry 2 marks each and should not exceed 30 – 50 words.",
+    "Question 9 - 13 carry 3 marks each and should not exceed 100 – 150 words.",
+    "Question 14 – 15 carry 5 marks each and should not exceed 180 - 220 words."
+  ]
+- Section A: Q1-Q6 (6 MCQs, 1m each).
+- Section B: Q7-Q8 (2 Short Answer, 2m each, 30-50 words).
+- Section C: Q9-Q13 (5 Short Answer, 3m each, 100-150 words). IMPORTANT: Q13 MUST be a Case Study with 3 sub-questions (i, ii, iii).
+- Section D: Q14-Q15 (2 Long Answer, 5m each, 180-220 words). Provide internal choice (OR) for both.
+
+STRUCTURE FOR 70 MARKS (Standard CBSE Board Pattern):
 - Section A: 18 MCQs (1m each)
-- Section B: 5 Very Short (2m each)
-- Section C: 5 Short (3m each)
+- Section B: 5 Very Short (2m each, 60-90 words)
+- Section C: 5 Short (3m each, 100-150 words)
 - Section D: 3 Case Studies (4m each)
-- Section E: 3 Long Answer (5m each)
-
-For 35 Marks:
-- Section A: 10 MCQs (1m each)
-- Section B: 3 Short (2m each)
-- Section C: 3 Short (3m)
-- Section D: 1 Case Study (4m each)
-- Section E: 1 Long Answer (5m each)
+- Section E: 3 Long Answer (5m each, 200-300 words)
 
 CONTENT RULES:
 - Use STRICT NCERT Class ${grade} textbook content.
-- Sections must include instructions like "Attempt any 5...".
-- Case studies must include a paragraph text.
-- Return EXACT JSON structure provided.`,
+- Sections must include headers like "Section A", "Section B" etc.
+- Support Internal Choices (OR) for 5-mark questions by putting "OR" in the question text or as a separate question object if needed (but prefer keeping total question count).
+- Return EXACT JSON structure.`,
       responseMimeType: "application/json",
     },
   });

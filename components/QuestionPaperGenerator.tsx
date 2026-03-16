@@ -167,6 +167,21 @@ const QuestionPaperGenerator: React.FC = () => {
             <p className="text-[10px] font-black text-slate-400">Strictly Based on NCERT Physical Education Curriculum 2025-26</p>
           </div>
 
+          {/* General Instructions */}
+          {paper.generalInstructions && paper.generalInstructions.length > 0 && (
+            <div className="mb-12 bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-4">General Instructions:</h3>
+              <ul className="space-y-2">
+                {paper.generalInstructions.map((ins, idx) => (
+                  <li key={idx} className="text-xs font-bold text-slate-500 flex items-start">
+                    <span className="mr-2 text-indigo-600">{idx + 1}.</span>
+                    {String(ins)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Sections */}
           <div className="space-y-12">
             {paper.sections && Array.isArray(paper.sections) ? paper.sections.map((section, sidx) => (
