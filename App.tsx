@@ -52,10 +52,11 @@ import ParentCommunication from './components/ParentCommunication.tsx';
 import ConnectedPEWidgets from './components/ConnectedPEWidgets.tsx';
 import { WarmupGenerator, SportsQuiz, InjuryFirstAid, WhatsAppSummary } from './components/NewAITools.tsx';
 import StudentManagement from './components/StudentManagement.tsx';
+import QuestionPaperGenerator from './components/QuestionPaperGenerator.tsx';
 import Logo from './components/Logo.tsx';
 import FeedbackModal from './components/FeedbackModal.tsx';
 
-type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'fitness' | 'reportcard' | 'substitute' | 'sportsday' | 'parentcomms' | 'pewidgets' | 'warmup' | 'sportsquiz' | 'firstaid' | 'lessonsummary' | 'students';
+type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'fitness' | 'reportcard' | 'substitute' | 'sportsday' | 'parentcomms' | 'pewidgets' | 'warmup' | 'sportsquiz' | 'firstaid' | 'lessonsummary' | 'students' | 'testgen';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -237,6 +238,8 @@ const App: React.FC = () => {
     { id: 'firstaid', name: 'Injury First Aid', icon: Activity, isNew: true },
     // ── ConnectedPE Widgets ────────────────────────────────
     { id: 'pewidgets', name: 'PE Classroom Widgets', icon: Timer, isNew: true },
+    // ── Exam Center ───────────────────────────────────────
+    { id: 'testgen', name: 'Test Paper Generator', icon: FileText, isNew: true },
   ];
 
   return (
@@ -532,6 +535,7 @@ const App: React.FC = () => {
           {activeTab === 'firstaid' && <InjuryFirstAid />}
           {activeTab === 'pewidgets' && <ConnectedPEWidgets />}
           {activeTab === 'students' && <StudentManagement />}
+          {activeTab === 'testgen' && <QuestionPaperGenerator />}
         </div>
         <Disclaimer onFeedback={() => setIsFeedbackOpen(true)} />
       </main>

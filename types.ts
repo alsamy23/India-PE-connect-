@@ -131,6 +131,25 @@ export interface Worksheet {
   }[];
 }
 
+export interface QuestionPaper {
+  title: string;
+  grade: string;
+  testType: string;
+  timeAllowed: string;
+  maxMarks: number;
+  sections: {
+    sectionId: string;
+    instructions: string;
+    questions: {
+      question: string;
+      marks: number;
+      options?: string[];
+      answer?: string;
+      caseStudyText?: string;
+    }[];
+  }[];
+}
+
 export interface SkillProgression {
   skillName: string;
   level: string;

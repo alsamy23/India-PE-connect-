@@ -601,3 +601,49 @@ Professional, warm, and clear tone. Language: ${language}. Indian school context
   });
   return safeParseJson(response.text);
 };
+
+// ── Test Question Paper Generator ──────────────────────────────────────────
+export const generateQuestionPaper = async (
+  grade: string, 
+  chapters: string[], 
+  testType: string, 
+  language: Language = 'English'
+) => {
+  const isClass12 = grade === '12';
+  const isFullPaper = testType.toLowerCase().includes('term') || testType.toLowerCase().includes('preboard');
+  const maxMarks = isFullPaper ? 70 : 35;
+  const timeAllowed = isFullPaper ? '3 Hours' : '90 Minutes';
+
+  const response = await callAIBase({
+    model: "claude-sonnet",
+    contents: `Generate a CBSE ${grade} PE ${testType} for these chapters: ${chapters.join(', ')}. Language: ${language}.`,
+    config: {
+      systemInstruction: `You are an expert CBSE Physical Education Teacher (NCERT 2025-26). 
+Generate a ${maxMarks}-mark question paper in JSON format: { title, grade, testType, timeAllowed, maxMarks, sections: [...] }.
+
+STRUCTURE RULES:
+For 70 Marks: 
+- Section A: 18 MCQs (1m each)
+- Section B: 5 Very Short (2m each)
+- Section C: 5 Short (3m each)
+- Section D: 3 Case Studies (4m each)
+- Section E: 3 Long Answer (5m each)
+
+For 35 Marks:
+- Section A: 10 MCQs (1m each)
+- Section B: 3 Short (2m each)
+- Section C: 3 Short (3m)
+- Section D: 1 Case Study (4m each)
+- Section E: 1 Long Answer (5m each)
+
+CONTENT RULES:
+- Use STRICT NCERT Class ${grade} textbook content.
+- Sections must include instructions like "Attempt any 5...".
+- Case studies must include a paragraph text.
+- Return EXACT JSON structure provided.`,
+      responseMimeType: "application/json",
+    },
+  });
+  return safeParseJson(response.text);
+};
+
