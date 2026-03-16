@@ -158,25 +158,25 @@ const QuestionPaperGenerator: React.FC = () => {
         <div className="bg-white p-12 md:p-16 rounded-[3rem] border border-slate-100 shadow-2xl print:shadow-none print:border-none print:p-0">
           {/* Header */}
           <div className="text-center space-y-4 mb-12 border-b-2 border-slate-900 pb-8">
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tighter">{paper.title}</h1>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tighter">{String(paper.title || 'Question Paper')}</h1>
             <div className="flex flex-wrap justify-center gap-6 text-sm font-black text-slate-500 uppercase tracking-widest">
-              <span>Class: {paper.grade}</span>
-              <span>Time: {paper.timeAllowed}</span>
-              <span>Max Marks: {paper.maxMarks}</span>
+              <span>Class: {String(paper.grade)}</span>
+              <span>Time: {String(paper.timeAllowed)}</span>
+              <span>Max Marks: {String(paper.maxMarks)}</span>
             </div>
             <p className="text-[10px] font-black text-slate-400">Strictly Based on NCERT Physical Education Curriculum 2025-26</p>
           </div>
 
           {/* Sections */}
           <div className="space-y-12">
-            {paper.sections.map((section, sidx) => (
+            {paper.sections && Array.isArray(paper.sections) ? paper.sections.map((section, sidx) => (
               <div key={sidx} className="space-y-6">
                 <div className="bg-slate-900 text-white px-6 py-3 rounded-xl inline-block font-black uppercase text-xs tracking-widest">
-                  {section.sectionId}
+                  {String(section.sectionId || `Section ${sidx + 1}`)}
                 </div>
-                <p className="text-xs font-bold text-slate-500 italic border-l-4 border-indigo-500 pl-4">{section.instructions}</p>
+                <p className="text-xs font-bold text-slate-500 italic border-l-4 border-indigo-500 pl-4">{String(section.instructions || '')}</p>
                 <div className="space-y-8 mt-6">
-                  {section.questions.map((q, qidx) => (
+                  {section.questions && Array.isArray(section.questions) && section.questions.map((q, qidx) => (
                     <div key={qidx} className="relative group">
                       <div className="flex justify-between items-start mb-2">
                          <div className="flex items-start space-x-4">
@@ -185,29 +185,34 @@ const QuestionPaperGenerator: React.FC = () => {
                                {q.caseStudyText && (
                                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-sm font-medium leading-relaxed italic text-slate-600 mb-4">
                                    <Zap size={16} className="text-indigo-500 mb-2" />
-                                   {q.caseStudyText}
+                                   {String(q.caseStudyText)}
                                  </div>
                                )}
-                               <p className="text-lg font-bold text-slate-800 leading-tight pr-12">{q.question}</p>
-                               {q.options && (
+                               <p className="text-lg font-bold text-slate-800 leading-tight pr-12">{String(q.question)}</p>
+                               {q.options && Array.isArray(q.options) && (
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                                    {q.options.map((opt, oidx) => (
                                      <div key={oidx} className="flex items-center space-x-3 p-3 rounded-xl border border-slate-100 bg-slate-50/50 text-sm font-medium">
                                        <span className="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black">{String.fromCharCode(65 + oidx)}</span>
-                                       <span>{opt}</span>
+                                       <span>{String(opt)}</span>
                                      </div>
                                    ))}
                                  </div>
                                )}
                             </div>
                          </div>
-                         <span className="flex-shrink-0 font-black text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">[{q.marks}M]</span>
+                         <span className="flex-shrink-0 font-black text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">[{String(q.marks)}M]</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-20 text-slate-400">
+                <FileText size={48} className="mx-auto mb-4 opacity-20" />
+                <p className="font-bold">No sections generated. Please try again.</p>
+              </div>
+            )}
           </div>
           
           <div className="mt-16 text-center border-t border-slate-100 pt-8 opacity-40">
