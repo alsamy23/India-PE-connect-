@@ -639,12 +639,12 @@ STRUCTURE FOR 35 MARKS (15 Questions Total):
 - Section C: Q9-Q13 (5 Short Answer, 3m each, 100-150 words). IMPORTANT: Q13 MUST be a Case Study with 3 sub-questions (i, ii, iii).
 - Section D: Q14-Q15 (2 Long Answer, 5m each, 180-220 words). Provide internal choice (OR) for both.
 
-STRUCTURE FOR 70 MARKS (Standard CBSE Board Pattern):
-- Section A: 18 MCQs (1m each)
-- Section B: 5 Very Short (2m each, 60-90 words)
-- Section C: 5 Short (3m each, 100-150 words)
-- Section D: 3 Case Studies (4m each)
-- Section E: 3 Long Answer (5m each, 200-300 words)
+STRUCTURE FOR 70 MARKS (Standard CBSE Board Pattern - 37 Questions):
+- Section A: Q1-Q18 (18 MCQs, 1m each)
+- Section B: Q19-Q24 (6 Very Short, 2m each, 60-90 words). Provide internal choice (OR) for one question or instruction to "Attempt any 5".
+- Section C: Q25-Q30 (6 Short, 3m each, 100-150 words). Provide internal choice (OR) for one question or instruction to "Attempt any 5".
+- Section D: Q31-Q33 (3 Case Studies, 4m each)
+- Section E: Q34-Q37 (4 Long Answer, 5m each, 200-300 words). Provide internal choice (OR) or instruction to "Attempt any 3".
 
 CONTENT RULES:
 - Use STRICT NCERT Class ${grade} textbook content.

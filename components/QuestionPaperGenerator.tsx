@@ -16,6 +16,7 @@ import {
   Layers
 } from 'lucide-react';
 import { generateQuestionPaper } from '../services/geminiService.ts';
+import { exportToWord } from '../services/docxExport.ts';
 import { QuestionPaper, Language } from '../types.ts';
 
 const CHAPTERS_11 = [
@@ -144,6 +145,13 @@ const QuestionPaperGenerator: React.FC = () => {
             >
               <Download size={14} />
               <span>Download Text</span>
+            </button>
+            <button 
+              onClick={() => paper && exportToWord(paper)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center space-x-2 shadow-lg shadow-blue-200"
+            >
+              <FileText size={14} />
+              <span>Download Word</span>
             </button>
             <button 
               onClick={handlePrint}
