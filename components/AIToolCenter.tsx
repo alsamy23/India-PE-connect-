@@ -14,22 +14,25 @@ interface Tool {
   description: string;
   icon: any;
   color: string;
+  sport: string;
+  emoji: string;
+  gradient: string;
 }
 
 const tools: Tool[] = [
-  { id: 'unit-planner', name: 'Unit Planner', description: 'Generate multi-week curriculum-aligned plans.', icon: Calendar, color: 'bg-blue-500' },
-  { id: 'rubric-maker', name: 'Rubric Maker', description: 'Assessment rubrics for any skill and age group.', icon: Layout, color: 'bg-purple-500' },
-  { id: 'worksheet-maker', name: 'Worksheet Maker', description: 'Engagement worksheets and theoretical tests.', icon: FileText, color: 'bg-indigo-500' },
-  { id: 'report-writer', name: 'Report Writer', description: 'Professional feedback and student report comments.', icon: FileSpreadsheet, color: 'bg-emerald-500' },
-  { id: 'game-generator', name: 'PE Games Generator', description: '5 skill-specific games for your class.', icon: Gamepad2, color: 'bg-orange-500' },
-  { id: 'round-robin', name: 'Tournament Maker', description: 'Balanced schedules for teams and playing areas.', icon: Split, color: 'bg-pink-500' },
-  { id: 'adapted-pe', name: 'Adapted PE', description: 'Inclusion modifications for students with disabilities.', icon: Accessibility, color: 'bg-sky-500' },
-  { id: 'differentiator', name: 'Differentiated Instruction', description: 'Tailored modifications for all skill levels.', icon: Target, color: 'bg-red-500' },
-  { id: 'progression-builder', name: 'Progression Builder', description: 'Technical skill mastery pathways with cues.', icon: Dumbbell, color: 'bg-cyan-500' },
-  { id: 'sports-science', name: 'Sports Science', description: 'Experiential learning connecting PE with science.', icon: Microscope, color: 'bg-yellow-500' },
-  { id: 'ask-advisor', name: 'Connected India PE', description: 'Get tailored advice on any PE teaching query.', icon: MessageSquare, color: 'bg-slate-700' },
-  { id: 'lesson-observer', name: 'Lesson Observator', description: 'Generate constructive peer-feedback forms.', icon: ClipboardCheck, color: 'bg-teal-500' },
-  { id: 'policy-writer', name: 'PE Policy Writer', description: 'Draft school-wide PE and safety policies.', icon: BookMarked, color: 'bg-indigo-800' },
+  { id: 'unit-planner', name: 'Unit Planner', description: 'Generate multi-week curriculum-aligned plans.', icon: Calendar, color: 'bg-blue-500', sport: 'Athletics Track', emoji: '🏃', gradient: 'from-blue-500 to-cyan-500' },
+  { id: 'rubric-maker', name: 'Rubric Maker', description: 'Assessment rubrics for any skill and age group.', icon: Layout, color: 'bg-purple-500', sport: 'Skill Stations', emoji: '🎯', gradient: 'from-purple-500 to-fuchsia-500' },
+  { id: 'worksheet-maker', name: 'Worksheet Maker', description: 'Engagement worksheets and theoretical tests.', icon: FileText, color: 'bg-indigo-500', sport: 'Classroom Theory', emoji: '📘', gradient: 'from-indigo-500 to-violet-600' },
+  { id: 'report-writer', name: 'Report Writer', description: 'Professional feedback and student report comments.', icon: FileSpreadsheet, color: 'bg-emerald-500', sport: 'Progress Review', emoji: '📊', gradient: 'from-emerald-500 to-teal-500' },
+  { id: 'game-generator', name: 'PE Games Generator', description: '5 skill-specific games for your class.', icon: Gamepad2, color: 'bg-orange-500', sport: 'Football Court', emoji: '⚽', gradient: 'from-orange-500 to-amber-500' },
+  { id: 'round-robin', name: 'Tournament Maker', description: 'Balanced schedules for teams and playing areas.', icon: Split, color: 'bg-pink-500', sport: 'Tournament Day', emoji: '🏆', gradient: 'from-pink-500 to-rose-500' },
+  { id: 'adapted-pe', name: 'Adapted PE', description: 'Inclusion modifications for students with disabilities.', icon: Accessibility, color: 'bg-sky-500', sport: 'Inclusive Play', emoji: '🤝', gradient: 'from-sky-500 to-blue-500' },
+  { id: 'differentiator', name: 'Differentiated Instruction', description: 'Tailored modifications for all skill levels.', icon: Target, color: 'bg-red-500', sport: 'Mixed Ability Group', emoji: '🥅', gradient: 'from-red-500 to-orange-500' },
+  { id: 'progression-builder', name: 'Progression Builder', description: 'Technical skill mastery pathways with cues.', icon: Dumbbell, color: 'bg-cyan-500', sport: 'Skill Ladder', emoji: '🏋️', gradient: 'from-cyan-500 to-sky-500' },
+  { id: 'sports-science', name: 'Sports Science', description: 'Experiential learning connecting PE with science.', icon: Microscope, color: 'bg-yellow-500', sport: 'Biomechanics Lab', emoji: '🔬', gradient: 'from-yellow-400 to-orange-500' },
+  { id: 'ask-advisor', name: 'Connected India PE', description: 'Get tailored advice on any PE teaching query.', icon: MessageSquare, color: 'bg-slate-700', sport: 'Coach Desk', emoji: '💬', gradient: 'from-slate-700 to-slate-900' },
+  { id: 'lesson-observer', name: 'Lesson Observator', description: 'Generate constructive peer-feedback forms.', icon: ClipboardCheck, color: 'bg-teal-500', sport: 'Observation Walkthrough', emoji: '👀', gradient: 'from-teal-500 to-emerald-500' },
+  { id: 'policy-writer', name: 'PE Policy Writer', description: 'Draft school-wide PE and safety policies.', icon: BookMarked, color: 'bg-indigo-800', sport: 'School Governance', emoji: '🛡️', gradient: 'from-indigo-800 to-slate-800' },
 ];
 
 const AIToolCenter: React.FC = () => {
@@ -75,14 +78,25 @@ const AIToolCenter: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-4">
             <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 sticky top-8">
-              <div className={`w-16 h-16 rounded-2xl ${selectedTool.color} flex items-center justify-center text-white mb-6 shadow-xl`}>
-                <selectedTool.icon size={32} />
+              <div className={`relative rounded-[2rem] bg-gradient-to-br ${selectedTool.gradient} p-6 text-white mb-6 overflow-hidden`}>
+                <div className="absolute -right-4 -bottom-7 text-[88px] opacity-15">{selectedTool.emoji}</div>
+                <div className={`w-16 h-16 rounded-2xl ${selectedTool.color} flex items-center justify-center text-white shadow-xl relative z-10`}>
+                  <selectedTool.icon size={32} />
+                </div>
+                <div className="mt-5 relative z-10">
+                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/70 mb-2">{selectedTool.sport}</p>
+                  <p className="text-sm font-semibold text-white/90 max-w-[14rem]">{selectedTool.description}</p>
+                </div>
               </div>
               <h2 className="text-2xl font-black text-slate-800 mb-2 leading-tight">{selectedTool.name}</h2>
               <p className="text-slate-400 text-sm font-medium mb-8">{selectedTool.description}</p>
 
               <div className="space-y-4">
                 <input className="w-full bg-slate-50 border p-4 rounded-xl font-bold outline-none" placeholder="Topic / Skill / Focus" onChange={e => setFormData({...formData, topic: e.target.value})} />
+                <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Prompt tip</p>
+                  <p className="text-xs text-slate-500 font-medium">Try sport + class + outcome, for example: “Basketball dribbling for Class 8 with 40 students and one court.”</p>
+                </div>
                 <button 
                   onClick={runTool}
                   disabled={loading}
@@ -195,13 +209,22 @@ const AIToolCenter: React.FC = () => {
           <button
             key={tool.id}
             onClick={() => handleToolClick(tool)}
-            className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all group text-left flex flex-col items-start"
+            className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all group text-left flex flex-col overflow-hidden"
           >
-            <div className={`p-4 rounded-2xl ${tool.color} text-white mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
-              <tool.icon size={28} />
+            <div className={`relative h-36 bg-gradient-to-br ${tool.gradient} p-6 text-white overflow-hidden`}>
+              <div className="absolute top-4 right-4 rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-widest backdrop-blur-sm">
+                {tool.sport}
+              </div>
+              <div className="absolute -right-5 -bottom-8 text-[92px] opacity-20">{tool.emoji}</div>
+              <div className={`relative z-10 p-4 rounded-2xl ${tool.color} text-white mb-6 group-hover:scale-110 transition-transform shadow-lg inline-flex`}>
+                <tool.icon size={28} />
+              </div>
             </div>
-            <h3 className="text-xl font-black text-slate-800 mb-2 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">{tool.name}</h3>
-            <p className="text-sm text-slate-400 font-medium leading-relaxed">{tool.description}</p>
+            <div className="p-8 pt-6 flex-1 flex flex-col">
+              <h3 className="text-xl font-black text-slate-800 mb-2 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">{tool.name}</h3>
+              <p className="text-sm text-slate-400 font-medium leading-relaxed">{tool.description}</p>
+              <div className="mt-5 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Sport-led tool card</div>
+            </div>
           </button>
         ))}
       </div>

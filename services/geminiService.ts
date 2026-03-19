@@ -613,10 +613,12 @@ export const generateQuestionPaper = async (
   const isFullPaper = testType.toLowerCase().includes('term') || testType.toLowerCase().includes('preboard');
   const maxMarks = isFullPaper ? 70 : 35;
   const timeAllowed = isFullPaper ? '3 Hours' : '90 Minutes';
+  const chapterList = chapters.map((chapter, index) => `${index + 1}. ${chapter}`).join('\n');
+  const chapterCount = Math.max(chapters.length, 1);
 
   const response = await callAIBase({
     model: "claude-sonnet",
-    contents: `Generate a CBSE ${grade} PE ${testType} for these chapters: ${chapters.join(', ')}. Language: ${language}.`,
+    contents: `Generate a CBSE ${grade} PE ${testType} strictly for these chapters:\n${chapterList}\n\nLanguage: ${language}.`,
     config: {
       systemInstruction: `You are an expert CBSE Physical Education Teacher (NCERT 2025-26). 
 Generate a ${maxMarks}-mark question paper in JSON format: { title, grade, testType, timeAllowed, maxMarks, generalInstructions: [], sections: [...] }.
@@ -648,12 +650,16 @@ STRUCTURE FOR 70 MARKS (Standard CBSE Board Pattern - 37 Questions):
 
 CONTENT RULES:
 - Use STRICT NCERT Class ${grade} textbook content.
+- Use ONLY the selected chapters listed in the user prompt. Do not pull questions from any other chapter, unit, or grade.
+- Make sure every selected chapter appears at least once across the paper. Balance question coverage as evenly as possible across the ${chapterCount} chosen chapters.
+- If a question references a chapter idea, it must clearly belong to one of these selected chapters: ${chapters.join(', ')}.
+- Write the full paper in ${language}. Do not mix languages unless the user explicitly requested bilingual output.
 - Sections must include headers like "Section A", "Section B" etc.
 - Support Internal Choices (OR) for 5-mark questions by putting "OR" in the question text or as a separate question object if needed (but prefer keeping total question count).
+- The title should mention the selected test type and the selected chapter scope.
 - Return EXACT JSON structure.`,
       responseMimeType: "application/json",
     },
   });
   return safeParseJson(response.text);
 };
-

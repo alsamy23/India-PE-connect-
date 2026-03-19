@@ -103,8 +103,8 @@ const App: React.FC = () => {
       
       if (data.status === 'ok') {
         setApiStatus('ok');
-        setAiProviders({ gemini: data.hasKey || false, groq: false });
-        setApiSource('Claude');
+        setAiProviders({ gemini: false, groq: data.hasKey || false });
+        setApiSource('Groq');
         setDebugInfo(data);
         // If we were missing a key and now have one, close the dialog
         if (isKeyDialogOpen && data.hasKey) {
@@ -264,36 +264,36 @@ const App: React.FC = () => {
               <div className="p-5 bg-indigo-50 rounded-3xl border-2 border-indigo-100 shadow-sm">
                 <p className="text-sm font-black text-indigo-900 mb-3 flex items-center">
                   <span className="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-xs mr-3 shadow-lg shadow-indigo-200">1</span>
-                  Option A: Paid Gemini Key (Primary)
+                  Option A: Connect Groq API (Recommended)
                 </p>
                 <p className="text-xs text-indigo-700 mb-5 leading-relaxed font-medium">
-                  The standard AI engine. If you see "Expired Key" or "Quota" errors, click below to renew, select, or upgrade to a key from a paid project.
+                  SmartPE is currently wired to the Groq API. Add a valid Groq key so the lesson planner, tools, and test generator can all respond consistently.
                 </p>
                 <button 
                   onClick={triggerKeySelector}
                   className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center space-x-3"
                 >
                   <Sparkles size={18} />
-                  <span>Renew / Upgrade to Paid Key</span>
+                  <span>Open Key Selector</span>
                 </button>
               </div>
 
               <div className="p-5 bg-orange-50 rounded-3xl border-2 border-orange-100 shadow-sm">
                 <p className="text-sm font-black text-orange-900 mb-3 flex items-center">
                   <span className="w-8 h-8 bg-orange-600 text-white rounded-xl flex items-center justify-center text-xs mr-3 shadow-lg shadow-orange-200">2</span>
-                  Option B: Groq Key (Recommended Fallback)
+                  Option B: Add Environment Variable
                 </p>
                 <div className="mb-4 p-3 bg-white/80 rounded-2xl border border-orange-200">
                   <p className="text-[11px] text-orange-800 font-black flex items-center mb-1">
                     <AlertCircle size={14} className="mr-2" />
-                    GETTING A "NO PAID PROJECT" ERROR?
+                    FASTEST WAY TO GET THE APP WORKING
                   </p>
                   <p className="text-[10px] text-orange-700 leading-tight">
-                    If Gemini shows a "No Paid Project" error, skip it! Use Groq instead—it's free, 10x faster, and doesn't require a paid Google account.
+                    Create a free Groq key and save it as <code className="bg-orange-100 px-1 py-0.5 rounded">GROQ_API_KEY</code>. That is the key the current backend checks.
                   </p>
                 </div>
                 <p className="text-xs text-orange-800 mb-4 leading-relaxed font-medium">
-                  <b>Best for speed!</b> Groq works when Gemini is busy or restricted.
+                  <b>Best for speed:</b> Groq powers the current API endpoints used throughout the app.
                 </p>
                 <div className="bg-white/50 p-4 rounded-2xl mb-5 space-y-3">
                   <div className="flex items-start space-x-3">
@@ -330,7 +330,7 @@ const App: React.FC = () => {
             </div>
 
             <p className="text-center text-[11px] text-slate-400 font-medium">
-              Need a key? Get one at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-600 underline">aistudio.google.com</a>
+              Need a key? Get one at <a href="https://console.groq.com/" target="_blank" rel="noreferrer" className="text-indigo-600 underline">console.groq.com</a>
             </p>
           </div>
         </div>
@@ -369,9 +369,7 @@ const App: React.FC = () => {
                 <div className="flex flex-col items-start">
                   <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">AI Connected</span>
                   <div className="flex items-center space-x-1">
-                    {aiProviders.gemini && <span className="text-[8px] font-bold text-indigo-400 uppercase">Claude AI</span>}
-                    
-                    
+                    {aiProviders.groq && <span className="text-[8px] font-bold text-indigo-400 uppercase">Groq AI</span>}
                   </div>
                 </div>
               </div>

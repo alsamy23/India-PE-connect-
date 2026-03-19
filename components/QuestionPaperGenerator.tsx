@@ -270,7 +270,7 @@ const QuestionPaperGenerator: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
          {/* Config Panel */}
          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
+            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8 lg:sticky lg:top-24">
               {/* Grade Selection */}
               <div className="space-y-4">
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Academic Level</label>
@@ -315,6 +315,15 @@ const QuestionPaperGenerator: React.FC = () => {
                 </div>
               </div>
 
+              <div className="rounded-[2rem] border border-indigo-100 bg-indigo-50/70 p-5 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-500">Coverage guardrails</p>
+                <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                  <li>• The paper should stay inside the chapters you select.</li>
+                  <li>• The output should remain in your selected language.</li>
+                  <li>• Pick 2–4 chapters for focused tests and more chapters for board-style papers.</li>
+                </ul>
+              </div>
+
               <button 
                 onClick={handleGenerate}
                 disabled={loading || selectedChapters.length === 0}
@@ -338,6 +347,21 @@ const QuestionPaperGenerator: React.FC = () => {
          {/* Chapter List */}
          <div className="lg:col-span-2">
             <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Grade</p>
+                  <p className="text-base font-black text-slate-800">Class {grade}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Test Type</p>
+                  <p className="text-base font-black text-slate-800">{TEST_TYPES.find(t => t.id === testType)?.name}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Language</p>
+                  <p className="text-base font-black text-slate-800">{language}</p>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Syllabus Coverage</h3>
@@ -345,6 +369,22 @@ const QuestionPaperGenerator: React.FC = () => {
                 </div>
                 <div className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">
                   {selectedChapters.length} Selected
+                </div>
+              </div>
+
+              <div className="rounded-[2rem] border border-slate-100 bg-slate-50 p-6">
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-700">Selected Chapter Scope</h4>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{selectedChapters.length} chapters</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedChapters.length > 0 ? selectedChapters.map(chapter => (
+                    <span key={chapter} className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600">
+                      {chapter}
+                    </span>
+                  )) : (
+                    <p className="text-sm text-slate-400 font-medium">Pick chapters below to define the paper scope before generating.</p>
+                  )}
                 </div>
               </div>
 
