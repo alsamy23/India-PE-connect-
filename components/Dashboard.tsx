@@ -39,13 +39,88 @@ const data = [
   { name: 'Sun', connections: 10 },
 ];
 
+const featuredToolLanes = [
+  {
+    id: 'planner',
+    name: 'Lesson Planner',
+    sport: 'Football Session',
+    desc: 'Build lesson flow, coaching cues, and equipment plans from one PE objective.',
+    emoji: '⚽',
+    gradient: 'from-emerald-500 to-lime-500'
+  },
+  {
+    id: 'testgen',
+    name: 'Test Generator',
+    sport: 'Theory Exam',
+    desc: 'Create chapter-based papers that stay aligned to Class 11/12 NCERT PE content.',
+    emoji: '📝',
+    gradient: 'from-indigo-500 to-violet-500'
+  },
+  {
+    id: 'warmup',
+    name: 'Warm-Up Builder',
+    sport: 'Athletics Prep',
+    desc: 'Generate fast sport-specific warm-up routines before a drill, game, or fitness block.',
+    emoji: '🏃',
+    gradient: 'from-rose-500 to-orange-500'
+  },
+  {
+    id: 'sportsquiz',
+    name: 'Sports Quiz',
+    sport: 'Quiz Battle',
+    desc: 'Spin up instant sports MCQs for theory revision, house competitions, or exit tickets.',
+    emoji: '🏅',
+    gradient: 'from-sky-500 to-cyan-500'
+  },
+];
+
+const landingSuggestions = [
+  {
+    title: 'Daily PE Teacher Home',
+    desc: 'Best default landing page for repeat use. Start with lesson planning, warm-ups, class widgets, and recent history.',
+    accent: 'from-indigo-500 to-sky-500',
+    points: ['Lesson Planner first', 'Quick warm-up access', 'Recent history + saved plans']
+  },
+  {
+    title: 'Theory & Exam Hub',
+    desc: 'Best for Class 11/12 usage. Promote theory notes, quizzes, and question paper generation higher in the layout.',
+    accent: 'from-violet-500 to-fuchsia-500',
+    points: ['Theory Master', 'Sports Quiz', 'Question Paper Generator']
+  },
+  {
+    title: 'Sports Operations Home',
+    desc: 'Useful for schools running events. Put Sports Day, report cards, parent communication, and student management together.',
+    accent: 'from-emerald-500 to-teal-500',
+    points: ['Student Management', 'Sports Day', 'Parent Letters']
+  },
+];
+
+const toolPriorityGroups = [
+  {
+    label: 'Core for this app',
+    tone: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    tools: ['Lesson Planner', 'Yearly Planner', 'Theory Master', 'Test Generator', 'Warm-Up', 'Sports Quiz', 'Student Management']
+  },
+  {
+    label: 'Good but secondary',
+    tone: 'bg-amber-50 text-amber-700 border-amber-100',
+    tools: ['Visual Physics', 'State Compliance', 'PE Widgets', 'Parent Letters', 'Report Cards']
+  },
+  {
+    label: 'Keep under “More tools”',
+    tone: 'bg-slate-100 text-slate-600 border-slate-200',
+    tools: ['Policy Writer', 'Lesson Observer', 'Connected India PE']
+  },
+];
+
 const Dashboard: React.FC<{ 
   apiStatus?: 'checking' | 'ok' | 'missing' | 'quota',
   debugInfo?: any,
   onTestConnection?: () => Promise<void>,
   isTesting?: boolean,
-  onNavigate?: (tab: any) => void
-}> = ({ apiStatus, debugInfo, onTestConnection, isTesting, onNavigate }) => {
+  onNavigate?: (tab: any) => void,
+  onOpenSetup?: () => void
+}> = ({ apiStatus, debugInfo, onTestConnection, isTesting, onNavigate, onOpenSetup }) => {
   const [history, setHistory] = React.useState<SavedItem[]>([]);
 
   React.useEffect(() => {
@@ -127,15 +202,15 @@ const Dashboard: React.FC<{
             </div>
             <div>
               <h4 className="font-black text-lg text-slate-800 uppercase tracking-tight">AI Connection Required</h4>
-              <p className="text-sm text-slate-400 font-medium">Configure your Gemini API key to unlock full AI capabilities.</p>
+              <p className="text-sm text-slate-400 font-medium">Configure your Groq API key to unlock the planners, quiz tools, and test generator.</p>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
             <button 
-              onClick={() => (window as any).aistudio?.openSelectKey()}
+              onClick={() => onOpenSetup?.()}
               className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all"
             >
-              Connect / Upgrade AI
+              Open Setup Guide
             </button>
             <button 
               onClick={() => onTestConnection?.()}
@@ -148,6 +223,99 @@ const Dashboard: React.FC<{
           </div>
         </div>
       )}
+
+      <div className="space-y-5">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500 mb-2">Landing page direction</p>
+            <h2 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900">Show the product through sport-first tool cards.</h2>
+          </div>
+          <button
+            onClick={() => onNavigate?.('tools')}
+            className="hidden md:inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 font-black text-xs uppercase tracking-widest hover:border-indigo-200 hover:text-indigo-600 transition-all"
+          >
+            <Wrench size={16} />
+            Explore all tools
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+          {featuredToolLanes.map((tool) => (
+            <button
+              key={tool.id}
+              onClick={() => onNavigate?.(tool.id as any)}
+              className="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm hover:-translate-y-1.5 hover:shadow-xl transition-all text-left"
+            >
+              <div className={`relative h-40 bg-gradient-to-br ${tool.gradient} p-6 text-white overflow-hidden`}>
+                <div className="absolute -right-6 -bottom-8 text-[96px] opacity-20">{tool.emoji}</div>
+                <div className="absolute top-4 right-4 rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-widest backdrop-blur-sm">
+                  {tool.sport}
+                </div>
+                <div className="relative z-10 max-w-[11rem]">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/75 mb-3">Featured Tool</p>
+                  <h3 className="text-2xl font-black leading-tight">{tool.name}</h3>
+                </div>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-slate-500 font-medium leading-relaxed">{tool.desc}</p>
+                <div className="mt-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700 group-hover:text-indigo-600">
+                  Open tool
+                  <ArrowRight size={14} />
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {landingSuggestions.map((item) => (
+          <div key={item.title} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className={`bg-gradient-to-r ${item.accent} px-6 py-5 text-white`}>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/70 mb-2">Landing Suggestion</p>
+              <h3 className="text-2xl font-black leading-tight">{item.title}</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-slate-500 font-medium leading-relaxed mb-4">{item.desc}</p>
+              <div className="space-y-2">
+                {item.points.map(point => (
+                  <div key={point} className="text-xs font-bold text-slate-600 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                    {point}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500 mb-2">Tool fit review</p>
+            <h3 className="text-2xl font-black tracking-tight text-slate-900">Which tools feel most relevant for SmartPE India.</h3>
+          </div>
+          <p className="text-sm text-slate-400 font-medium max-w-xl">
+            Use this as a guide for what should stay on the first screen versus what can move into a secondary “More Tools” area.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {toolPriorityGroups.map((group) => (
+            <div key={group.label} className={`rounded-[2rem] border p-5 ${group.tone}`}>
+              <h4 className="text-sm font-black uppercase tracking-widest mb-4">{group.label}</h4>
+              <div className="flex flex-wrap gap-2">
+                {group.tools.map(tool => (
+                  <span key={tool} className="px-3 py-2 rounded-xl bg-white/80 text-xs font-black">
+                    {tool}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* New Tools Quick Launch */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
