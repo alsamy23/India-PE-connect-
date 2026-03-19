@@ -52,6 +52,8 @@ const TEST_TYPES = [
   { id: 'preboard', name: 'Pre-board Exam', marks: 70, icon: GraduationCap }
 ];
 
+const LANGUAGE_OPTIONS: Language[] = ['English', 'Hindi', 'Marathi', 'Tamil', 'Bengali'];
+
 const QuestionPaperGenerator: React.FC = () => {
   const [grade, setGrade] = useState('12');
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
@@ -322,6 +324,25 @@ const QuestionPaperGenerator: React.FC = () => {
                   <li>• The output should remain in your selected language.</li>
                   <li>• Pick 2–4 chapters for focused tests and more chapters for board-style papers.</li>
                 </ul>
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Output Language</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {LANGUAGE_OPTIONS.map(option => (
+                    <button
+                      key={option}
+                      onClick={() => setLanguage(option)}
+                      className={`px-4 py-3 rounded-2xl border text-xs font-black uppercase tracking-widest transition-all ${
+                        language === option
+                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm'
+                          : 'border-slate-100 bg-white text-slate-500 hover:border-indigo-200 hover:text-indigo-600'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <button 

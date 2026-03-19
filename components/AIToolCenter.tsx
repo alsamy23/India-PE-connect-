@@ -51,10 +51,15 @@ const AIToolCenter: React.FC = () => {
 
   const runTool = async () => {
     if (!selectedTool) return;
+    const topic = String(formData.topic || '').trim();
+    if (!topic) {
+      setError('Add a topic, skill, or focus area before building the resource.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const data = await generateAIToolContent(selectedTool.id, formData);
+      const data = await generateAIToolContent(selectedTool.id, { ...formData, topic });
       setResult(data);
     } catch (e: any) {
       console.error("Tool execution failed:", e);

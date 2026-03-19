@@ -169,10 +169,6 @@ const App: React.FC = () => {
     }
   };
 
-  const triggerKeySelector = async () => {
-    await handleSelectKey();
-  };
-
   const handleTestConnection = async () => {
     setIsTesting(true);
     setGlobalError(null);
@@ -264,18 +260,20 @@ const App: React.FC = () => {
               <div className="p-5 bg-indigo-50 rounded-3xl border-2 border-indigo-100 shadow-sm">
                 <p className="text-sm font-black text-indigo-900 mb-3 flex items-center">
                   <span className="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-xs mr-3 shadow-lg shadow-indigo-200">1</span>
-                  Option A: Connect Groq API (Recommended)
+                  Option A: Get a Groq Key
                 </p>
                 <p className="text-xs text-indigo-700 mb-5 leading-relaxed font-medium">
                   SmartPE is currently wired to the Groq API. Add a valid Groq key so the lesson planner, tools, and test generator can all respond consistently.
                 </p>
-                <button 
-                  onClick={triggerKeySelector}
+                <a 
+                  href="https://console.groq.com/"
+                  target="_blank"
+                  rel="noreferrer"
                   className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center space-x-3"
                 >
                   <Sparkles size={18} />
-                  <span>Open Key Selector</span>
-                </button>
+                  <span>Open console.groq.com</span>
+                </a>
               </div>
 
               <div className="p-5 bg-orange-50 rounded-3xl border-2 border-orange-100 shadow-sm">
@@ -504,12 +502,13 @@ const App: React.FC = () => {
         )}
         <div className="max-w-7xl mx-auto p-6 md:p-12 min-h-full print:p-0">
           {activeTab === 'dashboard' && (
-            <Dashboard 
+                    <Dashboard 
               apiStatus={apiStatus} 
               debugInfo={debugInfo}
               onTestConnection={handleTestConnection}
               isTesting={isTesting}
               onNavigate={setActiveTab}
+              onOpenSetup={() => setIsKeyDialogOpen(true)}
             />
           )}
           {activeTab === 'yearly' && <YearlyPlanner />}

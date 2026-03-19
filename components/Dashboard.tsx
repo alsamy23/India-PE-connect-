@@ -79,8 +79,9 @@ const Dashboard: React.FC<{
   debugInfo?: any,
   onTestConnection?: () => Promise<void>,
   isTesting?: boolean,
-  onNavigate?: (tab: any) => void
-}> = ({ apiStatus, debugInfo, onTestConnection, isTesting, onNavigate }) => {
+  onNavigate?: (tab: any) => void,
+  onOpenSetup?: () => void
+}> = ({ apiStatus, debugInfo, onTestConnection, isTesting, onNavigate, onOpenSetup }) => {
   const [history, setHistory] = React.useState<SavedItem[]>([]);
 
   React.useEffect(() => {
@@ -167,10 +168,10 @@ const Dashboard: React.FC<{
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
             <button 
-              onClick={() => (window as any).aistudio?.openSelectKey()}
+              onClick={() => onOpenSetup?.()}
               className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all"
             >
-              Connect / Upgrade AI
+              Open Setup Guide
             </button>
             <button 
               onClick={() => onTestConnection?.()}
