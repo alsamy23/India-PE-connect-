@@ -2,6 +2,8 @@ import React from 'react';
 
 // New Sleek Logo for SmartPE India
 const Logo: React.FC<{ size?: number; showText?: boolean }> = ({ size = 48, showText = true }) => {
+  const isCompact = size < 40;
+
   return (
     <div className="flex items-center gap-3">
       {/* Logo Mark */}
@@ -47,16 +49,21 @@ const Logo: React.FC<{ size?: number; showText?: boolean }> = ({ size = 48, show
 
       {/* Text */}
       {showText && (
-        <div className="flex flex-col leading-none">
-          <span className="font-black text-white tracking-tighter" style={{ fontSize: size * 0.38, letterSpacing: '-0.03em' }}>
-            SMART<span className="text-orange-500">PE</span>
+        <div className="min-w-0 flex flex-col justify-center">
+          <span
+            className="whitespace-nowrap font-black text-slate-900"
+            style={{ fontSize: Math.max(size * 0.26, 14), letterSpacing: '-0.04em', lineHeight: 1 }}
+          >
+            SMART <span className="text-orange-500">PE</span> INDIA
           </span>
-          <span className="font-bold text-orange-400 tracking-widest uppercase" style={{ fontSize: size * 0.18 }}>
-            INDIA
-          </span>
-          <span className="text-indigo-300 font-semibold uppercase tracking-widest" style={{ fontSize: size * 0.10 }}>
-            Empower PE Teacher &amp; Coaches
-          </span>
+          {!isCompact && (
+            <span
+              className="mt-1 whitespace-nowrap font-semibold uppercase text-indigo-500"
+              style={{ fontSize: Math.max(size * 0.115, 9), letterSpacing: '0.18em', lineHeight: 1.15 }}
+            >
+              Empowering PE Teachers &amp; Coaches
+            </span>
+          )}
         </div>
       )}
     </div>

@@ -612,41 +612,76 @@ export const generateQuestionPaper = async (
   const isClass12 = grade === '12';
   const isFullPaper = testType.toLowerCase().includes('term') || testType.toLowerCase().includes('preboard');
   const maxMarks = isFullPaper ? 70 : 35;
-  const timeAllowed = isFullPaper ? '3 Hours' : '90 Minutes';
+  const timeAllowed = isFullPaper ? '3 HRS' : '90 Minutes';
   const chapterList = chapters.map((chapter, index) => `${index + 1}. ${chapter}`).join('\n');
   const chapterCount = Math.max(chapters.length, 1);
+
+  const sectionBlueprint = isFullPaper
+    ? `For 70 marks, return EXACTLY 5 sections with this sequence:
+- Section A / heading "SECTION A" / questionRange "Q1-Q18" / 18 questions / 1 mark each / MCQ only.
+- Section B / heading "SECTION B" / questionRange "Q19-Q24" / 6 questions / 2 marks each / very short answer. The section instruction must say "Attempt any 5."
+- Section C / heading "SECTION C" / questionRange "Q25-Q30" / 6 questions / 3 marks each / short answer. The section instruction must say "Attempt any 5."
+- Section D / heading "SECTION D" / questionRange "Q31-Q33" / 3 questions / 4 marks each / case-study format with four sub-parts each.
+- Section E / heading "SECTION E" / questionRange "Q34-Q37" / 4 questions / 5 marks each / long answer. The section instruction must say "Attempt any 3."
+Use questionNumber fields 1 through 37 in order.`
+    : `For 35 marks, return the standard 4-section structure already used in school tests with questionNumber fields in order.`;
 
   const response = await callAIBase({
     model: "claude-sonnet",
     contents: `Generate a CBSE ${grade} PE ${testType} strictly for these chapters:\n${chapterList}\n\nLanguage: ${language}.`,
     config: {
-      systemInstruction: `You are an expert CBSE Physical Education Teacher (NCERT 2025-26). 
-Generate a ${maxMarks}-mark question paper in JSON format: { title, grade, testType, timeAllowed, maxMarks, generalInstructions: [], sections: [...] }.
-
-GENERAL INSTRUCTIONS FOR ALL PAPERS:
-1. The question paper consists of 15 questions (for 35m) or 37 questions (for 70m).
-2. All questions are compulsory.
-
-STRUCTURE FOR 35 MARKS (15 Questions Total):
-- generalInstructions: [
-    "The question paper consists of 15 questions.",
-    "All questions are compulsory.",
-    "Question 1 – 6 carry 1 mark.",
-    "Question 7 and 8 carry 2 marks each and should not exceed 30 – 50 words.",
-    "Question 9 - 13 carry 3 marks each and should not exceed 100 – 150 words.",
-    "Question 14 – 15 carry 5 marks each and should not exceed 180 - 220 words."
+      systemInstruction: `You are an expert CBSE Physical Education Teacher (NCERT 2025-26) and official question paper setter.
+Generate a ${maxMarks}-mark question paper in JSON format:
+{
+  title,
+  grade,
+  displayGrade,
+  subjectCode,
+  sessionLabel,
+  testType,
+  timeAllowed,
+  maxMarks,
+  generalInstructions: string[],
+  sections: [
+    {
+      sectionId,
+      heading,
+      questionRange,
+      instructions,
+      questions: [
+        {
+          questionNumber,
+          question,
+          marks,
+          options?,
+          caseStudyText?,
+          subQuestions?,
+          internalChoice?,
+          figureLabel?,
+          visuallyImpairedAlternative?
+        }
+      ]
+    }
   ]
-- Section A: Q1-Q6 (6 MCQs, 1m each).
-- Section B: Q7-Q8 (2 Short Answer, 2m each, 30-50 words).
-- Section C: Q9-Q13 (5 Short Answer, 3m each, 100-150 words). IMPORTANT: Q13 MUST be a Case Study with 3 sub-questions (i, ii, iii).
-- Section D: Q14-Q15 (2 Long Answer, 5m each, 180-220 words). Provide internal choice (OR) for both.
+}.
 
-STRUCTURE FOR 70 MARKS (Standard CBSE Board Pattern - 37 Questions):
-- Section A: Q1-Q18 (18 MCQs, 1m each)
-- Section B: Q19-Q24 (6 Very Short, 2m each, 60-90 words). Provide internal choice (OR) for one question or instruction to "Attempt any 5".
-- Section C: Q25-Q30 (6 Short, 3m each, 100-150 words). Provide internal choice (OR) for one question or instruction to "Attempt any 5".
-- Section D: Q31-Q33 (3 Case Studies, 4m each)
-- Section E: Q34-Q37 (4 Long Answer, 5m each, 200-300 words). Provide internal choice (OR) or instruction to "Attempt any 3".
+GENERAL INSTRUCTIONS FOR 70 MARKS MUST MATCH THIS PATTERN IN CLEAR SCHOOL EXAM LANGUAGE:
+1. The question paper consists of 5 sections and 37 questions.
+2. Section A consists of question 1-18 carrying 1 mark each and is multiple choice questions. All questions are compulsory.
+3. Section B consists of questions 19-24 carrying 2 marks each and are very short answer types and should not exceed 60-90 words. Attempt any 5.
+4. Section C consists of questions 25-30 carrying 3 marks each and are short answer types and should not exceed 100-150 words. Attempt any 5.
+5. Section D consists of questions 31-33 carrying 4 marks each and are case studies.
+6. Section E consists of questions 34-37 carrying 5 marks each and are long answer types and should not exceed 200-300 words. Attempt any 3.
+
+GENERAL INSTRUCTIONS FOR 35 MARKS MUST REMAIN:
+1. The question paper consists of 15 questions.
+2. All questions are compulsory.
+3. Question 1-6 carry 1 mark each.
+4. Question 7-8 carry 2 marks each and should not exceed 30-50 words.
+5. Question 9-13 carry 3 marks each and should not exceed 100-150 words.
+6. Question 14-15 carry 5 marks each and should not exceed 180-220 words.
+
+${sectionBlueprint}
 
 CONTENT RULES:
 - Use STRICT NCERT Class ${grade} textbook content.
@@ -654,12 +689,110 @@ CONTENT RULES:
 - Make sure every selected chapter appears at least once across the paper. Balance question coverage as evenly as possible across the ${chapterCount} chosen chapters.
 - If a question references a chapter idea, it must clearly belong to one of these selected chapters: ${chapters.join(', ')}.
 - Write the full paper in ${language}. Do not mix languages unless the user explicitly requested bilingual output.
-- Sections must include headers like "Section A", "Section B" etc.
-- Support Internal Choices (OR) for 5-mark questions by putting "OR" in the question text or as a separate question object if needed (but prefer keeping total question count).
-- The title should mention the selected test type and the selected chapter scope.
-- Return EXACT JSON structure.`,
+- For 70-mark papers, include realistic board-style variety: direct MCQs, assertion-reason, match the following, odd one out, case studies, and long answers.
+- For questions that refer to a logo, yoga pose, diagram, fracture figure, or picture, fill figureLabel with a short caption like "Insert Deaflympics logo image" or "Insert yoga posture image". Do not use URLs or markdown images.
+- When a question has sub-parts, use subQuestions as an array.
+- For case studies, put the passage in caseStudyText and the follow-up prompts in subQuestions.
+- For internal choice in long answers, use internalChoice as full alternate question text.
+- The title for full papers should be "PHYSICAL EDUCATION (048)".
+- displayGrade should be "Class XI (2025-26)" or "Class XII (2025-26)".
+- subjectCode should be "048".
+- timeAllowed should be "${timeAllowed}".
+- maxMarks should be ${maxMarks}.
+- Return EXACT JSON only.`,
       responseMimeType: "application/json",
     },
   });
-  return safeParseJson(response.text);
+  return normalizeQuestionPaper(safeParseJson(response.text), grade, testType, maxMarks, timeAllowed);
+};
+
+const normalizeQuestionPaper = (
+  rawPaper: any,
+  grade: string,
+  testType: string,
+  maxMarks: number,
+  timeAllowed: string,
+) => {
+  const isFullPaper = maxMarks === 70;
+  const specs = isFullPaper
+    ? [
+        { sectionId: 'A', heading: 'SECTION A', questionRange: 'Q1-Q18', count: 18, marks: 1, instructions: 'Question 1 to 18 carry 1 mark each and are multiple choice questions. All questions are compulsory.' },
+        { sectionId: 'B', heading: 'SECTION B', questionRange: 'Q19-Q24', count: 6, marks: 2, instructions: 'Question 19 to 24 carry 2 marks each and are very short answer type questions. Attempt any 5.' },
+        { sectionId: 'C', heading: 'SECTION C', questionRange: 'Q25-Q30', count: 6, marks: 3, instructions: 'Question 25 to 30 carry 3 marks each and are short answer type questions. Attempt any 5.' },
+        { sectionId: 'D', heading: 'SECTION D', questionRange: 'Q31-Q33', count: 3, marks: 4, instructions: 'Question 31 to 33 carry 4 marks each and are case studies.' },
+        { sectionId: 'E', heading: 'SECTION E', questionRange: 'Q34-Q37', count: 4, marks: 5, instructions: 'Question 34 to 37 carry 5 marks each and are long answer type questions. Attempt any 3.' },
+      ]
+    : [
+        { sectionId: 'A', heading: 'SECTION A', questionRange: 'Q1-Q6', count: 6, marks: 1, instructions: 'Question 1 to 6 carry 1 mark each and are multiple choice questions.' },
+        { sectionId: 'B', heading: 'SECTION B', questionRange: 'Q7-Q8', count: 2, marks: 2, instructions: 'Question 7 to 8 carry 2 marks each and are very short answer type questions.' },
+        { sectionId: 'C', heading: 'SECTION C', questionRange: 'Q9-Q13', count: 5, marks: 3, instructions: 'Question 9 to 13 carry 3 marks each and are short answer type questions.' },
+        { sectionId: 'D', heading: 'SECTION D', questionRange: 'Q14-Q15', count: 2, marks: 5, instructions: 'Question 14 to 15 carry 5 marks each and are long answer type questions.' },
+      ];
+
+  const flattenedQuestions = (rawPaper?.sections || [])
+    .flatMap((section: any) => section?.questions || [])
+    .map((question: any) => ({
+      question: String(question?.question || '').trim(),
+      marks: Number(question?.marks || 0),
+      options: Array.isArray(question?.options) ? question.options.map((option: any) => String(option)) : undefined,
+      answer: question?.answer ? String(question.answer) : undefined,
+      caseStudyText: question?.caseStudyText ? String(question.caseStudyText).trim() : undefined,
+      internalChoice: question?.internalChoice ? String(question.internalChoice).trim() : undefined,
+      subQuestions: Array.isArray(question?.subQuestions) ? question.subQuestions.map((item: any) => String(item).trim()) : undefined,
+      figureLabel: question?.figureLabel ? String(question.figureLabel).trim() : undefined,
+      visuallyImpairedAlternative: question?.visuallyImpairedAlternative ? String(question.visuallyImpairedAlternative).trim() : undefined,
+    }))
+    .filter((question: any) => question.question);
+
+  let cursor = 0;
+  let runningNumber = 1;
+
+  const normalizedSections = specs.map((spec) => {
+    const sectionQuestions = flattenedQuestions.slice(cursor, cursor + spec.count).map((question: any) => ({
+      ...question,
+      marks: spec.marks,
+      questionNumber: runningNumber++,
+    }));
+
+    cursor += spec.count;
+
+    return {
+      sectionId: spec.sectionId,
+      heading: spec.heading,
+      questionRange: spec.questionRange,
+      instructions: spec.instructions,
+      questions: sectionQuestions,
+    };
+  });
+
+  const displayGrade = grade === '12' ? 'Class XII (2025-26)' : 'Class XI (2025-26)';
+
+  return {
+    title: isFullPaper ? 'PHYSICAL EDUCATION (048)' : rawPaper?.title || 'PHYSICAL EDUCATION (048)',
+    grade,
+    displayGrade,
+    subjectCode: '048',
+    sessionLabel: '2025-26',
+    testType,
+    timeAllowed,
+    maxMarks,
+    generalInstructions: isFullPaper
+      ? [
+          'The question paper consists of 5 sections and 37 questions.',
+          'Section A consists of question 1-18 carrying 1 mark each and is multiple choice questions. All questions are compulsory.',
+          'Section B consists of questions 19-24 carrying 2 marks each and are very short answer types and should not exceed 60-90 words. Attempt any 5.',
+          'Section C consists of questions 25-30 carrying 3 marks each and are short answer types and should not exceed 100-150 words. Attempt any 5.',
+          'Section D consists of questions 31-33 carrying 4 marks each and are case studies.',
+          'Section E consists of questions 34-37 carrying 5 marks each and are long answer types and should not exceed 200-300 words. Attempt any 3.',
+        ]
+      : [
+          'The question paper consists of 15 questions.',
+          'All questions are compulsory.',
+          'Question 1-6 carry 1 mark each.',
+          'Question 7-8 carry 2 marks each and should not exceed 30-50 words.',
+          'Question 9-13 carry 3 marks each and should not exceed 100-150 words.',
+          'Question 14-15 carry 5 marks each and should not exceed 180-220 words.',
+        ],
+    sections: normalizedSections,
+  };
 };

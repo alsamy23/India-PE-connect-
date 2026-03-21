@@ -54,6 +54,9 @@ const TEST_TYPES = [
 
 const LANGUAGE_OPTIONS: Language[] = ['English', 'Hindi', 'Marathi', 'Tamil', 'Bengali'];
 
+const getDisplayQuestionNumber = (questionNumber: number | undefined, fallbackIndex: number) =>
+  questionNumber ?? fallbackIndex + 1;
+
 const QuestionPaperGenerator: React.FC = () => {
   const [grade, setGrade] = useState('12');
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
@@ -99,21 +102,41 @@ const QuestionPaperGenerator: React.FC = () => {
   const handleDownload = () => {
     if (!paper) return;
     let text = `${paper.title}\n`;
-    text += `Class: ${paper.grade} | Type: ${paper.testType}\n`;
-    text += `Time: ${paper.timeAllowed} | Max Marks: ${paper.maxMarks}\n`;
+    text += `${paper.displayGrade || `Class ${paper.grade}`}\n`;
+    text += `Type: ${paper.testType}\n`;
+    text += `Time Allowed: ${paper.timeAllowed} | Max Marks: ${paper.maxMarks}\n`;
     text += `==========================================\n\n`;
 
+    if (paper.generalInstructions?.length) {
+      text += `GENERAL INSTRUCTIONS:\n`;
+      paper.generalInstructions.forEach((instruction, index) => {
+        text += `${index + 1}. ${instruction}\n`;
+      });
+      text += `\n`;
+    }
+
     paper.sections.forEach(section => {
-      text += `${section.sectionId}: ${section.instructions}\n`;
+      text += `${section.heading || section.sectionId}${section.questionRange ? ` (${section.questionRange})` : ''}\n`;
+      text += `${section.instructions}\n`;
       text += `------------------------------------------\n`;
       section.questions.forEach((q, i) => {
-        text += `${i + 1}. [${q.marks} Mark${q.marks > 1 ? 's' : ''}] ${q.question}\n`;
+        const questionNumber = getDisplayQuestionNumber(q.questionNumber, i);
+        text += `Q${questionNumber}. ${q.question}\n`;
         if (q.caseStudyText) text += `   CASE STUDY: ${q.caseStudyText}\n`;
+        if (q.figureLabel) text += `   FIGURE: ${q.figureLabel}\n`;
         if (q.options) {
           q.options.forEach((opt, oi) => {
             text += `   ${String.fromCharCode(65 + oi)}) ${opt}\n`;
           });
         }
+        if (q.subQuestions) {
+          q.subQuestions.forEach((subQuestion, subIndex) => {
+            text += `   ${subIndex + 1}. ${subQuestion}\n`;
+          });
+        }
+        if (q.internalChoice) text += `   OR ${q.internalChoice}\n`;
+        if (q.visuallyImpairedAlternative) text += `   VISUALLY IMPAIRED ALTERNATIVE: ${q.visuallyImpairedAlternative}\n`;
+        text += `   [${q.marks}]\n`;
         text += `\n`;
       });
       text += `\n`;
@@ -140,7 +163,7 @@ const QuestionPaperGenerator: React.FC = () => {
             <ChevronRight className="rotate-180" size={16} />
             <span>Modify Selection</span>
           </button>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button 
               onClick={handleDownload}
               className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center space-x-2"
@@ -165,26 +188,30 @@ const QuestionPaperGenerator: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white p-12 md:p-16 rounded-[3rem] border border-slate-100 shadow-2xl print:shadow-none print:border-none print:p-0">
+        <div className="bg-white p-8 md:p-16 rounded-[3rem] border border-slate-100 shadow-2xl print:shadow-none print:border-none print:p-0">
           {/* Header */}
-          <div className="text-center space-y-4 mb-12 border-b-2 border-slate-900 pb-8">
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tighter">{String(paper.title || 'Question Paper')}</h1>
-            <div className="flex flex-wrap justify-center gap-6 text-sm font-black text-slate-500 uppercase tracking-widest">
-              <span>Class: {String(paper.grade)}</span>
-              <span>Time: {String(paper.timeAllowed)}</span>
+          <div className="space-y-4 mb-10 border-b-2 border-slate-900 pb-8">
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tighter">{String(paper.title || 'Question Paper')}</h1>
+              {paper.displayGrade && (
+                <p className="text-lg md:text-xl font-bold text-slate-700">{paper.displayGrade}</p>
+              )}
+            </div>
+            <div className="flex justify-between gap-4 text-sm font-black text-slate-700 uppercase tracking-widest border-t border-slate-200 pt-4">
+              <span>Time Allowed: {String(paper.timeAllowed)}</span>
               <span>Max Marks: {String(paper.maxMarks)}</span>
             </div>
-            <p className="text-[10px] font-black text-slate-400">Strictly Based on NCERT Physical Education Curriculum 2025-26</p>
+            <p className="text-[10px] font-black text-slate-400 text-center">Strictly Based on NCERT Physical Education Curriculum 2025-26</p>
           </div>
 
           {/* General Instructions */}
           {paper.generalInstructions && paper.generalInstructions.length > 0 && (
-            <div className="mb-12 bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
-              <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-4">General Instructions:</h3>
-              <ul className="space-y-2">
+            <div className="mb-10 bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-100">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">General Instructions:</h3>
+              <ul className="space-y-3">
                 {paper.generalInstructions.map((ins, idx) => (
-                  <li key={idx} className="text-xs font-bold text-slate-500 flex items-start">
-                    <span className="mr-2 text-indigo-600">{idx + 1}.</span>
+                  <li key={idx} className="text-sm font-medium text-slate-700 flex items-start leading-7">
+                    <span className="mr-2 text-indigo-600 font-bold">{idx + 1}.</span>
                     {String(ins)}
                   </li>
                 ))}
@@ -193,24 +220,35 @@ const QuestionPaperGenerator: React.FC = () => {
           )}
 
           {/* Sections */}
-          <div className="space-y-12">
+          <div className="space-y-10">
             {paper.sections && Array.isArray(paper.sections) ? paper.sections.map((section, sidx) => (
               <div key={sidx} className="space-y-6">
-                <div className="bg-slate-900 text-white px-6 py-3 rounded-xl inline-block font-black uppercase text-xs tracking-widest">
-                  {String(section.sectionId || `Section ${sidx + 1}`)}
+                <div className="space-y-3">
+                  <div className="bg-slate-900 text-white px-6 py-3 rounded-xl inline-block font-black uppercase text-xs tracking-widest">
+                    {String(section.heading || section.sectionId || `Section ${sidx + 1}`)}
+                  </div>
+                  {section.questionRange && (
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">{section.questionRange}</p>
+                  )}
+                  <p className="text-sm font-medium text-slate-600 italic border-l-4 border-indigo-500 pl-4 leading-7">{String(section.instructions || '')}</p>
                 </div>
-                <p className="text-xs font-bold text-slate-500 italic border-l-4 border-indigo-500 pl-4">{String(section.instructions || '')}</p>
                 <div className="space-y-8 mt-6">
                   {section.questions && Array.isArray(section.questions) && section.questions.map((q, qidx) => (
                     <div key={qidx} className="relative group">
                       <div className="flex justify-between items-start mb-2">
                          <div className="flex items-start space-x-4">
-                            <span className="font-black text-slate-400 mt-1">{qidx + 1}.</span>
+                            <span className="font-black text-slate-400 mt-1">{getDisplayQuestionNumber(q.questionNumber, qidx)}.</span>
                             <div className="space-y-4 flex-1">
                                {q.caseStudyText && (
                                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-sm font-medium leading-relaxed italic text-slate-600 mb-4">
                                    <Zap size={16} className="text-indigo-500 mb-2" />
                                    {String(q.caseStudyText)}
+                                 </div>
+                               )}
+                               {q.figureLabel && (
+                                 <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-6 text-center">
+                                   <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Figure</p>
+                                   <p className="text-sm font-semibold text-slate-600">{String(q.figureLabel)}</p>
                                  </div>
                                )}
                                <p className="text-lg font-bold text-slate-800 leading-tight pr-12">{String(q.question)}</p>
@@ -224,9 +262,30 @@ const QuestionPaperGenerator: React.FC = () => {
                                    ))}
                                  </div>
                                )}
+                               {q.subQuestions && q.subQuestions.length > 0 && (
+                                 <div className="space-y-2 text-sm font-medium text-slate-700">
+                                   {q.subQuestions.map((item, subIdx) => (
+                                     <p key={subIdx} className="leading-7">
+                                       {subIdx + 1}. {String(item)}
+                                     </p>
+                                   ))}
+                                 </div>
+                               )}
+                               {q.internalChoice && (
+                                 <div className="rounded-2xl border border-slate-200 bg-amber-50/70 px-5 py-4">
+                                   <p className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-700 mb-2">OR</p>
+                                   <p className="text-sm font-medium text-slate-700 leading-7">{String(q.internalChoice)}</p>
+                                 </div>
+                               )}
+                               {q.visuallyImpairedAlternative && (
+                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+                                   <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2">Question for Visually Impaired</p>
+                                   <p className="text-sm font-medium text-slate-700 leading-7">{String(q.visuallyImpairedAlternative)}</p>
+                                 </div>
+                               )}
                             </div>
                          </div>
-                         <span className="flex-shrink-0 font-black text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">[{String(q.marks)}M]</span>
+                         <span className="flex-shrink-0 font-black text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">[{String(q.marks)}]</span>
                       </div>
                     </div>
                   ))}

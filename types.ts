@@ -134,19 +134,29 @@ export interface Worksheet {
 export interface QuestionPaper {
   title: string;
   grade: string;
+  displayGrade?: string;
+  subjectCode?: string;
+  sessionLabel?: string;
   testType: string;
   timeAllowed: string;
   maxMarks: number;
   generalInstructions: string[];
   sections: {
     sectionId: string;
+    heading?: string;
+    questionRange?: string;
     instructions: string;
     questions: {
+      questionNumber?: number;
       question: string;
       marks: number;
       options?: string[];
       answer?: string;
       caseStudyText?: string;
+      internalChoice?: string;
+      subQuestions?: string[];
+      figureLabel?: string;
+      visuallyImpairedAlternative?: string;
     }[];
   }[];
 }

@@ -1,239 +1,254 @@
-
-import { 
-  Document, 
-  Packer, 
-  Paragraph, 
-  TextRun, 
-  AlignmentType, 
-  HeadingLevel,
+import {
+  AlignmentType,
   BorderStyle,
+  Document,
+  Packer,
+  Paragraph,
   Table,
-  TableRow,
   TableCell,
+  TableRow,
+  TextRun,
   WidthType,
-  VerticalAlign,
-  LevelFormat
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { QuestionPaper } from '../types.ts';
 
-/**
- * Exports a QuestionPaper object to a Word document (.docx)
- */
-export const exportToWord = async (paper: QuestionPaper) => {
-  const doc = new Document({
-    sections: [{
-      properties: {},
-      children: [
-        // Title Header
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 200 },
-          children: [
-            new TextRun({
-              text: paper.title.toUpperCase(),
-              bold: true,
-              size: 32,
-              font: "Calibri",
-            }),
-          ],
-        }),
+const textRunsFromMultiline = (text: string, bold = false, size = 22) => {
+  const lines = text.split('\n');
+  return lines.flatMap((line, index) => {
+    const runs = [new TextRun({ text: line, bold, size, font: 'Calibri' })];
+    if (index < lines.length - 1) {
+      runs.push(new TextRun({ text: '', break: 1 }));
+    }
+    return runs;
+  });
+};
 
-        // Info Line (Class, Time, Marks)
-        new Table({
-          width: {
-            size: 100,
-            type: WidthType.PERCENTAGE,
-          },
-          rows: [
-            new TableRow({
-              children: [
-                new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: `CLASS: ${paper.grade}`, bold: true, size: 24 })] })],
-                  borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
-                }),
-                new TableCell({
-                  children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `TIME: ${paper.timeAllowed}`, bold: true, size: 24 })] })],
-                  borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
-                }),
-                new TableCell({
-                  children: [new Paragraph({ alignment: AlignmentType.END, children: [new TextRun({ text: `MAX MARKS: ${paper.maxMarks}`, bold: true, size: 24 })] })],
-                  borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
-                }),
-              ],
-            }),
-          ],
-        }),
-
-        new Paragraph({
-          children: [new TextRun({ text: "________________________________________________________________________________", bold: true })],
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 400 },
-        }),
-
-        // General Instructions
-        ...(paper.generalInstructions && paper.generalInstructions.length > 0 ? [
-          new Paragraph({
-            children: [new TextRun({ text: "GENERAL INSTRUCTIONS:", bold: true, size: 20 })],
-            spacing: { after: 200 },
+const createQuestionTable = (numberLabel: string, content: Paragraph[], marks: number) =>
+  new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 88, type: WidthType.PERCENTAGE },
+            children: content,
+            borders: {
+              top: { style: BorderStyle.NONE },
+              bottom: { style: BorderStyle.NONE },
+              left: { style: BorderStyle.NONE },
+              right: { style: BorderStyle.NONE },
+            },
           }),
-          ...paper.generalInstructions.map((ins, idx) => 
-            new Paragraph({
-              text: `${idx + 1}. ${ins}`,
-              indent: { left: 720, hanging: 360 },
-              spacing: { after: 120 },
-              style: "ListBullet",
-              children: [
-                new TextRun({
-                  text: `${idx + 1}. ${ins}`,
-                  size: 20,
-                  font: "Calibri",
-                })
-              ]
-            })
-          ),
-          new Paragraph({ spacing: { after: 400 } }),
-        ] : []),
-
-        // Sections
-        ...paper.sections.flatMap((section, sidx) => [
-          // Section Header
-          new Paragraph({
-             alignment: AlignmentType.CENTER,
-             spacing: { before: 400, after: 200 },
-             children: [
-               new TextRun({
-                 text: section.sectionId.toUpperCase(),
-                 bold: true,
-                 size: 24,
-                 underline: {},
-               }),
-             ],
-          }),
-          // Section Instructions
-          new Paragraph({
-            alignment: AlignmentType.LEFT,
-            spacing: { after: 300 },
+          new TableCell({
+            width: { size: 12, type: WidthType.PERCENTAGE },
             children: [
-              new TextRun({
-                text: section.instructions,
-                italics: true,
-                size: 18,
-                color: "666666",
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [new TextRun({ text: `[${marks}]`, bold: true, size: 22 })],
               }),
             ],
+            borders: {
+              top: { style: BorderStyle.NONE },
+              bottom: { style: BorderStyle.NONE },
+              left: { style: BorderStyle.NONE },
+              right: { style: BorderStyle.NONE },
+            },
           }),
+        ],
+      }),
+    ],
+  });
 
-          // Questions
-          ...section.questions.flatMap((q, qidx) => {
-            const questionParagraphs = [];
+const questionParagraphs = (question: QuestionPaper['sections'][number]['questions'][number], fallbackIndex: number) => {
+  const numberLabel = `Q${question.questionNumber ?? fallbackIndex + 1}.`;
+  const baseContent: Paragraph[] = [];
 
-            // Case Study text if present
-            if (q.caseStudyText) {
-              questionParagraphs.push(
-                new Paragraph({
-                  shading: { fill: "F3F4F6" },
-                  indent: { left: 360, right: 360 },
-                  spacing: { before: 200, after: 200 },
-                  children: [
-                    new TextRun({
-                      text: "CASE STUDY: ",
-                      bold: true,
-                      size: 20,
-                    }),
-                    new TextRun({
-                      text: q.caseStudyText,
-                      size: 20,
-                    }),
-                  ],
-                })
-              );
-            }
+  if (question.caseStudyText) {
+    baseContent.push(
+      new Paragraph({
+        spacing: { after: 120 },
+        shading: { fill: 'F8FAFC' },
+        children: [
+          new TextRun({ text: 'Case Study: ', bold: true, size: 22 }),
+          ...textRunsFromMultiline(question.caseStudyText, false, 22),
+        ],
+      }),
+    );
+  }
 
-            // Question text + marks
-            questionParagraphs.push(
-              new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                rows: [
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        width: { size: 90, type: WidthType.PERCENTAGE },
-                        children: [
-                          new Paragraph({
-                            spacing: { before: 120, after: 120 },
-                            children: [
-                              new TextRun({ text: `${qidx + 1}. `, bold: true, size: 22 }),
-                              new TextRun({ text: q.question, size: 22 }),
-                            ],
-                          })
-                        ],
-                        borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
-                      }),
-                      new TableCell({
-                        width: { size: 10, type: WidthType.PERCENTAGE },
-                        verticalAlign: VerticalAlign.TOP,
-                        children: [
-                          new Paragraph({
-                            alignment: AlignmentType.END,
-                            spacing: { before: 120, after: 120 },
-                            children: [
-                              new TextRun({ text: `(${q.marks})`, bold: true, size: 20 })
-                            ],
-                          })
-                        ],
-                        borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
-                      })
-                    ]
-                  })
-                ]
-              })
-            );
+  if (question.figureLabel) {
+    baseContent.push(
+      new Paragraph({
+        spacing: { after: 120 },
+        shading: { fill: 'F8FAFC' },
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: `[Figure: ${question.figureLabel}]`, italics: true, size: 20, color: '666666' })],
+      }),
+    );
+  }
 
-            // Options if MCQ
-            if (q.options && q.options.length > 0) {
-              const optionsRows = [];
-              // Create 2 columns for options
-              for (let i = 0; i < q.options.length; i += 2) {
-                optionsRows.push(
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [
-                          new Paragraph({
-                            indent: { left: 720 },
-                            children: [
-                              new TextRun({ text: `${String.fromCharCode(65 + i)}) `, bold: true, size: 20 }),
-                              new TextRun({ text: q.options[i], size: 20 })
-                            ]
-                          })
-                        ],
-                        borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
-                      }),
-                      new TableCell({
-                        children: [
-                          i + 1 < q.options.length ? new Paragraph({
-                            indent: { left: 720 },
-                            children: [
-                              new TextRun({ text: `${String.fromCharCode(65 + i + 1)}) `, bold: true, size: 20 }),
-                              new TextRun({ text: q.options[i + 1], size: 20 })
-                            ]
-                          }) : new Paragraph({})
-                        ],
-                        borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
-                      })
-                    ]
-                  })
-                );
-              }
-              questionParagraphs.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: optionsRows }));
-            }
-
-            return questionParagraphs;
-          })
-        ])
+  baseContent.push(
+    new Paragraph({
+      spacing: { after: 120 },
+      children: [
+        new TextRun({ text: `${numberLabel} `, bold: true, size: 22 }),
+        ...textRunsFromMultiline(question.question, false, 22),
       ],
-    }],
+    }),
+  );
+
+  if (question.options?.length) {
+    question.options.forEach((option, optionIndex) => {
+      baseContent.push(
+        new Paragraph({
+          indent: { left: 540 },
+          spacing: { after: 80 },
+          children: [
+            new TextRun({ text: `${String.fromCharCode(65 + optionIndex)}) `, bold: true, size: 20 }),
+            ...textRunsFromMultiline(option, false, 20),
+          ],
+        }),
+      );
+    });
+  }
+
+  if (question.subQuestions?.length) {
+    question.subQuestions.forEach((subQuestion, subIndex) => {
+      baseContent.push(
+        new Paragraph({
+          indent: { left: 540 },
+          spacing: { after: 80 },
+          children: [new TextRun({ text: `${subIndex + 1}. ${subQuestion}`, size: 20 })],
+        }),
+      );
+    });
+  }
+
+  if (question.internalChoice) {
+    baseContent.push(
+      new Paragraph({
+        spacing: { before: 60, after: 60 },
+        children: [new TextRun({ text: 'OR', bold: true, size: 20, color: 'B45309' })],
+      }),
+      new Paragraph({
+        spacing: { after: 100 },
+        children: [...textRunsFromMultiline(question.internalChoice, false, 20)],
+      }),
+    );
+  }
+
+  if (question.visuallyImpairedAlternative) {
+    baseContent.push(
+      new Paragraph({
+        spacing: { before: 60, after: 60 },
+        children: [new TextRun({ text: 'Question for Visually Impaired', bold: true, size: 20, color: '475569' })],
+      }),
+      new Paragraph({
+        spacing: { after: 100 },
+        children: [...textRunsFromMultiline(question.visuallyImpairedAlternative, false, 20)],
+      }),
+    );
+  }
+
+  return createQuestionTable(numberLabel, baseContent, question.marks);
+};
+
+export const exportToWord = async (paper: QuestionPaper) => {
+  const children: Array<Paragraph | Table> = [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 120 },
+      children: [new TextRun({ text: paper.title.toUpperCase(), bold: true, size: 30 })],
+    }),
+  ];
+
+  if (paper.displayGrade) {
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 240 },
+        children: [new TextRun({ text: paper.displayGrade, bold: true, size: 24 })],
+      }),
+    );
+  }
+
+  children.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: `TIME ALLOWED: ${paper.timeAllowed}`, bold: true, size: 20 })] })],
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+            }),
+            new TableCell({
+              children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `MAX MARKS: ${paper.maxMarks}`, bold: true, size: 20 })] })],
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+            }),
+          ],
+        }),
+      ],
+    }),
+    new Paragraph({ spacing: { after: 220 } }),
+  );
+
+  if (paper.generalInstructions?.length) {
+    children.push(
+      new Paragraph({
+        spacing: { after: 140 },
+        children: [new TextRun({ text: 'GENERAL INSTRUCTIONS:', bold: true, size: 22 })],
+      }),
+    );
+
+    paper.generalInstructions.forEach((instruction, index) => {
+      children.push(
+        new Paragraph({
+          indent: { left: 360, hanging: 240 },
+          spacing: { after: 100 },
+          children: [new TextRun({ text: `${index + 1}. ${instruction}`, size: 20 })],
+        }),
+      );
+    });
+
+    children.push(new Paragraph({ spacing: { after: 220 } }));
+  }
+
+  paper.sections.forEach((section) => {
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 260, after: 100 },
+        children: [new TextRun({ text: section.heading || section.sectionId, bold: true, size: 24, underline: {} })],
+      }),
+    );
+
+    if (section.questionRange) {
+      children.push(
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 80 },
+          children: [new TextRun({ text: section.questionRange, bold: true, size: 18, color: '64748B' })],
+        }),
+      );
+    }
+
+    children.push(
+      new Paragraph({
+        spacing: { after: 180 },
+        children: [new TextRun({ text: section.instructions, italics: true, size: 18, color: '64748B' })],
+      }),
+    );
+
+    section.questions.forEach((question, index) => {
+      children.push(questionParagraphs(question, index));
+      children.push(new Paragraph({ spacing: { after: 120 } }));
+    });
+  });
+
+  const doc = new Document({
+    sections: [{ properties: {}, children }],
   });
 
   const blob = await Packer.toBlob(doc);
