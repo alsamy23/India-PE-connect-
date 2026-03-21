@@ -1,365 +1,457 @@
-
 import React from 'react';
-import { 
-  TrendingUp, 
-  Users, 
-  FileText, 
-  Video, 
-  Calendar,
-  ChevronRight,
-  Trophy,
-  Sparkles,
-  AlertTriangle,
-  GraduationCap,
-  ArrowRight,
-  Clock,
-  Trash2,
+import {
   BookOpen,
-  Target,
-  Wrench,
-  Book,
-  Activity,
-  Loader2,
-  RotateCcw,
-  MessageCircle,
+  CalendarRange,
+  Clock3,
+  FileText,
+  FolderOpen,
+  GraduationCap,
   HeartPulse,
-  Timer
+  Info,
+  Loader2,
+  Search,
+  Sparkles,
+  Target,
+  Trash2,
+  Users,
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { storageService, SavedItem } from '../services/storageService.ts';
-import Logo from './Logo.tsx';
+import ActionCard from './ActionCard.tsx';
+import ToolCard from './ToolCard.tsx';
+import type { AppTab } from './Sidebar.tsx';
 
-const data = [
-  { name: 'Mon', connections: 4 },
-  { name: 'Tue', connections: 7 },
-  { name: 'Wed', connections: 5 },
-  { name: 'Thu', connections: 12 },
-  { name: 'Fri', connections: 8 },
-  { name: 'Sat', connections: 15 },
-  { name: 'Sun', connections: 10 },
+interface DashboardProps {
+  apiStatus?: 'checking' | 'ok' | 'missing' | 'quota';
+  onNavigate?: (tab: AppTab) => void;
+}
+
+interface ToolSection {
+  title: string;
+  description: string;
+  tools: Array<{
+    id: AppTab;
+    title: string;
+    description: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    badge?: string;
+    mostUsed?: boolean;
+    keywords: string[];
+    tooltip: string;
+  }>;
+}
+
+const toolSections: ToolSection[] = [
+  {
+    title: 'Teaching tools',
+    description: 'Plan today’s lesson flow and get your class moving quickly.',
+    tools: [
+      {
+        id: 'planner',
+        title: 'Lesson Planner',
+        description: 'Turn one teaching goal into a full PE lesson with warm-up, drills, and plenary.',
+        icon: Sparkles,
+        badge: 'Daily use',
+        mostUsed: true,
+        keywords: ['lesson', 'planner', 'daily', 'teaching'],
+        tooltip: 'Create a PE lesson plan with clear structure and coaching cues.',
+      },
+      {
+        id: 'yearly',
+        title: 'Year Planner',
+        description: 'Map units, sports, and progression across terms.',
+        icon: CalendarRange,
+        keywords: ['year', 'term', 'curriculum', 'planner'],
+        tooltip: 'Organize your PE curriculum over the full academic year.',
+      },
+      {
+        id: 'warmup',
+        title: 'Warm-up Generator',
+        description: 'Prepare quick movement starters for any age group or sport.',
+        icon: HeartPulse,
+        keywords: ['warmup', 'starter', 'routine', 'movement'],
+        tooltip: 'Generate simple PE warm-ups tailored to your lesson focus.',
+      },
+    ],
+  },
+  {
+    title: 'Assessment tools',
+    description: 'Create papers, evaluate fitness, and finish reporting faster.',
+    tools: [
+      {
+        id: 'testgen',
+        title: 'Test Generator',
+        description: 'Generate theory papers and quizzes aligned to PE topics.',
+        icon: FileText,
+        badge: 'Fast prep',
+        mostUsed: true,
+        keywords: ['test', 'exam', 'question', 'paper'],
+        tooltip: 'Build PE theory tests in minutes.',
+      },
+      {
+        id: 'fitness',
+        title: 'Fitness Tests',
+        description: 'Record and review common PE fitness assessments.',
+        icon: Target,
+        keywords: ['fitness', 'assessment', 'benchmark', 'scores'],
+        tooltip: 'Track student fitness performance using PE test tools.',
+      },
+      {
+        id: 'reportcard',
+        title: 'Report Card Generator',
+        description: 'Create concise PE progress reports for students.',
+        icon: GraduationCap,
+        badge: 'Admin saver',
+        keywords: ['report', 'card', 'grading', 'comments'],
+        tooltip: 'Generate PE report card comments quickly and clearly.',
+      },
+    ],
+  },
+  {
+    title: 'Students & resources',
+    description: 'Keep records handy and access practical materials when needed.',
+    tools: [
+      {
+        id: 'students',
+        title: 'Student Management',
+        description: 'Review class records, notes, and progress in one place.',
+        icon: Users,
+        keywords: ['students', 'class', 'records', 'roster'],
+        tooltip: 'Manage student records and PE notes.',
+      },
+      {
+        id: 'skillmastery',
+        title: 'Skill Progression',
+        description: 'Track movement development and next teaching steps.',
+        icon: Target,
+        keywords: ['skill', 'progress', 'development', 'rubric'],
+        tooltip: 'Monitor student skill progression over time.',
+      },
+      {
+        id: 'curriculum',
+        title: 'Library Hub',
+        description: 'Open curriculum guidance, resources, and classroom references.',
+        icon: BookOpen,
+        keywords: ['library', 'resources', 'curriculum', 'docs'],
+        tooltip: 'Browse your PE resource library and planning materials.',
+      },
+    ],
+  },
 ];
 
-const featuredToolLanes = [
-  {
-    id: 'planner',
-    name: 'Lesson Planner',
-    sport: 'Football Session',
-    desc: 'Build lesson flow, coaching cues, and equipment plans from one PE objective.',
-    emoji: '⚽',
-    gradient: 'from-emerald-500 to-lime-500'
-  },
-  {
-    id: 'testgen',
-    name: 'Test Generator',
-    sport: 'Theory Exam',
-    desc: 'Create chapter-based papers that stay aligned to Class 11/12 NCERT PE content.',
-    emoji: '📝',
-    gradient: 'from-indigo-500 to-violet-500'
-  },
-  {
-    id: 'warmup',
-    name: 'Warm-Up Builder',
-    sport: 'Athletics Prep',
-    desc: 'Generate fast sport-specific warm-up routines before a drill, game, or fitness block.',
-    emoji: '🏃',
-    gradient: 'from-rose-500 to-orange-500'
-  },
-  {
-    id: 'sportsquiz',
-    name: 'Sports Quiz',
-    sport: 'Quiz Battle',
-    desc: 'Spin up instant sports MCQs for theory revision, house competitions, or exit tickets.',
-    emoji: '🏅',
-    gradient: 'from-sky-500 to-cyan-500'
-  },
-];
+const getHistoryMeta = (item: SavedItem): { tab: AppTab; icon: React.ReactNode; label: string } => {
+  switch (item.type) {
+    case 'Lesson Plan':
+      return {
+        tab: 'planner',
+        icon: <Sparkles size={18} className="text-emerald-600" />,
+        label: 'Lesson Planner',
+      };
+    case 'Theory':
+      return {
+        tab: 'testgen',
+        icon: <FileText size={18} className="text-indigo-600" />,
+        label: 'Test Generator',
+      };
+    case 'Skill':
+      return {
+        tab: 'skillmastery',
+        icon: <Target size={18} className="text-orange-600" />,
+        label: 'Skill Progression',
+      };
+    case 'Tool':
+      return {
+        tab: 'fitness',
+        icon: <FolderOpen size={18} className="text-slate-600" />,
+        label: 'Fitness Tests',
+      };
+    default:
+      return {
+        tab: 'curriculum',
+        icon: <BookOpen size={18} className="text-slate-600" />,
+        label: 'Library Hub',
+      };
+  }
+};
 
-const Dashboard: React.FC<{ 
-  apiStatus?: 'checking' | 'ok' | 'missing' | 'quota',
-  debugInfo?: any,
-  onTestConnection?: () => Promise<void>,
-  isTesting?: boolean,
-  onNavigate?: (tab: any) => void,
-  onOpenSetup?: () => void
-}> = ({ apiStatus, debugInfo, onTestConnection, isTesting, onNavigate, onOpenSetup }) => {
+const Dashboard: React.FC<DashboardProps> = ({ apiStatus = 'checking', onNavigate }) => {
   const [history, setHistory] = React.useState<SavedItem[]>([]);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [pendingAction, setPendingAction] = React.useState<AppTab | null>(null);
 
   React.useEffect(() => {
     setHistory(storageService.getAllItems());
   }, []);
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const filteredSections = React.useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) return toolSections;
+
+    return toolSections
+      .map((section) => ({
+        ...section,
+        tools: section.tools.filter((tool) => {
+          const haystack = [tool.title, tool.description, section.title, ...tool.keywords].join(' ').toLowerCase();
+          return haystack.includes(query);
+        }),
+      }))
+      .filter((section) => section.tools.length > 0);
+  }, [searchQuery]);
+
+  const recentItems = history.slice(0, 4);
+
+  const navigateWithLoading = (tab: AppTab) => {
+    setPendingAction(tab);
+    window.setTimeout(() => {
+      onNavigate?.(tab);
+      setPendingAction(null);
+    }, 350);
+  };
+
+  const handleDelete = (id: string, event: React.MouseEvent) => {
+    event.stopPropagation();
     storageService.deleteItem(id);
     setHistory(storageService.getAllItems());
   };
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'Lesson Plan': return <FileText className="text-indigo-500" />;
-      case 'Theory': return <GraduationCap className="text-rose-500" />;
-      case 'Skill': return <Target className="text-emerald-500" />;
-      case 'Rule': return <Book className="text-amber-500" />;
-      case 'Tool': return <Activity className="text-indigo-600" />;
-      default: return <Wrench className="text-slate-500" />;
-    }
-  };
   return (
-    <div className="space-y-10 animate-slide-up">
-      {/* Hero Section */}
-      <div className="relative bg-indigo-900 rounded-[3rem] overflow-hidden p-8 md:p-12 text-white shadow-2xl">
-        <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center space-x-2 bg-indigo-800/50 border border-indigo-700 rounded-full px-4 py-1.5 mb-6 backdrop-blur-sm">
-            <Sparkles size={14} className="text-orange-400" />
-            <span className="text-[10px] font-black uppercase tracking-widest">AI-Powered for PE Teachers</span>
+    <div className="space-y-6 animate-in fade-in duration-500 sm:space-y-8 md:space-y-10">
+      <section className="motion-panel rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 md:rounded-[2rem] md:p-10">
+        <div className="flex flex-col gap-6 sm:gap-8 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-3xl space-y-5">
+            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+              <Sparkles size={14} className="text-slate-500" />
+              Teacher Daily Assistant
+            </span>
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Dashboard</p>
+              <h1 className="max-w-2xl text-[2rem] font-semibold tracking-tight text-slate-900 leading-[1.08] sm:text-[2.2rem] md:text-[2.6rem] md:leading-[1.05]">
+                What do you want to create today?
+              </h1>
+              <p className="max-w-2xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
+                Start with the task PE teachers use most often. Keep planning simple, move faster, and get back to class.
+              </p>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter leading-none">
-            Plan Smarter. <span className="text-orange-400">Teach Better.</span> <br/>
-            <span className="text-indigo-300">Lead Stronger.</span>
-          </h1>
-          <p className="text-indigo-100 text-lg mb-8 leading-relaxed font-medium">
-            India's first AI-powered platform built exclusively for Physical Education teachers. Plan lessons, assess students, and connect with PE teachers across India — all for FREE.
+
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600 sm:px-6 sm:py-5 xl:max-w-sm">
+            <div className="flex items-center gap-2 font-medium text-slate-900">
+              <Info size={16} className="text-slate-500" />
+              Today’s workflow
+            </div>
+            <p className="mt-3 max-w-sm leading-7">
+              Choose one primary action, then use search or recent work to continue from where you left off.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-8 grid gap-4 sm:mt-10 sm:gap-5 lg:grid-cols-3 lg:gap-6">
+          <div className="motion-delay-1">
+            <ActionCard
+              title="Create Lesson Plan"
+              description="Plan a complete PE lesson with objectives, movement tasks, equipment, and teaching cues."
+              icon={Sparkles}
+              accent="bg-emerald-50 text-emerald-700"
+              ctaLabel="Open lesson planner"
+              loadingLabel="Generating lesson plan..."
+              loading={pendingAction === 'planner'}
+              tooltip="Open the lesson planning workflow for today’s PE class."
+              onClick={() => navigateWithLoading('planner')}
+            />
+          </div>
+          <div className="motion-delay-2">
+            <ActionCard
+              title="Generate Test Paper"
+              description="Build a PE test paper quickly for classwork, revision, or formal assessment."
+              icon={FileText}
+              accent="bg-indigo-50 text-indigo-700"
+              ctaLabel="Open test generator"
+              loadingLabel="Generating test paper..."
+              loading={pendingAction === 'testgen'}
+              tooltip="Open the PE test generator for worksheets and papers."
+              onClick={() => navigateWithLoading('testgen')}
+            />
+          </div>
+          <div className="motion-delay-3">
+            <ActionCard
+              title="Create Report Card"
+              description="Write student-ready PE comments and report summaries without starting from scratch."
+              icon={GraduationCap}
+              accent="bg-orange-50 text-orange-700"
+              ctaLabel="Open report card generator"
+              loadingLabel="Preparing report card..."
+              loading={pendingAction === 'reportcard'}
+              tooltip="Open the report card generator for PE progress comments."
+              onClick={() => navigateWithLoading('reportcard')}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="motion-panel motion-delay-1 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 md:rounded-[2rem] md:p-8">
+        <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Search</p>
+            <label htmlFor="dashboard-search" className="block text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
+              Search lesson plans, tests, resources...
+            </label>
+          </div>
+          <p className="max-w-xl text-sm leading-6 text-slate-500 sm:leading-7">
+            Find the right tool quickly with natural keywords like “warm-up”, “report”, or “fitness”.
           </p>
-          
-          <div className="flex flex-wrap gap-4">
-             <button 
-                onClick={() => onNavigate?.('theory')}
-                className="px-8 py-4 bg-orange-400 text-indigo-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-300 transition-all flex items-center space-x-2 shadow-xl shadow-orange-500/20"
-              >
-                <GraduationCap size={18} />
-                <span>Theory Master (CBSE)</span>
-                <ArrowRight size={16} />
-              </button>
-              
-              <button 
-                onClick={() => onNavigate?.('students')}
-                className="px-8 py-4 bg-emerald-400 text-indigo-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-300 transition-all flex items-center space-x-2 shadow-xl shadow-emerald-500/20"
-              >
-                <Users size={18} />
-                <span>Student Management</span>
-                <ArrowRight size={16} />
-              </button>
-              
-              <button 
-                onClick={() => onNavigate?.('pewidgets')}
-                className="px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20 transition-all flex items-center space-x-2"
-              >
-                <Timer size={18} />
-                <span>Classroom Widgets</span>
-              </button>
-          </div>
-        </div>
-        
-        {/* Decorative elements */}
-        <div className="absolute -right-20 -bottom-20 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px]"></div>
-        <div className="absolute right-0 top-0 w-64 h-64 bg-orange-400/10 rounded-full blur-[80px]"></div>
-      </div>
-
-      {apiStatus !== 'ok' && (
-        <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center space-x-4">
-            <div className="p-4 bg-orange-50 text-orange-500 rounded-2xl">
-              <AlertTriangle size={32} />
-            </div>
-            <div>
-              <h4 className="font-black text-lg text-slate-800 uppercase tracking-tight">AI Connection Required</h4>
-              <p className="text-sm text-slate-400 font-medium">Configure your Groq API key to unlock the planners, quiz tools, and test generator.</p>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button 
-              onClick={() => onOpenSetup?.()}
-              className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all"
-            >
-              Open Setup Guide
-            </button>
-            <button 
-              onClick={() => onTestConnection?.()}
-              disabled={isTesting}
-              className="px-8 py-4 bg-white border-2 border-slate-100 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center space-x-2"
-            >
-              {isTesting ? <Loader2 className="animate-spin" size={16} /> : <RotateCcw size={16} />}
-              <span>{isTesting ? 'Testing...' : 'Refresh Connection'}</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-5">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500 mb-2">Landing page direction</p>
-            <h2 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900">Show the product through sport-first tool cards.</h2>
-          </div>
-          <button
-            onClick={() => onNavigate?.('tools')}
-            className="hidden md:inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 font-black text-xs uppercase tracking-widest hover:border-indigo-200 hover:text-indigo-600 transition-all"
-          >
-            <Wrench size={16} />
-            Explore all tools
-          </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-          {featuredToolLanes.map((tool) => (
-            <button
-              key={tool.id}
-              onClick={() => onNavigate?.(tool.id as any)}
-              className="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm hover:-translate-y-1.5 hover:shadow-xl transition-all text-left"
-            >
-              <div className={`relative h-40 bg-gradient-to-br ${tool.gradient} p-6 text-white overflow-hidden`}>
-                <div className="absolute -right-6 -bottom-8 text-[96px] opacity-20">{tool.emoji}</div>
-                <div className="absolute top-4 right-4 rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-widest backdrop-blur-sm">
-                  {tool.sport}
+        <div className="relative mt-5 sm:mt-6">
+          <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            id="dashboard-search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search lesson plans, tests, resources..."
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-12 pr-4 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:-translate-y-0.5 focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-100"
+          />
+        </div>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="space-y-5 sm:space-y-6">
+          {filteredSections.map((section) => (
+            <div key={section.title} className="motion-panel motion-delay-2 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 md:rounded-[2rem] md:p-8">
+              <div className="mb-6 flex flex-col gap-3 sm:mb-8 md:flex-row md:items-end md:justify-between">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tool section</p>
+                  <h2 className="text-xl font-semibold tracking-tight text-slate-900">{section.title}</h2>
+                  <p className="text-sm leading-7 text-slate-600">{section.description}</p>
                 </div>
-                <div className="relative z-10 max-w-[11rem]">
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/75 mb-3">Featured Tool</p>
-                  <h3 className="text-2xl font-black leading-tight">{tool.name}</h3>
-                </div>
+                <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                  {section.tools.length} tools
+                </span>
               </div>
-              <div className="p-6">
-                <p className="text-sm text-slate-500 font-medium leading-relaxed">{tool.desc}</p>
-                <div className="mt-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700 group-hover:text-indigo-600">
-                  Open tool
-                  <ArrowRight size={14} />
-                </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {section.tools.map((tool) => (
+                  <div key={tool.id}>
+                    <ToolCard
+                      title={tool.title}
+                      description={tool.description}
+                      icon={tool.icon}
+                      badge={tool.badge}
+                      mostUsed={tool.mostUsed}
+                      tooltip={tool.tooltip}
+                      onClick={() => onNavigate?.(tool.id)}
+                    />
+                  </div>
+                ))}
               </div>
-            </button>
+            </div>
           ))}
-        </div>
-      </div>
 
-      {/* New Tools Quick Launch */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { id: 'warmup', name: 'Warm-Up', desc: '5-Min routines', icon: HeartPulse, color: 'hover:border-rose-300 hover:bg-rose-50' },
-          { id: 'lessonsummary', name: 'WA Summary', desc: 'Lesson recaps', icon: MessageCircle, color: 'hover:border-emerald-300 hover:bg-emerald-50' },
-          { id: 'sportsquiz', name: 'Sports Quiz', desc: 'Instant MCQs', icon: Activity, color: 'hover:border-indigo-300 hover:bg-indigo-50' },
-          { id: 'firstaid', name: 'First Aid', desc: 'PE injury guide', icon: GraduationCap, color: 'hover:border-red-300 hover:bg-red-50' },
-        ].map(tool => (
-          <button 
-            key={tool.id}
-            onClick={() => onNavigate?.(tool.id as any)}
-            className={`bg-white p-6 rounded-3xl border border-slate-100 shadow-sm transition-all flex items-center gap-4 group ${tool.color}`}
-          >
-            <div className="p-3 bg-slate-50 rounded-2xl group-hover:scale-110 transition-transform">
-              <tool.icon size={24} className="text-slate-600" />
-            </div>
-            <div className="text-left">
-              <p className="font-black text-slate-800 text-sm tracking-tight">{tool.name}</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{tool.desc}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Active Teachers', value: '2,450', icon: Users, color: 'bg-blue-100 text-blue-600' },
-          { label: 'Curriculum Docs', value: '458', icon: FileText, color: 'bg-emerald-100 text-emerald-600' },
-          { label: 'Upcoming Meets', value: '12', icon: Calendar, color: 'bg-orange-100 text-orange-600' },
-          { label: 'Video Drills', value: '89', icon: Video, color: 'bg-purple-100 text-purple-600' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl ${stat.color}`}>
-                <stat.icon size={24} />
+          {filteredSections.length === 0 && (
+            <div className="rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm sm:p-10 md:rounded-[2rem] md:p-12">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                <Search size={22} />
               </div>
-              <TrendingUp size={16} className="text-emerald-500" />
+              <h2 className="mt-4 text-xl font-semibold text-slate-900">No matching tools found</h2>
+              <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-600">
+                Try a broader search like “lesson”, “fitness”, or “resources” to find the tool you need.
+              </p>
             </div>
-            <h3 className="text-slate-500 text-sm font-medium">{stat.label}</h3>
-            <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Network Growth Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-lg">Network Activity</h3>
-            <select className="text-sm border rounded-lg px-2 py-1 outline-none text-slate-500 bg-slate-50">
-              <option>This Week</option>
-              <option>Last Month</option>
-            </select>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
-                <defs>
-                  <linearGradient id="colorCon" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                <YAxis hide />
-                <Tooltip />
-                <Area type="monotone" dataKey="connections" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorCon)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Recent History Section */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <div className="flex items-center space-x-2 mb-6">
-            <Clock className="text-indigo-600" />
-            <h3 className="font-bold text-lg">Recent History</h3>
-          </div>
-          
-          <div className="space-y-4">
-            {history.length === 0 ? (
-              <div className="text-center py-8 bg-slate-50 rounded-xl border-2 border-dashed border-slate-100">
-                <p className="text-slate-400 text-xs font-medium">No saved items yet.</p>
-              </div>
-            ) : (
-              history.slice(0, 5).map((item) => (
-                <div 
-                  key={item.id} 
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer group border border-transparent hover:border-slate-100"
-                  onClick={() => {
-                    if (item.type === 'Lesson Plan') onNavigate?.('planner');
-                    if (item.type === 'Theory') onNavigate?.('theory');
-                    if (item.type === 'Skill') onNavigate?.('skillmastery');
-                    if (item.type === 'Tool') onNavigate?.('fitness');
-                  }}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform">
-                      {getIcon(item.type)}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-slate-800 truncate max-w-[120px]">{item.title}</p>
-                      <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">{item.type}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button 
-                      onClick={(e) => handleDelete(item.id, e)}
-                      className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                    <ChevronRight size={14} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          
-          {history.length > 5 && (
-            <button className="w-full mt-6 py-3 border-2 border-dashed border-slate-100 text-slate-400 rounded-xl text-xs font-black uppercase tracking-widest hover:border-indigo-200 hover:text-indigo-500 transition-all">
-              View Full History
-            </button>
           )}
         </div>
-      </div>
+
+        <div className="space-y-5 sm:space-y-6 xl:sticky xl:top-24 xl:self-start">
+          <div className="motion-panel motion-delay-2 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 md:rounded-[2rem] md:p-8">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                <Clock3 size={20} />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Recent</p>
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900">Continue Where You Left Off</h2>
+                <p className="text-sm leading-6 text-slate-600">Jump back into your recent work with one tap.</p>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-3 sm:mt-7">
+              {recentItems.length > 0 ? (
+                recentItems.map((item) => {
+                  const meta = getHistoryMeta(item);
+                  return (
+                    <div
+                      key={item.id}
+                      className="group flex items-start justify-between gap-3 rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm"
+                    >
+                      <div className="flex min-w-0 items-center gap-3 overflow-hidden sm:gap-4">
+                        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm">
+                          {meta.icon}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onNavigate?.(meta.tab)}
+                          className="min-w-0 text-left"
+                        >
+                          <p className="truncate text-sm font-medium text-slate-900">{item.title}</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {meta.label} • {new Date(item.timestamp).toLocaleDateString()}
+                          </p>
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(event) => handleDelete(item.id, event)}
+                        className="rounded-full p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                        aria-label={`Delete ${item.title}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center sm:px-6 sm:py-10">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm">
+                    {apiStatus === 'checking' ? <Loader2 size={18} className="animate-spin" /> : <Clock3 size={18} />}
+                  </div>
+                  <h3 className="mt-4 text-base font-semibold text-slate-900">No recent work yet</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Start with a lesson plan or test paper. Your latest items will appear here for quick access.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="motion-panel motion-delay-3 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 md:rounded-[2rem] md:p-8">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Guidance</p>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900">Helpful next steps</h2>
+            </div>
+            <div className="mt-6 space-y-4">
+              {[
+                {
+                  title: 'Plan a class in 3 steps',
+                  description: 'Open Lesson Planner, choose your sport or topic, then generate and refine.',
+                },
+                {
+                  title: 'Prepare assessment quickly',
+                  description: 'Use Test Generator for theory papers or Fitness Tests for performance checks.',
+                },
+                {
+                  title: 'Finish reporting faster',
+                  description: 'Use Report Card Generator once class observations are complete.',
+                },
+              ].map((item) => (
+                <div key={item.title} className="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4">
+                  <h3 className="text-sm font-medium text-slate-900">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{item.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
 
 export default Dashboard;
-    

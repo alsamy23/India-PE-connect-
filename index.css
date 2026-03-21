@@ -1,1 +1,86 @@
 @import "tailwindcss";
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gentle-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.motion-fade-up {
+  animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.motion-delay-1 {
+  animation-delay: 0.06s;
+}
+
+.motion-delay-2 {
+  animation-delay: 0.12s;
+}
+
+.motion-delay-3 {
+  animation-delay: 0.18s;
+}
+
+.motion-panel {
+  animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.motion-card {
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: center;
+}
+
+.motion-card:active {
+  transform: scale(0.985);
+}
+
+.motion-icon {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.motion-card:hover .motion-icon {
+  transform: translateY(-2px) scale(1.04);
+}
+
+.motion-arrow {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.motion-card:hover .motion-arrow {
+  transform: translateX(4px);
+}
+
+.motion-float {
+  animation: gentle-float 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
