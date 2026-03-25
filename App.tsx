@@ -248,7 +248,7 @@ const App: React.FC = () => {
 
   return (
     <>
-      <div className="flex min-h-screen flex-col overflow-hidden bg-slate-100 md:flex-row print:h-auto print:overflow-visible">
+      <div className="flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-100 via-indigo-50 to-cyan-50 md:flex-row print:h-auto print:overflow-visible">
         {isSidebarOpen && (
           <button
             type="button"

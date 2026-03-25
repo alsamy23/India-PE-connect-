@@ -619,9 +619,12 @@ export const generateQuestionPaper = async (
   const sectionBlueprint = isFullPaper
     ? `For 70 marks, return EXACTLY 5 sections with this sequence:
 - Section A / heading "SECTION A" / questionRange "Q1-Q18" / 18 questions / 1 mark each / MCQ only.
+  * Section A must include a balanced CBSE-style mix of standard MCQs, assertion-reason questions, match-the-following questions, odd-one-out questions, and at least 2 image-based identification questions with figureLabel.
 - Section B / heading "SECTION B" / questionRange "Q19-Q24" / 6 questions / 2 marks each / very short answer. The section instruction must say "Attempt any 5."
 - Section C / heading "SECTION C" / questionRange "Q25-Q30" / 6 questions / 3 marks each / short answer. The section instruction must say "Attempt any 5."
 - Section D / heading "SECTION D" / questionRange "Q31-Q33" / 3 questions / 4 marks each / case-study format with four sub-parts each.
+  * Each Section D case-study question must have either a short passage (caseStudyText) OR an image context (figureLabel), and exactly 4 MCQ-style sub-parts.
+  * At least 1 of Q31-Q33 must be image-based with figureLabel, and the rest can be passage-based.
 - Section E / heading "SECTION E" / questionRange "Q34-Q37" / 4 questions / 5 marks each / long answer. The section instruction must say "Attempt any 3."
 Use questionNumber fields 1 through 37 in order.`
     : `For 35 marks, return the standard 4-section structure already used in school tests with questionNumber fields in order.`;
@@ -689,10 +692,18 @@ CONTENT RULES:
 - Make sure every selected chapter appears at least once across the paper. Balance question coverage as evenly as possible across the ${chapterCount} chosen chapters.
 - If a question references a chapter idea, it must clearly belong to one of these selected chapters: ${chapters.join(', ')}.
 - Write the full paper in ${language}. Do not mix languages unless the user explicitly requested bilingual output.
-- For 70-mark papers, include realistic board-style variety: direct MCQs, assertion-reason, match the following, odd one out, case studies, and long answers.
+- For 70-mark papers, Section A must explicitly cover realistic board-style variety: direct MCQs, assertion-reason, match the following, odd one out, and identify-the-image questions such as yoga asana/logo/posture/sports-injury style prompts.
+- For 70-mark papers, include at least 1 assertion-reason question, at least 1 match-the-following question, and at least 2 identify-the-image questions in Section A.
+- For identify-the-image questions, write the stem like "Identify the yoga asana below." or similar and fill figureLabel with a printable caption such as "Insert yoga asana image" or "Insert sports logo image".
+- For match-the-following questions, use the main question text for the two columns and provide 4 answer choices in options.
+- For assertion-reason questions, include Assertion (A) and Reason (R) in the main question text and provide 4 standard interpretation choices in options.
 - For questions that refer to a logo, yoga pose, diagram, fracture figure, or picture, fill figureLabel with a short caption like "Insert Deaflympics logo image" or "Insert yoga posture image". Do not use URLs or markdown images.
 - When a question has sub-parts, use subQuestions as an array.
 - For case studies, put the passage in caseStudyText and the follow-up prompts in subQuestions.
+- For Section D case studies, each of the 4 subQuestions must be MCQ-style and the parent question should clearly instruct the student to answer the questions based on the passage/picture.
+- For Section D, format EACH subQuestion string with 4 choices in-line using this structure:
+  "1. <question text> (a) <option> (b) <option> (c) <option> (d) <option>"
+- Section D must contain exactly 3 main questions: Q31, Q32, Q33.
 - For internal choice in long answers, use internalChoice as full alternate question text.
 - The title for full papers should be "PHYSICAL EDUCATION (048)".
 - displayGrade should be "Class XI (2025-26)" or "Class XII (2025-26)".
@@ -719,7 +730,7 @@ const normalizeQuestionPaper = (
         { sectionId: 'A', heading: 'SECTION A', questionRange: 'Q1-Q18', count: 18, marks: 1, instructions: 'Question 1 to 18 carry 1 mark each and are multiple choice questions. All questions are compulsory.' },
         { sectionId: 'B', heading: 'SECTION B', questionRange: 'Q19-Q24', count: 6, marks: 2, instructions: 'Question 19 to 24 carry 2 marks each and are very short answer type questions. Attempt any 5.' },
         { sectionId: 'C', heading: 'SECTION C', questionRange: 'Q25-Q30', count: 6, marks: 3, instructions: 'Question 25 to 30 carry 3 marks each and are short answer type questions. Attempt any 5.' },
-        { sectionId: 'D', heading: 'SECTION D', questionRange: 'Q31-Q33', count: 3, marks: 4, instructions: 'Question 31 to 33 carry 4 marks each and are case studies.' },
+        { sectionId: 'D', heading: 'SECTION D', questionRange: 'Q31-Q33', count: 3, marks: 4, instructions: 'Question 31 to 33 carry 4 marks each and are case-based questions. Read the given case/picture and answer the four MCQ sub-parts.' },
         { sectionId: 'E', heading: 'SECTION E', questionRange: 'Q34-Q37', count: 4, marks: 5, instructions: 'Question 34 to 37 carry 5 marks each and are long answer type questions. Attempt any 3.' },
       ]
     : [

@@ -138,6 +138,13 @@ const toolSections: ToolSection[] = [
   },
 ];
 
+const analyticsCards = [
+  { label: 'Weekly viewers', value: '12,480', trend: '+18%', tone: 'from-violet-500 to-indigo-500' },
+  { label: 'Active teachers', value: '1,245', trend: '+9%', tone: 'from-emerald-500 to-teal-500' },
+  { label: 'Papers generated', value: '3,812', trend: '+27%', tone: 'from-amber-500 to-orange-500' },
+  { label: 'Lesson plans saved', value: '6,940', trend: '+14%', tone: 'from-fuchsia-500 to-pink-500' },
+];
+
 const getHistoryMeta = (item: SavedItem): { tab: AppTab; icon: React.ReactNode; label: string } => {
   switch (item.type) {
     case 'Lesson Plan':
@@ -216,33 +223,47 @@ const Dashboard: React.FC<DashboardProps> = ({ apiStatus = 'checking', onNavigat
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 sm:space-y-8 md:space-y-10">
-      <section className="motion-panel rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 md:rounded-[2rem] md:p-10">
+      <section className="motion-panel overflow-hidden rounded-[1.75rem] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-violet-50 to-cyan-50 p-5 shadow-sm sm:p-6 md:rounded-[2rem] md:p-10">
         <div className="flex flex-col gap-6 sm:gap-8 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl space-y-5">
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-              <Sparkles size={14} className="text-slate-500" />
+            <span className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/90 px-3 py-1 text-xs font-medium text-indigo-700">
+              <Sparkles size={14} className="text-indigo-500" />
               Teacher Daily Assistant
             </span>
             <div className="space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Dashboard</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-400">Dashboard</p>
               <h1 className="max-w-2xl text-[2rem] font-semibold tracking-tight text-slate-900 leading-[1.08] sm:text-[2.2rem] md:text-[2.6rem] md:leading-[1.05]">
                 What do you want to create today?
               </h1>
-              <p className="max-w-2xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
+              <p className="max-w-2xl text-sm leading-7 text-slate-700 sm:text-base sm:leading-8">
                 Start with the task PE teachers use most often. Keep planning simple, move faster, and get back to class.
               </p>
             </div>
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600 sm:px-6 sm:py-5 xl:max-w-sm">
-            <div className="flex items-center gap-2 font-medium text-slate-900">
-              <Info size={16} className="text-slate-500" />
+          <div className="rounded-[1.5rem] border border-indigo-100 bg-white/90 px-5 py-4 text-sm text-slate-700 sm:px-6 sm:py-5 xl:max-w-sm">
+            <div className="flex items-center gap-2 font-medium text-indigo-900">
+              <Info size={16} className="text-indigo-500" />
               Today’s workflow
             </div>
             <p className="mt-3 max-w-sm leading-7">
               Choose one primary action, then use search or recent work to continue from where you left off.
             </p>
           </div>
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {analyticsCards.map((card) => (
+            <div key={card.label} className="rounded-2xl border border-white/60 bg-white/90 p-4 backdrop-blur-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{card.label}</p>
+              <div className="mt-2 flex items-end justify-between">
+                <p className="text-2xl font-bold tracking-tight text-slate-900">{card.value}</p>
+                <span className={`rounded-full bg-gradient-to-r px-2.5 py-1 text-[10px] font-bold text-white ${card.tone}`}>
+                  {card.trend}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="mt-8 grid gap-4 sm:mt-10 sm:gap-5 lg:grid-cols-3 lg:gap-6">
@@ -288,7 +309,7 @@ const Dashboard: React.FC<DashboardProps> = ({ apiStatus = 'checking', onNavigat
         </div>
       </section>
 
-      <section className="motion-panel motion-delay-1 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 md:rounded-[2rem] md:p-8">
+      <section className="motion-panel motion-delay-1 rounded-[1.75rem] border border-violet-100 bg-gradient-to-r from-white via-violet-50/40 to-cyan-50/40 p-5 shadow-sm sm:p-6 md:rounded-[2rem] md:p-8">
         <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Search</p>
