@@ -48,42 +48,13 @@ const RulesBot: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-2">
-            <select className="bg-indigo-800 text-sm rounded-lg px-3 py-1 outline-none max-w-[150px]" value={sport} onChange={e => setSport(e.target.value)}>
-              <optgroup label="Popular Sports">
-                <option>Kabaddi</option>
-                <option>Kho-Kho</option>
-                <option>Cricket</option>
-                <option>Football</option>
-                <option>Volleyball</option>
-                <option>Basketball</option>
-                <option>Badminton</option>
-                <option>Hockey</option>
-              </optgroup>
-              <optgroup label="Olympic & Other Sports">
-                <option>Athletics</option>
-                <option>Table Tennis</option>
-                <option>Tennis</option>
-                <option>Handball</option>
-                <option>Throwball</option>
-                <option>Swimming</option>
-                <option>Shooting</option>
-                <option>Archery</option>
-              </optgroup>
-              <optgroup label="Combat Sports">
-                <option>Wrestling</option>
-                <option>Judo / Karate</option>
-                <option>Boxing</option>
-                <option>Fencing</option>
-              </optgroup>
-              <optgroup label="Traditional & Mental">
-                <option>Chess</option>
-                <option>Yoga (Competitive)</option>
-                <option>Mallakhamb</option>
-                <option>Gatka</option>
-                <option>Silambam</option>
-                <option>Kalaripayattu</option>
-              </optgroup>
-            </select>
+           <select className="bg-indigo-800 text-sm rounded-lg px-3 py-1 outline-none" value={sport} onChange={e => setSport(e.target.value)}>
+             <option>Kabaddi</option>
+             <option>Kho-Kho</option>
+             <option>Cricket</option>
+             <option>Football</option>
+             <option>Volleyball</option>
+           </select>
            <select className="bg-indigo-800 text-sm rounded-lg px-3 py-1 outline-none" value={language} onChange={e => setLanguage(e.target.value as any)}>
              <option value="English">ENG</option>
              <option value="Hindi">HIN</option>

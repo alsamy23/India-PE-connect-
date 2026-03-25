@@ -1,814 +1,757 @@
-import { BoardType, LessonPlan, YearlyPlan, TheoryContent, Language, FitnessAssessment, BiomechanicsConcept } from "../types.ts";
 
-// ── Streaming call — returns text via onChunk, resolves with full text ──────
-export const callAIStream = async (
-  payload: any,
-  onChunk: (partial: string) => void
-): Promise<string> => {
-  const response = await fetch(`/api/ai/generate?t=${Date.now()}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "text/event-stream",
-    },
-    body: JSON.stringify(payload),
-  });
+import { BoardType, LessonPlan, YearlyPlan, TheoryContent, Language, FitnessAssessment, BiomechanicsConcept, QuestionPaper } from "../types.ts";
 
-  if (!response.ok || !response.body) {
-    const text = await response.text();
-    let msg = "AI generation failed.";
-    try { msg = JSON.parse(text)?.error || msg; } catch (_) {}
-    throw new Error(msg);
+const callAIBase = async (payload: any, retries = 2) => {
+  // Map legacy names to current best models
+  if (payload.model === 'gemini-1.5-flash') {
+    payload.model = 'gemini-flash-latest'; 
   }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const chunk = decoder.decode(value);
-    const lines = chunk.split("\n");
-    for (const line of lines) {
-      if (line.startsWith("data: ")) {
-        const jsonStr = line.slice(6).trim();
-        try {
-          const parsed = JSON.parse(jsonStr);
-          if (parsed.error) throw new Error(parsed.error);
-          if (parsed.delta) {
-            fullText = parsed.text || fullText;
-            onChunk(fullText);
-          }
-          if (parsed.done) fullText = parsed.text || fullText;
-        } catch (e: any) {
-          if (e.message && !e.message.includes("JSON")) throw e;
-        }
-      }
-    }
+  
+  // Add ThinkingLevel.LOW to config to minimize latency for speed
+  if (!payload.config) payload.config = {};
+  if (!payload.config.thinkingConfig) {
+    payload.config.thinkingConfig = { thinkingLevel: 'LOW' };
   }
-  return fullText;
-};
-
-// ── Regular (non-streaming) call for JSON responses ───────────────────────
-export const callAIBase = async (payload: any, retries = 2): Promise<any> => {
+  
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 90000);
-
+  const timeoutId = setTimeout(() => controller.abort(), 90000); 
+  
   try {
     const response = await fetch(`/api/ai/generate?t=${Date.now()}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-      signal: controller.signal,
+      signal: controller.signal
     });
-
+    
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      let errMsg = `Server returned ${response.status}`;
+      let errorData: any = null;
+      let responseText = "";
       try {
-        const errData = await response.json();
-        errMsg = errData?.error || errData?.message || errMsg;
-      } catch (_) {}
-      const err: any = new Error(errMsg);
-      if (retries > 0 && response.status >= 500) return callAIBase(payload, retries - 1);
-      throw err;
+        responseText = await response.text();
+        if (responseText) {
+          errorData = JSON.parse(responseText);
+        }
+      } catch (e) {
+        console.error("Could not parse error response as JSON", e);
+      }
+      
+      const errorMessage = typeof errorData?.error === 'string' ? errorData.error : (errorData?.error?.message || errorData?.message || responseText || `Server returned ${response.status}: ${response.statusText}`);
+      
+      // Handle Quota Exceeded (429)
+      const isQuotaError = response.status === 429 || errorMessage.includes("429") || errorMessage.includes("RESOURCE_EXHAUSTED") || errorMessage.toLowerCase().includes("quota");
+      if (isQuotaError) {
+        throw new Error("AI Quota Exceeded: You've reached the daily limit for the free version of Gemini. Please try again in a few hours or use a different API key with a paid project.");
+      }
+
+      const isInvalidKeyError = response.status === 401 || response.status === 400 || 
+                               errorMessage.includes("API_KEY_INVALID") || 
+                               errorMessage.includes("API key not valid") ||
+                               errorMessage.toLowerCase().includes("expired") ||
+                               errorMessage.toLowerCase().includes("invalid_argument");
+      if (isInvalidKeyError) {
+        if (window.aistudio) {
+          console.warn("AI Key expired or invalid. Prompting for key selection.");
+          await window.aistudio.openSelectKey();
+          return callAIBase(payload, 0);
+        }
+      }
+
+      const error: any = new Error(errorMessage);
+      if (errorData?.originalError) error.originalError = errorData.originalError;
+      
+      if (retries > 0 && response.status >= 500) {
+        return callAIBase(payload, retries - 1);
+      }
+      throw error;
+    }
+    
+    const text = await response.text();
+    if (!text) {
+      throw new Error("Empty response from server.");
+    }
+    
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (e) {
+      throw new Error(`Server returned invalid JSON response: ${text.substring(0, 100)}`);
     }
 
-    const text = await response.text();
-    if (!text) throw new Error("Empty response from server.");
-    try { return JSON.parse(text); } catch (_) {
-      throw new Error(`Invalid JSON response: ${text.substring(0, 100)}`);
-    }
+    return parsed;
   } catch (error: any) {
     clearTimeout(timeoutId);
-    if (error.name === "AbortError") throw new Error("AI took too long. Please try a simpler request.");
-    if (retries > 0) return callAIBase(payload, retries - 1);
+    
+    if (error.name === 'AbortError') {
+      throw new Error("The AI took too long to respond (Timeout). Please try a simpler request or check your internet connection.");
+    }
+
+    if (retries > 0) {
+      return callAIBase(payload, retries - 1);
+    }
     throw error;
   }
 };
 
 const safeParseJson = (text: string | undefined): any => {
   if (!text) throw new Error("AI response was empty.");
-  let clean = text.replace(/```json/g, "").replace(/```/g, "").trim();
-  try { return JSON.parse(clean); } catch (_) {
-    const m = clean.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error("AI response was malformed. Please try again.");
-    try { return JSON.parse(m[0]); } catch (__) {
-      throw new Error("AI generated an invalid format. Try simplifying your request.");
+  
+  let cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+  try {
+    return JSON.parse(cleanText);
+  } catch (e) {
+    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("The AI response was malformed. Please try again.");
+    }
+    
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch (innerE) {
+      throw new Error("The AI generated an invalid format. Try simplifying your request.");
     }
   }
 };
 
-// ── Lesson Plan ─────────────────────────────────────────────────────────────
 export const generateLessonPlan = async (
-  board: BoardType, grade: string, sport: string, topic: string,
-  teacherName: string, duration: string, date: string, language: Language
+  board: BoardType,
+  grade: string,
+  sport: string,
+  topic: string,
+  teacherName: string,
+  duration: string,
+  date: string,
+  language: Language
 ): Promise<LessonPlan> => {
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      teacher: { type: "STRING" },
+      subject: { type: "STRING" },
+      grade: { type: "STRING" },
+      date: { type: "STRING" },
+      topic: { type: "STRING" },
+      period: { type: "STRING" },
+      termWeek: { type: "STRING" },
+      duration: { type: "STRING" },
+      equipment: { type: "ARRAY", items: { type: "STRING" } },
+      teachingAids: { type: "ARRAY", items: { type: "STRING" } },
+      safety: { type: "ARRAY", items: { type: "STRING" } },
+      keyVocabulary: { type: "ARRAY", items: { type: "STRING" } },
+      sen: {
+        type: "OBJECT",
+        properties: {
+          wave1: { type: "STRING" },
+          wave2: { type: "STRING" },
+          wave3: { type: "STRING" }
+        }
+      },
+      objectives: {
+        type: "OBJECT",
+        properties: {
+          know: { type: "STRING" },
+          understand: { type: "STRING" },
+          beAbleTo: { type: "STRING" }
+        }
+      },
+      successCriteria: {
+        type: "OBJECT",
+        properties: {
+          all: { type: "STRING" },
+          most: { type: "STRING" },
+          some: { type: "STRING" }
+        }
+      },
+      starter: {
+        type: "OBJECT",
+        properties: {
+          time: { type: "STRING" },
+          title: { type: "STRING" },
+          description: { type: "STRING" }
+        }
+      },
+      mainActivity: {
+        type: "OBJECT",
+        properties: {
+          time: { type: "STRING" },
+          activities: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                title: { type: "STRING" },
+                description: { type: "STRING" },
+                coachingPoints: { type: "ARRAY", items: { type: "STRING" } }
+              }
+            }
+          }
+        }
+      },
+      plenary: {
+        type: "OBJECT",
+        properties: {
+          time: { type: "STRING" },
+          title: { type: "STRING" },
+          description: { type: "STRING" }
+        }
+      },
+      homework: { type: "STRING" },
+      collaboration: { type: "STRING" },
+      differentiation: { type: "STRING" },
+      criticalThinking: { type: "STRING" },
+      warmupDiagramPrompt: { type: "STRING" },
+      explanationDiagramPrompt: { type: "STRING" },
+      gameDiagramPrompt: { type: "STRING" }
+    },
+    required: ["objectives", "starter", "mainActivity", "plenary", "warmupDiagramPrompt", "explanationDiagramPrompt"]
+  };
+
   const response = await callAIBase({
-    model: "claude-sonnet",
+    model: 'gemini-flash-latest',
     contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}, Duration: ${duration}.`,
     config: {
-      systemInstruction: `You are an expert Physical Education Curriculum Designer for Indian schools.
-Create a highly professional, structured PE lesson plan for a ${duration} session.
-Return ONLY valid JSON with these fields:
-- objectives: {know, understand, beAbleTo}
-- successCriteria: {all, most, some}
-- starter: {time, title, description}
-- mainActivity: {time, activities: [{title, description, coachingPoints[]}]}
-- plenary: {time, title, description}
-- equipment: string[]
-- teachingAids: string[]
-- safety: string[]
-- keyVocabulary: string[]
-- sen: {wave1, wave2, wave3}
-- homework: string
-- collaboration: string
-- differentiation: string
-- criticalThinking: string
-- warmupDiagramPrompt: string
-- explanationDiagramPrompt: string
-- gameDiagramPrompt: string
-Translate all content to ${language}. No empty fields.`,
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `You are an expert Physical Education Curriculum Designer and Teacher's Assistant. 
+      Be decisive and do not ask for clarification.
+      Create a highly professional, structured PE lesson plan for a ${duration} session. 
+      Format:
+      1. Objectives: Clear Psychomotor (Know), Cognitive (Understand), and Affective (Apply) goals.
+      2. Success Criteria: Differentiated (All, Most, Some).
+      3. Starter: Engaging warm-up related to the topic (${duration} appropriate).
+      4. Main Activity: 3 progressive drills with clear coaching points.
+      5. Plenary: Cool-down and reflective questions.
+      6. Safety: Specific risks for this sport/activity.
+      7. Equipment: List all necessary items.
+      8. Teaching Aids: Whistles, cones, charts, etc.
+      9. Key Vocabulary: Terms students should learn.
+      Translate all content to ${language}. Ensure NO fields are empty strings. Use the provided duration (${duration}) to time the activities correctly.`,
       responseMimeType: "application/json",
-    },
+      responseSchema: schema
+    }
   });
   return safeParseJson(response.text);
 };
 
-// ── Yearly Plan ──────────────────────────────────────────────────────────────
 export const generateYearlyPlan = async (
-  grade: string, board: BoardType, frequency: string, calendarText: string,
-  term1Focus: string, term2Focus: string, startDate: string, duration: string, language: Language
+  grade: string,
+  board: BoardType,
+  frequency: string,
+  calendarText: string,
+  term1Focus: string,
+  term2Focus: string,
+  startDate: string,
+  duration: string,
+  language: Language
 ): Promise<YearlyPlan> => {
-  const safeCalendar = calendarText ? calendarText.substring(0, 1500) : "No calendar.";
-  const response = await callAIBase({
-    model: "claude-sonnet",
-    contents: `Yearly PE Plan. Grade: ${grade}, Board: ${board}, Lang: ${language}. Start: ${startDate}. Terms: 2. Focus1: ${term1Focus}. Focus2: ${term2Focus}. Holidays: ${safeCalendar}`,
-    config: {
-      systemInstruction: `Generate a yearly PE curriculum plan as JSON.
-Structure: { grade, board, academicYear, terms: [{ termName, months: [{ monthName, weeks: [{ weekNumber, status, dates, topic, details }] }] }] }
-Status enum: Instructional | Holiday | Exam | Event
-Output language: ${language}. 2 terms. Populate all arrays fully.`,
-      responseMimeType: "application/json",
+  const safeCalendarText = calendarText ? calendarText.substring(0, 1500) : "No calendar.";
+  
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      grade: { type: "STRING" },
+      board: { type: "STRING" },
+      academicYear: { type: "STRING" },
+      terms: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            termName: { type: "STRING" },
+            months: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  monthName: { type: "STRING" },
+                  weeks: {
+                    type: "ARRAY",
+                    items: {
+                      type: "OBJECT",
+                      properties: {
+                        weekNumber: { type: "NUMBER" },
+                        status: { type: "STRING", enum: ['Instructional', 'Holiday', 'Exam', 'Event'] },
+                        dates: { type: "STRING" },
+                        topic: { type: "STRING" },
+                        details: { type: "STRING" }
+                      },
+                      required: ["weekNumber", "status", "topic", "details"]
+                    }
+                  }
+                },
+                required: ["monthName", "weeks"]
+              }
+            }
+          },
+          required: ["termName", "months"]
+        }
+      }
     },
+    required: ["terms", "academicYear"]
+  };
+
+  const response = await callAIBase({
+    model: 'gemini-flash-latest',
+    contents: `Yearly PE Plan. Grade: ${grade}, Board: ${board}, Lang: ${language}. Start: ${startDate}. Terms: 2. Focus1: ${term1Focus}. Focus2: ${term2Focus}. Holidays: ${safeCalendarText}`,
+    config: {
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `Generate strictly valid JSON. 
+      Be decisive and do not ask for clarification.
+      Output Language: ${language} (translate Topic and Details).
+      Structure: terms[] -> months[] -> weeks[].
+      Constraint: 2 terms, Concise (max 5 words per detail).
+      ENSURE DATA IS POPULATED. Do not return empty arrays.`,
+      responseMimeType: "application/json",
+      responseSchema: schema
+    }
   });
+
   const parsed = safeParseJson(response.text);
-  return {
-    ...parsed,
-    grade: parsed.grade || grade,
+  const terms = Array.isArray(parsed.terms) ? parsed.terms : [];
+
+  return { 
+    ...parsed, 
+    grade: parsed.grade || grade, 
     board: parsed.board || board,
-    duration,
-    terms: Array.isArray(parsed.terms) ? parsed.terms : [],
+    duration: duration,
+    terms: terms,
     generatedDate: new Date().toLocaleDateString(),
-    academicYear: parsed.academicYear || "2025-2026",
+    academicYear: parsed.academicYear || "2024-2025"
   };
 };
 
-// ── Mind Map ─────────────────────────────────────────────────────────────────
-// ── CBSE 2025-26 Exact Curriculum Data from Official PDF ──────────────────
-const CBSE_CURRICULUM: Record<string, Record<string, string[]>> = {
-  "11": {
-    "Changing Trends & Career in Physical Education": [
-      "Concept, Aims & Objectives of Physical Education",
-      "Development of Physical Education in India – Post Independence",
-      "Changing Trends in Sports – playing surface, wearable gear, sports equipment, technological advancements",
-      "Career options in Physical Education",
-      "Khelo-India Program and Fit-India Program"
-    ],
-    "Olympic Value Education": [
-      "Olympism – Concept and Olympics Values (Excellence, Friendship & Respect)",
-      "Olympic Value Education – Joy of Effort, Fair Play, Respect for Others, Pursuit of Excellence, Balance Among Body, Will & Mind",
-      "Ancient and Modern Olympics",
-      "Olympics – Symbols, Motto, Flag, Oath, and Anthem",
-      "Olympic Movement Structure – IOC, NOC, IFS, Other members"
-    ],
-    "Yoga": [
-      "Meaning and importance of Yoga",
-      "Introduction to Astanga Yoga",
-      "Yogic Kriyas (Shat Karma)",
-      "Pranayama and its types",
-      "Active Lifestyle and stress management through Yoga"
-    ],
-    "Physical Education & Sports for CWSN": [
-      "Concept of Disability and Disorder",
-      "Types of Disability, its causes & nature (Intellectual disability, Physical disability)",
-      "Disability Etiquette",
-      "Aim and objectives of Adaptive Physical Education",
-      "Role of various professionals for CWSN (Counselor, Occupational Therapist, Physiotherapist, PE Teacher, Speech Therapist, Special Educator)"
-    ],
-    "Physical Fitness, Wellness": [
-      "Meaning & importance of Wellness, Health, and Physical Fitness",
-      "Components/Dimensions of Wellness, Health, and Physical Fitness",
-      "Traditional Sports & Regional Games for promoting wellness",
-      "Leadership through Physical Activity and Sports",
-      "Introduction to First Aid – PRICE"
-    ],
-    "Test, Measurements & Evaluation": [
-      "Define Test, Measurements and Evaluation",
-      "Importance of Test, Measurements and Evaluation in Sports",
-      "Calculation of BMI, Waist-Hip Ratio, Skin fold measurement (3-site)",
-      "Somato Types (Endomorphy, Mesomorphy & Ectomorphy)",
-      "Measurements of health-related fitness – BMI computation"
-    ],
-    "Fundamentals of Anatomy and Physiology in Sports": [
-      "Definition and importance of Anatomy and Physiology in Exercise and Sports",
-      "Functions of Skeletal System, Classification of Bones, and Types of Joints",
-      "Properties and Functions of Muscles",
-      "Structure and Functions of Circulatory System and Heart",
-      "Structure and Functions of Respiratory System"
-    ],
-    "Fundamentals of Kinesiology and Biomechanics in Sports": [
-      "Definition and Importance of Kinesiology and Biomechanics in Sports",
-      "Principles of Biomechanics",
-      "Kinetics and Kinematics in Sports",
-      "Types of Body Movements – Flexion, Extension, Abduction, Adduction, Rotation, Circumduction, Supination & Pronation",
-      "Axis and Planes – Concept and its application in body movements"
-    ],
-    "Psychology and Sports": [
-      "Definition & Importance of Psychology in Physical Education & Sports",
-      "Developmental Characteristics at Different Stages of Development",
-      "Adolescent Problems & their Management",
-      "Team Cohesion and Sports",
-      "Psychological Attributes: Attention, Resilience, Mental Toughness"
-    ],
-    "Training & Doping in Sports": [
-      "Concept and Principles of Sports Training",
-      "Training Load: Over Load, Adaptation, and Recovery",
-      "Warming-up & Limbering Down – Types, Method & Importance",
-      "Concept of Skill, Technique, Tactics & Strategies",
-      "Concept of Doping and its disadvantages"
-    ]
-  },
-  "12": {
-    "Management of Sporting Events": [
-      "Functions of Sports Events Management (Planning, Organising, Staffing, Directing & Controlling)",
-      "Various Committees & their Responsibilities (pre, during & post)",
-      "Fixtures and their Procedures – Knock-Out (Bye & Seeding) & League (Staircase, Cyclic, Tabular method) and Combination tournaments",
-      "Intramural & Extramural tournaments – Meaning, Objectives & Its Significance",
-      "Community sports program (Sports Day, Health Run, Run for Fun, Run for Specific Cause & Run for Unity)"
-    ],
-    "Children and Women in Sports": [
-      "Exercise guidelines of WHO for different age groups",
-      "Common postural deformities – knock knees, flat foot, round shoulders, Lordosis, Kyphosis, Scoliosis, bow legs and corrective measures",
-      "Women's participation in Sports – Physical, Psychological, and social benefits",
-      "Special consideration (menarche and menstrual dysfunction)",
-      "Female athlete triad (osteoporosis, amenorrhea, eating disorders)"
-    ],
-    "Yoga as Preventive measure for Lifestyle Disease": [
-      "Obesity – Asanas: Tadasana, Katichakrasana, Pavanmuktasana, Matsayasana, Halasana, Pachimottanasana, Ardha-Matsyendrasana, Dhanurasana, Ushtrasana, Suryabedhan pranayama",
-      "Diabetes – Asanas: Katichakrasana, Pavanmuktasana, Bhujangasana, Shalabhasana, Dhanurasana, Suptavajarasana, Paschimottanasana, ArdhaMastendrasan, Mandukasana, Gomukasana, Yogmudra, Ushtrasana, Kapalabhati",
-      "Asthma – Asanas: Tadasana, Urdhwahastottansana, UttanMandukasana, Bhujangasana, Dhanurasana, Ushtrasana, Vakrasana, Kapalbhati, Gomukhasana, Matsyaasana, Anuloma-Viloma",
-      "Hypertension – Asanas: Tadasana, Katichakransan, Uttanpadasana, Ardha Halasana, Sarala Matyasana, Gomukhasana, UttanMandukasana, Vakrasana, Bhujangasana, Makarasana, Shavasana",
-      "Back Pain and Arthritis – Asanas: Tadasana, Urdhawahastootansana, ArdhChakrasana, Ushtrasana, Vakrasana, Sarala Maysyendrsana, Bhujangasana, Gomukhasana, Bhadrasana, Makarasana, NadiShodhanapranayama"
-    ],
-    "Physical Education & Sports for (CWSN)": [
-      "Organisations promoting Disability Sports (Special Olympics, Paralympics, Deaflympics)",
-      "Concept of Classification and Divisioning in Sports",
-      "Concept of Inclusion in sports, its need, and Implementation",
-      "Advantages of Physical Activities for children with special needs",
-      "Strategies to make Physical Activities accessible for children with special needs"
-    ],
-    "Sports & Nutrition": [
-      "Concept of balanced diet and nutrition",
-      "Macro and Micro Nutrients: Food sources & functions",
-      "Nutritive & Non-Nutritive Components of Diet",
-      "Eating for Weight control – A Healthy Weight, The Pitfalls of Dieting, Food Intolerance, and Food Myths",
-      "Importance of Diet in Sports – Pre, During and Post competition Requirements"
-    ],
-    "Test and Measurement in Sports": [
-      "Fitness Test – SAI Khelo India Fitness Test in school (Age group 5-8 years/class 1-3: BMI, Flamingo Balance Test, Plate Tapping Test; Age group 9-18yrs/class 4-12: BMI, 50mt Speed test, 600mt Run/Walk, Sit & Reach, Strength Test)",
-      "Measurement of Cardio-Vascular Fitness – Harvard Step Test",
-      "Computing Basal Metabolic Rate (BMR)",
-      "Rikli & Jones – Senior Citizen Fitness Test (Chair Stand, Arm Curl, Chair Sit & Reach, Back Scratch, Eight Foot Up & Go, Six-Minute Walk Test)",
-      "Johnsen-Methney Test of Motor Educability (Front Roll, Back Roll, Jumping Half-Turn, Jumping full-turn)"
-    ],
-    "Physiology & Injuries in Sport": [
-      "Physiological factors determining components of physical fitness",
-      "Effect of exercise on the Muscular System",
-      "Effect of exercise on the Cardio-Respiratory System",
-      "Physiological changes due to aging",
-      "Sports injuries: Classification – Soft Tissue Injuries (Abrasion, Contusion, Laceration, Incision, Sprain & Strain), Bone & Joint Injuries (Dislocation, Fractures – Green Stick, Comminuted, Transverse, Oblique & Impacted)"
-    ],
-    "Biomechanics and Sports": [
-      "Newton\'s Law of Motion & its application in sports",
-      "Types of Levers and their application in Sports",
-      "Equilibrium – Dynamic & Static and Centre of Gravity and its application in sports",
-      "Friction & Sports",
-      "Projectile in Sports"
-    ],
-    "Psychology and Sports": [
-      "Personality; its definition & types (Jung Classification & Big Five Theory)",
-      "Motivation, its type & techniques",
-      "Exercise Adherence: Reasons, Benefits & Strategies for Enhancing it",
-      "Meaning, Concept & Types of Aggressions in Sports",
-      "Psychological Attributes in Sports – Self-Esteem, Mental Imagery, Self-Talk, Goal Setting"
-    ],
-    "Training in Sports": [
-      "Concept of Talent Identification and Talent Development in Sports",
-      "Introduction to Sports Training Cycle – Micro, Meso, Macro Cycle",
-      "Types & Methods to Develop – Strength, Endurance, and Speed",
-      "Types & Methods to Develop – Flexibility and Coordinative Ability",
-      "Circuit Training – Introduction & its importance"
-    ]
-  }
-};
-
-export const generateMindMap = async (grade: string, chapter: string, board: BoardType) => {
-  // Get exact topics from official CBSE 2025-26 curriculum
-  const gradeKey = grade === "11" ? "11" : "12";
-  const exactTopics = CBSE_CURRICULUM[gradeKey]?.[chapter] || [];
-  const topicsContext = exactTopics.length > 0
-    ? `EXACT TOPICS from CBSE 2025-26 official curriculum for this chapter:\n${exactTopics.map((t, i) => `${i+1}. ${t}`).join("\n")}`
-    : `Chapter: ${chapter}`;
+export const generateMindMap = async (grade: string, chapter: string, board: BoardType): Promise<{
+  center: string;
+  branches: {
+    title: string;
+    description: string;
+    subTopics?: string[];
+  }[];
+}> => {
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      center: { type: "STRING" },
+      branches: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            title: { type: "STRING" },
+            description: { type: "STRING" },
+            subTopics: { type: "ARRAY", items: { type: "STRING" } }
+          },
+          required: ["title", "description"]
+        }
+      }
+    },
+    required: ["center", "branches"]
+  };
 
   const response = await callAIBase({
-    model: "claude-sonnet",
-    contents: `Generate detailed mind map for CBSE Class ${grade} PE Chapter: "${chapter}".\n\n${topicsContext}`,
+    model: 'gemini-flash-latest',
+    contents: `Generate a comprehensive mind map structure for CBSE Class ${grade} Physical Education Chapter: ${chapter}. 
+    Include ALL major topics and sub-topics from the latest 2025-2026 CBSE curriculum and NCERT textbook.
+    Provide 6-8 main branches with clear, academic titles and brief descriptions.`,
     config: {
-      systemInstruction: `You are a CBSE Physical Education expert. Return JSON: { center: string, branches: [{ title, description, subTopics?: string[] }] }
-CRITICAL: Use EXACTLY the topics listed above — these are from the official CBSE 2025-26 curriculum PDF.
-Each topic from the list must become one branch. Add 2-4 specific subTopics per branch based on that topic.
-Do NOT invent topics not in the curriculum. Be accurate and exam-focused.`,
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: "You are a CBSE Physical Education Subject Matter Expert. Generate a structured, hierarchical mind map in JSON format. Ensure full coverage of the specified chapter according to the 2025-26 syllabus.",
       responseMimeType: "application/json",
-    },
+      responseSchema: schema
+    }
   });
   return safeParseJson(response.text);
 };
 
-// ── Theory Content ───────────────────────────────────────────────────────────
-export const generateTheoryContent = async (
-  grade: string, topic: string, board: BoardType, contentType: string, language: Language
-): Promise<TheoryContent> => {
-  // Get exact curriculum context for this topic
-  const gradeKey = grade === "11" ? "11" : "12";
-  let exactContext = "";
-  
-  const isFullChapter = topic.startsWith("Full Chapter: ");
-  const cleanTopic = isFullChapter ? topic.replace("Full Chapter: ", "").trim() : topic;
-  const lowerTopic = cleanTopic.toLowerCase();
+export const generateTheoryContent = async (grade: string, topic: string, board: BoardType, contentType: string, language: Language): Promise<TheoryContent> => {
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      title: { type: "STRING" },
+      contentType: { type: "STRING" },
+      content: { type: "STRING" },
+      questions: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            question: { type: "STRING" },
+            answer: { type: "STRING" },
+            type: { type: "STRING" }
+          },
+          required: ["question", "answer"]
+        }
+      }
+    },
+    required: ["title", "content", "questions"]
+  };
 
-  // 1. Try EXACT Chapter Match first
-  for (const chapter of Object.keys(CBSE_CURRICULUM[gradeKey] || {})) {
-    if (chapter.toLowerCase() === lowerTopic) {
-      exactContext = `This is a request for the full chapter: "${chapter}".\nGenerate comprehensive content covering ALL these exact curriculum topics: ${CBSE_CURRICULUM[gradeKey][chapter].join("; ")}`;
-      break;
-    }
-  }
+  const isCBSE12 = board === 'CBSE' && (grade === '12' || grade === 'Class 12');
+  const contextUrl = "https://www.failures.in/p/physical-education-class-12-notes-pdf.html";
 
-  // 2. Try partial match if not found
-  if (!exactContext) {
-    for (const [chapter, topics] of Object.entries(CBSE_CURRICULUM[gradeKey] || {})) {
-      const chapterLower = chapter.toLowerCase();
+  const response = await callAIBase({
+    model: 'gemini-flash-latest',
+    contents: `PE Theory Content. Grade ${grade} ${board}. Topic: ${topic}. Type: ${contentType}. Language: ${language}.${isCBSE12 ? ` Use context from ${contextUrl}` : ''}`,
+    config: { 
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `You are an expert CBSE PE Teacher. Output valid JSON. 
+      Content Language: ${language}. 
       
-      // Check if topic is a specific sub-topic in this chapter
-      const matchedTopic = (topics as string[]).find(t => {
-        const tLower = t.toLowerCase();
-        return tLower === lowerTopic || tLower.includes(lowerTopic);
-      });
-
-      if (matchedTopic) {
-        exactContext = `This specific topic is "${matchedTopic}" from Chapter: "${chapter}".\nEnsure content is strictly as per NCERT Class ${grade} textbook for this section.`;
-        break;
-      }
-
-      // Check if topic is part of chapter name (but avoid generic "Sports" collision)
-      if (lowerTopic.length > 5 && chapterLower.includes(lowerTopic)) {
-        exactContext = `This pertains to Chapter: "${chapter}".\nGenerate content based on these exact curriculum topics: ${(topics as string[]).join("; ")}`;
-        break;
-      }
+      GUIDELINES:
+      1. Reference: Strictly follow NCERT and CBSE 2025-26 curriculum.
+      2. Style: For 'Notes', use the "shortest way for math-like understanding" - very logical, bulleted, and precise. Avoid fluff.
+      3. Case Studies: For 'CaseStudy', follow the latest board sample paper patterns (2024-25/2025-26). Include a scenario followed by 3-4 analytical questions.
+      4. MCQs: Ensure options are challenging and follow board patterns.
+      
+      ${isCBSE12 ? `IMPORTANT: Prioritize and summarize information from ${contextUrl} for this CBSE Class 12 request.` : ''}`,
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      tools: isCBSE12 ? [{ urlContext: {} }] : undefined
     }
-  }
-
-  const response = await callAIBase({
-    model: "claude-sonnet",
-    contents: `CBSE Class ${grade} PE ${contentType}: "${topic}". Language: ${language}.${exactContext ? "\n\nCurriculum Context: " + exactContext : ""}`,
-    config: {
-      systemInstruction: `You are an expert CBSE Physical Education Teacher specializing in current NCERT textbook content (2025-26 session).
-Return JSON: { "title": string, "contentType": string, "content": string, "questions": [{ "question": string, "options": string[], "answer": string, "type": string }] }
-
-CRITICAL RULES:
-- "content" MUST be a single string. Use \n for newlines.
-- Do NOT return "content" as an object or array.
-- Use EXACT terminology from the latest NCERT Physical Education textbook for Class ${grade}.
-- Content Language: ${language}
-- For Notes: Provide high-quality, exam-ready notes with structured bullet points and headers.
-- For MCQ: 5 questions (CBSE pattern), 4 options each, provide clear string answers.
-- For CaseStudy: A realistic scenario followed by 4 questions.
-- Maintain 100% academic integrity to NCERT material.`,
-      responseMimeType: "application/json",
-    },
   });
   return safeParseJson(response.text);
 };
 
-// ── AI Tool Content ───────────────────────────────────────────────────────────
 export const generateAIToolContent = async (toolId: string, params: any) => {
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      title: { type: "STRING", description: "Title of the generated resource" },
+      content: { type: "STRING", description: "Main content, explanation or description" },
+      items: { 
+        type: "ARRAY", 
+        items: { type: "STRING" },
+        description: "List of key points, drill steps, or specific items"
+      },
+      summary: { type: "STRING", description: "Brief summary or conclusion" }
+    },
+    required: ["title", "content"]
+  };
+
   const response = await callAIBase({
-    model: "claude-sonnet",
+    model: 'gemini-flash-latest',
     contents: `PE Tool ${toolId}. Parameters: ${JSON.stringify(params)}.`,
-    config: {
-      systemInstruction: `PE Expert. Return JSON: { title, content, items?: string[], summary? }. High quality, actionable content.`,
+    config: { 
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: "You are a PE Expert. Be decisive and do not ask for clarification. Generate high-quality, actionable content. Do not return empty fields. If specific data is missing, generate realistic examples.",
       responseMimeType: "application/json",
-    },
+      responseSchema: schema
+    }
   });
   return safeParseJson(response.text);
 };
 
-// ── Lesson Diagram — using image.pollinations.ai ───────────────────────────
-export const generateLessonDiagram = async (prompt: string, _context = "general") => {
-  if (!prompt) return undefined;
-  
-  // Clean and shorten the prompt for better stability
-  const cleanPrompt = prompt.toString().replace(/[^\w\s,]/gi, '').substring(0, 500);
-  const educationalPrompt = `${cleanPrompt}, educational physics diagram, sports biomechanics, professional illustration, scientific style`;
-  
-  // Using image.pollinations.ai for more direct image generation
-  const encodedPrompt = encodeURIComponent(educationalPrompt);
-  return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 1000)}`;
+export const generateLessonDiagram = async (prompt: string, context: string = 'general') => {
+  try {
+    const response = await callAIBase({
+      model: 'gemini-2.5-flash-image',
+      contents: { parts: [{ text: `Minimalist sports coaching diagram. Whiteboard style. No text. ${context}: ${prompt}` }] }
+    });
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+    }
+  } catch (err) { console.error("Diagram error", err); }
+  return undefined;
 };
 
-// ── Skill Progression ─────────────────────────────────────────────────────────
 export const generateSkillProgression = async (sport: string, skill: string) => {
-  const response = await callAIBase({
-    model: "claude-sonnet",
-    contents: `Skill progression: ${sport} - ${skill}`,
-    config: {
-      systemInstruction: `Return JSON: { skillName, level, phases: [{ phaseName, drills: string[], technicalFocus, diagramPrompt }] }
-3-4 phases. Actionable drills. Coach-friendly language.`,
-      responseMimeType: "application/json",
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      skillName: { type: "STRING" },
+      level: { type: "STRING" },
+      phases: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            phaseName: { type: "STRING" },
+            drills: { type: "ARRAY", items: { type: "STRING" } },
+            technicalFocus: { type: "STRING" },
+            diagramPrompt: { type: "STRING" }
+          },
+          required: ["phaseName", "drills", "technicalFocus", "diagramPrompt"]
+        }
+      }
     },
+    required: ["skillName", "phases"]
+  };
+
+  const response = await callAIBase({
+    model: 'gemini-flash-latest',
+    contents: `Skill progression: ${sport} - ${skill}`,
+    config: { 
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: "Be decisive and do not ask for clarification. Generate a detailed 3-4 phase skill progression. Ensure diagrams prompts are descriptive. Drills must be actionable.",
+      responseMimeType: "application/json",
+      responseSchema: schema
+    }
   });
   return safeParseJson(response.text);
 };
 
-// ── State Regulations ─────────────────────────────────────────────────────────
 export const getStateRegulationInsights = async (state: string, board: BoardType) => {
   const response = await callAIBase({
-    model: "claude-sonnet",
+    model: 'gemini-flash-latest',
     contents: `PE regulations for ${state} ${board}. Marks, Hours, Curriculum.`,
-    config: { systemInstruction: "PE curriculum expert. Provide clear, factual regulatory information." },
+    config: { thinkingConfig: { thinkingLevel: "LOW" } }
   });
   return response.text;
 };
 
-// ── Fitness Tests ─────────────────────────────────────────────────────────────
 export const evaluateFitnessTests = async (
-  age: string, gender: string, category: string, testName: string, value: string
+  age: string,
+  gender: string,
+  category: string,
+  testName: string,
+  value: string
 ): Promise<FitnessAssessment> => {
-  const response = await callAIBase({
-    model: "claude-sonnet",
-    contents: `Assess fitness: Category: ${category}. Test: ${testName}. Result: ${value}. Student: Age ${age}, ${gender}.`,
-    config: {
-      systemInstruction: `Sports Scientist. Return JSON: { studentName, age, gender, overallSummary, tests: [{ testName, score, percentile, rating, recommendation }] }
-Rating enum: Needs Improvement | Average | Good | Excellent | Elite
-Compare to ACSM/NSCA norms. Fully populate all fields.`,
-      responseMimeType: "application/json",
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      studentName: { type: "STRING" },
+      age: { type: "NUMBER" },
+      gender: { type: "STRING" },
+      overallSummary: { type: "STRING" },
+      tests: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            testName: { type: "STRING" },
+            score: { type: "STRING" },
+            percentile: { type: "STRING" },
+            rating: { type: "STRING", enum: ['Needs Improvement', 'Average', 'Good', 'Excellent', 'Elite'] },
+            recommendation: { type: "STRING" },
+          },
+          required: ["testName", "score", "percentile", "rating", "recommendation"]
+        }
+      }
     },
+    required: ["studentName", "age", "gender", "tests", "overallSummary"]
+  };
+
+  const response = await callAIBase({
+    model: 'gemini-flash-latest',
+    contents: `Assess fitness test result. 
+    Category: ${category}.
+    Test: ${testName}.
+    Result: ${value}.
+    Student: Age ${age}, ${gender}.`,
+    config: {
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `You are a professional Sports Scientist and Fitness Assessor. 
+      Be decisive and do not ask for clarification.
+      Task: Compare the provided test result to international standard norms (e.g. ACSM, NSCA).
+      Output JSON must be fully populated.
+      Calculate percentile and rating strictly based on standard age/gender norms.`,
+      responseMimeType: "application/json",
+      responseSchema: schema
+    }
   });
   return safeParseJson(response.text);
 };
 
-// ── Khelo India ───────────────────────────────────────────────────────────────
 export const evaluateKheloIndiaScores = async (
-  age: string, gender: string, tests: { name: string; value: string }[]
+  age: string,
+  gender: string,
+  tests: { name: string; value: string }[]
 ): Promise<FitnessAssessment> => {
-  const response = await callAIBase({
-    model: "claude-sonnet",
-    contents: `Assess fitness based on Khelo India Norms. Student: Age ${age}, ${gender}. Tests: ${JSON.stringify(tests)}.`,
-    config: {
-      systemInstruction: `Khelo India Assessor. Return JSON: { studentName, age, gender, overallSummary, tests: [{ testName, score, percentile, rating, recommendation }] }
-Rating enum: Needs Improvement | Average | Good | Excellent | Elite
-Compare to Indian National Fitness Protocols. If scores missing, estimate for average student of that age/gender and label "(Estimated)".`,
-      responseMimeType: "application/json",
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      studentName: { type: "STRING" },
+      age: { type: "NUMBER" },
+      gender: { type: "STRING" },
+      overallSummary: { type: "STRING" },
+      tests: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            testName: { type: "STRING" },
+            score: { type: "STRING" },
+            percentile: { type: "STRING" },
+            rating: { type: "STRING", enum: ['Needs Improvement', 'Average', 'Good', 'Excellent', 'Elite'] },
+            recommendation: { type: "STRING" },
+          },
+          required: ["testName", "score", "percentile", "rating", "recommendation"]
+        }
+      }
     },
+    required: ["studentName", "age", "gender", "tests", "overallSummary"]
+  };
+
+  const response = await callAIBase({
+    model: 'gemini-flash-latest',
+    contents: `Assess fitness based on Khelo India Norms. 
+    Student: Age ${age}, ${gender}.
+    Tests Provided: ${JSON.stringify(tests)}.`,
+    config: {
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `You are a Khelo India Assessor. 
+      Be decisive and do not ask for clarification.
+      Task: Compare scores to Indian National Fitness Protocols.
+      CRITICAL: If test scores are missing or empty in the input, ESTIMATE typical scores for a student of this age/gender who is 'Average' and label them as (Estimated).
+      Output JSON must be fully populated. Do not return empty strings for recommendations or ratings.
+      Calculate percentiles strictly.`,
+      responseMimeType: "application/json",
+      responseSchema: schema
+    }
   });
   return safeParseJson(response.text);
 };
 
-// ── Biomechanics ──────────────────────────────────────────────────────────────
-export const explainBiomechanics = async (
-  sport: string, concept: string, language: Language
-): Promise<BiomechanicsConcept> => {
+export const generateQuestionPaper = async (
+  grade: string,
+  topic: string,
+  board: BoardType,
+  testType: string,
+  timeAllowed: string,
+  maxMarks: number,
+  language: Language
+): Promise<QuestionPaper> => {
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      title: { type: "STRING" },
+      grade: { type: "STRING" },
+      displayGrade: { type: "STRING" },
+      subjectCode: { type: "STRING" },
+      sessionLabel: { type: "STRING" },
+      testType: { type: "STRING" },
+      timeAllowed: { type: "STRING" },
+      maxMarks: { type: "NUMBER" },
+      generalInstructions: { type: "ARRAY", items: { type: "STRING" } },
+      sections: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            sectionId: { type: "STRING" },
+            heading: { type: "STRING" },
+            instructions: { type: "STRING" },
+            questions: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  questionNumber: { type: "NUMBER" },
+                  question: { type: "STRING" },
+                  marks: { type: "NUMBER" },
+                  options: { type: "ARRAY", items: { type: "STRING" } },
+                  answer: { type: "STRING" },
+                  caseStudyText: { type: "STRING" }
+                },
+                required: ["question", "marks"]
+              }
+            }
+          },
+          required: ["sectionId", "instructions", "questions"]
+        }
+      }
+    },
+    required: ["title", "grade", "maxMarks", "sections", "generalInstructions"]
+  };
+
   const response = await callAIBase({
-    model: "claude-sonnet",
+    model: 'gemini-flash-latest',
+    contents: `Generate a Physical Education Question Paper. 
+    Grade: ${grade}, Board: ${board}, Topic: ${topic}, 
+    Type: ${testType}, Time: ${timeAllowed}, Marks: ${maxMarks}, 
+    Language: ${language}.`,
+    config: {
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `You are an expert CBSE/ICSE Physical Education Examiner. 
+      Be decisive and do not ask for clarification.
+      Create a professional question paper following the latest board patterns (2025-26).
+      Include:
+      1. Section A: MCQs (1 mark each).
+      2. Section B: Very Short Answer (2 marks each).
+      3. Section C: Short Answer (3 marks each).
+      4. Section D: Case Study based (4 marks each).
+      5. Section E: Long Answer (5 marks each).
+      Distribute marks to total exactly ${maxMarks}.
+      Ensure questions are high-quality and cover the topic: ${topic}.
+      Language: ${language}.`,
+      responseMimeType: "application/json",
+      responseSchema: schema
+    }
+  });
+  return safeParseJson(response.text);
+};
+
+export const explainBiomechanics = async (
+  sport: string,
+  concept: string,
+  language: Language
+): Promise<BiomechanicsConcept> => {
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      concept: { type: "STRING" },
+      sportApplication: { type: "STRING" },
+      explanation: { type: "STRING" },
+      analogy: { type: "STRING" },
+      diagramPrompt: { type: "STRING" }
+    },
+    required: ["concept", "explanation", "analogy", "diagramPrompt"]
+  };
+
+  const response = await callAIBase({
+    model: 'gemini-flash-latest',
     contents: `Explain biomechanics concept '${concept}' in '${sport}'. Language: ${language}.`,
     config: {
-      systemInstruction: `Return JSON: { concept, sportApplication, explanation, analogy, diagramPrompt }
-Simple language for school students. Language: ${language}.`,
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `Output JSON. Be decisive and do not ask for clarification. Explanation must be simple for school students. Include a visual analogy description. Language: ${language}.`,
       responseMimeType: "application/json",
-    },
+      responseSchema: schema
+    }
   });
   return safeParseJson(response.text);
 };
 
-// ── Rules Bot ─────────────────────────────────────────────────────────────────
 export const getSportsRule = async (sport: string, query: string, language: Language) => {
   const response = await callAIBase({
-    model: "claude-sonnet",
+    model: 'gemini-flash-latest',
     contents: `Rule Check: ${sport}. Question: ${query}. Language: ${language}`,
     config: {
-      systemInstruction: `Expert official for Indian sports (Kabaddi, Kho-Kho, Cricket, Football, etc). Provide specific rule numbers if possible. Concise. Language: ${language}.`,
-    },
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `You are an expert official for Indian Sports (Kabaddi, Kho-Kho, Cricket, Football). Be decisive and do not ask for clarification. Provide specific rule numbers if possible. Keep it concise. Language: ${language}.`,
+    }
   });
   return response.text;
 };
 
-// ── NEW: Student Report Card ──────────────────────────────────────────────────
-export const generateReportCard = async (
-  studentName: string, grade: string, sport: string,
-  performance: string, attendance: string, language: Language
-) => {
-  const response = await callAIBase({
-    model: "claude-sonnet",
-    contents: `Generate PE report card. Student: ${studentName}, Grade: ${grade}, Sport: ${sport}, Performance: ${performance}, Attendance: ${attendance}. Language: ${language}.`,
-    config: {
-      systemInstruction: `PE Teacher. Return JSON: { 
-  studentName, grade, subject, academicYear,
-  skills: [{ skillName, rating, comment }],
-  overallGrade, teacherRemarks, areasOfStrength, areasForImprovement, targetForNextTerm
-}
-Rating values: Outstanding | Excellent | Good | Satisfactory | Needs Improvement
-Language: ${language}. Professional tone. Encouraging and constructive.`,
-      responseMimeType: "application/json",
-    },
-  });
-  return safeParseJson(response.text);
-};
-
-// ── NEW: Substitute Teacher Plan ──────────────────────────────────────────────
-export const generateSubstitutePlan = async (
-  grade: string, duration: string, availableEquipment: string, language: Language
-) => {
-  const response = await callAIBase({
-    model: "claude-sonnet",
-    contents: `Emergency substitute PE lesson. Grade: ${grade}, Duration: ${duration}, Equipment available: ${availableEquipment}. Language: ${language}.`,
-    config: {
-      systemInstruction: `PE Expert. Return JSON: {
-  title, gradeLevel, duration,
-  warmup: { activity, duration, instructions },
-  mainActivities: [{ name, duration, instructions, variations }],
-  cooldown: { activity, duration, instructions },
-  safetyNotes: string[],
-  teacherTips: string[]
-}
-Keep it simple — no specialist equipment needed. Fun, safe, engaging. Language: ${language}.`,
-      responseMimeType: "application/json",
-    },
-  });
-  return safeParseJson(response.text);
-};
-
-// ── NEW: Sports Day Planner ───────────────────────────────────────────────────
-export const generateSportsDayPlan = async (
-  schoolName: string, grades: string, totalStudents: string,
-  duration: string, theme: string, language: Language
-) => {
-  const response = await callAIBase({
-    model: "claude-sonnet",
-    contents: `Sports Day Plan. School: ${schoolName}, Grades: ${grades}, Students: ${totalStudents}, Duration: ${duration}, Theme: ${theme}. Language: ${language}.`,
-    config: {
-      systemInstruction: `PE Events Coordinator. Return JSON: {
-  title, schoolName, theme, date,
-  schedule: [{ time, event, venue, participants, coordinator, equipment }],
-  events: [{ name, category, rules, equipment, prizes }],
-  logistics: { setup, registration, refreshments, medical, photography },
-  announcements: string[]
-}
-Professional Indian school sports day format. Language: ${language}.`,
-      responseMimeType: "application/json",
-    },
-  });
-  return safeParseJson(response.text);
-};
-
-// ── NEW: Parent Communication ──────────────────────────────────────────────────
 export const generateParentLetter = async (
-  studentName: string, purpose: string, details: string,
-  teacherName: string, language: Language
-) => {
+  studentName: string,
+  teacherName: string,
+  purpose: string,
+  details: string,
+  language: Language
+): Promise<string> => {
   const response = await callAIBase({
-    model: "claude-sonnet",
-    contents: `Parent communication letter. Student: ${studentName}, Purpose: ${purpose}, Details: ${details}, Teacher: ${teacherName}. Language: ${language}.`,
+    model: 'gemini-flash-latest',
+    contents: `Generate a professional parent letter. 
+    Student: ${studentName}, Teacher: ${teacherName}, 
+    Purpose: ${purpose}, Details: ${details}, 
+    Language: ${language}.`,
     config: {
-      systemInstruction: `PE Teacher writing to parent. Return JSON: {
-  subject, greeting, body, actionRequired, closingRemarks, teacherName, date
-}
-Professional, warm, and clear tone. Language: ${language}. Indian school context.`,
-      responseMimeType: "application/json",
-    },
-  });
-  return safeParseJson(response.text);
-};
-
-// ── Test Question Paper Generator ──────────────────────────────────────────
-export const generateQuestionPaper = async (
-  grade: string, 
-  chapters: string[], 
-  testType: string, 
-  language: Language = 'English'
-) => {
-  const isClass12 = grade === '12';
-  const isFullPaper = testType.toLowerCase().includes('term') || testType.toLowerCase().includes('preboard');
-  const maxMarks = isFullPaper ? 70 : 35;
-  const timeAllowed = isFullPaper ? '3 HRS' : '90 Minutes';
-  const chapterList = chapters.map((chapter, index) => `${index + 1}. ${chapter}`).join('\n');
-  const chapterCount = Math.max(chapters.length, 1);
-
-  const sectionBlueprint = isFullPaper
-    ? `For 70 marks, return EXACTLY 5 sections with this sequence:
-- Section A / heading "SECTION A" / questionRange "Q1-Q18" / 18 questions / 1 mark each / MCQ only.
-  * Section A must include a balanced CBSE-style mix of standard MCQs, assertion-reason questions, match-the-following questions, odd-one-out questions, and at least 2 image-based identification questions with figureLabel.
-- Section B / heading "SECTION B" / questionRange "Q19-Q24" / 6 questions / 2 marks each / very short answer. The section instruction must say "Attempt any 5."
-- Section C / heading "SECTION C" / questionRange "Q25-Q30" / 6 questions / 3 marks each / short answer. The section instruction must say "Attempt any 5."
-- Section D / heading "SECTION D" / questionRange "Q31-Q33" / 3 questions / 4 marks each / case-study format with four sub-parts each.
-  * Each Section D case-study question must have either a short passage (caseStudyText) OR an image context (figureLabel), and exactly 4 MCQ-style sub-parts.
-  * At least 1 of Q31-Q33 must be image-based with figureLabel, and the rest can be passage-based.
-- Section E / heading "SECTION E" / questionRange "Q34-Q37" / 4 questions / 5 marks each / long answer. The section instruction must say "Attempt any 3."
-Use questionNumber fields 1 through 37 in order.`
-    : `For 35 marks, return the standard 4-section structure already used in school tests with questionNumber fields in order.`;
-
-  const response = await callAIBase({
-    model: "claude-sonnet",
-    contents: `Generate a CBSE ${grade} PE ${testType} strictly for these chapters:\n${chapterList}\n\nLanguage: ${language}.`,
-    config: {
-      systemInstruction: `You are an expert CBSE Physical Education Teacher (NCERT 2025-26) and official question paper setter.
-Generate a ${maxMarks}-mark question paper in JSON format:
-{
-  title,
-  grade,
-  displayGrade,
-  subjectCode,
-  sessionLabel,
-  testType,
-  timeAllowed,
-  maxMarks,
-  generalInstructions: string[],
-  sections: [
-    {
-      sectionId,
-      heading,
-      questionRange,
-      instructions,
-      questions: [
-        {
-          questionNumber,
-          question,
-          marks,
-          options?,
-          caseStudyText?,
-          subQuestions?,
-          internalChoice?,
-          figureLabel?,
-          visuallyImpairedAlternative?
-        }
-      ]
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `You are a professional Physical Education Teacher and School Administrator. 
+      Write a formal, polite, and professional letter to a parent. 
+      The letter should follow a standard school communication format:
+      - Date
+      - Salutation (Dear Parent/Guardian of [Student Name])
+      - Clear subject line
+      - Body text clearly explaining the purpose: ${purpose}
+      - Include specific details if provided: ${details}
+      - Professional closing (Sincerely, [Teacher Name])
+      Language: ${language}. 
+      Ensure the tone is supportive and professional.`,
     }
-  ]
-}.
-
-GENERAL INSTRUCTIONS FOR 70 MARKS MUST MATCH THIS PATTERN IN CLEAR SCHOOL EXAM LANGUAGE:
-1. The question paper consists of 5 sections and 37 questions.
-2. Section A consists of question 1-18 carrying 1 mark each and is multiple choice questions. All questions are compulsory.
-3. Section B consists of questions 19-24 carrying 2 marks each and are very short answer types and should not exceed 60-90 words. Attempt any 5.
-4. Section C consists of questions 25-30 carrying 3 marks each and are short answer types and should not exceed 100-150 words. Attempt any 5.
-5. Section D consists of questions 31-33 carrying 4 marks each and are case studies.
-6. Section E consists of questions 34-37 carrying 5 marks each and are long answer types and should not exceed 200-300 words. Attempt any 3.
-
-GENERAL INSTRUCTIONS FOR 35 MARKS MUST REMAIN:
-1. The question paper consists of 15 questions.
-2. All questions are compulsory.
-3. Question 1-6 carry 1 mark each.
-4. Question 7-8 carry 2 marks each and should not exceed 30-50 words.
-5. Question 9-13 carry 3 marks each and should not exceed 100-150 words.
-6. Question 14-15 carry 5 marks each and should not exceed 180-220 words.
-
-${sectionBlueprint}
-
-CONTENT RULES:
-- Use STRICT NCERT Class ${grade} textbook content.
-- Use ONLY the selected chapters listed in the user prompt. Do not pull questions from any other chapter, unit, or grade.
-- Make sure every selected chapter appears at least once across the paper. Balance question coverage as evenly as possible across the ${chapterCount} chosen chapters.
-- If a question references a chapter idea, it must clearly belong to one of these selected chapters: ${chapters.join(', ')}.
-- Write the full paper in ${language}. Do not mix languages unless the user explicitly requested bilingual output.
-- For 70-mark papers, Section A must explicitly cover realistic board-style variety: direct MCQs, assertion-reason, match the following, odd one out, and identify-the-image questions such as yoga asana/logo/posture/sports-injury style prompts.
-- For 70-mark papers, include at least 1 assertion-reason question, at least 1 match-the-following question, and at least 2 identify-the-image questions in Section A.
-- For identify-the-image questions, write the stem like "Identify the yoga asana below." or similar and fill figureLabel with a printable caption such as "Insert yoga asana image" or "Insert sports logo image".
-- For match-the-following questions, use the main question text for the two columns and provide 4 answer choices in options.
-- For assertion-reason questions, include Assertion (A) and Reason (R) in the main question text and provide 4 standard interpretation choices in options.
-- For questions that refer to a logo, yoga pose, diagram, fracture figure, or picture, fill figureLabel with a short caption like "Insert Deaflympics logo image" or "Insert yoga posture image". Do not use URLs or markdown images.
-- When a question has sub-parts, use subQuestions as an array.
-- For case studies, put the passage in caseStudyText and the follow-up prompts in subQuestions.
-- For Section D case studies, each of the 4 subQuestions must be MCQ-style and the parent question should clearly instruct the student to answer the questions based on the passage/picture.
-- For Section D, format EACH subQuestion string with 4 choices in-line using this structure:
-  "Each subQuestion must be an object { question: string, options: string[], answer: string }."
-- Section D must contain exactly 3 main questions: Q31, Q32, Q33.
-- For internal choice in long answers, use internalChoice as full alternate question text.
-- The title for full papers should be "PHYSICAL EDUCATION (048)".
-- displayGrade should be "Class XI (2025-26)" or "Class XII (2025-26)".
-- subjectCode should be "048".
-- timeAllowed should be "${timeAllowed}".
-- maxMarks should be ${maxMarks}.
-- Return EXACT JSON only.`,
-      responseMimeType: "application/json",
-    },
   });
-  return normalizeQuestionPaper(safeParseJson(response.text), grade, testType, maxMarks, timeAllowed);
-};
-
-const normalizeQuestionPaper = (
-  rawPaper: any,
-  grade: string,
-  testType: string,
-  maxMarks: number,
-  timeAllowed: string,
-) => {
-  const isFullPaper = maxMarks === 70;
-  const specs = isFullPaper
-    ? [
-        { sectionId: 'A', heading: 'SECTION A', questionRange: 'Q1-Q18', count: 18, marks: 1, instructions: 'Question 1 to 18 carry 1 mark each and are multiple choice questions. All questions are compulsory.' },
-        { sectionId: 'B', heading: 'SECTION B', questionRange: 'Q19-Q24', count: 6, marks: 2, instructions: 'Question 19 to 24 carry 2 marks each and are very short answer type questions. Attempt any 5.' },
-        { sectionId: 'C', heading: 'SECTION C', questionRange: 'Q25-Q30', count: 6, marks: 3, instructions: 'Question 25 to 30 carry 3 marks each and are short answer type questions. Attempt any 5.' },
-        { sectionId: 'D', heading: 'SECTION D', questionRange: 'Q31-Q33', count: 3, marks: 4, instructions: 'Question 31 to 33 carry 4 marks each and are case-based questions. Read the given case/picture and answer the four MCQ sub-parts.' },
-        { sectionId: 'E', heading: 'SECTION E', questionRange: 'Q34-Q37', count: 4, marks: 5, instructions: 'Question 34 to 37 carry 5 marks each and are long answer type questions. Attempt any 3.' },
-      ]
-    : [
-        { sectionId: 'A', heading: 'SECTION A', questionRange: 'Q1-Q6', count: 6, marks: 1, instructions: 'Question 1 to 6 carry 1 mark each and are multiple choice questions.' },
-        { sectionId: 'B', heading: 'SECTION B', questionRange: 'Q7-Q8', count: 2, marks: 2, instructions: 'Question 7 to 8 carry 2 marks each and are very short answer type questions.' },
-        { sectionId: 'C', heading: 'SECTION C', questionRange: 'Q9-Q13', count: 5, marks: 3, instructions: 'Question 9 to 13 carry 3 marks each and are short answer type questions.' },
-        { sectionId: 'D', heading: 'SECTION D', questionRange: 'Q14-Q15', count: 2, marks: 5, instructions: 'Question 14 to 15 carry 5 marks each and are long answer type questions.' },
-      ];
-
-  const flattenedQuestions = (rawPaper?.sections || [])
-    .flatMap((section: any) => section?.questions || [])
-    .map((question: any) => ({
-      question: String(question?.question || '').trim(),
-      marks: Number(question?.marks || 0),
-      options: Array.isArray(question?.options) ? question.options.map((option: any) => String(option)) : undefined,
-      answer: question?.answer ? String(question.answer) : undefined,
-      caseStudyText: question?.caseStudyText ? String(question.caseStudyText).trim() : undefined,
-      caseStudyImagePrompt: question?.caseStudyImagePrompt ? String(question.caseStudyImagePrompt).trim() : undefined,
-      internalChoice: question?.internalChoice ? String(question.internalChoice).trim() : undefined,
-      subQuestions: Array.isArray(question?.subQuestions) ? question.subQuestions.map((sq: any) => ({
-        question: String(sq?.question || '').trim(),
-        options: Array.isArray(sq?.options) ? sq.options.map((opt: any) => String(opt)) : [],
-        answer: String(sq?.answer || '')
-      })) : undefined,
-      figureLabel: question?.figureLabel ? String(question.figureLabel).trim() : undefined,
-      visuallyImpairedAlternative: question?.visuallyImpairedAlternative ? String(question.visuallyImpairedAlternative).trim() : undefined,
-    }))
-    .filter((question: any) => question.question);
-
-  let cursor = 0;
-  let runningNumber = 1;
-
-  const normalizedSections = specs.map((spec) => {
-    const sectionQuestions = flattenedQuestions.slice(cursor, cursor + spec.count).map((question: any) => ({
-      ...question,
-      marks: spec.marks,
-      questionNumber: runningNumber++,
-    }));
-
-    cursor += spec.count;
-
-    return {
-      sectionId: spec.sectionId,
-      heading: spec.heading,
-      questionRange: spec.questionRange,
-      instructions: spec.instructions,
-      questions: sectionQuestions,
-    };
-  });
-
-  const displayGrade = grade === '12' ? 'Class XII (2025-26)' : 'Class XI (2025-26)';
-
-  return {
-    title: isFullPaper ? 'PHYSICAL EDUCATION (048)' : rawPaper?.title || 'PHYSICAL EDUCATION (048)',
-    grade,
-    displayGrade,
-    subjectCode: '048',
-    sessionLabel: '2025-26',
-    testType,
-    timeAllowed,
-    maxMarks,
-    generalInstructions: isFullPaper
-      ? [
-          'The question paper consists of 5 sections and 37 questions.',
-          'Section A consists of question 1-18 carrying 1 mark each and is multiple choice questions. All questions are compulsory.',
-          'Section B consists of questions 19-24 carrying 2 marks each and are very short answer types and should not exceed 60-90 words. Attempt any 5.',
-          'Section C consists of questions 25-30 carrying 3 marks each and are short answer types and should not exceed 100-150 words. Attempt any 5.',
-          'Section D consists of questions 31-33 carrying 4 marks each and are case studies.',
-          'Section E consists of questions 34-37 carrying 5 marks each and are long answer types and should not exceed 200-300 words. Attempt any 3.',
-        ]
-      : [
-          'The question paper consists of 15 questions.',
-          'All questions are compulsory.',
-          'Question 1-6 carry 1 mark each.',
-          'Question 7-8 carry 2 marks each and should not exceed 30-50 words.',
-          'Question 9-13 carry 3 marks each and should not exceed 100-150 words.',
-          'Question 14-15 carry 5 marks each and should not exceed 180-220 words.',
-        ],
-    sections: normalizedSections,
-  };
+  return response.text;
 };

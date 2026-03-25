@@ -115,7 +115,6 @@ export interface TheoryContent {
     question: string;
     answer: string;
     type: string;
-    options?: string[];
   }[];
 }
 
@@ -127,41 +126,6 @@ export interface Worksheet {
       question: string;
       type: 'MCQ' | 'Short' | 'Reflective';
       options?: string[];
-    }[];
-  }[];
-}
-
-export interface QuestionPaper {
-  title: string;
-  grade: string;
-  displayGrade?: string;
-  subjectCode?: string;
-  sessionLabel?: string;
-  testType: string;
-  timeAllowed: string;
-  maxMarks: number;
-  generalInstructions: string[];
-  sections: {
-    sectionId: string;
-    heading?: string;
-    questionRange?: string;
-    instructions: string;
-    questions: {
-      questionNumber?: number;
-      question: string;
-      marks: number;
-      options?: string[];
-      answer?: string;
-      caseStudyText?: string;
-      internalChoice?: string;
-      caseStudyImagePrompt?: string;
-      subQuestions?: {
-        question: string;
-        options: string[];
-        answer: string;
-      }[];
-      figureLabel?: string;
-      visuallyImpairedAlternative?: string;
     }[];
   }[];
 }
@@ -220,6 +184,59 @@ export interface BiomechanicsConcept {
   analogy: string;
   diagramPrompt: string;
   diagramUrl?: string;
+}
+
+export interface QuestionPaper {
+  title: string;
+  grade: string;
+  displayGrade?: string;
+  subjectCode?: string;
+  sessionLabel?: string;
+  testType: string;
+  timeAllowed: string;
+  maxMarks: number;
+  generalInstructions: string[];
+  sections: {
+    sectionId: string;
+    heading?: string;
+    questionRange?: string;
+    instructions: string;
+    questions: {
+      questionNumber?: number;
+      question: string;
+      marks: number;
+      options?: string[];
+      answer?: string;
+      caseStudyText?: string;
+      internalChoice?: string;
+      caseStudyImagePrompt?: string;
+      subQuestions?: {
+        question: string;
+        options: string[];
+        answer: string;
+      }[];
+      figureLabel?: string;
+      visuallyImpairedAlternative?: string;
+    }[];
+  }[];
+}
+
+export interface Student {
+  id: string;
+  name: string;
+  rollNumber: string;
+  grade: string;
+  attendance: number;
+  performance: 'Excellent' | 'Good' | 'Average' | 'Needs Improvement';
+  lastAssessment?: string;
+}
+
+export interface Classroom {
+  id: string;
+  name: string;
+  grade: string;
+  studentCount: number;
+  teacherId: string;
 }
 
 declare global {

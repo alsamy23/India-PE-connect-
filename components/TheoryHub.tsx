@@ -76,46 +76,6 @@ const TheoryHub: React.FC = () => {
     setTimeout(() => setIsSaved(false), 3000);
   };
 
-  const handleDownload = () => {
-    if (!result) return;
-    
-    let text = `${result.title}\n`;
-    text += `CBSE Class ${grade} PE • ${selectedChapter}\n`;
-    text += `Type: ${contentType}\n`;
-    text += `-------------------------------------------\n\n`;
-    
-    if (result.content) {
-      text += `NOTES:\n${result.content}\n\n`;
-    }
-    
-    if (result.questions && result.questions.length > 0) {
-      text += `QUESTIONS & ASSESSMENT:\n`;
-      result.questions.forEach((q, i) => {
-        text += `${i + 1}. ${q.question}\n`;
-        if (q.options) {
-          q.options.forEach((opt, oi) => {
-            text += `   ${String.fromCharCode(65 + oi)}) ${opt}\n`;
-          });
-        }
-        text += `   Answer: ${q.answer}\n\n`;
-      });
-    }
-    
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${result.title.replace(/\s+/g, '_')}_Class${grade}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
   const chapters = grade === '11' ? CHAPTERS_11 : CHAPTERS_12;
 
   const handleChapterSelect = async (chapter: string) => {
@@ -464,7 +424,7 @@ const TheoryHub: React.FC = () => {
                       {contentType === 'Notes' ? <FileText size={24} /> : <HelpCircle size={24} />}
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-slate-800 tracking-tight">{String(result.title)}</h3>
+                      <h3 className="text-2xl font-black text-slate-800 tracking-tight">{result.title}</h3>
                       <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">CBSE Class {grade} • {selectedChapter}</p>
                     </div>
                   </div>
@@ -478,21 +438,10 @@ const TheoryHub: React.FC = () => {
                       {isSaved ? <CheckCircle2 size={20} /> : <Save size={20} />}
                       {isSaved && <span className="text-[10px] font-black uppercase tracking-widest">Saved</span>}
                     </button>
-                    <button 
-                      onClick={handleDownload}
-                      className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors"
-                      title="Download as Text File"
-                    >
-                      <Download size={20} />
-                    </button>
                     <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors">
                       <Share2 size={20} />
                     </button>
-                    <button 
-                      onClick={handlePrint}
-                      className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors"
-                      title="Print Notes"
-                    >
+                    <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors">
                       <Printer size={20} />
                     </button>
                   </div>
@@ -501,7 +450,7 @@ const TheoryHub: React.FC = () => {
                 <div className="prose prose-slate max-w-none">
                   {result.content && (
                     <div className="mb-12 text-slate-600 font-medium leading-relaxed whitespace-pre-wrap bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
-                      {typeof result.content === 'string' ? result.content : JSON.stringify(result.content, null, 2)}
+                      {result.content}
                     </div>
                   )}
 
@@ -521,20 +470,11 @@ const TheoryHub: React.FC = () => {
                                 {idx + 1}
                               </span>
                               <div className="flex-1 space-y-4">
-                                <p className="font-bold text-slate-800 text-lg leading-tight">{String(q.question)}</p>
-                                {q.options && q.options.length > 0 && (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 mt-2">
-                                    {q.options.map((opt, oIdx) => (
-                                      <div key={oIdx} className="p-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700">
-                                        <span className="mr-2 font-black text-slate-400">{String.fromCharCode(65 + oIdx)}.</span> {String(opt)}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
+                                <p className="font-bold text-slate-800 text-lg leading-tight">{q.question}</p>
                                 <div className="p-5 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
                                   <p className="text-sm text-emerald-700 font-bold">
                                     <span className="text-[10px] uppercase tracking-widest opacity-60 block mb-1">Correct Answer / Explanation</span>
-                                    {typeof q.answer === 'string' ? q.answer : JSON.stringify(q.answer)}
+                                    {q.answer}
                                   </p>
                                 </div>
                               </div>

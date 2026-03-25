@@ -1,9 +1,37 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, LayoutDashboard, Loader2, Menu, RotateCcw, ShieldCheck, Sparkles, X } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { 
+  Users, 
+  BookOpen, 
+  Sparkles, 
+  LayoutDashboard, 
+  Menu,
+  X,
+  Dumbbell,
+  Target,
+  ShieldCheck,
+  TrendingUp,
+  Wrench,
+  Wifi,
+  AlertTriangle,
+  CalendarRange,
+  RotateCcw,
+  Loader2,
+  GraduationCap,
+  Trophy,
+  Microscope,
+  Book,
+  Activity,
+  AlertCircle,
+  ClipboardList,
+  UserCheck,
+  Mail
+} from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import CurriculumHub from './components/CurriculumHub.tsx';
 import AIPlanner from './components/AIPlanner.tsx';
 import YearlyPlanner from './components/YearlyPlanner.tsx';
+import Networking from './components/Networking.tsx';
 import SkillMastery from './components/SkillMastery.tsx';
 import ComplianceAdvisor from './components/ComplianceAdvisor.tsx';
 import AIToolCenter from './components/AIToolCenter.tsx';
@@ -12,114 +40,91 @@ import KheloIndia from './components/KheloIndia.tsx';
 import Biomechanics from './components/Biomechanics.tsx';
 import RulesBot from './components/RulesBot.tsx';
 import FitnessTests from './components/FitnessTests.tsx';
+import TestPaperGenerator from './components/TestPaperGenerator.tsx';
+import ClassroomManager from './components/ClassroomManager.tsx';
+import ParentLetters from './components/ParentLetters.tsx';
 import Disclaimer from './components/Disclaimer.tsx';
-import ReportCard from './components/ReportCard.tsx';
-import SubstitutePlan from './components/SubstitutePlan.tsx';
-import SportsDayPlanner from './components/SportsDayPlanner.tsx';
-import ParentCommunication from './components/ParentCommunication.tsx';
-import ConnectedPEWidgets from './components/ConnectedPEWidgets.tsx';
-import { WarmupGenerator, SportsQuiz, InjuryFirstAid, WhatsAppSummary } from './components/NewAITools.tsx';
-import StudentManagement from './components/StudentManagement.tsx';
-import QuestionPaperGenerator from './components/QuestionPaperGenerator.tsx';
-import Logo from './components/Logo.tsx';
-import FeedbackModal from './components/FeedbackModal.tsx';
-import CommunityPlanner from './components/CommunityPlanner.tsx';
-import SettingsPanel from './components/SettingsPanel.tsx';
-import Sidebar, { AppTab } from './components/Sidebar.tsx';
 
-const pageTitles: Record<AppTab, string> = {
-  dashboard: 'Home',
-  planner: 'Lesson Planner',
-  yearly: 'Year Planner',
-  warmup: 'Warm-up Generator',
-  testgen: 'Test Generator',
-  fitness: 'Fitness Tests',
-  reportcard: 'Report Card Generator',
-  students: 'Student Management',
-  skillmastery: 'Skill Progression',
-  curriculum: 'Library Hub',
-  parentcomms: 'Parent Letters',
-  community: 'Community',
-  settings: 'Settings',
-  compliance: 'State Compliance',
-  tools: 'AI Tool Center',
-  theory: 'Theory Master',
-  khelo: 'Khelo India Battery',
-  biomechanics: 'Visual Physics',
-  rules: 'Game Rules Bot',
-  substitute: 'Substitute Plan',
-  sportsday: 'Sports Day Planner',
-  pewidgets: 'PE Classroom Widgets',
-  sportsquiz: 'Sports Quiz',
-  firstaid: 'Injury First Aid',
-  lessonsummary: 'Lesson Summary',
-};
+type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'fitness' | 'testpaper' | 'classroom' | 'parentletters';
+
+import { BoardType, Language } from './types.ts';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<AppTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'missing' | 'quota'>('checking');
-  const [aiProviders, setAiProviders] = useState<{ gemini: boolean; groq: boolean }>({ gemini: false, groq: false });
+  const [aiProviders, setAiProviders] = useState<{ gemini: boolean, groq: boolean }>({ gemini: false, groq: false });
+  const [apiSource, setApiSource] = useState<string>('');
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-
+  
+  // Static Profile Data (Read-Only)
   const userProfile = {
-    name: 'L. Samy',
-    role: 'Founder & Director',
-    org: 'SmartPE India',
+    name: "L. Samy",
+    role: "Founder & Director",
+    org: "SmartPE India"
   };
 
   const checkApiStatus = async (retryCount = 0) => {
     try {
-      const response = await fetch(`/api/health?t=${Date.now()}`);
+      console.log("Checking API health...");
+      const response = await fetch(`/api/health?t=${Date.now()}`); // Cache busting
       const text = await response.text();
-      const contentType = response.headers.get('content-type');
-
-      if (!contentType || !contentType.includes('application/json')) {
+      
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error("Health check returned non-JSON response:", text);
+        
         if (retryCount < 3) {
-          window.setTimeout(() => checkApiStatus(retryCount + 1), 2000);
+          console.log(`Retrying health check (${retryCount + 1}/3)...`);
+          setTimeout(() => checkApiStatus(retryCount + 1), 2000);
           return;
         }
-
+        
         setApiStatus('missing');
-        setDebugInfo({ error: 'Server returned non-JSON', detail: text.substring(0, 100) });
+        setDebugInfo({ error: "Server returned non-JSON", detail: text.substring(0, 100) });
         return;
       }
 
       const data = JSON.parse(text);
-
+      console.log("API Health Data:", data);
+      
       if (data.status === 'ok') {
         setApiStatus('ok');
-        setAiProviders({ gemini: false, groq: data.hasKey || false });
+        setAiProviders({ gemini: data.hasGemini, groq: data.hasGroq });
+        setApiSource(data.hasGemini ? 'Gemini' : 'Groq');
         setDebugInfo(data);
-        if (isKeyDialogOpen && data.hasKey) {
+        // If we were missing a key and now have one, close the dialog
+        if (isKeyDialogOpen && (data.hasGemini || data.hasGroq)) {
           setIsKeyDialogOpen(false);
         }
       } else if (data.status === 'error' && (data.message?.toLowerCase().includes('429') || data.message?.toLowerCase().includes('quota'))) {
         setApiStatus('quota');
         setAiProviders({ gemini: false, groq: false });
+        setApiSource('');
         setDebugInfo(data);
-      } else if (
-        data.status === 'error' &&
-        (data.message?.toLowerCase().includes('expired') ||
-          data.message?.toLowerCase().includes('renew') ||
-          data.message?.toLowerCase().includes('invalid') ||
-          data.message?.toLowerCase().includes('not valid'))
-      ) {
-        setApiStatus('missing');
+      } else if (data.status === 'error' && (
+        data.message?.toLowerCase().includes('expired') || 
+        data.message?.toLowerCase().includes('renew') || 
+        data.message?.toLowerCase().includes('invalid') ||
+        data.message?.toLowerCase().includes('not valid')
+      )) {
+        setApiStatus('missing'); 
         setAiProviders({ gemini: false, groq: false });
+        setApiSource('Expired Key');
         setDebugInfo(data);
       } else {
         setApiStatus('missing');
         setAiProviders({ gemini: false, groq: false });
+        setApiSource('');
         setDebugInfo(data);
       }
     } catch (error: any) {
+      console.error("Health check failed:", error);
       if (retryCount < 3) {
-        window.setTimeout(() => checkApiStatus(retryCount + 1), 2000);
+        setTimeout(() => checkApiStatus(retryCount + 1), 2000);
       } else {
         setApiStatus('missing');
         setDebugInfo({ error: error.message });
@@ -129,280 +134,345 @@ const App: React.FC = () => {
 
   useEffect(() => {
     checkApiStatus();
-
-    const interval = window.setInterval(async () => {
+    
+    // Check if key was selected if we're still missing it, but less frequently
+    const interval = setInterval(async () => {
       if (apiStatus === 'missing' && window.aistudio) {
         const hasKey = await window.aistudio.hasSelectedApiKey();
         if (hasKey) {
           checkApiStatus();
         }
       }
-    }, 10000);
+    }, 10000); // 10 seconds is enough
+    
+    return () => clearInterval(interval);
+  }, []); // Only run once on mount
 
-    return () => window.clearInterval(interval);
-  }, []);
+  const handleSelectKey = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      // Assume success as per guidelines
+      setApiStatus('ok');
+      setIsKeyDialogOpen(false);
+      // Re-check health after a short delay to be sure
+      setTimeout(checkApiStatus, 3000);
+    }
+  };
+
+  const triggerKeySelector = async () => {
+    await handleSelectKey();
+  };
 
   const handleTestConnection = async () => {
     setIsTesting(true);
     setGlobalError(null);
-
     try {
       const response = await fetch('/api/ai/test');
       const text = await response.text();
-      const contentType = response.headers.get('content-type');
-
-      if (!contentType || !contentType.includes('application/json')) {
+      
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
         throw new Error(`Server returned non-JSON response: ${text.substring(0, 50)}...`);
       }
 
-      if (!text) {
-        throw new Error('Empty response from server');
-      }
-
+      if (!text) throw new Error("Empty response from server");
+      
       const data = JSON.parse(text);
       if (data.message) {
-        alert(`Success: ${data.message}`);
+        alert("Success: " + data.message);
         checkApiStatus();
       } else {
-        const errorMessage = data.error || 'Unknown error';
-        setGlobalError(errorMessage);
-        alert(`Error: ${errorMessage}`);
+        const err = data.error || "Unknown error";
+        setGlobalError(err);
+        alert("Error: " + err);
       }
     } catch (error: any) {
       setGlobalError(error.message);
-      alert(`Test failed: ${error.message}`);
+      alert("Test failed: " + error.message);
     } finally {
       setIsTesting(false);
     }
   };
 
-  const content = useMemo(() => {
-    const commonDashboardProps = {
-      apiStatus,
-      onNavigate: setActiveTab,
-    };
-
-    switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard {...commonDashboardProps} />;
-      case 'planner':
-        return <AIPlanner />;
-      case 'yearly':
-        return <YearlyPlanner />;
-      case 'warmup':
-        return <WarmupGenerator />;
-      case 'testgen':
-        return <QuestionPaperGenerator />;
-      case 'fitness':
-        return <FitnessTests />;
-      case 'reportcard':
-        return <ReportCard />;
-      case 'students':
-        return <StudentManagement />;
-      case 'skillmastery':
-        return <SkillMastery />;
-      case 'curriculum':
-        return <CurriculumHub />;
-      case 'parentcomms':
-        return <ParentCommunication />;
-      case 'community':
-        return <CommunityPlanner />;
-      case 'settings':
-        return (
-          <SettingsPanel
-            apiStatus={apiStatus}
-            isTesting={isTesting}
-            onOpenSetup={() => setIsKeyDialogOpen(true)}
-            onTestConnection={handleTestConnection}
-            onOpenFeedback={() => setIsFeedbackOpen(true)}
-          />
-        );
-      case 'compliance':
-        return <ComplianceAdvisor />;
-      case 'tools':
-        return <AIToolCenter />;
-      case 'theory':
-        return <TheoryHub />;
-      case 'khelo':
-        return <KheloIndia />;
-      case 'biomechanics':
-        return <Biomechanics />;
-      case 'rules':
-        return <RulesBot />;
-      case 'substitute':
-        return <SubstitutePlan />;
-      case 'sportsday':
-        return <SportsDayPlanner />;
-      case 'pewidgets':
-        return <ConnectedPEWidgets />;
-      case 'sportsquiz':
-        return <SportsQuiz />;
-      case 'firstaid':
-        return <InjuryFirstAid />;
-      case 'lessonsummary':
-        return <WhatsAppSummary />;
-      default:
-        return <Dashboard {...commonDashboardProps} />;
+  const handleResetKey = async () => {
+    if (window.aistudio) {
+      // There isn't a direct 'clear' but we can re-open or just refresh
+      await window.aistudio.openSelectKey();
+      checkApiStatus();
     }
-  }, [activeTab, apiStatus, isTesting]);
+  };
+
+  const navigation = [
+    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
+    { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true },
+    { id: 'classroom', name: 'Class Manager', icon: UserCheck, isNew: true },
+    { id: 'testpaper', name: 'Test Generator', icon: ClipboardList, isNew: true },
+    { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange },
+    { id: 'planner', name: 'Lesson Planner', icon: Sparkles },
+    { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true },
+    { id: 'khelo', name: 'Khelo India Battery', icon: Trophy },
+    { id: 'biomechanics', name: 'Visual Physics', icon: Microscope, isNew: true },
+    { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true },
+    { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap },
+    { id: 'tools', name: 'AI Tool Center', icon: Wrench },
+    { id: 'skillmastery', name: 'Skill Progressions', icon: Target },
+    { id: 'compliance', name: 'State Compliance', icon: ShieldCheck },
+    { id: 'curriculum', name: 'Library Hub', icon: BookOpen },
+    { id: 'networking', name: 'Coach Community', icon: Users },
+  ];
 
   return (
-    <>
-      <div className="flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-100 via-indigo-50 to-cyan-50 md:flex-row print:h-auto print:overflow-visible">
-        {isSidebarOpen && (
-          <button
-            type="button"
-            aria-label="Close navigation overlay"
-            onClick={() => setIsSidebarOpen(false)}
-            className="motion-fade-up fixed inset-0 z-30 bg-slate-950/35 backdrop-blur-[1px] md:hidden"
-          />
-        )}
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-sans">
+      {/* API Key Selection Modal - Enhanced with instructions */}
+      {isKeyDialogOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-slate-100 animate-slide-up">
+            <div className="flex justify-between items-start mb-8">
+              <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
+                <ShieldCheck size={32} />
+              </div>
+              <button onClick={() => setIsKeyDialogOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight font-display uppercase">AI Setup Guide</h2>
+            
+            <div className="space-y-6 mb-8">
+              <div className="p-5 bg-indigo-50 rounded-3xl border-2 border-indigo-100 shadow-sm">
+                <p className="text-sm font-black text-indigo-900 mb-3 flex items-center uppercase tracking-widest">
+                  <span className="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-xs mr-3 shadow-lg shadow-indigo-200">1</span>
+                  Option A: Paid Gemini Key
+                </p>
+                <p className="text-xs text-indigo-700 mb-5 leading-relaxed font-medium">
+                  The standard AI engine. If you see "Expired Key" or "Quota" errors, click below to renew, select, or upgrade to a key from a paid project.
+                </p>
+                <button 
+                  onClick={triggerKeySelector}
+                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center space-x-3"
+                >
+                  <Sparkles size={18} />
+                  <span>Renew / Upgrade Key</span>
+                </button>
+              </div>
 
-        {isKeyDialogOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm">
-            <div className="motion-panel w-full max-w-xl rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-2xl sm:p-6 md:rounded-[2rem] md:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                    AI setup
-                  </span>
-                  <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">Connect your AI tools</h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">
-                    Add a valid Groq API key so lesson planning, assessment, and report generation stay available.
+              <div className="p-5 bg-orange-50 rounded-3xl border-2 border-orange-100 shadow-sm">
+                <p className="text-sm font-black text-orange-900 mb-3 flex items-center uppercase tracking-widest">
+                  <span className="w-8 h-8 bg-orange-600 text-white rounded-xl flex items-center justify-center text-xs mr-3 shadow-lg shadow-orange-200">2</span>
+                  Option B: Groq Key
+                </p>
+                <div className="mb-4 p-3 bg-white/80 rounded-2xl border border-orange-200">
+                  <p className="text-[11px] text-orange-800 font-black flex items-center mb-1 uppercase tracking-widest">
+                    <AlertCircle size={14} className="mr-2" />
+                    GETTING A "NO PAID PROJECT" ERROR?
+                  </p>
+                  <p className="text-[10px] text-orange-700 leading-tight">
+                    If Gemini shows a "No Paid Project" error, skip it! Use Groq instead—it's free, 10x faster, and doesn't require a paid Google account.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsKeyDialogOpen(false)}
-                  className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="mt-6 space-y-4 sm:mt-8">
-                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                  <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                    <ShieldCheck size={16} className="text-slate-500" />
-                    Recommended setup
-                  </h3>
-                  <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-600">
-                    <li>Create a Groq key at console.groq.com.</li>
-                    <li>Add it as <code className="rounded bg-white px-1.5 py-0.5 text-slate-800">GROQ_API_KEY</code> in your environment variables.</li>
-                    <li>Run a connection check below to confirm your tools are ready.</li>
-                  </ol>
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <a
-                    href="https://console.groq.com/"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-800"
-                  >
-                    <Sparkles size={16} />
-                    Open Groq console
-                  </a>
-                  <button
-                    type="button"
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
                     onClick={handleTestConnection}
                     disabled={isTesting}
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-wait"
+                    className="py-3 bg-white border-2 border-orange-200 text-orange-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-100 transition-all flex items-center justify-center space-x-2"
                   >
-                    {isTesting ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
-                    {isTesting ? 'Checking connection...' : 'Check connection'}
+                    {isTesting ? <Loader2 className="animate-spin" size={14} /> : <RotateCcw size={14} />}
+                    <span>{isTesting ? 'Verifying...' : 'Verify'}</span>
+                  </button>
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="py-3 bg-orange-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all flex items-center justify-center space-x-2"
+                  >
+                    <RotateCcw size={14} />
+                    <span>Force Refresh</span>
                   </button>
                 </div>
               </div>
+            </div>
+
+            <p className="text-center text-[11px] text-slate-400 font-medium">
+              Need a key? Get one at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-600 underline">aistudio.google.com</a>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Header */}
+      <header className="md:hidden bg-slate-950 text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
+        <div className="flex items-center space-x-2">
+          <Activity className="w-8 h-8 text-orange-400" />
+          <span className="font-black text-lg tracking-tighter uppercase font-display">SmartPE India</span>
+        </div>
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/10 rounded-xl">
+          {isSidebarOpen ? <X /> : <Menu />}
+        </button>
+      </header>
+
+      {/* Navigation Sidebar */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-40 w-80 bg-slate-950 text-white transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:relative md:translate-x-0
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        border-r border-white/5
+        print:hidden
+      `}>
+        <div className="p-10 hidden md:flex items-center space-x-4">
+          <div className="relative">
+             <div className="p-3 bg-white rounded-2xl shadow-2xl shadow-orange-600/20 rotate-3 z-10 relative">
+               <Activity className="w-8 h-8 text-indigo-700" />
+             </div>
+             <div className="absolute inset-0 bg-orange-500 rounded-2xl -rotate-6 opacity-50"></div>
+          </div>
+          <div>
+            <h1 className="font-black text-2xl leading-none uppercase tracking-tighter font-display">SmartPE<br/><span className="text-orange-400">India</span></h1>
+            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-2">Plan. Teach. Lead.</p>
+          </div>
+        </div>
+
+        {/* API Status Badge - Interactive */}
+        <div className="mx-6 mb-8">
+          {apiStatus === 'ok' ? (
+            <button 
+              onClick={handleSelectKey}
+              className="w-full bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-emerald-500/10 transition-all group"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+                <div className="flex flex-col items-start">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">AI Connected</span>
+                  <div className="flex items-center space-x-1">
+                    {aiProviders.gemini && <span className="text-[8px] font-bold text-indigo-400 uppercase">Gemini</span>}
+                    {aiProviders.gemini && aiProviders.groq && <span className="text-[8px] text-slate-600">+</span>}
+                    {aiProviders.groq && <span className="text-[8px] font-bold text-orange-400 uppercase">Groq</span>}
+                  </div>
+                </div>
+              </div>
+              <Wifi size={12} className="text-emerald-500 group-hover:scale-110 transition-transform" />
+            </button>
+          ) : apiStatus === 'quota' ? (
+            <button 
+              onClick={handleSelectKey}
+              className="w-full bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-amber-500/10 transition-all group"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.6)]"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Quota Exceeded</span>
+              </div>
+              <AlertTriangle size={12} className="text-amber-500 group-hover:scale-110 transition-transform" />
+            </button>
+          ) : (
+            <button 
+              onClick={handleSelectKey}
+              className="w-full bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-rose-500/10 transition-all group"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">AI Disconnected</span>
+              </div>
+              <AlertTriangle size={12} className="text-rose-500 group-hover:scale-110 transition-transform" />
+            </button>
+          )}
+        </div>
+
+        <nav className="mt-4 px-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-380px)] custom-scrollbar">
+          {navigation.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id as Tab);
+                setIsSidebarOpen(false);
+              }}
+              className={`
+                w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
+                ${activeTab === item.id 
+                  ? 'bg-white text-slate-950 shadow-2xl shadow-white/5 scale-[1.02] font-black' 
+                  : 'text-slate-500 hover:bg-white/5 hover:text-white font-bold'}
+              `}
+            >
+              <item.icon size={20} className={activeTab === item.id ? 'text-indigo-600' : 'text-slate-600 group-hover:text-white'} />
+              <span className="text-sm tracking-wide uppercase font-display">{item.name}</span>
+              {(item as any).isNew && activeTab !== item.id && (
+                <span className="absolute right-4 top-4 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+              )}
+              {activeTab === item.id && <div className="ml-auto w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>}
+            </button>
+          ))}
+        </nav>
+
+        {/* Profile Footer - Static/Read-Only */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-950 border-t border-white/5">
+          <div className="w-full bg-white/5 rounded-[2rem] p-4 flex items-center space-x-4">
+            <div className="relative">
+              <div className="w-12 h-12 bg-indigo-600 rounded-2xl border-2 border-indigo-500/30 flex items-center justify-center text-white font-black text-lg font-display">
+                {userProfile.name.charAt(0)}
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-950 rounded-full"></div>
+            </div>
+            <div className="overflow-hidden text-left flex-1">
+              <p className="text-sm font-black truncate leading-none mb-1 text-white font-display uppercase">{userProfile.name}</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase truncate tracking-widest">{userProfile.role}</p>
+            </div>
+            <Trophy size={16} className="text-orange-500" />
+          </div>
+        </div>
+      </aside>
+
+
+      {/* Content Area */}
+      <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-20">
+        {globalError && (
+          <div className="max-w-7xl mx-auto px-6 pt-6 md:px-12">
+            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 flex items-center space-x-4 text-red-700">
+              <AlertTriangle className="flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-black uppercase tracking-tight">System Error Detected</p>
+                <p className="text-xs font-medium opacity-80 mb-2">{globalError}</p>
+                <button 
+                  onClick={handleSelectKey}
+                  className="px-4 py-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+                >
+                  Setup AI / Fix Connection
+                </button>
+              </div>
+              <button 
+                onClick={() => setGlobalError(null)}
+                className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
         )}
-
-        <header className="motion-fade-up sticky top-0 z-20 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur md:hidden print:hidden">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <Logo size={32} showText={true} />
-              <p className="mt-1 truncate text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
-                {pageTitles[activeTab]}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsSidebarOpen((open) => !open)}
-              className="rounded-xl border border-slate-200 p-2 text-slate-700"
-              aria-label="Toggle navigation"
-            >
-              {isSidebarOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-          </div>
-        </header>
-
-        <Sidebar
-          activeTab={activeTab}
-          onNavigate={setActiveTab}
-          isSidebarOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          apiStatus={apiStatus}
-          onOpenSetup={() => setIsKeyDialogOpen(true)}
-          onOpenFeedback={() => setIsFeedbackOpen(true)}
-          userProfile={userProfile}
-        />
-
-        <main className="relative flex-1 overflow-y-auto bg-slate-100 pb-24 print:h-auto print:overflow-visible print:bg-white">
-          {globalError && (
-            <div className="mx-auto max-w-7xl px-6 pt-6 md:px-10">
-              <div className="flex items-start gap-4 rounded-[1.5rem] border border-rose-200 bg-rose-50 p-4 text-rose-700">
-                <AlertTriangle className="mt-0.5 flex-shrink-0" size={18} />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold">System error detected</p>
-                  <p className="mt-1 text-sm leading-6">{globalError}</p>
-                  <button
-                    type="button"
-                    onClick={() => setIsKeyDialogOpen(true)}
-                    className="mt-3 rounded-xl bg-rose-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-rose-700"
-                  >
-                    Review AI setup
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setGlobalError(null)}
-                  className="rounded-lg p-1.5 transition-colors hover:bg-rose-100"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
+        <div className="max-w-7xl mx-auto p-6 md:p-12 min-h-full print:p-0">
+          {activeTab === 'dashboard' && (
+            <Dashboard 
+              apiStatus={apiStatus} 
+              debugInfo={debugInfo}
+              onTestConnection={handleTestConnection}
+              isTesting={isTesting}
+              onNavigate={setActiveTab}
+            />
           )}
-
-          {activeTab !== 'dashboard' && (
-            <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 px-6 py-3 backdrop-blur md:px-10 print:hidden">
-              <div className="flex items-center justify-between gap-4">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('dashboard')}
-                  className="inline-flex items-center gap-3 text-sm font-medium text-slate-700 transition-colors hover:text-slate-900"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100">
-                    <LayoutDashboard size={16} />
-                  </span>
-                  Back to home
-                </button>
-                <span className="hidden text-xs font-medium uppercase tracking-[0.18em] text-slate-400 sm:block">
-                  {pageTitles[activeTab]}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="mx-auto max-w-[1280px] p-4 sm:p-5 md:p-10 xl:p-12 print:p-0">{content}</div>
-          <Disclaimer onFeedback={() => setIsFeedbackOpen(true)} />
-        </main>
-      </div>
-
-      {isFeedbackOpen && <FeedbackModal onClose={() => setIsFeedbackOpen(false)} />}
-    </>
+          {activeTab === 'yearly' && <YearlyPlanner />}
+          {activeTab === 'tools' && <AIToolCenter />}
+          {activeTab === 'theory' && <TheoryHub />}
+          {activeTab === 'curriculum' && <CurriculumHub />}
+          {activeTab === 'planner' && <AIPlanner />}
+          {activeTab === 'skillmastery' && <SkillMastery />}
+          {activeTab === 'compliance' && <ComplianceAdvisor />}
+          {activeTab === 'networking' && <Networking />}
+          {activeTab === 'khelo' && <KheloIndia />}
+          {activeTab === 'biomechanics' && <Biomechanics />}
+          {activeTab === 'rules' && <RulesBot />}
+          {activeTab === 'fitness' && <FitnessTests />}
+          {activeTab === 'testpaper' && <TestPaperGenerator />}
+          {activeTab === 'classroom' && <ClassroomManager />}
+          {activeTab === 'parentletters' && <ParentLetters />}
+        </div>
+        <Disclaimer />
+      </main>
+    </div>
   );
 };
 
 export default App;
+    

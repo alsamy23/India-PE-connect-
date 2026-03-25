@@ -1,19 +1,20 @@
-# India PE Connect 🏃‍♂️
-**Free AI Lesson Planner for PE Teachers — Powered by Groq (100% FREE)**
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-## 🚀 Setup (Takes 2 minutes)
+# Run and deploy your AI Studio app
 
-### Step 1 — Get FREE Groq API Key
-1. Go to → **https://console.groq.com**
-2. Sign up (free, no credit card)
-3. Click **API Keys** → **Create API Key**
-4. Copy the key (starts with `gsk_...`)
+This contains everything you need to run your app locally.
 
-### Step 2 — Add to Vercel
-1. Open your project on **vercel.com**
-2. **Settings** → **Environment Variables** → **Add New**
-   - Name: `GROQ_API_KEY`
-   - Value: paste your `gsk_...` key
-3. Click **Save** → **Redeploy**
+View your app in AI Studio: https://ai.studio/apps/7dd992b8-a371-4c71-9a3c-5465d1858cef
 
-### Done! ✅ All features work for FREE for all teachers!
+## Run Locally
+
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

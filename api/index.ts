@@ -1,4 +1,6 @@
 import express from "express";
+import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 import "dotenv/config";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -8,210 +10,287 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3000;
-app.use(express.json({ limit: "10mb" }));
 
-// ── Groq API Config (FREE) ─────────────────────────────────────────────────
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama-3.3-70b-versatile"; // Best free model on Groq
+app.use(express.json());
+
+// Secure AI Initialization (Server-side only)
+const getGeminiKeys = () => {
+  const keys: string[] = [];
+  const standardNames = ["GEMINI_API_KEY", "API_KEY", "VITE_GEMINI_API_KEY"];
+  standardNames.forEach(name => {
+    const val = process.env[name];
+    if (val && val.trim() !== "" && val !== "undefined" && val !== "null") {
+      keys.push(val.trim().replace(/^["']|["']$/g, ''));
+    }
+  });
+
+  for (let i = 1; i <= 20; i++) {
+    const key = process.env[`GEMINI_KEY_${i}`];
+    if (key && key.trim() !== "" && key !== "undefined" && key !== "null") {
+      keys.push(key.trim().replace(/^["']|["']$/g, ''));
+    }
+  }
+  return [...new Set(keys)].filter(k => k.length > 10);
+};
 
 const getGroqKey = () => {
   const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-  if (key && key.trim() !== "" && key !== "undefined") return key.trim();
+  if (key && key.trim() !== "" && key !== "undefined" && key !== "null") {
+    return key.trim().replace(/^["']|["']$/g, '');
+  }
   return null;
 };
 
-// ── Call Groq ──────────────────────────────────────────────────────────────
-const callGroq = async (systemPrompt: string, userPrompt: string, expectJson = false): Promise<string> => {
-  const apiKey = getGroqKey();
-  if (!apiKey) throw new Error("GROQ_API_KEY is not set in Vercel Environment Variables.");
-
-  const body: any = {
-    model: GROQ_MODEL,
-    max_tokens: 4096,
-    temperature: 0.7,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
+const getAI = () => {
+  const geminiKeys = getGeminiKeys();
+  const groqKey = getGroqKey();
+  
+  return { 
+    hasGemini: geminiKeys.length > 0,
+    hasGroq: !!groqKey,
+    geminiCount: geminiKeys.length,
+    groqConfigured: !!groqKey,
+    env: process.env.NODE_ENV
   };
-
-  if (expectJson) {
-    body.response_format = { type: "json_object" };
-  }
-
-  const response = await fetch(GROQ_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Groq API error ${response.status}: ${errText}`);
-  }
-
-  const data: any = await response.json();
-  return data?.choices?.[0]?.message?.content || "";
 };
 
-// ── Extract prompt from Gemini-style body ──────────────────────────────────
-const extractPrompt = (contents: any): string => {
-  if (typeof contents === "string") return contents;
-  if (contents?.parts) return contents.parts.map((p: any) => p.text || "").join("\n");
-  if (Array.isArray(contents))
-    return contents.map((c: any) =>
-      typeof c === "string" ? c : c.parts ? c.parts.map((p: any) => p.text || "").join("\n") : ""
-    ).join("\n");
-  return "";
-};
-
-// ── Routes ──────────────────────────────────────────────────────────────────
+// API Routes
 const apiRouter = express.Router();
 
-apiRouter.get("/health", (_req, res) => {
-  const hasKey = !!getGroqKey();
-  res.json({ 
-    status: hasKey ? "ok" : "missing_key", 
-    provider: "groq", 
-    model: GROQ_MODEL, 
-    hasKey 
-  });
-});
-
-apiRouter.get("/ai/test", async (_req, res) => {
+apiRouter.get("/health", (req, res) => {
   try {
-    const text = await callGroq("You are a helpful assistant.", "Say exactly: Groq Connection Successful");
-    return res.json({ message: text, provider: "groq" });
+    const status = getAI();
+    res.json({ 
+      status: (status.hasGemini || status.hasGroq) ? "ok" : "missing",
+      ...status
+    });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    res.status(500).json({ status: "error", message: "Health check failed" });
   }
 });
 
-// ── Streaming generate endpoint ────────────────────────────────────────────
-apiRouter.post("/ai/generate", async (req: express.Request, res: express.Response) => {
-  const { contents, config } = req.body;
-  const apiKey = getGroqKey();
+apiRouter.get("/ai/test", async (req, res) => {
+  try {
+    const geminiKeys = getGeminiKeys();
+    if (geminiKeys.length > 0) {
+      const ai = new GoogleGenAI({ apiKey: geminiKeys[0] });
+      const response = await ai.models.generateContent({
+        model: "gemini-flash-latest",
+        contents: "Say 'Gemini Connection Successful'"
+      });
+      return res.json({ message: response.text, provider: "gemini" });
+    }
+    
+    const groqKey = getGroqKey();
+    if (groqKey) {
+      const groq = new Groq({ apiKey: groqKey });
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: "Say 'Groq Connection Successful'" }],
+        model: "llama3-70b-8192",
+      });
+      return res.json({ message: completion.choices[0]?.message?.content, provider: "groq" });
+    }
 
-  if (!apiKey) {
-    return res.status(500).json({
-      error: "GROQ_API_KEY is not set. Please add it in Vercel → Settings → Environment Variables.",
+    res.status(401).json({ error: "No AI API keys found" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Test failed" });
+  }
+});
+
+apiRouter.post("/ai/generate", async (req, res) => {
+  const { model, contents, config } = req.body;
+  const geminiKeys = getGeminiKeys();
+  const groqKey = getGroqKey();
+  
+  if (geminiKeys.length === 0 && !groqKey) {
+    return res.status(500).json({ 
+      error: "No AI API keys configured.",
+      message: "Please add a Gemini key via the 'Renew / Upgrade' button OR add GROQ_API_KEY to the Environment Variables tab in the AI Studio sidebar."
     });
   }
 
-  const userPrompt = extractPrompt(contents);
-  const systemBase = config?.systemInstruction || "You are a helpful Physical Education assistant for Indian teachers.";
-  const expectJson = config?.responseMimeType === "application/json";
+  let lastError: any = null;
 
-  const systemPrompt = expectJson
-    ? systemBase + "\n\nCRITICAL: Respond ONLY with a valid JSON object. No explanation, no markdown fences (```), no extra text. Just raw JSON starting with { and ending with }."
-    : systemBase;
-
-  const wantsStream = req.headers["accept"] === "text/event-stream";
-
-  if (wantsStream) {
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.flushHeaders();
-
-    try {
-      const body: any = {
-        model: GROQ_MODEL,
-        max_tokens: 4096,
-        temperature: 0.7,
-        stream: true,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      };
-
-      const upstream = await fetch(GROQ_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!upstream.ok) {
-        const errText = await upstream.text();
-        res.write(`data: ${JSON.stringify({ error: `Groq API error ${upstream.status}: ${errText}` })}\n\n`);
-        res.end();
-        return;
-      }
-
-      const reader = upstream.body!.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const jsonStr = line.slice(6).trim();
-            if (jsonStr === "[DONE]") continue;
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const delta = parsed?.choices?.[0]?.delta?.content;
-              if (delta) {
-                fullText += delta;
-                res.write(`data: ${JSON.stringify({ delta, text: fullText })}\n\n`);
-              }
-            } catch (_) {}
+  // 1. Try Gemini first (with rotation and model fallback)
+  if (geminiKeys.length > 0) {
+    const shuffledKeys = [...geminiKeys].sort(() => Math.random() - 0.5);
+    const modelsToTry = [model || "gemini-flash-latest", "gemini-3-flash-preview", "gemini-3.1-flash-lite-preview"];
+    
+    for (const key of shuffledKeys) {
+      for (const currentModel of modelsToTry) {
+        try {
+          console.log(`Attempting generation with ${currentModel}...`);
+          const ai = new GoogleGenAI({ apiKey: key });
+          
+          // Ensure thinkingLevel is LOW for speed if not specified
+          const finalConfig = { ...config };
+          if (!finalConfig.thinkingConfig) {
+            finalConfig.thinkingConfig = { thinkingLevel: 'LOW' };
           }
+
+          const response = await ai.models.generateContent({
+            model: currentModel,
+            contents,
+            config: finalConfig
+          });
+
+          return res.json({
+            text: response.text,
+            provider: "gemini",
+            model: currentModel,
+            candidates: response.candidates
+          });
+        } catch (error: any) {
+          lastError = error;
+          const errorMsg = (error.message || "").toLowerCase();
+          
+          // If it's a model error, try the next model with the same key
+          if (errorMsg.includes("model") || errorMsg.includes("not found") || errorMsg.includes("404")) {
+            console.warn(`Model ${currentModel} failed, trying next model...`);
+            continue;
+          }
+
+          const isQuotaError = errorMsg.includes("429") || error.status === 429 || errorMsg.includes("resource_exhausted") || errorMsg.includes("quota");
+          const isInvalidKeyError = errorMsg.includes("400") || error.status === 400 || 
+                                   errorMsg.includes("api_key_invalid") || errorMsg.includes("api key not valid") || 
+                                   errorMsg.includes("expired") || errorMsg.includes("invalid_argument") ||
+                                   errorMsg.includes("renew the api key");
+
+          if (isQuotaError || isInvalidKeyError) {
+            console.warn(`Gemini key hit ${isQuotaError ? 'quota' : 'invalid/expired'} error. Trying next key...`);
+            
+            // Try to extract a cleaner error message from Gemini's JSON response
+            if (isInvalidKeyError) {
+              const jsonStart = errorMsg.indexOf('{');
+              if (jsonStart !== -1) {
+                try {
+                  const parsed = JSON.parse(errorMsg.substring(jsonStart));
+                  if (parsed.error?.message) {
+                    lastError = new Error(parsed.error.message);
+                  }
+                } catch (e) {
+                  // Ignore parsing errors
+                }
+              }
+            }
+            break; // Try next key
+          }
+          
+          // For other errors, try next model or next key
+          console.error(`Gemini error with ${currentModel}:`, errorMsg);
+          continue;
         }
       }
-
-      res.write(`data: ${JSON.stringify({ done: true, text: fullText, provider: "groq" })}\n\n`);
-      res.end();
-    } catch (err: any) {
-      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-      res.end();
-    }
-  } else {
-    // Regular JSON mode
-    try {
-      const text = await callGroq(systemPrompt, userPrompt, expectJson);
-      return res.json({ text, provider: "groq", model: GROQ_MODEL });
-    } catch (err: any) {
-      console.error("Groq API error:", err.message);
-      return res.status(500).json({ error: err.message || "AI generation failed." });
     }
   }
+
+  // 2. Fallback to Groq if Gemini failed or wasn't available
+  if (groqKey) {
+    try {
+      console.log("Falling back to Groq...");
+      const groq = new Groq({ apiKey: groqKey });
+      
+      // Convert Gemini format to OpenAI/Groq format
+      let prompt = "";
+      if (typeof contents === 'string') {
+        prompt = contents;
+      } else if (contents.parts) {
+        prompt = contents.parts.map((p: any) => p.text).join("\n");
+      } else if (Array.isArray(contents)) {
+        prompt = contents.map((c: any) => typeof c === 'string' ? c : (c.parts ? c.parts.map((p: any) => p.text).join("\n") : "")).join("\n");
+      }
+
+      const systemPrompt = config?.systemInstruction || "You are a helpful assistant.";
+      
+      const completion = await groq.chat.completions.create({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt }
+        ],
+        model: "llama3-70b-8192",
+        temperature: config?.temperature || 0.7,
+        response_format: config?.responseMimeType === "application/json" ? { type: "json_object" } : undefined
+      });
+
+      return res.json({
+        text: completion.choices[0]?.message?.content,
+        provider: "groq"
+      });
+    } catch (groqError: any) {
+      console.error("Groq fallback failed:", groqError);
+      const groqMsg = groqError.message || "";
+      if (groqMsg.toLowerCase().includes("api_key_invalid") || groqMsg.toLowerCase().includes("invalid api key")) {
+        lastError = new Error("Groq API key is invalid. Please check your GROQ_API_KEY in the Environment Variables.");
+      } else {
+        lastError = groqError;
+      }
+    }
+  }
+
+  let errorMessage = "AI generation failed after trying all available providers.";
+  let statusCode = 500;
+
+  const isInvalidKey = lastError?.message?.toLowerCase().includes("expired") || 
+                      lastError?.message?.toLowerCase().includes("renew") ||
+                      lastError?.message?.toLowerCase().includes("api key not valid") ||
+                      lastError?.message?.toLowerCase().includes("api_key_invalid") ||
+                      lastError?.message?.toLowerCase().includes("invalid_argument");
+
+  if (isInvalidKey) {
+    statusCode = 401;
+    errorMessage = "Your Gemini API key is invalid or has expired. To fix this, click the 'Renew / Upgrade' button in the dashboard and select a key from a PAID project, or add a GROQ_API_KEY in the Environment Variables sidebar.";
+  } else if (lastError?.message?.toLowerCase().includes("quota") || lastError?.message?.toLowerCase().includes("429")) {
+    errorMessage = "Gemini quota exceeded. To continue without interruption, please add a GROQ_API_KEY to the Environment Variables tab in the AI Studio sidebar (left).";
+  } else if (!groqKey && geminiKeys.length > 0) {
+    errorMessage = "Gemini failed and no Groq fallback was found. Please add a GROQ_API_KEY to the Environment Variables tab in the AI Studio sidebar (left) for a reliable free fallback.";
+  }
+
+  res.status(statusCode).json({ 
+    error: errorMessage,
+    message: errorMessage,
+    originalError: lastError?.message,
+    details: lastError?.stack
+  });
 });
 
+// Mount API routes
 app.use("/api", apiRouter);
 
-// ── Start Server ──────────────────────────────────────────────────────────
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    console.log("Starting in development mode with Vite middleware...");
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
-      server: { middlewareMode: true, hmr: { port: 24679 } },
+      server: { 
+        middlewareMode: true,
+        hmr: { port: 24679 } // Use a different port for HMR to avoid conflicts
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
+    console.log("Starting in production mode...");
     const distPath = path.resolve(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get(/.*/, (_req, res) => res.sendFile(path.join(distPath, "index.html")));
+    app.get(/.*/, (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
   }
+
+  // Error handler for API
+  app.use("/api", (req, res) => {
+    res.status(404).json({ error: "API endpoint not found" });
+  });
 
   if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`✅ Server on http://localhost:${PORT}`);
-      console.log(`🆓 AI Provider: Groq (${GROQ_MODEL}) — FREE!`);
+      console.log(`Server running on http://localhost:${PORT}`);
     });
   }
 }
 
-startServer().catch(console.error);
+startServer().catch(err => {
+  console.error("Failed to start server:", err);
+});
+
 export default app;

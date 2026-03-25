@@ -1,7 +1,7 @@
 
 export interface SavedItem {
   id: string;
-  type: 'Lesson Plan' | 'Theory' | 'Skill' | 'Rule' | 'Physics' | 'Tool';
+  type: 'Lesson Plan' | 'Theory' | 'Skill' | 'Rule' | 'Physics' | 'Tool' | 'TestPaper' | 'Classroom' | 'ParentLetter';
   title: string;
   content: any;
   timestamp: number;
