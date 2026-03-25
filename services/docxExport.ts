@@ -83,7 +83,22 @@ const questionParagraphs = (question: QuestionPaper['sections'][number]['questio
         spacing: { after: 120 },
         shading: { fill: 'F8FAFC' },
         alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: `[Figure: ${question.figureLabel}]`, italics: true, size: 20, color: '666666' })],
+        children: [new TextRun({ text: `[Figure: ${question.figureLabel}]`, italics: true, size: 20, color: '64748B' })],
+      }),
+    );
+  }
+
+  if (question.caseStudyImagePrompt) {
+    baseContent.push(
+      new Paragraph({
+        spacing: { after: 120 },
+        shading: { fill: 'F8FAFC' },
+        alignment: AlignmentType.CENTER,
+        children: [
+          new TextRun({ text: '[DIAGRAM / IMAGE BASED ON: ', bold: true, size: 20 }),
+          new TextRun({ text: question.caseStudyImagePrompt, italics: true, size: 20 }),
+          new TextRun({ text: ']', bold: true, size: 20 }),
+        ],
       }),
     );
   }
@@ -98,7 +113,7 @@ const questionParagraphs = (question: QuestionPaper['sections'][number]['questio
     }),
   );
 
-  if (question.options?.length) {
+  if (question.options?.length && (!question.subQuestions || question.subQuestions.length === 0)) {
     question.options.forEach((option, optionIndex) => {
       baseContent.push(
         new Paragraph({
@@ -114,14 +129,32 @@ const questionParagraphs = (question: QuestionPaper['sections'][number]['questio
   }
 
   if (question.subQuestions?.length) {
-    question.subQuestions.forEach((subQuestion, subIndex) => {
+    question.subQuestions.forEach((sq, sqidx) => {
       baseContent.push(
         new Paragraph({
           indent: { left: 540 },
-          spacing: { after: 80 },
-          children: [new TextRun({ text: `${subIndex + 1}. ${subQuestion}`, size: 20 })],
-        }),
+          spacing: { before: 100, after: 60 },
+          children: [
+            new TextRun({ text: `${String.fromCharCode(105 + sqidx)}. `, bold: true, size: 20 }),
+            new TextRun({ text: sq.question, size: 20 }),
+          ],
+        })
       );
+
+      if (sq.options?.length) {
+        sq.options.forEach((opt, oidx) => {
+          baseContent.push(
+            new Paragraph({
+              indent: { left: 900 },
+              spacing: { after: 40 },
+              children: [
+                new TextRun({ text: `${String.fromCharCode(65 + oidx)}) `, bold: true, size: 18 }),
+                new TextRun({ text: opt, size: 18 })
+              ]
+            })
+          );
+        });
+      }
     });
   }
 

@@ -154,7 +154,12 @@ export interface QuestionPaper {
       answer?: string;
       caseStudyText?: string;
       internalChoice?: string;
-      subQuestions?: string[];
+      caseStudyImagePrompt?: string;
+      subQuestions?: {
+        question: string;
+        options: string[];
+        answer: string;
+      }[];
       figureLabel?: string;
       visuallyImpairedAlternative?: string;
     }[];

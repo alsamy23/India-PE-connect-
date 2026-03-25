@@ -702,7 +702,7 @@ CONTENT RULES:
 - For case studies, put the passage in caseStudyText and the follow-up prompts in subQuestions.
 - For Section D case studies, each of the 4 subQuestions must be MCQ-style and the parent question should clearly instruct the student to answer the questions based on the passage/picture.
 - For Section D, format EACH subQuestion string with 4 choices in-line using this structure:
-  "1. <question text> (a) <option> (b) <option> (c) <option> (d) <option>"
+  "Each subQuestion must be an object { question: string, options: string[], answer: string }."
 - Section D must contain exactly 3 main questions: Q31, Q32, Q33.
 - For internal choice in long answers, use internalChoice as full alternate question text.
 - The title for full papers should be "PHYSICAL EDUCATION (048)".
@@ -748,8 +748,13 @@ const normalizeQuestionPaper = (
       options: Array.isArray(question?.options) ? question.options.map((option: any) => String(option)) : undefined,
       answer: question?.answer ? String(question.answer) : undefined,
       caseStudyText: question?.caseStudyText ? String(question.caseStudyText).trim() : undefined,
+      caseStudyImagePrompt: question?.caseStudyImagePrompt ? String(question.caseStudyImagePrompt).trim() : undefined,
       internalChoice: question?.internalChoice ? String(question.internalChoice).trim() : undefined,
-      subQuestions: Array.isArray(question?.subQuestions) ? question.subQuestions.map((item: any) => String(item).trim()) : undefined,
+      subQuestions: Array.isArray(question?.subQuestions) ? question.subQuestions.map((sq: any) => ({
+        question: String(sq?.question || '').trim(),
+        options: Array.isArray(sq?.options) ? sq.options.map((opt: any) => String(opt)) : [],
+        answer: String(sq?.answer || '')
+      })) : undefined,
       figureLabel: question?.figureLabel ? String(question.figureLabel).trim() : undefined,
       visuallyImpairedAlternative: question?.visuallyImpairedAlternative ? String(question.visuallyImpairedAlternative).trim() : undefined,
     }))

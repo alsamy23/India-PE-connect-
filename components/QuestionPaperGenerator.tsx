@@ -246,28 +246,52 @@ const QuestionPaperGenerator: React.FC = () => {
                                  </div>
                                )}
                                {q.figureLabel && (
-                                 <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-6 text-center">
+                                 <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-6 text-center mb-4">
                                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Figure</p>
                                    <p className="text-sm font-semibold text-slate-600">{String(q.figureLabel)}</p>
                                  </div>
                                )}
+                               {q.caseStudyImagePrompt && (
+                                 <div className="bg-amber-50 p-8 rounded-2xl border-2 border-dashed border-amber-200 text-center space-y-3 mb-4">
+                                   <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                                     <Layers size={24} />
+                                   </div>
+                                   <p className="text-sm font-black text-amber-900 uppercase tracking-widest">[ Diagram / Image Placeholder ]</p>
+                                   <p className="text-xs font-bold text-amber-700 italic px-4">"{q.caseStudyImagePrompt}"</p>
+                                 </div>
+                               )}
                                <p className="text-lg font-bold text-slate-800 leading-tight pr-12">{String(q.question)}</p>
-                               {q.options && Array.isArray(q.options) && (
+                               
+                               {/* Sub-questions for Case Studies */}
+                               {q.subQuestions && q.subQuestions.length > 0 && (
+                                 <div className="space-y-6 mt-4 ml-4 border-l-2 border-slate-100 pl-6">
+                                   {q.subQuestions.map((sq, sqidx) => (
+                                     <div key={sqidx} className="space-y-3">
+                                       <p className="text-sm font-bold text-slate-700">
+                                         <span className="text-indigo-600 mr-2">{String.fromCharCode(105 + sqidx)}.</span>
+                                         {sq.question}
+                                       </p>
+                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                         {sq.options.map((opt, oidx) => (
+                                           <div key={oidx} className="flex items-center space-x-2 p-2 rounded-lg border border-slate-50 bg-white text-xs font-medium">
+                                             <span className="w-5 h-5 rounded bg-slate-50 border border-slate-100 flex items-center justify-center text-[9px] font-black">{String.fromCharCode(65 + oidx)}</span>
+                                             <span>{opt}</span>
+                                           </div>
+                                         ))}
+                                       </div>
+                                     </div>
+                                   ))}
+                                 </div>
+                               )}
+
+                               {/* Standard MCQ options */}
+                               {q.options && Array.isArray(q.options) && (!q.subQuestions || q.subQuestions.length === 0) && (
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                                    {q.options.map((opt, oidx) => (
                                      <div key={oidx} className="flex items-center space-x-3 p-3 rounded-xl border border-slate-100 bg-slate-50/50 text-sm font-medium">
                                        <span className="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black">{String.fromCharCode(65 + oidx)}</span>
                                        <span>{String(opt)}</span>
                                      </div>
-                                   ))}
-                                 </div>
-                               )}
-                               {q.subQuestions && q.subQuestions.length > 0 && (
-                                 <div className="space-y-2 text-sm font-medium text-slate-700">
-                                   {q.subQuestions.map((item, subIdx) => (
-                                     <p key={subIdx} className="leading-7">
-                                       {subIdx + 1}. {String(item)}
-                                     </p>
                                    ))}
                                  </div>
                                )}
