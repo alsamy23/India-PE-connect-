@@ -623,7 +623,8 @@ export const generateQuestionPaper = async (
 - Section B / heading "SECTION B" / questionRange "Q19-Q24" / 6 questions / 2 marks each / very short answer. The section instruction must say "Attempt any 5."
 - Section C / heading "SECTION C" / questionRange "Q25-Q30" / 6 questions / 3 marks each / short answer. The section instruction must say "Attempt any 5."
 - Section D / heading "SECTION D" / questionRange "Q31-Q33" / 3 questions / 4 marks each / case-study format with four sub-parts each.
-  * Each Section D case-study question must have a short passage or image context in caseStudyText/figureLabel and exactly 4 MCQ-style sub-parts.
+  * Each Section D case-study question must have either a short passage (caseStudyText) OR an image context (figureLabel), and exactly 4 MCQ-style sub-parts.
+  * At least 1 of Q31-Q33 must be image-based with figureLabel, and the rest can be passage-based.
 - Section E / heading "SECTION E" / questionRange "Q34-Q37" / 4 questions / 5 marks each / long answer. The section instruction must say "Attempt any 3."
 Use questionNumber fields 1 through 37 in order.`
     : `For 35 marks, return the standard 4-section structure already used in school tests with questionNumber fields in order.`;
@@ -700,6 +701,9 @@ CONTENT RULES:
 - When a question has sub-parts, use subQuestions as an array.
 - For case studies, put the passage in caseStudyText and the follow-up prompts in subQuestions.
 - For Section D case studies, each of the 4 subQuestions must be MCQ-style and the parent question should clearly instruct the student to answer the questions based on the passage/picture.
+- For Section D, format EACH subQuestion string with 4 choices in-line using this structure:
+  "1. <question text> (a) <option> (b) <option> (c) <option> (d) <option>"
+- Section D must contain exactly 3 main questions: Q31, Q32, Q33.
 - For internal choice in long answers, use internalChoice as full alternate question text.
 - The title for full papers should be "PHYSICAL EDUCATION (048)".
 - displayGrade should be "Class XI (2025-26)" or "Class XII (2025-26)".
@@ -726,7 +730,7 @@ const normalizeQuestionPaper = (
         { sectionId: 'A', heading: 'SECTION A', questionRange: 'Q1-Q18', count: 18, marks: 1, instructions: 'Question 1 to 18 carry 1 mark each and are multiple choice questions. All questions are compulsory.' },
         { sectionId: 'B', heading: 'SECTION B', questionRange: 'Q19-Q24', count: 6, marks: 2, instructions: 'Question 19 to 24 carry 2 marks each and are very short answer type questions. Attempt any 5.' },
         { sectionId: 'C', heading: 'SECTION C', questionRange: 'Q25-Q30', count: 6, marks: 3, instructions: 'Question 25 to 30 carry 3 marks each and are short answer type questions. Attempt any 5.' },
-        { sectionId: 'D', heading: 'SECTION D', questionRange: 'Q31-Q33', count: 3, marks: 4, instructions: 'Question 31 to 33 carry 4 marks each and are case studies.' },
+        { sectionId: 'D', heading: 'SECTION D', questionRange: 'Q31-Q33', count: 3, marks: 4, instructions: 'Question 31 to 33 carry 4 marks each and are case-based questions. Read the given case/picture and answer the four MCQ sub-parts.' },
         { sectionId: 'E', heading: 'SECTION E', questionRange: 'Q34-Q37', count: 4, marks: 5, instructions: 'Question 34 to 37 carry 5 marks each and are long answer type questions. Attempt any 3.' },
       ]
     : [
