@@ -328,7 +328,7 @@ ${plan.plenary.description}
                     },
                     { 
                       title: "Automatic Rotation", 
-                      text: "The SmartPE backend will automatically rotate these keys to bypass daily limits." 
+                      text: "The Smarty India backend will automatically rotate these keys to bypass daily limits." 
                     }
                   ].map((step, i) => (
                     <div key={i} className="flex space-x-4">
@@ -363,7 +363,7 @@ ${plan.plenary.description}
                 </div>
                 <div className="p-8 bg-indigo-50 rounded-[2rem] border border-indigo-100 flex flex-col justify-center">
                   <p className="text-sm font-bold text-indigo-900 mb-2">Need more help?</p>
-                  <p className="text-xs text-indigo-700 mb-4">Contact the SmartPE India support team for enterprise setup.</p>
+                  <p className="text-xs text-indigo-700 mb-4">Contact the Smarty India support team for enterprise setup.</p>
                   <button className="text-xs font-black uppercase tracking-widest text-indigo-600 flex items-center space-x-2">
                     <span>Contact Support</span>
                     <ExternalLink size={14} />
@@ -417,7 +417,7 @@ ${plan.plenary.description}
                   </div>
                   <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
                     <p className="text-xs text-slate-400 leading-relaxed italic">
-                      "By distributing load across multiple free providers, we can keep SmartPE India 100% free for teachers indefinitely."
+                      "By distributing load across multiple free providers, we can keep Smarty India 100% free for teachers indefinitely."
                     </p>
                   </div>
                 </div>

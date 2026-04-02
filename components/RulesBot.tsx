@@ -54,6 +54,13 @@ const RulesBot: React.FC = () => {
              <option>Cricket</option>
              <option>Football</option>
              <option>Volleyball</option>
+             <option>Basketball</option>
+             <option>Tennis</option>
+             <option>Badminton</option>
+             <option>Athletics</option>
+             <option>Table Tennis</option>
+             <option>Hockey</option>
+             <option>Swimming</option>
            </select>
            <select className="bg-indigo-800 text-sm rounded-lg px-3 py-1 outline-none" value={language} onChange={e => setLanguage(e.target.value as any)}>
              <option value="English">ENG</option>

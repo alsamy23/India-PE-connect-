@@ -25,27 +25,26 @@ import {
   AlertCircle,
   ClipboardList,
   UserCheck,
-  Mail
+  Mail,
+  Zap
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
-import CurriculumHub from './components/CurriculumHub.tsx';
 import AIPlanner from './components/AIPlanner.tsx';
 import YearlyPlanner from './components/YearlyPlanner.tsx';
-import Networking from './components/Networking.tsx';
 import SkillMastery from './components/SkillMastery.tsx';
 import ComplianceAdvisor from './components/ComplianceAdvisor.tsx';
 import AIToolCenter from './components/AIToolCenter.tsx';
 import TheoryHub from './components/TheoryHub.tsx';
 import KheloIndia from './components/KheloIndia.tsx';
-import Biomechanics from './components/Biomechanics.tsx';
 import RulesBot from './components/RulesBot.tsx';
 import FitnessTests from './components/FitnessTests.tsx';
 import TestPaperGenerator from './components/TestPaperGenerator.tsx';
-import ClassroomManager from './components/ClassroomManager.tsx';
 import ParentLetters from './components/ParentLetters.tsx';
+import ClassroomWidgets from './components/ClassroomWidgets.tsx';
 import Disclaimer from './components/Disclaimer.tsx';
+import Logo from './components/Logo.tsx';
 
-type Tab = 'dashboard' | 'curriculum' | 'planner' | 'yearly' | 'networking' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'biomechanics' | 'rules' | 'fitness' | 'testpaper' | 'classroom' | 'parentletters';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets';
 
 import { BoardType, Language } from './types.ts';
 
@@ -64,7 +63,7 @@ const App: React.FC = () => {
   const userProfile = {
     name: "L. Samy",
     role: "Founder & Director",
-    org: "SmartPE India"
+    org: "Smarty India"
   };
 
   const checkApiStatus = async (retryCount = 0) => {
@@ -204,21 +203,18 @@ const App: React.FC = () => {
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
+    { id: 'widgets', name: 'PE Classroom Widgets', icon: Zap, isNew: true },
     { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true },
-    { id: 'classroom', name: 'Class Manager', icon: UserCheck, isNew: true },
     { id: 'testpaper', name: 'Test Generator', icon: ClipboardList, isNew: true },
     { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange },
     { id: 'planner', name: 'Lesson Planner', icon: Sparkles },
     { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true },
     { id: 'khelo', name: 'Khelo India Battery', icon: Trophy },
-    { id: 'biomechanics', name: 'Visual Physics', icon: Microscope, isNew: true },
     { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true },
     { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap },
     { id: 'tools', name: 'AI Tool Center', icon: Wrench },
     { id: 'skillmastery', name: 'Skill Progressions', icon: Target },
     { id: 'compliance', name: 'State Compliance', icon: ShieldCheck },
-    { id: 'curriculum', name: 'Library Hub', icon: BookOpen },
-    { id: 'networking', name: 'Coach Community', icon: Users },
   ];
 
   return (
@@ -299,10 +295,7 @@ const App: React.FC = () => {
 
       {/* Mobile Header */}
       <header className="md:hidden bg-slate-950 text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
-        <div className="flex items-center space-x-2">
-          <Activity className="w-8 h-8 text-orange-400" />
-          <span className="font-black text-lg tracking-tighter uppercase font-display">SmartPE India</span>
-        </div>
+        <Logo variant="light" />
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/10 rounded-xl">
           {isSidebarOpen ? <X /> : <Menu />}
         </button>
@@ -315,17 +308,8 @@ const App: React.FC = () => {
         border-r border-white/5
         print:hidden
       `}>
-        <div className="p-10 hidden md:flex items-center space-x-4">
-          <div className="relative">
-             <div className="p-3 bg-white rounded-2xl shadow-2xl shadow-orange-600/20 rotate-3 z-10 relative">
-               <Activity className="w-8 h-8 text-indigo-700" />
-             </div>
-             <div className="absolute inset-0 bg-orange-500 rounded-2xl -rotate-6 opacity-50"></div>
-          </div>
-          <div>
-            <h1 className="font-black text-2xl leading-none uppercase tracking-tighter font-display">SmartPE<br/><span className="text-orange-400">India</span></h1>
-            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-2">Plan. Teach. Lead.</p>
-          </div>
+        <div className="p-10 hidden md:flex items-center">
+          <Logo variant="light" />
         </div>
 
         {/* API Status Badge - Interactive */}
@@ -339,11 +323,6 @@ const App: React.FC = () => {
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
                 <div className="flex flex-col items-start">
                   <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">AI Connected</span>
-                  <div className="flex items-center space-x-1">
-                    {aiProviders.gemini && <span className="text-[8px] font-bold text-indigo-400 uppercase">Gemini</span>}
-                    {aiProviders.gemini && aiProviders.groq && <span className="text-[8px] text-slate-600">+</span>}
-                    {aiProviders.groq && <span className="text-[8px] font-bold text-orange-400 uppercase">Groq</span>}
-                  </div>
                 </div>
               </div>
               <Wifi size={12} className="text-emerald-500 group-hover:scale-110 transition-transform" />
@@ -455,18 +434,15 @@ const App: React.FC = () => {
           {activeTab === 'yearly' && <YearlyPlanner />}
           {activeTab === 'tools' && <AIToolCenter />}
           {activeTab === 'theory' && <TheoryHub />}
-          {activeTab === 'curriculum' && <CurriculumHub />}
           {activeTab === 'planner' && <AIPlanner />}
           {activeTab === 'skillmastery' && <SkillMastery />}
           {activeTab === 'compliance' && <ComplianceAdvisor />}
-          {activeTab === 'networking' && <Networking />}
           {activeTab === 'khelo' && <KheloIndia />}
-          {activeTab === 'biomechanics' && <Biomechanics />}
           {activeTab === 'rules' && <RulesBot />}
           {activeTab === 'fitness' && <FitnessTests />}
           {activeTab === 'testpaper' && <TestPaperGenerator />}
-          {activeTab === 'classroom' && <ClassroomManager />}
           {activeTab === 'parentletters' && <ParentLetters />}
+          {activeTab === 'widgets' && <ClassroomWidgets />}
         </div>
         <Disclaimer />
       </main>

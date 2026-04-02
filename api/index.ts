@@ -75,7 +75,7 @@ apiRouter.get("/ai/test", async (req, res) => {
     if (geminiKeys.length > 0) {
       const ai = new GoogleGenAI({ apiKey: geminiKeys[0] });
       const response = await ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: "gemini-3-flash-preview",
         contents: "Say 'Gemini Connection Successful'"
       });
       return res.json({ message: response.text, provider: "gemini" });
@@ -111,10 +111,15 @@ apiRouter.post("/ai/generate", async (req, res) => {
 
   let lastError: any = null;
 
-  // 1. Try Gemini first (with rotation and model fallback)
+          // 1. Try Gemini first (with rotation and model fallback)
   if (geminiKeys.length > 0) {
     const shuffledKeys = [...geminiKeys].sort(() => Math.random() - 0.5);
-    const modelsToTry = [model || "gemini-flash-latest", "gemini-3-flash-preview", "gemini-3.1-flash-lite-preview"];
+    // Prefer Gemini 3 models as per guidelines
+    const modelsToTry = [
+      model || "gemini-3-flash-preview", 
+      "gemini-3.1-flash-lite-preview",
+      "gemini-flash-latest"
+    ];
     
     for (const key of shuffledKeys) {
       for (const currentModel of modelsToTry) {
@@ -122,10 +127,15 @@ apiRouter.post("/ai/generate", async (req, res) => {
           console.log(`Attempting generation with ${currentModel}...`);
           const ai = new GoogleGenAI({ apiKey: key });
           
-          // Ensure thinkingLevel is LOW for speed if not specified
+          // Ensure thinkingLevel is LOW for speed if not specified, but ONLY for Gemini 3 models
           const finalConfig = { ...config };
-          if (!finalConfig.thinkingConfig) {
+          const isGemini3 = currentModel.includes("gemini-3");
+          
+          if (isGemini3 && !finalConfig.thinkingConfig) {
             finalConfig.thinkingConfig = { thinkingLevel: 'LOW' };
+          } else if (!isGemini3 && finalConfig.thinkingConfig) {
+            // Remove thinkingConfig for non-Gemini 3 models to avoid errors
+            delete finalConfig.thinkingConfig;
           }
 
           const response = await ai.models.generateContent({

@@ -3,14 +3,18 @@ import { BoardType, LessonPlan, YearlyPlan, TheoryContent, Language, FitnessAsse
 
 const callAIBase = async (payload: any, retries = 2) => {
   // Map legacy names to current best models
-  if (payload.model === 'gemini-1.5-flash') {
-    payload.model = 'gemini-flash-latest'; 
+  if (payload.model === 'gemini-1.5-flash' || payload.model === 'gemini-flash-latest') {
+    payload.model = 'gemini-3-flash-preview'; 
   }
   
-  // Add ThinkingLevel.LOW to config to minimize latency for speed
+  // Add ThinkingLevel.LOW to config to minimize latency for speed (ONLY for Gemini 3 models)
   if (!payload.config) payload.config = {};
-  if (!payload.config.thinkingConfig) {
+  const isGemini3 = payload.model && payload.model.includes("gemini-3");
+  
+  if (isGemini3 && !payload.config.thinkingConfig) {
     payload.config.thinkingConfig = { thinkingLevel: 'LOW' };
+  } else if (!isGemini3 && payload.config.thinkingConfig) {
+    delete payload.config.thinkingConfig;
   }
   
   const controller = new AbortController();
@@ -210,7 +214,7 @@ export const generateLessonPlan = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}, Duration: ${duration}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -293,7 +297,7 @@ export const generateYearlyPlan = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `Yearly PE Plan. Grade: ${grade}, Board: ${board}, Lang: ${language}. Start: ${startDate}. Terms: 2. Focus1: ${term1Focus}. Focus2: ${term2Focus}. Holidays: ${safeCalendarText}`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -351,7 +355,7 @@ export const generateMindMap = async (grade: string, chapter: string, board: Boa
   };
 
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `Generate a comprehensive mind map structure for CBSE Class ${grade} Physical Education Chapter: ${chapter}. 
     Include ALL major topics and sub-topics from the latest 2025-2026 CBSE curriculum and NCERT textbook.
     Provide 6-8 main branches with clear, academic titles and brief descriptions.`,
@@ -392,7 +396,7 @@ export const generateTheoryContent = async (grade: string, topic: string, board:
   const contextUrl = "https://www.failures.in/p/physical-education-class-12-notes-pdf.html";
 
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `PE Theory Content. Grade ${grade} ${board}. Topic: ${topic}. Type: ${contentType}. Language: ${language}.${isCBSE12 ? ` Use context from ${contextUrl}` : ''}`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -431,7 +435,7 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
   };
 
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `PE Tool ${toolId}. Parameters: ${JSON.stringify(params)}.`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -480,7 +484,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
   };
 
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `Skill progression: ${sport} - ${skill}`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -494,7 +498,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
 
 export const getStateRegulationInsights = async (state: string, board: BoardType) => {
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `PE regulations for ${state} ${board}. Marks, Hours, Curriculum.`,
     config: { thinkingConfig: { thinkingLevel: "LOW" } }
   });
@@ -534,7 +538,7 @@ export const evaluateFitnessTests = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `Assess fitness test result. 
     Category: ${category}.
     Test: ${testName}.
@@ -585,7 +589,7 @@ export const evaluateKheloIndiaScores = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `Assess fitness based on Khelo India Norms. 
     Student: Age ${age}, ${gender}.
     Tests Provided: ${JSON.stringify(tests)}.`,
@@ -657,7 +661,7 @@ export const generateQuestionPaper = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `Generate a Physical Education Question Paper. 
     Grade: ${grade}, Board: ${board}, Topic: ${topic}, 
     Type: ${testType}, Time: ${timeAllowed}, Marks: ${maxMarks}, 
@@ -701,7 +705,7 @@ export const explainBiomechanics = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `Explain biomechanics concept '${concept}' in '${sport}'. Language: ${language}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -715,11 +719,11 @@ export const explainBiomechanics = async (
 
 export const getSportsRule = async (sport: string, query: string, language: Language) => {
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `Rule Check: ${sport}. Question: ${query}. Language: ${language}`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
-      systemInstruction: `You are an expert official for Indian Sports (Kabaddi, Kho-Kho, Cricket, Football). Be decisive and do not ask for clarification. Provide specific rule numbers if possible. Keep it concise. Language: ${language}.`,
+      systemInstruction: `You are an expert official for global and Indian Sports (Kabaddi, Kho-Kho, Cricket, Football, Basketball, Tennis, Badminton, Athletics, Hockey, etc.). Be decisive and do not ask for clarification. Provide specific rule numbers if possible. Keep it concise. Language: ${language}.`,
     }
   });
   return response.text;
@@ -733,7 +737,7 @@ export const generateParentLetter = async (
   language: Language
 ): Promise<string> => {
   const response = await callAIBase({
-    model: 'gemini-flash-latest',
+    model: 'gemini-3-flash-preview',
     contents: `Generate a professional parent letter. 
     Student: ${studentName}, Teacher: ${teacherName}, 
     Purpose: ${purpose}, Details: ${details}, 
