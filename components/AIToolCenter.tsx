@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Calendar, FileSpreadsheet, FileText, Gamepad2, Users, Accessibility, 
   Dumbbell, Microscope, MessageSquare, Target, Split, Layout, ChevronLeft, Zap, Loader2, Download, Printer, CheckCircle2,
@@ -27,7 +28,7 @@ const tools: Tool[] = [
   { id: 'differentiator', name: 'Differentiated Instruction', description: 'Tailored modifications for all skill levels.', icon: Target, color: 'bg-red-500' },
   { id: 'progression-builder', name: 'Progression Builder', description: 'Technical skill mastery pathways with cues.', icon: Dumbbell, color: 'bg-cyan-500' },
   { id: 'sports-science', name: 'Sports Science', description: 'Experiential learning connecting PE with science.', icon: Microscope, color: 'bg-yellow-500' },
-  { id: 'ask-advisor', name: 'Connected India PE', description: 'Get tailored advice on any PE teaching query.', icon: MessageSquare, color: 'bg-slate-700' },
+  { id: 'ask-advisor', name: 'Smart PE Advisor', description: 'Get tailored advice on any PE teaching query.', icon: MessageSquare, color: 'bg-slate-700' },
   { id: 'lesson-observer', name: 'Lesson Observator', description: 'Generate constructive peer-feedback forms.', icon: ClipboardCheck, color: 'bg-teal-500' },
   { id: 'policy-writer', name: 'PE Policy Writer', description: 'Draft school-wide PE and safety policies.', icon: BookMarked, color: 'bg-indigo-800' },
 ];
@@ -191,18 +192,22 @@ const AIToolCenter: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {tools.map((tool) => (
-          <button
+        {tools.map((tool, idx) => (
+          <motion.button
             key={tool.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.05 }}
+            whileHover={{ y: -8, scale: 1.02 }}
             onClick={() => handleToolClick(tool)}
-            className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all group text-left flex flex-col items-start"
+            className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all group text-left flex flex-col items-start"
           >
             <div className={`p-4 rounded-2xl ${tool.color} text-white mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
               <tool.icon size={28} />
             </div>
             <h3 className="text-xl font-black text-slate-800 mb-2 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">{tool.name}</h3>
             <p className="text-sm text-slate-400 font-medium leading-relaxed">{tool.description}</p>
-          </button>
+          </motion.button>
         ))}
       </div>
     </div>

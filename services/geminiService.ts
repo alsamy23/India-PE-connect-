@@ -1,7 +1,12 @@
 
-import { BoardType, LessonPlan, YearlyPlan, TheoryContent, Language, FitnessAssessment, BiomechanicsConcept, QuestionPaper } from "../types.ts";
+import { BoardType, LessonPlan, YearlyPlan, TheoryContent, Language, FitnessAssessment, BiomechanicsConcept, TestPaper } from "../types.ts";
 
 const callAIBase = async (payload: any, retries = 2) => {
+  // Check for internet connection first
+  if (!navigator.onLine) {
+    throw new Error("No Internet Connection: Please check your network settings and try again.");
+  }
+
   // Map legacy names to current best models
   if (payload.model === 'gemini-1.5-flash' || payload.model === 'gemini-flash-latest') {
     payload.model = 'gemini-3-flash-preview'; 
@@ -128,7 +133,8 @@ export const generateLessonPlan = async (
   teacherName: string,
   duration: string,
   date: string,
-  language: Language
+  language: Language,
+  equipment: string
 ): Promise<LessonPlan> => {
   const schema = {
     type: "OBJECT",
@@ -215,7 +221,7 @@ export const generateLessonPlan = async (
 
   const response = await callAIBase({
     model: 'gemini-3-flash-preview',
-    contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}, Duration: ${duration}.`,
+    contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}, Duration: ${duration}, Available Equipment: ${equipment || 'Standard PE equipment'}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
       systemInstruction: `You are an expert Physical Education Curriculum Designer and Teacher's Assistant. 
@@ -228,7 +234,7 @@ export const generateLessonPlan = async (
       4. Main Activity: 3 progressive drills with clear coaching points.
       5. Plenary: Cool-down and reflective questions.
       6. Safety: Specific risks for this sport/activity.
-      7. Equipment: List all necessary items.
+      7. Equipment: List all necessary items. You MUST design the lesson plan around the available equipment provided by the user. If no specific equipment is provided, use standard PE equipment.
       8. Teaching Aids: Whistles, cones, charts, etc.
       9. Key Vocabulary: Terms students should learn.
       Translate all content to ${language}. Ensure NO fields are empty strings. Use the provided duration (${duration}) to time the activities correctly.`,
@@ -450,8 +456,14 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
 export const generateLessonDiagram = async (prompt: string, context: string = 'general') => {
   try {
     const response = await callAIBase({
-      model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ text: `Minimalist sports coaching diagram. Whiteboard style. No text. ${context}: ${prompt}` }] }
+      model: 'gemini-3.1-flash-image-preview',
+      contents: { parts: [{ text: `Minimalist sports coaching diagram. Whiteboard style. No text. ${context}: ${prompt}` }] },
+      config: {
+        imageConfig: {
+          aspectRatio: "1:1",
+          imageSize: "1K"
+        }
+      }
     });
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
@@ -608,15 +620,14 @@ export const evaluateKheloIndiaScores = async (
   return safeParseJson(response.text);
 };
 
-export const generateQuestionPaper = async (
+export const generateTestPaper = async (
   grade: string,
   topic: string,
-  board: BoardType,
   testType: string,
   timeAllowed: string,
   maxMarks: number,
   language: Language
-): Promise<QuestionPaper> => {
+): Promise<TestPaper> => {
   const schema = {
     type: "OBJECT",
     properties: {
@@ -662,15 +673,15 @@ export const generateQuestionPaper = async (
 
   const response = await callAIBase({
     model: 'gemini-3-flash-preview',
-    contents: `Generate a Physical Education Question Paper. 
-    Grade: ${grade}, Board: ${board}, Topic: ${topic}, 
+    contents: `Generate a Physical Education Test. 
+    Grade: ${grade}, Topic: ${topic}, 
     Type: ${testType}, Time: ${timeAllowed}, Marks: ${maxMarks}, 
     Language: ${language}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
-      systemInstruction: `You are an expert CBSE/ICSE Physical Education Examiner. 
+      systemInstruction: `You are an expert Physical Education Examiner. 
       Be decisive and do not ask for clarification.
-      Create a professional question paper following the latest board patterns (2025-26).
+      Create a professional test following standard educational patterns.
       Include:
       1. Section A: MCQs (1 mark each).
       2. Section B: Very Short Answer (2 marks each).

@@ -43,6 +43,7 @@ import ParentLetters from './components/ParentLetters.tsx';
 import ClassroomWidgets from './components/ClassroomWidgets.tsx';
 import Disclaimer from './components/Disclaimer.tsx';
 import Logo from './components/Logo.tsx';
+import ErrorBoundary from './components/ErrorBoundary.tsx';
 
 type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets';
 
@@ -63,7 +64,7 @@ const App: React.FC = () => {
   const userProfile = {
     name: "L. Samy",
     role: "Founder & Director",
-    org: "Smarty India"
+    org: "Smart PE in India"
   };
 
   const checkApiStatus = async (retryCount = 0) => {
@@ -207,7 +208,7 @@ const App: React.FC = () => {
     { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true },
     { id: 'testpaper', name: 'Test Generator', icon: ClipboardList, isNew: true },
     { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange },
-    { id: 'planner', name: 'Lesson Planner', icon: Sparkles },
+    { id: 'planner', name: 'PE Architect', icon: Sparkles },
     { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true },
     { id: 'khelo', name: 'Khelo India Battery', icon: Trophy },
     { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true },
@@ -218,13 +219,14 @@ const App: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-sans">
-      {/* API Key Selection Modal - Enhanced with instructions */}
+    <ErrorBoundary>
+      <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-sans">
+        {/* API Key Selection Modal - Enhanced with instructions */}
       {isKeyDialogOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
           <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-slate-100 animate-slide-up">
             <div className="flex justify-between items-start mb-8">
-              <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
+              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
                 <ShieldCheck size={32} />
               </div>
               <button onClick={() => setIsKeyDialogOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400">
@@ -235,17 +237,17 @@ const App: React.FC = () => {
             <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight font-display uppercase">AI Setup Guide</h2>
             
             <div className="space-y-6 mb-8">
-              <div className="p-5 bg-indigo-50 rounded-3xl border-2 border-indigo-100 shadow-sm">
-                <p className="text-sm font-black text-indigo-900 mb-3 flex items-center uppercase tracking-widest">
-                  <span className="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-xs mr-3 shadow-lg shadow-indigo-200">1</span>
+              <div className="p-5 bg-primary/5 rounded-3xl border-2 border-primary/10 shadow-sm">
+                <p className="text-sm font-black text-primary mb-3 flex items-center uppercase tracking-widest">
+                  <span className="w-8 h-8 bg-primary text-white rounded-xl flex items-center justify-center text-xs mr-3 shadow-lg shadow-primary/20">1</span>
                   Option A: Paid Gemini Key
                 </p>
-                <p className="text-xs text-indigo-700 mb-5 leading-relaxed font-medium">
+                <p className="text-xs text-primary/70 mb-5 leading-relaxed font-medium">
                   The standard AI engine. If you see "Expired Key" or "Quota" errors, click below to renew, select, or upgrade to a key from a paid project.
                 </p>
                 <button 
                   onClick={triggerKeySelector}
-                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center space-x-3"
+                  className="w-full py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20 flex items-center justify-center space-x-3"
                 >
                   <Sparkles size={18} />
                   <span>Renew / Upgrade Key</span>
@@ -287,21 +289,29 @@ const App: React.FC = () => {
             </div>
 
             <p className="text-center text-[11px] text-slate-400 font-medium">
-              Need a key? Get one at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-600 underline">aistudio.google.com</a>
+              Need a key? Get one at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-primary underline">aistudio.google.com</a>
             </p>
           </div>
         </div>
       )}
 
-      {/* Mobile Header */}
-      <header className="md:hidden bg-slate-950 text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
-        <Logo variant="light" />
-        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/10 rounded-xl">
-          {isSidebarOpen ? <X /> : <Menu />}
-        </button>
-      </header>
+        {/* Mobile Header */}
+        <header className="md:hidden bg-slate-950 text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
+          <Logo variant="light" />
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/10 rounded-xl">
+            {isSidebarOpen ? <X /> : <Menu />}
+          </button>
+        </header>
 
-      {/* Navigation Sidebar */}
+        {/* Mobile Sidebar Backdrop */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-30 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
+        {/* Navigation Sidebar */}
       <aside className={`
         fixed inset-y-0 left-0 z-40 w-80 bg-slate-950 text-white transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:relative md:translate-x-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -363,16 +373,16 @@ const App: React.FC = () => {
               className={`
                 w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
                 ${activeTab === item.id 
-                  ? 'bg-white text-slate-950 shadow-2xl shadow-white/5 scale-[1.02] font-black' 
+                  ? 'bg-white text-on-surface shadow-2xl shadow-white/5 scale-[1.02] font-black' 
                   : 'text-slate-500 hover:bg-white/5 hover:text-white font-bold'}
               `}
             >
-              <item.icon size={20} className={activeTab === item.id ? 'text-indigo-600' : 'text-slate-600 group-hover:text-white'} />
+              <item.icon size={20} className={activeTab === item.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'} />
               <span className="text-sm tracking-wide uppercase font-display">{item.name}</span>
               {(item as any).isNew && activeTab !== item.id && (
-                <span className="absolute right-4 top-4 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                <span className="absolute right-4 top-4 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
               )}
-              {activeTab === item.id && <div className="ml-auto w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>}
+              {activeTab === item.id && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"></div>}
             </button>
           ))}
         </nav>
@@ -381,16 +391,16 @@ const App: React.FC = () => {
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-950 border-t border-white/5">
           <div className="w-full bg-white/5 rounded-[2rem] p-4 flex items-center space-x-4">
             <div className="relative">
-              <div className="w-12 h-12 bg-indigo-600 rounded-2xl border-2 border-indigo-500/30 flex items-center justify-center text-white font-black text-lg font-display">
+              <div className="w-12 h-12 bg-primary rounded-2xl border-2 border-primary/30 flex items-center justify-center text-white font-black text-lg font-display">
                 {userProfile.name.charAt(0)}
               </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-950 rounded-full"></div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-secondary border-2 border-slate-950 rounded-full"></div>
             </div>
             <div className="overflow-hidden text-left flex-1">
               <p className="text-sm font-black truncate leading-none mb-1 text-white font-display uppercase">{userProfile.name}</p>
               <p className="text-[10px] text-slate-500 font-bold uppercase truncate tracking-widest">{userProfile.role}</p>
             </div>
-            <Trophy size={16} className="text-orange-500" />
+            <Trophy size={16} className="text-secondary" />
           </div>
         </div>
       </aside>
@@ -445,9 +455,32 @@ const App: React.FC = () => {
           {activeTab === 'widgets' && <ClassroomWidgets />}
         </div>
         <Disclaimer />
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-3 flex justify-between items-center z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] print:hidden">
+          {[
+            { id: 'dashboard', icon: LayoutDashboard, label: 'Home' },
+            { id: 'planner', icon: Sparkles, label: 'Architect' },
+            { id: 'testpaper', icon: ClipboardList, label: 'Tests' },
+            { id: 'tools', icon: Wrench, label: 'Tools' },
+            { id: 'theory', icon: GraduationCap, label: 'Theory' }
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id as Tab)}
+              className={`flex flex-col items-center space-y-1 transition-all ${activeTab === item.id ? 'text-primary' : 'text-slate-400'}`}
+            >
+              <item.icon size={20} className={activeTab === item.id ? 'scale-110' : ''} />
+              <span className={`text-[10px] font-black uppercase tracking-widest ${activeTab === item.id ? 'opacity-100' : 'opacity-60'}`}>
+                {item.label}
+              </span>
+            </button>
+          ))}
+        </nav>
       </main>
     </div>
-  );
+  </ErrorBoundary>
+);
 };
 
 export default App;

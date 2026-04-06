@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   FileText, 
   Sparkles, 
@@ -12,15 +13,19 @@ import {
   Settings,
   Plus,
   Trash2,
-  Save
+  Save,
+  Trophy,
+  Target,
+  Activity,
+  Dumbbell,
+  Timer
 } from 'lucide-react';
-import { BoardType, QuestionPaper, Language } from '../types.ts';
-import { generateQuestionPaper } from '../services/geminiService.ts';
+import { TestPaper, Language } from '../types.ts';
+import { generateTestPaper } from '../services/geminiService.ts';
 import { storageService } from '../services/storageService.ts';
 
 const TestPaperGenerator: React.FC = () => {
   const [grade, setGrade] = useState('12');
-  const [board, setBoard] = useState<BoardType>(BoardType.CBSE);
   const [topic, setTopic] = useState('');
   const [testType, setTestType] = useState('Unit Test');
   const [timeAllowed, setTimeAllowed] = useState('1.5 Hours');
@@ -28,7 +33,7 @@ const TestPaperGenerator: React.FC = () => {
   const [language, setLanguage] = useState<Language>('English');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<QuestionPaper | null>(null);
+  const [result, setResult] = useState<TestPaper | null>(null);
   const [isSaved, setIsSaved] = useState(false);
 
   const handleGenerate = async () => {
@@ -39,7 +44,7 @@ const TestPaperGenerator: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await generateQuestionPaper(grade, topic, board, testType, timeAllowed, maxMarks, language);
+      const data = await generateTestPaper(grade, topic, testType, timeAllowed, maxMarks, language);
       setResult(data);
     } catch (e: any) {
       console.error(e);
@@ -55,7 +60,7 @@ const TestPaperGenerator: React.FC = () => {
       type: 'TestPaper',
       title: `${result.title} - ${result.grade}`,
       content: result,
-      metadata: { grade, board, topic, testType }
+      metadata: { grade, topic, testType }
     });
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
@@ -80,9 +85,9 @@ const TestPaperGenerator: React.FC = () => {
               <FileText size={14} className="text-emerald-400" />
               <span className="text-[10px] font-black uppercase tracking-widest">Assessment Engine</span>
             </div>
-            <h1 className="text-4xl font-black tracking-tighter">Test Paper <span className="text-emerald-500">Generator</span></h1>
+            <h1 className="text-4xl font-black tracking-tighter">Test <span className="text-emerald-500">Generator</span></h1>
             <p className="text-slate-400 text-sm font-medium max-w-md">
-              Create professional, board-aligned question papers in seconds using AI.
+              Create professional tests in seconds using AI.
             </p>
           </div>
           
@@ -114,19 +119,6 @@ const TestPaperGenerator: React.FC = () => {
               </h3>
               
               <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Board</label>
-                  <select 
-                    value={board}
-                    onChange={e => setBoard(e.target.value as BoardType)}
-                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-200 font-bold text-slate-700"
-                  >
-                    <option value={BoardType.CBSE}>CBSE</option>
-                    <option value={BoardType.ICSE}>ICSE</option>
-                    <option value={BoardType.STATE}>State Board</option>
-                  </select>
-                </div>
-
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Test Type</label>
                   <select 
@@ -195,9 +187,25 @@ const TestPaperGenerator: React.FC = () => {
                 </div>
 
                 {error && (
-                  <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center space-x-3 text-rose-600">
-                    <AlertTriangle size={20} />
-                    <p className="text-xs font-black uppercase tracking-tight">{error}</p>
+                  <div className="p-6 bg-rose-50 border border-rose-100 rounded-[2rem] flex flex-col space-y-4 text-rose-600">
+                    <div className="flex items-center space-x-3">
+                      <AlertTriangle size={20} />
+                      <p className="text-xs font-black uppercase tracking-tight">{error}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button 
+                        onClick={handleGenerate}
+                        className="py-3 bg-rose-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/20"
+                      >
+                        Retry
+                      </button>
+                      <button 
+                        onClick={() => window.aistudio?.openSelectKey()}
+                        className="py-3 bg-white border border-rose-200 text-rose-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 transition-all"
+                      >
+                        Setup AI
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -205,20 +213,59 @@ const TestPaperGenerator: React.FC = () => {
               <button 
                 onClick={handleGenerate}
                 disabled={loading}
-                className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] hover:bg-slate-800 transition-all flex items-center justify-center space-x-4 shadow-xl shadow-slate-900/20 disabled:opacity-50"
+                className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] hover:bg-slate-800 transition-all flex items-center justify-center space-x-4 shadow-xl shadow-slate-900/20 disabled:opacity-50 relative overflow-hidden group"
               >
                 {loading ? (
-                  <>
-                    <Loader2 className="animate-spin" size={24} />
-                    <span>Generating Paper...</span>
-                  </>
+                  <div className="flex items-center space-x-4">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    >
+                      <Loader2 size={24} />
+                    </motion.div>
+                    <div className="flex flex-col items-start">
+                      <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Architecting</span>
+                      <span className="text-xs font-black uppercase tracking-widest">Generating Paper...</span>
+                    </div>
+                  </div>
                 ) : (
                   <>
-                    <Sparkles size={24} className="text-emerald-400" />
-                    <span>Generate Question Paper</span>
+                    <Sparkles size={24} className="text-emerald-400 group-hover:scale-125 transition-transform" />
+                    <span>Generate Test</span>
                   </>
                 )}
+                
+                {loading && (
+                  <motion.div 
+                    initial={{ x: '-100%' }}
+                    animate={{ x: '100%' }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                  />
+                )}
               </button>
+              
+              {loading && (
+                <div className="mt-8 flex justify-center space-x-6">
+                  {[Trophy, Target, Activity, Dumbbell].map((Icon, i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ 
+                        y: [0, -10, 0],
+                        opacity: [0.3, 1, 0.3]
+                      }}
+                      transition={{ 
+                        duration: 1.5, 
+                        repeat: Infinity, 
+                        delay: i * 0.2 
+                      }}
+                      className="text-emerald-500"
+                    >
+                      <Icon size={24} />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -250,82 +297,100 @@ const TestPaperGenerator: React.FC = () => {
             </div>
           </div>
 
-          {/* Question Paper Preview */}
-          <div className="bg-white rounded-[3rem] p-16 border border-slate-100 shadow-2xl max-w-4xl mx-auto print:shadow-none print:border-none print:p-0">
-            <div className="text-center space-y-4 mb-12 border-b-2 border-slate-900 pb-12">
-              <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">{result.title}</h2>
-              <div className="flex justify-center items-center space-x-8 text-sm font-black uppercase tracking-widest text-slate-500">
-                <span>Class: {result.displayGrade || result.grade}</span>
-                <span>Subject: Physical Education</span>
-                <span>Marks: {result.maxMarks}</span>
-                <span>Time: {result.timeAllowed}</span>
-              </div>
-            </div>
-
-            <div className="space-y-12">
-              {/* Instructions */}
-              <div className="space-y-4">
-                <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs">General Instructions:</h4>
-                <ul className="space-y-2">
-                  {result.generalInstructions.map((inst, idx) => (
-                    <li key={idx} className="text-sm text-slate-600 font-medium flex items-start">
-                      <span className="mr-3 text-slate-400">•</span>
-                      {inst}
-                    </li>
-                  ))}
-                </ul>
+          {/* Test Preview */}
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={result.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-[3rem] p-16 border border-slate-100 shadow-2xl max-w-4xl mx-auto print:shadow-none print:border-none print:p-0 relative overflow-hidden"
+            >
+              {/* Decorative Background */}
+              <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
+                <FileText size={200} />
               </div>
 
-              {/* Sections */}
-              {result.sections.map((section, sIdx) => (
-                <div key={sIdx} className="space-y-8">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center">
-                    <h4 className="font-black text-slate-900 uppercase tracking-widest text-sm">
-                      Section {section.sectionId} {section.heading && `- ${section.heading}`}
-                    </h4>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{section.instructions}</span>
-                  </div>
-
-                  <div className="space-y-10">
-                    {section.questions.map((q, qIdx) => (
-                      <div key={qIdx} className="space-y-6">
-                        <div className="flex justify-between items-start gap-6">
-                          <div className="flex-1 space-y-4">
-                            <p className="text-lg font-bold text-slate-800 leading-tight">
-                              <span className="mr-4 text-slate-400">{q.questionNumber || qIdx + 1}.</span>
-                              {q.question}
-                            </p>
-                            
-                            {q.options && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-10">
-                                {q.options.map((opt, oIdx) => (
-                                  <div key={oIdx} className="text-sm text-slate-600 font-medium flex items-center">
-                                    <span className="w-6 h-6 bg-slate-50 rounded-md flex items-center justify-center text-[10px] font-black mr-3 border border-slate-100">
-                                      {String.fromCharCode(65 + oIdx)}
-                                    </span>
-                                    {opt}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {q.caseStudyText && (
-                              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-sm text-slate-600 italic leading-relaxed">
-                                {q.caseStudyText}
-                              </div>
-                            )}
-                          </div>
-                          <span className="bg-slate-100 px-3 py-1 rounded-lg text-[10px] font-black text-slate-500 uppercase">
-                            {q.marks} Mark{q.marks > 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <div className="text-center space-y-4 mb-12 border-b-2 border-slate-900 pb-12">
+                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">{result.title}</h2>
+                <div className="flex justify-center items-center space-x-8 text-sm font-black uppercase tracking-widest text-slate-500">
+                  <span>Class: {result.displayGrade || result.grade}</span>
+                  <span>Subject: Physical Education</span>
+                  <span>Marks: {result.maxMarks}</span>
+                  <span>Time: {result.timeAllowed}</span>
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+
+              <div className="space-y-12">
+                {/* Instructions */}
+                <div className="space-y-4">
+                  <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs">General Instructions:</h4>
+                  <ul className="space-y-2">
+                    {result.generalInstructions.map((inst, idx) => (
+                      <li key={idx} className="text-sm text-slate-600 font-medium flex items-start">
+                        <span className="mr-3 text-slate-400">•</span>
+                        {inst}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Sections */}
+                {result.sections.map((section, sIdx) => (
+                  <motion.div 
+                    key={sIdx} 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: sIdx * 0.1 }}
+                    className="space-y-8"
+                  >
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center">
+                      <h4 className="font-black text-slate-900 uppercase tracking-widest text-sm">
+                        Section {section.sectionId} {section.heading && `- ${section.heading}`}
+                      </h4>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{section.instructions}</span>
+                    </div>
+
+                    <div className="space-y-10">
+                      {section.questions.map((q, qIdx) => (
+                        <div key={qIdx} className="space-y-6">
+                          <div className="flex justify-between items-start gap-6">
+                            <div className="flex-1 space-y-4">
+                              <p className="text-lg font-bold text-slate-800 leading-tight">
+                                <span className="mr-4 text-slate-400">{q.questionNumber || qIdx + 1}.</span>
+                                {q.question}
+                              </p>
+                              
+                              {q.options && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-10">
+                                  {q.options.map((opt, oIdx) => (
+                                    <div key={oIdx} className="text-sm text-slate-600 font-medium flex items-center">
+                                      <span className="w-6 h-6 bg-slate-50 rounded-md flex items-center justify-center text-[10px] font-black mr-3 border border-slate-100">
+                                        {String.fromCharCode(65 + oIdx)}
+                                      </span>
+                                      {opt}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {q.caseStudyText && (
+                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-sm text-slate-600 italic leading-relaxed">
+                                  {q.caseStudyText}
+                                </div>
+                              )}
+                            </div>
+                            <span className="bg-slate-100 px-3 py-1 rounded-lg text-[10px] font-black text-slate-500 uppercase">
+                              {q.marks} Mark{q.marks > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
       )}
     </div>

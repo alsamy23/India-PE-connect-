@@ -1,5 +1,6 @@
 
 import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target, User, CalendarDays, BookOpen, PenTool, Languages, FileText, Save, CheckCircle2 } from 'lucide-react';
 import { BoardType, LessonPlan, Language } from '../types.ts';
 import { generateLessonPlan, generateLessonDiagram } from '../services/geminiService.ts';
@@ -21,6 +22,7 @@ const AIPlanner: React.FC = () => {
   const [topic, setTopic] = useState('Dribbling and Passing');
   const [duration, setDuration] = useState('40 min');
   const [language, setLanguage] = useState<Language>('English');
+  const [equipment, setEquipment] = useState('cones + ball');
   
   const [plan, setPlan] = useState<LessonPlan | null>(null);
   const [isSaved, setIsSaved] = useState(false);
@@ -50,7 +52,8 @@ const AIPlanner: React.FC = () => {
         teacherName, 
         duration, 
         date,
-        language
+        language,
+        equipment
       );
       
       setPlan({ 
@@ -192,8 +195,8 @@ const AIPlanner: React.FC = () => {
               <Sparkles size={24} />
             </div>
             <div>
-              <h3 className="font-black text-xl text-slate-800 tracking-tighter uppercase leading-none">Lesson Planner</h3>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Daily Plan Generator</p>
+              <h3 className="font-black text-xl text-slate-800 tracking-tighter uppercase leading-none">PE Architect</h3>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Curriculum Design Studio</p>
             </div>
           </div>
           
@@ -260,6 +263,11 @@ const AIPlanner: React.FC = () => {
               <input type="text" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm" value={topic} onChange={e => setTopic(e.target.value)} />
             </div>
 
+            <div className="group">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Smart Equipment-Based Planning</label>
+              <input type="text" placeholder="e.g., cones + ball" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm" value={equipment} onChange={e => setEquipment(e.target.value)} />
+            </div>
+
             <button 
               onClick={handleGenerate} 
               disabled={loading} 
@@ -275,12 +283,20 @@ const AIPlanner: React.FC = () => {
                   <AlertCircle size={16} className="flex-shrink-0" />
                   <span>{error}</span>
                 </div>
-                <button 
-                  onClick={() => window.aistudio?.openSelectKey()}
-                  className="w-full py-2 bg-red-600 text-white rounded-lg font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-sm"
-                >
-                  Fix AI Connection
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={handleGenerate}
+                    className="py-2 bg-red-600 text-white rounded-lg font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-sm"
+                  >
+                    Retry
+                  </button>
+                  <button 
+                    onClick={() => window.aistudio?.openSelectKey()}
+                    className="py-2 bg-white border border-red-200 text-red-600 rounded-lg font-black uppercase tracking-widest hover:bg-red-50 transition-all"
+                  >
+                    Setup AI
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -289,12 +305,35 @@ const AIPlanner: React.FC = () => {
 
       <div className="lg:col-span-8">
            {!plan ? (
-             <div className="bg-white border-4 border-dashed border-slate-100 rounded-[2.5rem] h-full min-h-[600px] flex flex-col items-center justify-center p-12 text-center">
-               <div className="w-24 h-24 bg-slate-50 rounded-3xl flex items-center justify-center mb-6">
-                 <PenTool size={32} className="text-slate-300" />
-               </div>
-               <h3 className="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">Lesson Canvas</h3>
-               <p className="text-slate-400 font-medium">Your generated plan will appear here.</p>
+             <div className="bg-white border-4 border-dashed border-slate-100 rounded-[2.5rem] h-full min-h-[600px] flex flex-col items-center justify-center p-12 text-center relative overflow-hidden">
+               {/* Architect Blueprint Background Elements */}
+               <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+               
+               <motion.div 
+                 initial={{ scale: 0.9, opacity: 0 }}
+                 animate={{ scale: 1, opacity: 1 }}
+                 className="relative z-10"
+               >
+                 <div className="w-32 h-32 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-8 shadow-inner border border-slate-100 mx-auto">
+                   <PenTool size={48} className="text-indigo-400" />
+                 </div>
+                 <h3 className="text-4xl font-black text-slate-900 mb-4 uppercase tracking-tighter">Architect's Canvas</h3>
+                 <p className="text-slate-400 font-medium max-w-sm mx-auto text-lg leading-relaxed">
+                   Configure your parameters on the left to begin designing your professional PE curriculum.
+                 </p>
+                 
+                 {/* Animated Decorative Elements */}
+                 <div className="mt-12 flex justify-center space-x-4">
+                   {[1,2,3].map(i => (
+                     <motion.div 
+                       key={i}
+                       animate={{ y: [0, -10, 0] }}
+                       transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
+                       className="w-3 h-3 rounded-full bg-indigo-200"
+                     />
+                   ))}
+                 </div>
+               </motion.div>
              </div>
            ) : (
              <div className="bg-white rounded-[2.5rem] p-12 shadow-sm border border-slate-100 animate-in fade-in slide-in-from-bottom-8 duration-700">

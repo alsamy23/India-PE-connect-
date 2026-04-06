@@ -186,7 +186,7 @@ export interface BiomechanicsConcept {
   diagramUrl?: string;
 }
 
-export interface QuestionPaper {
+export interface TestPaper {
   title: string;
   grade: string;
   displayGrade?: string;

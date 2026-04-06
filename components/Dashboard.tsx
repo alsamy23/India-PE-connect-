@@ -72,7 +72,7 @@ const Dashboard: React.FC<{
   return (
     <div className="space-y-24 pb-20 overflow-x-hidden">
       {/* Split Hero Section - Brutalist / Editorial Look */}
-      <section className="relative min-h-[90vh] grid grid-cols-1 lg:grid-cols-2 gap-12 items-center overflow-hidden rounded-[4rem] bg-white border-2 border-slate-900 p-8 md:p-20 shadow-[16px_16px_0px_0px_rgba(15,23,42,0.05)]">
+      <section className="relative min-h-[70vh] lg:min-h-[90vh] grid grid-cols-1 lg:grid-cols-2 gap-12 items-center overflow-hidden rounded-[2.5rem] md:rounded-[4rem] bg-white border-2 border-slate-900 p-6 md:p-20 shadow-[16px_16px_0px_0px_rgba(15,23,42,0.05)]">
         {/* Background Grid */}
         <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
         
@@ -83,7 +83,7 @@ const Dashboard: React.FC<{
             className="inline-flex items-center space-x-3 bg-slate-900 text-white rounded-full px-6 py-2 shadow-lg"
           >
             <Sparkles size={16} className="text-orange-400" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Smarty India v4.0</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Smart PE in India v4.0</span>
           </motion.div>
           
           <div className="space-y-6">
@@ -91,11 +91,11 @@ const Dashboard: React.FC<{
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-7xl md:text-9xl font-black tracking-tighter leading-[0.85] text-slate-900 uppercase"
+              className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter leading-[0.85] text-slate-900 uppercase"
             >
               Smart <br/>
               <span className="text-indigo-600">PE.</span> <br/>
-              <span className="text-orange-500">Smarty India.</span>
+              <span className="text-orange-500">Smart PE in India.</span>
             </motion.h1>
             
             <motion.p 
@@ -104,7 +104,7 @@ const Dashboard: React.FC<{
               transition={{ delay: 0.4 }}
               className="text-2xl text-slate-500 max-w-xl leading-relaxed font-medium"
             >
-              The intelligent hub for India's Physical Education professionals. Plan smarter, teach better, and lead with AI-driven insights.
+              The ultimate AI-powered architect for Physical Education in India. Plan smarter, teach better, and lead with precision.
             </motion.p>
           </div>
           
@@ -256,8 +256,8 @@ const Dashboard: React.FC<{
                 <Sparkles size={40} />
               </div>
               <div className="space-y-4">
-                <h3 className="text-4xl font-black uppercase tracking-tight">AI Lesson Architect</h3>
-                <p className="text-slate-400 font-medium text-lg">Generate board-compliant curriculum plans in seconds. Tailored for CBSE, ICSE, and State Boards.</p>
+                <h3 className="text-4xl font-black uppercase tracking-tight">PE Architect</h3>
+                <p className="text-slate-400 font-medium text-lg">Design board-compliant curriculum plans with precision. The ultimate architect for your PE department.</p>
               </div>
               <div className="flex items-center space-x-3 text-indigo-400 font-black text-xs uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
                 <span>Enter Module</span>
@@ -353,8 +353,8 @@ const Dashboard: React.FC<{
       </section>
 
       {/* Recent Activity / History - Brutalist List Look */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-        <div className="lg:col-span-2 space-y-10">
+      <section className="max-w-4xl mx-auto">
+        <div className="space-y-10">
           <div className="flex items-center justify-between border-b-4 border-slate-900 pb-6">
             <h3 className="text-4xl font-black uppercase tracking-tight text-slate-900">Recent Activity</h3>
             <button className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600 hover:text-indigo-700">Audit Log</button>
@@ -407,43 +407,6 @@ const Dashboard: React.FC<{
             )}
           </div>
         </div>
-
-        {/* Community / Network - Bold Sidebar Look */}
-        <motion.div 
-          whileHover={{ y: -10, x: 10 }}
-          className="bg-indigo-600 rounded-[3rem] p-12 text-white space-y-10 relative overflow-hidden flex flex-col justify-between border-4 border-slate-900 shadow-[16px_16px_0px_0px_rgba(79,70,229,0.3)]"
-        >
-          <div className="absolute top-0 right-0 p-12 opacity-10">
-            <Users size={160} />
-          </div>
-          <div className="relative z-10 space-y-8">
-            <div className="w-20 h-20 bg-white text-indigo-600 rounded-3xl flex items-center justify-center shadow-xl">
-              <Users size={40} />
-            </div>
-            <h3 className="text-5xl font-black uppercase tracking-tight leading-[0.9]">Professional <br/>Network.</h3>
-            <p className="text-indigo-100 font-medium text-lg leading-relaxed">Connect with 2,500+ PE teachers across India. Peer-to-peer resource sharing and growth.</p>
-            <div className="flex -space-x-4">
-              {[1,2,3,4,5].map(i => (
-                <motion.div 
-                  key={i} 
-                  whileHover={{ y: -8, zIndex: 20 }}
-                  className="w-14 h-14 rounded-2xl border-4 border-slate-900 bg-white text-slate-900 flex items-center justify-center font-black text-sm shadow-2xl"
-                >
-                  {String.fromCharCode(64 + i)}
-                </motion.div>
-              ))}
-              <div className="w-14 h-14 rounded-2xl border-4 border-slate-900 bg-slate-900 text-white flex items-center justify-center font-black text-sm shadow-2xl">
-                +2k
-              </div>
-            </div>
-          </div>
-          <button 
-            onClick={() => onNavigate?.('networking')}
-            className="w-full py-6 bg-white text-slate-900 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-50 transition-all shadow-2xl relative z-10 border-4 border-slate-900"
-          >
-            Join the Network
-          </button>
-        </motion.div>
       </section>
     </div>
   );
