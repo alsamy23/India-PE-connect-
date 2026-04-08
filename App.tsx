@@ -64,7 +64,7 @@ const App: React.FC = () => {
   const userProfile = {
     name: "L. Samy",
     role: "Founder & Director",
-    org: "Smart PE in India"
+    org: "SmartPE India"
   };
 
   const checkApiStatus = async (retryCount = 0) => {
@@ -208,7 +208,7 @@ const App: React.FC = () => {
     { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true },
     { id: 'testpaper', name: 'Test Generator', icon: ClipboardList, isNew: true },
     { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange },
-    { id: 'planner', name: 'PE Architect', icon: Sparkles },
+    { id: 'planner', name: 'PE Lesson Plan', icon: Sparkles },
     { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true },
     { id: 'khelo', name: 'Khelo India Battery', icon: Trophy },
     { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true },
@@ -296,9 +296,9 @@ const App: React.FC = () => {
       )}
 
         {/* Mobile Header */}
-        <header className="md:hidden bg-slate-950 text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
-          <Logo variant="light" />
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/10 rounded-xl">
+        <header className="md:hidden sticky top-0 bg-slate-950/90 backdrop-blur-xl text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
+          <Logo variant="light" className="scale-90 origin-left" />
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/10 rounded-xl active:scale-90 transition-transform">
             {isSidebarOpen ? <X /> : <Menu />}
           </button>
         </header>
@@ -457,10 +457,10 @@ const App: React.FC = () => {
         <Disclaimer />
 
         {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-3 flex justify-between items-center z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] print:hidden">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-3 pb-safe flex justify-between items-center z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] print:hidden">
           {[
             { id: 'dashboard', icon: LayoutDashboard, label: 'Home' },
-            { id: 'planner', icon: Sparkles, label: 'Architect' },
+            { id: 'planner', icon: Sparkles, label: 'Lesson Plan' },
             { id: 'testpaper', icon: ClipboardList, label: 'Tests' },
             { id: 'tools', icon: Wrench, label: 'Tools' },
             { id: 'theory', icon: GraduationCap, label: 'Theory' }
@@ -468,10 +468,10 @@ const App: React.FC = () => {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id as Tab)}
-              className={`flex flex-col items-center space-y-1 transition-all ${activeTab === item.id ? 'text-primary' : 'text-slate-400'}`}
+              className={`flex flex-col items-center space-y-1 transition-all active:scale-90 ${activeTab === item.id ? 'text-primary' : 'text-slate-400'}`}
             >
               <item.icon size={20} className={activeTab === item.id ? 'scale-110' : ''} />
-              <span className={`text-[10px] font-black uppercase tracking-widest ${activeTab === item.id ? 'opacity-100' : 'opacity-60'}`}>
+              <span className={`text-[9px] font-black uppercase tracking-widest ${activeTab === item.id ? 'opacity-100' : 'opacity-60'}`}>
                 {item.label}
               </span>
             </button>

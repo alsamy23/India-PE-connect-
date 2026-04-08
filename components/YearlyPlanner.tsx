@@ -287,17 +287,17 @@ const YearlyPlanner: React.FC = () => {
                      <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Grade {plan.grade} Plan</h3>
                      <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">{plan.academicYear} | ${plan.board}</p>
                    </div>
-                   <div className="flex flex-wrap gap-2">
-                     <button onClick={handleExportExcel} className="flex items-center space-x-2 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold hover:bg-emerald-100 transition-colors">
-                        <FileSpreadsheet size={18} />
+                   <div className="flex flex-wrap gap-2 md:gap-3">
+                     <button onClick={handleExportExcel} className="flex items-center space-x-2 px-4 md:px-6 py-2.5 md:py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold hover:bg-emerald-100 transition-colors text-xs md:text-sm">
+                        <FileSpreadsheet size={16} />
                         <span>Excel</span>
                      </button>
-                     <button onClick={handleExportWord} className="flex items-center space-x-2 px-6 py-3 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors">
-                        <FileText size={18} />
+                     <button onClick={handleExportWord} className="flex items-center space-x-2 px-4 md:px-6 py-2.5 md:py-3 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors text-xs md:text-sm">
+                        <FileText size={16} />
                         <span>Word</span>
                      </button>
-                     <button onClick={handleExportPdf} className="flex items-center space-x-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
-                        <Download size={18} />
+                     <button onClick={handleExportPdf} className="flex items-center space-x-2 px-4 md:px-6 py-2.5 md:py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 text-xs md:text-sm">
+                        <Download size={16} />
                         <span>PDF</span>
                      </button>
                    </div>

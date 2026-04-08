@@ -22,7 +22,11 @@ import {
   Loader2,
   RotateCcw,
   Microscope,
-  Dumbbell
+  Dumbbell,
+  ClipboardList,
+  ShieldCheck,
+  Mail,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -72,7 +76,7 @@ const Dashboard: React.FC<{
   return (
     <div className="space-y-24 pb-20 overflow-x-hidden">
       {/* Split Hero Section - Brutalist / Editorial Look */}
-      <section className="relative min-h-[70vh] lg:min-h-[90vh] grid grid-cols-1 lg:grid-cols-2 gap-12 items-center overflow-hidden rounded-[2.5rem] md:rounded-[4rem] bg-white border-2 border-slate-900 p-6 md:p-20 shadow-[16px_16px_0px_0px_rgba(15,23,42,0.05)]">
+      <section className="relative min-h-[60vh] lg:min-h-[90vh] grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center overflow-hidden rounded-[2rem] md:rounded-[4rem] bg-white border-2 border-slate-900 p-6 md:p-20 shadow-[8px_8px_0px_0px_rgba(15,23,42,0.05)] md:shadow-[16px_16px_0px_0px_rgba(15,23,42,0.05)]">
         {/* Background Grid */}
         <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
         
@@ -83,7 +87,7 @@ const Dashboard: React.FC<{
             className="inline-flex items-center space-x-3 bg-slate-900 text-white rounded-full px-6 py-2 shadow-lg"
           >
             <Sparkles size={16} className="text-orange-400" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Smart PE in India v4.0</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em]">SmartPE India v4.0</span>
           </motion.div>
           
           <div className="space-y-6">
@@ -91,18 +95,18 @@ const Dashboard: React.FC<{
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter leading-[0.85] text-slate-900 uppercase"
+              className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] text-slate-900 uppercase"
             >
               Smart <br/>
               <span className="text-indigo-600">PE.</span> <br/>
-              <span className="text-orange-500">Smart PE in India.</span>
+              <span className="text-orange-500">SmartPE India.</span>
             </motion.h1>
             
             <motion.p 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="text-2xl text-slate-500 max-w-xl leading-relaxed font-medium"
+              className="text-lg sm:text-xl md:text-2xl text-slate-500 max-w-xl leading-relaxed font-medium"
             >
               The ultimate AI-powered architect for Physical Education in India. Plan smarter, teach better, and lead with precision.
             </motion.p>
@@ -112,13 +116,13 @@ const Dashboard: React.FC<{
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex flex-wrap gap-6"
+            className="flex flex-col sm:flex-row gap-4 sm:gap-6"
           >
             <button 
               onClick={() => onNavigate?.('planner')}
-              className="group px-12 py-6 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:bg-indigo-600 hover:-translate-y-1 active:translate-y-0 shadow-[8px_8px_0px_0px_rgba(79,70,229,0.3)]"
+              className="group w-full sm:w-auto px-8 md:px-12 py-5 md:py-6 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:bg-indigo-600 hover:-translate-y-1 active:translate-y-0 shadow-[8px_8px_0px_0px_rgba(79,70,229,0.3)]"
             >
-              <span className="flex items-center space-x-3">
+              <span className="flex items-center justify-center space-x-3">
                 <span>Start Planning</span>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </span>
@@ -126,7 +130,7 @@ const Dashboard: React.FC<{
             
             <button 
               onClick={() => onNavigate?.('theory')}
-              className="px-12 py-6 bg-white border-2 border-slate-900 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
+              className="w-full sm:w-auto px-8 md:px-12 py-5 md:py-6 bg-white border-2 border-slate-900 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
             >
               View Resources
             </button>
@@ -223,15 +227,15 @@ const Dashboard: React.FC<{
 
       {/* Bento Grid Redesign - Brutalist / High Contrast Look */}
       <section className="space-y-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b-4 border-slate-900 pb-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b-4 border-slate-900 pb-8 md:pb-12">
           <motion.div 
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             className="space-y-4"
           >
-            <p className="text-[11px] font-black uppercase tracking-[0.4em] text-indigo-600">The Core Modules</p>
-            <h2 className="text-6xl md:text-8xl font-black text-slate-900 tracking-tighter uppercase leading-[0.85]">
+            <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.4em] text-indigo-600">The Core Modules</p>
+            <h2 className="text-4xl sm:text-6xl md:text-8xl font-black text-slate-900 tracking-tighter uppercase leading-[0.85]">
               Specialist <br/>
               <span className="text-slate-300">Infrastructure.</span>
             </h2>
@@ -241,25 +245,29 @@ const Dashboard: React.FC<{
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* AI Planner - Large Card */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 [perspective:1000px]">
+          {/* PE Lesson Plan - Large Card */}
           <motion.div 
-            whileHover={{ y: -10, x: 10 }}
+            whileHover={{ rotateY: -5, rotateX: 5, translateZ: 20, scale: 1.02 }}
             onClick={() => onNavigate?.('planner')}
-            className="md:col-span-2 group bg-slate-900 text-white rounded-[3rem] p-12 hover:shadow-[20px_20px_0px_0px_rgba(79,70,229,0.3)] transition-all cursor-pointer overflow-hidden relative border-4 border-slate-900"
+            className="md:col-span-2 group bg-slate-900 text-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 hover:shadow-[20px_20px_0px_0px_rgba(79,70,229,0.3)] transition-all cursor-pointer overflow-hidden relative border-4 border-slate-900"
           >
-            <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:scale-110 transition-transform">
-              <Sparkles size={160} />
+            <div className="absolute top-0 right-0 p-8 md:p-12 opacity-10 group-hover:scale-110 transition-transform">
+              <Sparkles size={120} className="md:w-[160px] md:h-[160px]" />
             </div>
-            <div className="relative z-10 h-full flex flex-col justify-between space-y-12">
-              <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center shadow-xl">
-                <Sparkles size={40} />
-              </div>
+            <div className="relative z-10 h-full flex flex-col justify-between space-y-8 md:space-y-12">
+            <motion.div 
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="w-16 h-16 md:w-20 md:h-20 bg-indigo-600 rounded-2xl md:rounded-3xl flex items-center justify-center shadow-xl"
+            >
+              <Sparkles size={32} className="md:w-[40px] md:h-[40px]" />
+            </motion.div>
               <div className="space-y-4">
-                <h3 className="text-4xl font-black uppercase tracking-tight">PE Architect</h3>
-                <p className="text-slate-400 font-medium text-lg">Design board-compliant curriculum plans with precision. The ultimate architect for your PE department.</p>
+                <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight">PE Lesson Plan</h3>
+                <p className="text-slate-400 font-medium text-base md:text-lg">Design board-compliant curriculum plans with precision. The ultimate architect for your PE department.</p>
               </div>
-              <div className="flex items-center space-x-3 text-indigo-400 font-black text-xs uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
+              <div className="flex items-center space-x-3 text-indigo-400 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
                 <span>Enter Module</span>
                 <ArrowRight size={18} />
               </div>
@@ -268,13 +276,17 @@ const Dashboard: React.FC<{
 
           {/* Theory Hub */}
           <motion.div 
-            whileHover={{ y: -10, x: 10 }}
+            whileHover={{ rotateY: 5, rotateX: 5, translateZ: 20, scale: 1.02 }}
             onClick={() => onNavigate?.('theory')}
-            className="group bg-white border-4 border-slate-900 rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(244,63,94,0.3)] transition-all cursor-pointer flex flex-col justify-between"
+            className="md:col-span-2 group bg-white border-4 border-slate-900 rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(244,63,94,0.3)] transition-all cursor-pointer flex flex-col justify-between"
           >
-            <div className="w-16 h-16 bg-rose-500 text-white rounded-2xl flex items-center justify-center shadow-lg">
+            <motion.div 
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="w-16 h-16 bg-rose-500 text-white rounded-2xl flex items-center justify-center shadow-lg"
+            >
               <GraduationCap size={32} />
-            </div>
+            </motion.div>
             <div className="space-y-4">
               <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Theory Master</h3>
               <p className="text-slate-500 text-sm font-medium">MCQs, Case Studies, and Notes for CBSE Physical Education.</p>
@@ -284,71 +296,202 @@ const Dashboard: React.FC<{
             </div>
           </motion.div>
 
-          {/* Biomechanics */}
+          {/* Khelo India */}
           <motion.div 
-            whileHover={{ y: -10, x: 10 }}
-            onClick={() => onNavigate?.('biomechanics')}
-            className="group bg-emerald-500 border-4 border-slate-900 text-white rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(16,185,129,0.3)] transition-all cursor-pointer flex flex-col justify-between"
+            whileHover={{ rotateY: -5, rotateX: -5, translateZ: 20, scale: 1.02 }}
+            onClick={() => onNavigate?.('khelo')}
+            className="group bg-orange-500 border-4 border-slate-900 text-white rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(249,115,22,0.3)] transition-all cursor-pointer flex flex-col justify-between"
           >
-            <div className="w-16 h-16 bg-white text-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Microscope size={32} />
-            </div>
+            <motion.div 
+              animate={{ y: [0, -12, 0] }}
+              transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-16 h-16 bg-white text-orange-600 rounded-2xl flex items-center justify-center shadow-lg"
+            >
+              <Trophy size={32} />
+            </motion.div>
             <div className="space-y-4">
-              <h3 className="text-2xl font-black uppercase tracking-tight">Visual Physics</h3>
-              <p className="text-emerald-100 text-sm font-medium">Understand the biomechanics of sports through visual AI analysis.</p>
-              <div className="w-12 h-12 rounded-2xl border-2 border-white flex items-center justify-center group-hover:bg-white group-hover:text-emerald-600 transition-all">
+              <h3 className="text-2xl font-black uppercase tracking-tight">Khelo India</h3>
+              <p className="text-orange-100 text-sm font-medium">Official battery tests and student fitness profiles.</p>
+              <div className="w-12 h-12 rounded-2xl border-2 border-white flex items-center justify-center group-hover:bg-white group-hover:text-orange-600 transition-all">
                 <ArrowRight size={18} />
               </div>
             </div>
           </motion.div>
 
-          {/* Fitness Tests - Wide Card */}
+          {/* Yearly Planner */}
           <motion.div 
-            whileHover={{ y: -10, x: 10 }}
-            onClick={() => onNavigate?.('fitness')}
-            className="md:col-span-4 group bg-white border-4 border-slate-900 rounded-[3rem] p-12 hover:shadow-[24px_24px_0px_0px_rgba(79,70,229,0.1)] transition-all cursor-pointer flex flex-col md:flex-row items-center gap-16"
+            whileHover={{ rotateY: 5, rotateX: -5, translateZ: 20, scale: 1.02 }}
+            onClick={() => onNavigate?.('yearly')}
+            className="group bg-indigo-600 border-4 border-slate-900 text-white rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.3)] transition-all cursor-pointer flex flex-col justify-between"
           >
-            <div className="w-full md:w-1/3 h-64 bg-slate-900 rounded-[2.5rem] flex items-center justify-center relative overflow-hidden border-4 border-slate-900 shadow-xl">
-              <Activity size={80} className="text-indigo-400 relative z-10" />
+            <motion.div 
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-16 h-16 bg-white text-indigo-600 rounded-2xl flex items-center justify-center shadow-lg"
+            >
+              <Calendar size={32} />
+            </motion.div>
+            <div className="space-y-4">
+              <h3 className="text-2xl font-black uppercase tracking-tight">Yearly Planner</h3>
+              <p className="text-indigo-100 text-sm font-medium">Long-term curriculum mapping and academic scheduling.</p>
+              <div className="w-12 h-12 rounded-2xl border-2 border-white flex items-center justify-center group-hover:bg-white group-hover:text-indigo-600 transition-all">
+                <ArrowRight size={18} />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Test Generator */}
+          <motion.div 
+            whileHover={{ rotateY: -5, rotateX: 5, translateZ: 20, scale: 1.02 }}
+            onClick={() => onNavigate?.('testpaper')}
+            className="group bg-slate-100 border-4 border-slate-900 text-slate-900 rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(15,23,42,0.1)] transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <motion.div 
+              animate={{ y: [0, -9, 0] }}
+              transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+              className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg"
+            >
+              <ClipboardList size={32} />
+            </motion.div>
+            <div className="space-y-4">
+              <h3 className="text-2xl font-black uppercase tracking-tight">Test Generator</h3>
+              <p className="text-slate-500 text-sm font-medium">Create professional test papers and question banks instantly.</p>
+              <div className="w-12 h-12 rounded-2xl border-2 border-slate-900 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all">
+                <ArrowRight size={18} />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Tool Center */}
+          <motion.div 
+            whileHover={{ rotateY: 5, rotateX: 5, translateZ: 20, scale: 1.02 }}
+            onClick={() => onNavigate?.('tools')}
+            className="group bg-amber-400 border-4 border-slate-900 text-slate-900 rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(251,191,36,0.3)] transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <motion.div 
+              animate={{ y: [0, -11, 0] }}
+              transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut" }}
+              className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg"
+            >
+              <Wrench size={32} />
+            </motion.div>
+            <div className="space-y-4">
+              <h3 className="text-2xl font-black uppercase tracking-tight">Tool Center</h3>
+              <p className="text-amber-900 text-sm font-medium">AI-powered advisors and specialized PE utilities.</p>
+              <div className="w-12 h-12 rounded-2xl border-2 border-slate-900 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all">
+                <ArrowRight size={18} />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Fitness Assessments - Wide Card */}
+          <motion.div 
+            whileHover={{ rotateX: -5, translateZ: 30, scale: 1.01 }}
+            onClick={() => onNavigate?.('fitness')}
+            className="md:col-span-4 group bg-white border-4 border-slate-900 rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 hover:shadow-[24px_24px_0px_0px_rgba(79,70,229,0.1)] transition-all cursor-pointer flex flex-col md:flex-row items-center gap-8 md:gap-16"
+          >
+            <div className="w-full md:w-1/3 h-48 md:h-64 bg-slate-900 rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center relative overflow-hidden border-4 border-slate-900 shadow-xl">
+              <Activity size={60} className="md:w-[80px] md:h-[80px] text-indigo-400 relative z-10" />
               <div className="absolute inset-0 opacity-[0.1]" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
             </div>
-            <div className="flex-1 space-y-6 text-left">
+            <div className="flex-1 space-y-4 md:space-y-6 text-left">
               <div className="inline-flex px-4 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest">New Module</div>
-              <h3 className="text-5xl font-black text-slate-900 uppercase tracking-tight">Fitness Assessments</h3>
-              <p className="text-slate-500 font-medium text-xl leading-relaxed">Track student progress with Khelo India battery tests and automated reporting. Professional analytics for every student.</p>
-              <div className="flex items-center space-x-3 text-indigo-600 font-black text-xs uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
+              <h3 className="text-3xl md:text-5xl font-black text-slate-900 uppercase tracking-tight">Fitness Assessments</h3>
+              <p className="text-slate-500 font-medium text-lg md:text-xl leading-relaxed">Track student progress with Khelo India battery tests and automated reporting. Professional analytics for every student.</p>
+              <div className="flex items-center space-x-3 text-indigo-600 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
                 <span>Begin Assessment</span>
                 <ChevronRight size={18} />
               </div>
             </div>
           </motion.div>
-        </div>
-      </section>
 
-      {/* Quick Stats - Brutalist Look */}
-      <section className="py-24 bg-slate-900 text-white rounded-[4rem] border-4 border-slate-900 shadow-[20px_20px_0px_0px_rgba(15,23,42,0.1)]">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-12 px-12 md:px-20">
-          {[
-            { label: 'Active Educators', value: '2.5k+', icon: Users, color: 'text-indigo-400' },
-            { label: 'Digital Resources', value: '500+', icon: FileText, color: 'text-emerald-400' },
-            { label: 'Platform Success', value: '98%', icon: Trophy, color: 'text-amber-400' },
-            { label: 'AI Intelligence', value: 'v3.1', icon: Sparkles, color: 'text-rose-400' },
-          ].map((stat, i) => (
+          {/* Skill Mastery */}
+          <motion.div 
+            whileHover={{ rotateY: -5, rotateX: 5, translateZ: 20, scale: 1.02 }}
+            onClick={() => onNavigate?.('skillmastery')}
+            className="group bg-rose-50 border-4 border-slate-900 text-slate-900 rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(244,63,94,0.2)] transition-all cursor-pointer flex flex-col justify-between"
+          >
             <motion.div 
-              key={i} 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="space-y-4 border-l-2 border-white/10 pl-8"
+              animate={{ y: [0, -7, 0] }}
+              transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
+              className="w-16 h-16 bg-rose-500 text-white rounded-2xl flex items-center justify-center shadow-lg"
             >
-              <div className={`${stat.color} mb-4`}>
-                <stat.icon size={40} />
-              </div>
-              <p className="text-6xl font-black tracking-tighter">{stat.value}</p>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">{stat.label}</p>
+              <Target size={32} />
             </motion.div>
-          ))}
+            <div className="space-y-4">
+              <h3 className="text-2xl font-black uppercase tracking-tight">Skill Mastery</h3>
+              <p className="text-slate-500 text-sm font-medium">Step-by-step progressions for technical sports skills.</p>
+              <div className="w-12 h-12 rounded-2xl border-2 border-slate-900 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all">
+                <ArrowRight size={18} />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Compliance */}
+          <motion.div 
+            whileHover={{ rotateY: 5, rotateX: 5, translateZ: 20, scale: 1.02 }}
+            onClick={() => onNavigate?.('compliance')}
+            className="group bg-emerald-50 border-4 border-slate-900 text-slate-900 rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(16,185,129,0.2)] transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <motion.div 
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
+              className="w-16 h-16 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg"
+            >
+              <ShieldCheck size={32} />
+            </motion.div>
+            <div className="space-y-4">
+              <h3 className="text-2xl font-black uppercase tracking-tight">Compliance</h3>
+              <p className="text-slate-500 text-sm font-medium">Ensure your curriculum meets state and board standards.</p>
+              <div className="w-12 h-12 rounded-2xl border-2 border-slate-900 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all">
+                <ArrowRight size={18} />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Parent Letters */}
+          <motion.div 
+            whileHover={{ rotateY: -5, rotateX: -5, translateZ: 20, scale: 1.02 }}
+            onClick={() => onNavigate?.('parentletters')}
+            className="group bg-blue-50 border-4 border-slate-900 text-slate-900 rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(59,130,246,0.2)] transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <motion.div 
+              animate={{ y: [0, -9, 0] }}
+              transition={{ duration: 4.1, repeat: Infinity, ease: "easeInOut" }}
+              className="w-16 h-16 bg-blue-500 text-white rounded-2xl flex items-center justify-center shadow-lg"
+            >
+              <Mail size={32} />
+            </motion.div>
+            <div className="space-y-4">
+              <h3 className="text-2xl font-black uppercase tracking-tight">Parent Letters</h3>
+              <p className="text-slate-500 text-sm font-medium">Automated communication for sports events and health.</p>
+              <div className="w-12 h-12 rounded-2xl border-2 border-slate-900 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all">
+                <ArrowRight size={18} />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Widgets */}
+          <motion.div 
+            whileHover={{ rotateY: 5, rotateX: -5, translateZ: 20, scale: 1.02 }}
+            onClick={() => onNavigate?.('widgets')}
+            className="group bg-purple-50 border-4 border-slate-900 text-slate-900 rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(168,85,247,0.2)] transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <motion.div 
+              animate={{ y: [0, -11, 0] }}
+              transition={{ duration: 3.3, repeat: Infinity, ease: "easeInOut" }}
+              className="w-16 h-16 bg-purple-500 text-white rounded-2xl flex items-center justify-center shadow-lg"
+            >
+              <Zap size={32} />
+            </motion.div>
+            <div className="space-y-4">
+              <h3 className="text-2xl font-black uppercase tracking-tight">Classroom Widgets</h3>
+              <p className="text-slate-500 text-sm font-medium">Interactive timers, scoreboards, and group makers.</p>
+              <div className="w-12 h-12 rounded-2xl border-2 border-slate-900 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all">
+                <ArrowRight size={18} />
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 

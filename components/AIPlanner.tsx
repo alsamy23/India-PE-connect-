@@ -195,7 +195,7 @@ const AIPlanner: React.FC = () => {
               <Sparkles size={24} />
             </div>
             <div>
-              <h3 className="font-black text-xl text-slate-800 tracking-tighter uppercase leading-none">PE Architect</h3>
+              <h3 className="font-black text-xl text-slate-800 tracking-tighter uppercase leading-none">PE Lesson Plan</h3>
               <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Curriculum Design Studio</p>
             </div>
           </div>
@@ -337,25 +337,25 @@ const AIPlanner: React.FC = () => {
              </div>
            ) : (
              <div className="bg-white rounded-[2.5rem] p-12 shadow-sm border border-slate-100 animate-in fade-in slide-in-from-bottom-8 duration-700">
-               <div className="flex justify-between items-center mb-10 pb-6 border-b border-slate-100 print:hidden">
-                 <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Plan Preview</h2>
-                 <div className="flex space-x-3">
+               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-10 pb-6 border-b border-slate-100 print:hidden gap-4">
+                 <h2 className="text-2xl md:text-3xl font-black text-slate-800 uppercase tracking-tighter">Plan Preview</h2>
+                 <div className="flex flex-wrap gap-2 md:gap-3">
                     <button 
                       onClick={handleSaveToHistory}
                       disabled={isSaved}
-                      className={`px-6 py-3 rounded-xl font-bold flex items-center space-x-2 transition-all shadow-lg ${isSaved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
+                      className={`px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold flex items-center space-x-2 transition-all shadow-lg text-xs md:text-sm ${isSaved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
                     >
                       {isSaved ? <CheckCircle2 size={18} /> : <Save size={18} />}
                       <span>{isSaved ? 'Saved' : 'Save'}</span>
                     </button>
-                    <button onClick={() => {setPlan(null); setLanguage('English');}} className="p-3 text-slate-400 hover:text-indigo-600 font-bold flex items-center space-x-2">
-                       <RotateCcw size={16} /> <span>Reset</span>
+                    <button onClick={() => {setPlan(null); setLanguage('English');}} className="p-2.5 md:p-3 text-slate-400 hover:text-indigo-600 font-bold flex items-center space-x-2 text-xs md:text-sm">
+                       <RotateCcw size={14} /> <span>Reset</span>
                     </button>
-                    <button onClick={handleExportWord} className="bg-blue-50 text-blue-700 px-6 py-3 rounded-xl font-bold flex items-center space-x-2 hover:bg-blue-100 transition-all">
-                       <FileText size={18} /> <span>Word</span>
+                    <button onClick={handleExportWord} className="bg-blue-50 text-blue-700 px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold flex items-center space-x-2 hover:bg-blue-100 transition-all text-xs md:text-sm">
+                       <FileText size={16} /> <span>Word</span>
                      </button>
-                     <button onClick={handleExportPdf} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold flex items-center space-x-2 shadow-lg hover:bg-indigo-700 transition-all">
-                        <Download size={18} /> <span>PDF</span>
+                     <button onClick={handleExportPdf} className="bg-indigo-600 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold flex items-center space-x-2 shadow-lg hover:bg-indigo-700 transition-all text-xs md:text-sm">
+                        <Download size={16} /> <span>PDF</span>
                     </button>
                  </div>
                </div>
