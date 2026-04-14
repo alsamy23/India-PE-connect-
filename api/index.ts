@@ -14,9 +14,10 @@ const PORT = 3000;
 app.use(express.json());
 
 // Secure AI Initialization (Server-side only)
+// IMPORTANT: Do NOT use VITE_ prefix for these keys, as that would expose them to the browser.
 const getGeminiKeys = () => {
   const keys: string[] = [];
-  const standardNames = ["GEMINI_API_KEY", "API_KEY", "VITE_GEMINI_API_KEY"];
+  const standardNames = ["GEMINI_API_KEY", "API_KEY"];
   standardNames.forEach(name => {
     const val = process.env[name];
     if (val && val.trim() !== "" && val !== "undefined" && val !== "null") {
@@ -34,7 +35,7 @@ const getGeminiKeys = () => {
 };
 
 const getGroqKey = () => {
-  const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
+  const key = process.env.GROQ_API_KEY;
   if (key && key.trim() !== "" && key !== "undefined" && key !== "null") {
     return key.trim().replace(/^["']|["']$/g, '');
   }
