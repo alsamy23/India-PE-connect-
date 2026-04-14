@@ -226,17 +226,71 @@ export interface Student {
   name: string;
   rollNumber: string;
   grade: string;
+  section: string;
+  gender: 'Male' | 'Female';
+  age: number;
+  schoolId: string;
+  teacherId: string;
   attendance: number;
   performance: 'Excellent' | 'Good' | 'Average' | 'Needs Improvement';
   lastAssessment?: string;
 }
 
-export interface Classroom {
+export interface Team {
   id: string;
   name: string;
   grade: string;
-  studentCount: number;
+  section: string;
+  studentIds: string[];
   teacherId: string;
+  schoolId: string;
+}
+
+export interface School {
+  id: string;
+  name: string;
+  adminId: string;
+  address?: string;
+  createdAt: string;
+}
+
+export interface SchoolMember {
+  uid: string;
+  schoolId: string;
+  role: 'admin' | 'teacher';
+  displayName: string;
+  email: string;
+}
+
+export interface FitnessResult {
+  id: string;
+  studentId: string;
+  teacherId: string;
+  schoolId: string;
+  testId: string;
+  testName: string;
+  value: string;
+  unit: string;
+  date: string;
+  term: string;
+  rating?: string;
+  percentile?: number;
+}
+
+export type KIFTGradeCategory = 'Primary' | 'Upper Primary' | 'Middle School' | 'Secondary' | 'Senior Secondary';
+
+export interface KIFTTest {
+  id: string;
+  name: string;
+  unit: string;
+  description: string;
+}
+
+export interface KIFTBattery {
+  category: KIFTGradeCategory;
+  grades: string[];
+  objective: string;
+  tests: KIFTTest[];
 }
 
 declare global {

@@ -16,143 +16,66 @@ import {
   CheckCircle2,
   Info,
   Trophy,
-  History
+  History,
+  Activity
 } from 'lucide-react';
 import { evaluateFitnessTests } from '../services/geminiService.ts';
-import { FitnessAssessment } from '../types.ts';
+import { FitnessAssessment, KIFTBattery, KIFTTest } from '../types.ts';
 import { storageService } from '../services/storageService.ts';
-
-interface Test {
-  id: string;
-  name: string;
-  unit: string;
-  description: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  icon: any;
-  tests: Test[];
-}
-
-const FITNESS_CATEGORIES: Category[] = [
-  {
-    id: 'aerobic',
-    name: 'Aerobic Endurance/Power',
-    icon: Heart,
-    tests: [
-      { id: 'cooper', name: '12-Minute Run (Cooper Test)', unit: 'meters', description: 'Run as far as possible in 12 minutes.' },
-      { id: '1.5mile', name: '1.5 Mile Run', unit: 'min:sec', description: 'Run 1.5 miles as fast as possible.' },
-      { id: 'beep', name: 'Beep Test (Multi-Stage Fitness)', unit: 'level.shuttle', description: 'Run 20m shuttles in time with beeps.' },
-      { id: '2.4km', name: '2.4km Run', unit: 'min:sec', description: 'Run 2.4km as fast as possible.' }
-    ]
-  },
-  {
-    id: 'muscular_endurance',
-    name: 'Muscular Endurance',
-    icon: Zap,
-    tests: [
-      { id: 'pushup_1min', name: 'Push-Up Test (1 Minute)', unit: 'reps', description: 'Maximum push-ups in one minute.' },
-      { id: 'situp_1min', name: 'Sit-Up Test (1 Minute)', unit: 'reps', description: 'Maximum sit-ups in one minute.' },
-      { id: 'situp_30sec', name: 'Sit-Up Test (30 Seconds)', unit: 'reps', description: 'Maximum sit-ups in 30 seconds.' },
-      { id: 'squat_1min', name: 'Squat Test (1 Minute)', unit: 'reps', description: 'Maximum bodyweight squats in one minute.' },
-      { id: 'plank', name: 'Plank Hold', unit: 'min:sec', description: 'Hold a forearm plank for as long as possible.' }
-    ]
-  },
-  {
-    id: 'muscular_strength',
-    name: 'Muscular Strength',
-    icon: Dumbbell,
-    tests: [
-      { id: 'bench_1rm', name: '1RM Bench Press', unit: 'kg', description: 'Maximum weight for one repetition of bench press.' },
-      { id: 'squat_1rm', name: '1RM Squat', unit: 'kg', description: 'Maximum weight for one repetition of back squat.' },
-      { id: 'handgrip', name: 'Handgrip Strength', unit: 'kg', description: 'Maximum grip force using a dynamometer.' },
-      { id: 'legpress_1rm', name: '1RM Leg Press', unit: 'kg', description: 'Maximum weight for one repetition of leg press.' }
-    ]
-  },
-  {
-    id: 'muscular_power',
-    name: 'Muscular Power',
-    icon: Zap,
-    tests: [
-      { id: 'vertical_jump', name: 'Vertical Jump', unit: 'cm', description: 'Measure the height of a vertical jump.' },
-      { id: 'standing_long_jump', name: 'Standing Long Jump', unit: 'cm', description: 'Jump as far as possible from a standing start.' },
-      { id: 'medball_throw', name: 'Medicine Ball Throw', unit: 'meters', description: 'Throw a 2kg/3kg medicine ball as far as possible.' },
-      { id: 'broad_jump', name: 'Broad Jump', unit: 'cm', description: 'Jump forward from a standing position.' }
-    ]
-  },
-  {
-    id: 'agility',
-    name: 'Agility',
-    icon: Move,
-    tests: [
-      { id: 'illinois', name: 'Illinois Agility Test', unit: 'seconds', description: 'Standard agility course involving weaving and sprinting.' },
-      { id: 't_test', name: 'T-Test', unit: 'seconds', description: 'Agility test involving forward, lateral, and backward movement.' },
-      { id: '5105', name: '5-10-5 Shuttle (Pro Agility)', unit: 'seconds', description: 'Short shuttle run test of lateral quickness.' },
-      { id: 'hexagon', name: 'Hexagon Test', unit: 'seconds', description: 'Jump in and out of a hexagon as fast as possible.' }
-    ]
-  },
-  {
-    id: 'speed',
-    name: 'Speed',
-    icon: Timer,
-    tests: [
-      { id: '20m_sprint', name: '20m Sprint', unit: 'seconds', description: 'Time taken to sprint 20 meters.' },
-      { id: '30m_sprint', name: '30m Sprint', unit: 'seconds', description: 'Time taken to sprint 30 meters.' },
-      { id: '40m_sprint', name: '40m Sprint', unit: 'seconds', description: 'Time taken to sprint 40 meters.' },
-      { id: '50m_sprint', name: '50m Sprint', unit: 'seconds', description: 'Time taken to sprint 50 meters.' }
-    ]
-  },
-  {
-    id: 'flexibility',
-    name: 'Flexibility',
-    icon: StretchHorizontal,
-    tests: [
-      { id: 'sit_reach', name: 'Sit and Reach', unit: 'cm', description: 'Measure lower back and hamstring flexibility.' },
-      { id: 'shoulder_stretch', name: 'Shoulder Stretch', unit: 'pass/fail', description: 'Reach hands together behind the back.' },
-      { id: 'trunk_rotation', name: 'Trunk Rotation', unit: 'cm', description: 'Measure the range of motion of the trunk.' },
-      { id: 'groin_flex', name: 'Groin Flexibility', unit: 'cm', description: 'Measure the distance between heels and groin in a butterfly stretch.' }
-    ]
-  },
-  {
-    id: 'body_comp',
-    name: 'Body Composition',
-    icon: User,
-    tests: [
-      { id: 'bmi', name: 'BMI (Body Mass Index)', unit: 'kg/m²', description: 'Calculate BMI using height and weight.' },
-      { id: 'whr', name: 'Waist-to-Hip Ratio', unit: 'ratio', description: 'Measure waist and hip circumference.' },
-      { id: 'skinfold_3', name: 'Skinfold (3-Site)', unit: 'mm', description: 'Measure skinfold thickness at three specific sites.' },
-      { id: 'bodyfat_bia', name: 'Body Fat % (BIA)', unit: '%', description: 'Estimate body fat using bioelectrical impedance.' }
-    ]
-  }
-];
+import { fitnessService, Student, KIFT_BATTERIES } from '../services/fitnessService.ts';
+import { auth } from '../services/firebase.ts';
+import { useEffect } from 'react';
 
 const FitnessTests: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [selectedTest, setSelectedTest] = useState<Test | null>(null);
-  const [age, setAge] = useState('18');
+  const [selectedBattery, setSelectedBattery] = useState<KIFTBattery | null>(null);
+  const [selectedTest, setSelectedTest] = useState<KIFTTest | null>(null);
+  const [age, setAge] = useState('10');
   const [gender, setGender] = useState('Male');
   const [testValue, setTestValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FitnessAssessment | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState('');
 
-  const handleCategoryClick = (category: Category) => {
-    setSelectedCategory(category);
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    // For testing, we subscribe to teacher's students. 
+    // In a full school context, this would be filtered by schoolId if admin.
+    const unsub = fitnessService.subscribeToStudents(auth.currentUser.uid, undefined, false, setStudents);
+    return () => unsub();
+  }, []);
+
+  const handleBatteryClick = (battery: KIFTBattery) => {
+    setSelectedBattery(battery);
     setSelectedTest(null);
     setResult(null);
   };
 
-  const handleTestClick = (test: Test) => {
+  const handleTestClick = (test: KIFTTest) => {
     setSelectedTest(test);
     setResult(null);
     setTestValue('');
   };
 
+  const handleStudentChange = (id: string) => {
+    setSelectedStudentId(id);
+    const student = students.find(s => s.id === id);
+    if (student) {
+      setAge(student.age.toString());
+      setGender(student.gender);
+      
+      // Automatically select the correct battery for the student's grade
+      const battery = fitnessService.getBatteryForGrade(student.grade);
+      if (battery) {
+        setSelectedBattery(battery);
+      }
+    }
+  };
+
   const handleCalculate = async () => {
-    if (!selectedCategory || !selectedTest || !testValue) {
+    if (!selectedBattery || !selectedTest || !testValue) {
       setError("Please enter a result for the test.");
       return;
     }
@@ -160,7 +83,7 @@ const FitnessTests: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await evaluateFitnessTests(age, gender, selectedCategory.name, selectedTest.name, testValue);
+      const data = await evaluateFitnessTests(age, gender, selectedBattery.category, selectedTest.name, testValue);
       setResult(data);
     } catch (e: any) {
       console.error(e);
@@ -170,14 +93,41 @@ const FitnessTests: React.FC = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!result) return;
+
+    if (!auth.currentUser) {
+      setError("Please log in as a teacher to save results to your school database.");
+      return;
+    }
+    
+    // Save to general history
     storageService.saveItem({
       type: 'Tool',
       title: `${selectedTest?.name} Assessment`,
       content: result,
-      metadata: { age, gender, category: selectedCategory?.name, test: selectedTest?.name, value: testValue }
+      metadata: { age, gender, category: selectedBattery?.category, test: selectedTest?.name, value: testValue }
     });
+
+    // Save to school database if student is selected
+    if (selectedStudentId) {
+      const student = students.find(s => s.id === selectedStudentId);
+      await fitnessService.saveResult({
+        id: Math.random().toString(36).substr(2, 9),
+        teacherId: auth.currentUser.uid,
+        schoolId: student?.schoolId || '',
+        studentId: selectedStudentId,
+        testId: selectedTest?.id || '',
+        testName: selectedTest?.name || '',
+        value: testValue,
+        unit: selectedTest?.unit || '',
+        date: new Date().toISOString(),
+        term: 'Term 1', // Default
+        rating: result.tests[0]?.rating,
+        percentile: parseFloat(result.tests[0]?.percentile)
+      });
+    }
+
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };
@@ -187,58 +137,59 @@ const FitnessTests: React.FC = () => {
       {/* Header */}
       <div className="bg-indigo-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
         <div className="relative z-10 max-w-2xl">
-          <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter">Fitness Testing Suite</h2>
+          <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter">KIFT Testing Suite</h2>
           <p className="text-indigo-200 text-lg font-medium leading-relaxed">
-            32 professional fitness tests across 8 categories. Instant analysis and percentile ranking based on international norms.
+            Khelo India Fitness Test (CBSE Format). Standardized batteries for Primary to Senior Secondary grades.
           </p>
         </div>
-        <Timer className="absolute right-[-20px] bottom-[-40px] w-64 h-64 text-white/10 rotate-12" />
+        <Trophy className="absolute right-[-20px] bottom-[-40px] w-64 h-64 text-white/10 rotate-12" />
       </div>
 
-      {!selectedCategory ? (
-        /* Categories Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {FITNESS_CATEGORIES.map((cat) => (
+      {!selectedBattery ? (
+        /* Batteries Grid */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {KIFT_BATTERIES.map((battery) => (
             <button
-              key={cat.id}
-              onClick={() => handleCategoryClick(cat)}
+              key={battery.category}
+              onClick={() => handleBatteryClick(battery)}
               className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:scale-[1.02] transition-all text-left group"
             >
               <div className="p-4 bg-indigo-50 rounded-2xl w-fit mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                <cat.icon size={32} />
+                <Activity size={32} />
               </div>
-              <h3 className="font-black text-xl text-slate-800 mb-2 leading-tight uppercase tracking-tight">{cat.name}</h3>
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">{cat.tests.length} Tests Available</p>
-              <div className="mt-6 flex items-center text-indigo-600 text-xs font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                <span>Explore Tests</span>
+              <h3 className="font-black text-xl text-slate-800 mb-2 leading-tight uppercase tracking-tight">{battery.category}</h3>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-4">Grades: {battery.grades.join(', ')}</p>
+              <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6">{battery.objective}</p>
+              <div className="mt-auto flex items-center text-indigo-600 text-xs font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                <span>View {battery.tests.length} Tests</span>
                 <ChevronRight size={14} className="ml-1" />
               </div>
             </button>
           ))}
         </div>
       ) : (
-        /* Category View */
+        /* Battery View */
         <div className="space-y-8">
           <button 
-            onClick={() => setSelectedCategory(null)}
+            onClick={() => setSelectedBattery(null)}
             className="flex items-center space-x-2 text-slate-400 hover:text-indigo-600 font-bold uppercase text-xs tracking-widest transition-colors"
           >
             <ArrowLeft size={16} />
-            <span>Back to Categories</span>
+            <span>Back to Batteries</span>
           </button>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Sidebar: Tests in Category */}
+            {/* Sidebar: Tests in Battery */}
             <div className="lg:col-span-4 space-y-4">
               <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
                 <div className="flex items-center space-x-3 mb-6">
                   <div className="p-2 bg-indigo-50 rounded-xl">
-                    <selectedCategory.icon size={20} className="text-indigo-600" />
+                    <Activity size={20} className="text-indigo-600" />
                   </div>
-                  <h3 className="font-black text-lg text-slate-800 uppercase tracking-tight">{selectedCategory.name}</h3>
+                  <h3 className="font-black text-lg text-slate-800 uppercase tracking-tight">{selectedBattery.category} Tests</h3>
                 </div>
                 <div className="space-y-2">
-                  {selectedCategory.tests.map((test) => (
+                  {selectedBattery.tests.map((test) => (
                     <button
                       key={test.id}
                       onClick={() => handleTestClick(test)}
@@ -272,19 +223,34 @@ const FitnessTests: React.FC = () => {
             <div className="lg:col-span-8">
               {!selectedTest ? (
                 <div className="bg-white border-4 border-dashed border-slate-100 rounded-[2.5rem] h-full flex flex-col items-center justify-center p-12 text-center text-slate-400 min-h-[400px]">
-                  <selectedCategory.icon size={48} className="mb-4 text-slate-200" />
-                  <p className="font-bold">Select a test from the list to begin assessment.</p>
+                  <Activity size={48} className="mb-4 text-slate-200" />
+                  <p className="font-bold uppercase tracking-tight">Select a test from the {selectedBattery.category} battery to begin.</p>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {/* Input Card */}
                   <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+                    <div className="mb-8">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Select Student (Optional)</label>
+                      <select 
+                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                        value={selectedStudentId}
+                        onChange={e => handleStudentChange(e.target.value)}
+                      >
+                        <option value="">Manual Entry</option>
+                        {students.map(s => (
+                          <option key={s.id} value={s.id}>{s.name} (Grade {s.grade} {s.section})</option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div className="flex flex-wrap gap-6 mb-8">
                       <div className="flex-1 min-w-[150px]">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Student Age</label>
                         <select 
                           className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                           value={age}
+                          disabled={!!selectedStudentId}
                           onChange={e => setAge(e.target.value)}
                         >
                           {[...Array(60)].map((_, i) => <option key={i} value={i+5}>{i+5} Years</option>)}
@@ -295,6 +261,7 @@ const FitnessTests: React.FC = () => {
                         <select 
                           className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                           value={gender}
+                          disabled={!!selectedStudentId}
                           onChange={e => setGender(e.target.value)}
                         >
                           <option value="Male">Male</option>

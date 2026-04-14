@@ -1,0 +1,226 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: uid
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - displayName: string
+    //   - schoolName: string
+    //   - schoolId: string
+    //   - role: string (required, 'teacher' | 'admin')
+    //   - createdAt: string (date format)
+    //
+    // Collection: schools
+    // Document ID: schoolId
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required)
+    //   - adminId: string (required)
+    //   - createdAt: string
+    //
+    // Collection: schoolMembers
+    // Document ID: uid
+    // Fields:
+    //   - uid: string (required)
+    //   - schoolId: string (required)
+    //   - role: string (required, 'teacher' | 'admin')
+    //   - displayName: string
+    //   - email: string
+    //
+    // Collection: students
+    // Document ID: studentId
+    // Fields:
+    //   - id: string (required)
+    //   - teacherId: string (required, matches creator uid)
+    //   - schoolId: string (required)
+    //   - name: string (required)
+    //   - rollNumber: string
+    //   - grade: string (required)
+    //   - section: string
+    //   - gender: string ('Male' | 'Female')
+    //   - age: number
+    //   - dob: string (date format)
+    //
+    // Collection: teams
+    // Document ID: teamId
+    // Fields:
+    //   - id: string (required)
+    //   - teacherId: string (required, matches creator uid)
+    //   - schoolId: string (required)
+    //   - name: string (required)
+    //   - grade: string
+    //   - section: string
+    //   - studentIds: list
+    //
+    // Collection: results
+    // Document ID: resultId
+    // Fields:
+    //   - id: string (required)
+    //   - teacherId: string (required, matches creator uid)
+    //   - schoolId: string (required)
+    //   - studentId: string (required)
+    //   - testId: string (required)
+    //   - testName: string
+    //   - value: string (required)
+    //   - unit: string
+    //   - date: string (required, date format)
+    //   - term: string ('Term 1' | 'Term 2' | 'Term 3')
+    //   - rating: string
+    //   - percentile: number
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getMemberData() {
+      return get(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)).data;
+    }
+
+    function isSchoolMember(schoolId) {
+      return isAuthenticated() && getMemberData().schoolId == schoolId;
+    }
+
+    function isSchoolAdmin(schoolId) {
+      return isSchoolMember(schoolId) && getMemberData().role == 'admin';
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.teacherId;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDate(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}.*");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'schoolName', 'schoolId', 'role', 'createdAt']) &&
+             data.uid is string && data.uid == request.auth.uid &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['teacher', 'admin'];
+    }
+
+    function isValidSchool(data) {
+      return hasOnlyAllowedFields(['id', 'name', 'adminId', 'createdAt']) &&
+             data.id is string &&
+             data.name is string && data.name.size() > 0 &&
+             data.adminId is string && data.adminId == request.auth.uid;
+    }
+
+    function isValidSchoolMember(data) {
+      return hasOnlyAllowedFields(['uid', 'schoolId', 'role', 'displayName', 'email']) &&
+             data.uid is string &&
+             data.schoolId is string &&
+             data.role in ['teacher', 'admin'];
+    }
+
+    function isValidStudent(data) {
+      return hasOnlyAllowedFields(['id', 'teacherId', 'schoolId', 'name', 'rollNumber', 'grade', 'section', 'gender', 'age', 'dob']) &&
+             data.id is string &&
+             data.teacherId is string && data.teacherId == request.auth.uid &&
+             data.schoolId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.grade is string &&
+             (!('gender' in data) || data.gender in ['Male', 'Female']) &&
+             (!('age' in data) || data.age is number) &&
+             (!('dob' in data) || isValidDate(data.dob));
+    }
+
+    function isValidTeam(data) {
+      return hasOnlyAllowedFields(['id', 'teacherId', 'schoolId', 'name', 'grade', 'section', 'studentIds']) &&
+             data.id is string &&
+             data.teacherId is string && data.teacherId == request.auth.uid &&
+             data.schoolId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             (!('studentIds' in data) || data.studentIds is list);
+    }
+
+    function isValidResult(data) {
+      return hasOnlyAllowedFields(['id', 'teacherId', 'schoolId', 'studentId', 'testId', 'testName', 'value', 'unit', 'date', 'term', 'rating', 'percentile']) &&
+             data.id is string &&
+             data.teacherId is string && data.teacherId == request.auth.uid &&
+             data.schoolId is string &&
+             data.studentId is string &&
+             data.testId is string &&
+             data.value is string &&
+             data.date is string && isValidDate(data.date) &&
+             (!('term' in data) || data.term in ['Term 1', 'Term 2', 'Term 3']) &&
+             (!('percentile' in data) || data.percentile is number);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(uid) && isValidUser(request.resource.data);
+      allow update: if isOwner(uid) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role;
+    }
+
+    match /schools/{schoolId} {
+      allow read: if isSchoolMember(schoolId);
+      allow create: if isAuthenticated() && isValidSchool(request.resource.data);
+      allow update: if isSchoolAdmin(schoolId) && isValidSchool(request.resource.data);
+    }
+
+    match /schoolMembers/{uid} {
+      allow read: if isAuthenticated() && (isOwner(uid) || isSchoolMember(resource.data.schoolId));
+      allow create, update: if isAuthenticated() && (isOwner(uid) || isSchoolAdmin(request.resource.data.schoolId)) && isValidSchoolMember(request.resource.data);
+    }
+
+    match /students/{studentId} {
+      allow read: if isAuthenticated() && (resource == null || isSchoolMember(resource.data.schoolId));
+      allow create: if isAuthenticated() && isSchoolMember(request.resource.data.schoolId) && isValidStudent(request.resource.data);
+      allow update: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId)) && isValidStudent(request.resource.data);
+      allow delete: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId));
+    }
+
+    match /teams/{teamId} {
+      allow read: if isAuthenticated() && (resource == null || isSchoolMember(resource.data.schoolId));
+      allow create: if isAuthenticated() && isSchoolMember(request.resource.data.schoolId) && isValidTeam(request.resource.data);
+      allow update: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId)) && isValidTeam(request.resource.data);
+      allow delete: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId));
+    }
+
+    match /results/{resultId} {
+      allow read: if isAuthenticated() && (resource == null || isSchoolMember(resource.data.schoolId));
+      allow create: if isAuthenticated() && isSchoolMember(request.resource.data.schoolId) && isValidResult(request.resource.data);
+      allow update: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId)) && isValidResult(request.resource.data);
+      allow delete: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId));
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

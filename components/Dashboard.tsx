@@ -387,19 +387,22 @@ const Dashboard: React.FC<{
           {/* Fitness Assessments - Wide Card */}
           <motion.div 
             whileHover={{ rotateX: -5, translateZ: 30, scale: 1.01 }}
-            onClick={() => onNavigate?.('fitness')}
-            className="md:col-span-4 group bg-white border-4 border-slate-900 rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 hover:shadow-[24px_24px_0px_0px_rgba(79,70,229,0.1)] transition-all cursor-pointer flex flex-col md:flex-row items-center gap-8 md:gap-16"
+            onClick={() => onNavigate?.('school-overview')}
+            className="md:col-span-4 group bg-indigo-900 border-4 border-slate-900 rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 hover:shadow-[24px_24px_0px_0px_rgba(79,70,229,0.2)] transition-all cursor-pointer flex flex-col md:flex-row items-center gap-8 md:gap-16 relative overflow-hidden"
           >
-            <div className="w-full md:w-1/3 h-48 md:h-64 bg-slate-900 rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center relative overflow-hidden border-4 border-slate-900 shadow-xl">
-              <Activity size={60} className="md:w-[80px] md:h-[80px] text-indigo-400 relative z-10" />
-              <div className="absolute inset-0 opacity-[0.1]" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
+            
+            <div className="w-full md:w-1/3 h-48 md:h-64 bg-white rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center relative overflow-hidden border-4 border-slate-900 shadow-xl">
+              <Activity size={60} className="md:w-[80px] md:h-[80px] text-indigo-600 relative z-10" />
+              <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
             </div>
-            <div className="flex-1 space-y-4 md:space-y-6 text-left">
-              <div className="inline-flex px-4 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest">New Module</div>
-              <h3 className="text-3xl md:text-5xl font-black text-slate-900 uppercase tracking-tight">Fitness Assessments</h3>
-              <p className="text-slate-500 font-medium text-lg md:text-xl leading-relaxed">Track student progress with Khelo India battery tests and automated reporting. Professional analytics for every student.</p>
-              <div className="flex items-center space-x-3 text-indigo-600 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
-                <span>Begin Assessment</span>
+            
+            <div className="flex-1 space-y-4 md:space-y-6 text-left relative z-10">
+              <div className="inline-flex px-4 py-1 bg-white text-indigo-900 rounded-full text-[10px] font-black uppercase tracking-widest">School Fitness Management</div>
+              <h3 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tight">Manage Your School's <br/> Fitness Database</h3>
+              <p className="text-indigo-200 font-medium text-lg md:text-xl leading-relaxed">The professional toolkit for Indian PE Teachers. Create student directories, track live results, and generate automated progress reports.</p>
+              <div className="flex items-center space-x-3 text-white font-black text-[10px] md:text-xs uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
+                <span>View Guide & Setup</span>
                 <ChevronRight size={18} />
               </div>
             </div>

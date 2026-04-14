@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Teacher profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "role": { "type": "string", "enum": ["teacher", "admin"] },
+        "createdAt": { "type": "string", "format": "date" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "School": {
+      "title": "School",
+      "description": "School organization",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "adminId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date" }
+      },
+      "required": ["id", "name", "adminId"]
+    },
+    "SchoolMember": {
+      "title": "SchoolMember",
+      "description": "Mapping of users to schools with roles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "role": { "type": "string", "enum": ["teacher", "admin"] },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "required": ["uid", "schoolId", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "name": { "type": "string" },
+        "rollNumber": { "type": "string" },
+        "grade": { "type": "string" },
+        "section": { "type": "string" },
+        "gender": { "type": "string", "enum": ["Male", "Female"] },
+        "age": { "type": "number" },
+        "dob": { "type": "string", "format": "date" }
+      },
+      "required": ["id", "teacherId", "schoolId", "name", "grade"]
+    },
+    "Team": {
+      "title": "Team",
+      "description": "A class or sports group",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "name": { "type": "string" },
+        "grade": { "type": "string" },
+        "section": { "type": "string" },
+        "studentIds": { "type": "array" }
+      },
+      "required": ["id", "teacherId", "schoolId", "name"]
+    },
+    "FitnessResult": {
+      "title": "FitnessResult",
+      "description": "A single fitness test result",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "testId": { "type": "string" },
+        "testName": { "type": "string" },
+        "value": { "type": "string" },
+        "unit": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "term": { "type": "string", "enum": ["Term 1", "Term 2", "Term 3"] },
+        "rating": { "type": "string" },
+        "percentile": { "type": "number" }
+      },
+      "required": ["id", "teacherId", "schoolId", "studentId", "testId", "value", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": { "schema": "User", "description": "Teacher profiles" },
+    "/schools/{schoolId}": { "schema": "School", "description": "School organizations" },
+    "/schoolMembers/{uid}": { "schema": "SchoolMember", "description": "School staff memberships" },
+    "/students/{studentId}": { "schema": "Student", "description": "Student records" },
+    "/teams/{teamId}": { "schema": "Team", "description": "Class/Team records" },
+    "/results/{resultId}": { "schema": "FitnessResult", "description": "Test results" }
+  }
+}

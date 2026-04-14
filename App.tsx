@@ -26,7 +26,8 @@ import {
   ClipboardList,
   UserCheck,
   Mail,
-  Zap
+  Zap,
+  Shield
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import AIPlanner from './components/AIPlanner.tsx';
@@ -38,14 +39,22 @@ import TheoryHub from './components/TheoryHub.tsx';
 import KheloIndia from './components/KheloIndia.tsx';
 import RulesBot from './components/RulesBot.tsx';
 import FitnessTests from './components/FitnessTests.tsx';
+import FitnessDashboard from './components/FitnessDashboard.tsx';
+import StudentManagement from './components/StudentManagement.tsx';
+import TeamManagement from './components/TeamManagement.tsx';
 import TestPaperGenerator from './components/TestPaperGenerator.tsx';
 import ParentLetters from './components/ParentLetters.tsx';
 import ClassroomWidgets from './components/ClassroomWidgets.tsx';
 import Disclaimer from './components/Disclaimer.tsx';
 import Logo from './components/Logo.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
+import Auth from './components/Auth.tsx';
+import FitnessManagementIntro from './components/FitnessManagementIntro.tsx';
+import SchoolAdmin from './components/SchoolAdmin.tsx';
+import { auth } from './services/firebase.ts';
+import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
 
-type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin';
 
 import { BoardType, Language } from './types.ts';
 
@@ -59,12 +68,22 @@ const App: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isAuthView, setIsAuthView] = useState(false);
   
-  // Static Profile Data (Read-Only)
-  const userProfile = {
-    name: "L. Samy",
-    role: "Founder & Director",
-    org: "SmartPE India"
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser: FirebaseUser | null) => {
+      setUser(currentUser);
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    if (window.confirm('Are you sure you want to log out?')) {
+      await signOut(auth);
+    }
   };
 
   const checkApiStatus = async (retryCount = 0) => {
@@ -209,7 +228,17 @@ const App: React.FC = () => {
     { id: 'testpaper', name: 'Test Generator', icon: ClipboardList, isNew: true },
     { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange },
     { id: 'planner', name: 'PE Lesson Plan', icon: Sparkles },
-    { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true },
+    { 
+      section: 'School Fitness Management',
+      items: [
+        { id: 'school-overview', name: 'Overview & Guide', icon: Zap, isNew: true },
+        { id: 'school-results', name: 'Live Results', icon: Activity, isNew: true, protected: true },
+        { id: 'school-students', name: 'Student Directory', icon: Users, protected: true },
+        { id: 'school-teams', name: 'Teams/Classes', icon: UserCheck, protected: true },
+        { id: 'school-admin', name: 'Administration', icon: Shield, protected: true },
+        { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true },
+      ]
+    },
     { id: 'khelo', name: 'Khelo India Battery', icon: Trophy },
     { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true },
     { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap },
@@ -217,6 +246,54 @@ const App: React.FC = () => {
     { id: 'skillmastery', name: 'Skill Progressions', icon: Target },
     { id: 'compliance', name: 'State Compliance', icon: ShieldCheck },
   ];
+
+  const isProtectedTab = (tabId: string) => {
+    for (const item of navigation) {
+      if ('section' in item && item.items) {
+        if (item.items.some(i => i.id === tabId && i.protected)) return true;
+      } else if ('id' in item && (item as any).id === tabId && (item as any).protected) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={48} />
+      </div>
+    );
+  }
+
+  const renderContent = () => {
+    if (isProtectedTab(activeTab) && !user) {
+      if (isAuthView) return <Auth onBack={() => setIsAuthView(false)} />;
+      return <FitnessManagementIntro onLogin={() => setIsAuthView(true)} onTryDemo={() => setActiveTab('fitness')} />;
+    }
+
+    switch (activeTab) {
+      case 'dashboard': return <Dashboard apiStatus={apiStatus} debugInfo={debugInfo} onTestConnection={handleTestConnection} isTesting={isTesting} onNavigate={setActiveTab} />;
+      case 'yearly': return <YearlyPlanner />;
+      case 'tools': return <AIToolCenter />;
+      case 'theory': return <TheoryHub />;
+      case 'planner': return <AIPlanner />;
+      case 'skillmastery': return <SkillMastery />;
+      case 'compliance': return <ComplianceAdvisor />;
+      case 'khelo': return <KheloIndia />;
+      case 'rules': return <RulesBot />;
+      case 'fitness': return <FitnessTests />;
+      case 'school-results': return <FitnessDashboard onNavigate={setActiveTab} />;
+      case 'school-students': return <StudentManagement />;
+      case 'school-teams': return <TeamManagement />;
+      case 'school-admin': return <SchoolAdmin />;
+      case 'testpaper': return <TestPaperGenerator />;
+      case 'parentletters': return <ParentLetters />;
+      case 'widgets': return <ClassroomWidgets />;
+      case 'school-overview': return <FitnessManagementIntro onLogin={() => setIsAuthView(true)} onTryDemo={() => setActiveTab('fitness')} />;
+      default: return <Dashboard apiStatus={apiStatus} debugInfo={debugInfo} onTestConnection={handleTestConnection} isTesting={isTesting} onNavigate={setActiveTab} />;
+    }
+  };
 
   return (
     <ErrorBoundary>
@@ -363,45 +440,97 @@ const App: React.FC = () => {
         </div>
 
         <nav className="mt-4 px-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-380px)] custom-scrollbar">
-          {navigation.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                setActiveTab(item.id as Tab);
-                setIsSidebarOpen(false);
-              }}
-              className={`
-                w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
-                ${activeTab === item.id 
-                  ? 'bg-white text-on-surface shadow-2xl shadow-white/5 scale-[1.02] font-black' 
-                  : 'text-slate-500 hover:bg-white/5 hover:text-white font-bold'}
-              `}
-            >
-              <item.icon size={20} className={activeTab === item.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'} />
-              <span className="text-sm tracking-wide uppercase font-display">{item.name}</span>
-              {(item as any).isNew && activeTab !== item.id && (
-                <span className="absolute right-4 top-4 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
-              )}
-              {activeTab === item.id && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"></div>}
-            </button>
-          ))}
+          {navigation.map((item, idx) => {
+            if ('section' in item && item.items) {
+              return (
+                <div key={`section-${idx}`} className="py-4">
+                  <p className="px-6 mb-3 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">{item.section}</p>
+                  <div className="space-y-1.5">
+                    {item.items.map((subItem) => (
+                      <button
+                        key={subItem.id}
+                        onClick={() => {
+                          setActiveTab(subItem.id as Tab);
+                          setIsSidebarOpen(false);
+                        }}
+                        className={`
+                          w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
+                          ${activeTab === subItem.id 
+                            ? 'bg-white text-on-surface shadow-2xl shadow-white/5 scale-[1.02] font-black' 
+                            : 'text-slate-500 hover:bg-white/5 hover:text-white font-bold'}
+                        `}
+                      >
+                        <subItem.icon size={20} className={activeTab === subItem.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'} />
+                        <span className="text-sm tracking-wide uppercase font-display">{subItem.name}</span>
+                        {subItem.isNew && activeTab !== subItem.id && (
+                          <span className="absolute right-4 top-4 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+                        )}
+                        {activeTab === subItem.id && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"></div>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            if ('id' in item) {
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id as Tab);
+                    setIsSidebarOpen(false);
+                  }}
+                  className={`
+                    w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
+                    ${activeTab === item.id 
+                      ? 'bg-white text-on-surface shadow-2xl shadow-white/5 scale-[1.02] font-black' 
+                      : 'text-slate-500 hover:bg-white/5 hover:text-white font-bold'}
+                  `}
+                >
+                  <item.icon size={20} className={activeTab === item.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'} />
+                  <span className="text-sm tracking-wide uppercase font-display">{item.name}</span>
+                  {(item as any).isNew && activeTab !== item.id && (
+                    <span className="absolute right-4 top-4 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+                  )}
+                  {activeTab === item.id && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"></div>}
+                </button>
+              );
+            }
+            return null;
+          })}
         </nav>
 
-        {/* Profile Footer - Static/Read-Only */}
+        {/* Profile Footer */}
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-950 border-t border-white/5">
-          <div className="w-full bg-white/5 rounded-[2rem] p-4 flex items-center space-x-4">
-            <div className="relative">
-              <div className="w-12 h-12 bg-primary rounded-2xl border-2 border-primary/30 flex items-center justify-center text-white font-black text-lg font-display">
-                {userProfile.name.charAt(0)}
+          {user ? (
+            <div className="w-full bg-white/5 rounded-[2rem] p-4 flex items-center space-x-4">
+              <div className="relative">
+                <div className="w-12 h-12 bg-primary rounded-2xl border-2 border-primary/30 flex items-center justify-center text-white font-black text-lg font-display">
+                  {user.displayName?.charAt(0) || user.email?.charAt(0)}
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-secondary border-2 border-slate-950 rounded-full"></div>
               </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-secondary border-2 border-slate-950 rounded-full"></div>
+              <div className="overflow-hidden text-left flex-1">
+                <p className="text-sm font-black truncate leading-none mb-1 text-white font-display uppercase">{user.displayName || 'Teacher'}</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase truncate tracking-widest">{user.email}</p>
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="p-2 hover:bg-white/10 rounded-xl text-slate-500 hover:text-white transition-colors"
+                title="Logout"
+              >
+                <RotateCcw size={16} />
+              </button>
             </div>
-            <div className="overflow-hidden text-left flex-1">
-              <p className="text-sm font-black truncate leading-none mb-1 text-white font-display uppercase">{userProfile.name}</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase truncate tracking-widest">{userProfile.role}</p>
-            </div>
-            <Trophy size={16} className="text-secondary" />
-          </div>
+          ) : (
+            <button 
+              onClick={() => setActiveTab('school-results')}
+              className="w-full py-4 bg-primary text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary-container transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] flex items-center justify-center gap-2"
+            >
+              <Users size={16} />
+              <span>Teacher Login</span>
+            </button>
+          )}
         </div>
       </aside>
 
@@ -432,27 +561,7 @@ const App: React.FC = () => {
           </div>
         )}
         <div className="max-w-7xl mx-auto p-6 md:p-12 min-h-full print:p-0">
-          {activeTab === 'dashboard' && (
-            <Dashboard 
-              apiStatus={apiStatus} 
-              debugInfo={debugInfo}
-              onTestConnection={handleTestConnection}
-              isTesting={isTesting}
-              onNavigate={setActiveTab}
-            />
-          )}
-          {activeTab === 'yearly' && <YearlyPlanner />}
-          {activeTab === 'tools' && <AIToolCenter />}
-          {activeTab === 'theory' && <TheoryHub />}
-          {activeTab === 'planner' && <AIPlanner />}
-          {activeTab === 'skillmastery' && <SkillMastery />}
-          {activeTab === 'compliance' && <ComplianceAdvisor />}
-          {activeTab === 'khelo' && <KheloIndia />}
-          {activeTab === 'rules' && <RulesBot />}
-          {activeTab === 'fitness' && <FitnessTests />}
-          {activeTab === 'testpaper' && <TestPaperGenerator />}
-          {activeTab === 'parentletters' && <ParentLetters />}
-          {activeTab === 'widgets' && <ClassroomWidgets />}
+          {renderContent()}
         </div>
         <Disclaimer />
 

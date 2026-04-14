@@ -21,37 +21,37 @@ const Logo: React.FC<LogoProps> = ({ className = '', showText = true, variant = 
             {/* Hexagon Background */}
             <path 
               d="M50 5L89.5 27.5V72.5L50 95L10.5 72.5V27.5L50 5Z" 
-              fill="#312E81" 
-              stroke="#4338CA" 
+              fill="#003ec7" 
+              stroke="#0052ff" 
               strokeWidth="2"
             />
             
             {/* Side Accents */}
-            <line x1="15" y1="50" x2="30" y2="50" stroke="#6366F1" strokeWidth="2" strokeDasharray="2 2" />
-            <circle cx="12" cy="50" r="2" fill="#60A5FA" />
+            <line x1="15" y1="50" x2="30" y2="50" stroke="#6cf8bb" strokeWidth="2" strokeDasharray="2 2" />
+            <circle cx="12" cy="50" r="2" fill="#6cf8bb" />
             
-            <line x1="70" y1="50" x2="85" y2="50" stroke="#6366F1" strokeWidth="2" strokeDasharray="2 2" />
-            <circle cx="88" cy="50" r="2" fill="#60A5FA" />
+            <line x1="70" y1="50" x2="85" y2="50" stroke="#6cf8bb" strokeWidth="2" strokeDasharray="2 2" />
+            <circle cx="88" cy="50" r="2" fill="#6cf8bb" />
 
             {/* Gradient S Shape */}
             <defs>
               <linearGradient id="sGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#F97316" />
-                <stop offset="100%" stopColor="#EF4444" />
+                <stop offset="0%" stopColor="#ffffff" />
+                <stop offset="100%" stopColor="#6cf8bb" />
               </linearGradient>
             </defs>
             
             <path 
-              d="M65 35C65 25 35 25 35 35C35 45 65 55 65 65C65 75 35 75 35 65" 
+              d="M65 30C65 20 35 20 35 35C35 50 65 50 65 65C65 80 35 80 35 70" 
               stroke="url(#sGradient)" 
-              strokeWidth="12" 
+              strokeWidth="10" 
               strokeLinecap="round"
               fill="none"
             />
             
             {/* End Dots */}
-            <circle cx="65" cy="35" r="4" fill="white" />
-            <circle cx="35" cy="65" r="4" fill="white" />
+            <circle cx="65" cy="30" r="3" fill="white" />
+            <circle cx="35" cy="70" r="3" fill="white" />
           </svg>
         </div>
         

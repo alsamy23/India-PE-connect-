@@ -20,18 +20,18 @@ import {
   Trophy,
   Activity
 } from 'lucide-react';
-import { Student, Classroom } from '../types.ts';
+import { Student } from '../types.ts';
 
-const MOCK_STUDENTS: Student[] = [
-  { id: '1', name: 'Arjun Singh', rollNumber: 'PE-001', grade: '12-A', attendance: 92, performance: 'Excellent', lastAssessment: '95/100' },
-  { id: '2', name: 'Priya Sharma', rollNumber: 'PE-002', grade: '12-A', attendance: 88, performance: 'Good', lastAssessment: '82/100' },
-  { id: '3', name: 'Rahul Verma', rollNumber: 'PE-003', grade: '12-A', attendance: 75, performance: 'Average', lastAssessment: '65/100' },
-  { id: '4', name: 'Ananya Iyer', rollNumber: 'PE-004', grade: '12-A', attendance: 95, performance: 'Excellent', lastAssessment: '98/100' },
-  { id: '5', name: 'Vikram Malhotra', rollNumber: 'PE-005', grade: '12-A', attendance: 60, performance: 'Needs Improvement', lastAssessment: '45/100' },
+const MOCK_STUDENTS: any[] = [
+  { id: '1', name: 'Arjun Singh', rollNumber: 'PE-001', grade: '12', section: 'A', attendance: 92, performance: 'Excellent', lastAssessment: '95/100' },
+  { id: '2', name: 'Priya Sharma', rollNumber: 'PE-002', grade: '12', section: 'A', attendance: 88, performance: 'Good', lastAssessment: '82/100' },
+  { id: '3', name: 'Rahul Verma', rollNumber: 'PE-003', grade: '12', section: 'A', attendance: 75, performance: 'Average', lastAssessment: '65/100' },
+  { id: '4', name: 'Ananya Iyer', rollNumber: 'PE-004', grade: '12', section: 'A', attendance: 95, performance: 'Excellent', lastAssessment: '98/100' },
+  { id: '5', name: 'Vikram Malhotra', rollNumber: 'PE-005', grade: '12', section: 'A', attendance: 60, performance: 'Needs Improvement', lastAssessment: '45/100' },
 ];
 
 const ClassroomManager: React.FC = () => {
-  const [students, setStudents] = useState<Student[]>(MOCK_STUDENTS);
+  const [students, setStudents] = useState<any[]>(MOCK_STUDENTS);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('12-A');
 
@@ -149,7 +149,7 @@ const ClassroomManager: React.FC = () => {
                   <td className="px-8 py-6">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 font-black text-xs">
-                        {student.name.split(' ').map(n => n[0]).join('')}
+                        {student.name.split(' ').map((n: string) => n[0]).join('')}
                       </div>
                       <div>
                         <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{student.name}</p>
