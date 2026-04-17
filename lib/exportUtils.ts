@@ -3,7 +3,8 @@
  * Utility for exporting content to PDF and Word
  */
 
-declare var html2pdf: any;
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 export const exportToPdf = async (element: HTMLElement | null, filename: string) => {
   if (!element) {
@@ -11,28 +12,61 @@ export const exportToPdf = async (element: HTMLElement | null, filename: string)
     return;
   }
 
-  if (typeof html2pdf === 'undefined') {
-    const error = "PDF library is not loaded. Please ensure index.html includes the html2pdf.js script.";
-    console.error(error);
-    alert(error);
-    return;
-  }
-
   try {
-    const opt = {
-      margin: [10, 10, 10, 10],
-      filename: filename.endsWith('.pdf') ? filename : `${filename}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
+    // Show a loading indication if possible (caller should ideally handle this)
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      onclone: (document) => {
+        const hiddenElements = document.querySelectorAll('.print\\:hidden');
+        hiddenElements.forEach((el) => {
+          (el as HTMLElement).style.display = 'none';
+        });
+      }
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
     
-    await html2pdf().set(opt).from(element).save();
+    // Calculate PDF dimensions (A4 portrait)
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
+    // Calculate image dimensions to fit PDF page margin
+    const margin = 10;
+    const imgWidth = pdfWidth - (margin * 2);
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    
+    let heightLeft = imgHeight;
+    let position = margin;
+    let pageData = 0;
+
+    // First page
+    pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
+    heightLeft -= (pdfHeight - (margin * 2));
+
+    // Subsequent pages
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight + margin; // Shift image up
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
+      heightLeft -= (pdfHeight - (margin * 2));
+    }
+
+    pdf.save(filename.endsWith('.pdf') ? filename : `${filename}.pdf`);
     console.log("PDF export completed successfully");
-  } catch (err) {
+  } catch (err: any) {
     console.error("PDF export failed:", err);
-    alert("Failed to export PDF. Try printing the page instead.");
+    alert(`Failed to export PDF: ${err?.message || err}. Try printing the page instead (Ctrl+P / Cmd+P).`);
+    window.print();
   }
 };
 
