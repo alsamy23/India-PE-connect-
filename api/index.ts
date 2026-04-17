@@ -1,5 +1,5 @@
 import express from "express";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import Groq from "groq-sdk";
 import "dotenv/config";
 import path from "path";
@@ -14,10 +14,11 @@ const PORT = 3000;
 app.use(express.json());
 
 // Secure AI Initialization (Server-side only)
-// IMPORTANT: Do NOT use VITE_ prefix for these keys, as that would expose them to the browser.
+// Note: While we don't want to expose keys to the client, we allow VITE_ prefixes on the server 
+// for compatibility with common Vite/Vercel setup patterns.
 const getGeminiKeys = () => {
   const keys: string[] = [];
-  const standardNames = ["GEMINI_API_KEY", "API_KEY"];
+  const standardNames = ["GEMINI_API_KEY", "API_KEY", "VITE_GEMINI_API_KEY", "GOOGLE_API_KEY"];
   standardNames.forEach(name => {
     const val = process.env[name];
     if (val && val.trim() !== "" && val !== "undefined" && val !== "null") {
@@ -35,7 +36,7 @@ const getGeminiKeys = () => {
 };
 
 const getGroqKey = () => {
-  const key = process.env.GROQ_API_KEY;
+  const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
   if (key && key.trim() !== "" && key !== "undefined" && key !== "null") {
     return key.trim().replace(/^["']|["']$/g, '');
   }
@@ -133,7 +134,7 @@ apiRouter.post("/ai/generate", async (req, res) => {
           const isGemini3 = currentModel.includes("gemini-3");
           
           if (isGemini3 && !finalConfig.thinkingConfig) {
-            finalConfig.thinkingConfig = { thinkingLevel: 'LOW' };
+            finalConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
           } else if (!isGemini3 && finalConfig.thinkingConfig) {
             // Remove thinkingConfig for non-Gemini 3 models to avoid errors
             delete finalConfig.thinkingConfig;
@@ -145,6 +146,7 @@ apiRouter.post("/ai/generate", async (req, res) => {
             config: finalConfig
           });
 
+          console.log(`Success with Gemini model: ${currentModel}`);
           return res.json({
             text: response.text,
             provider: "gemini",
@@ -154,6 +156,7 @@ apiRouter.post("/ai/generate", async (req, res) => {
         } catch (error: any) {
           lastError = error;
           const errorMsg = (error.message || "").toLowerCase();
+          console.error(`Gemini error with model ${currentModel}:`, error.message);
           
           // If it's a model error, try the next model with the same key
           if (errorMsg.includes("model") || errorMsg.includes("not found") || errorMsg.includes("404")) {
