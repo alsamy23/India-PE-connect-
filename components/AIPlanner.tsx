@@ -23,7 +23,13 @@ const AIPlanner: React.FC = () => {
   const [topic, setTopic] = useState('Dribbling and Passing');
   const [duration, setDuration] = useState('40 min');
   const [language, setLanguage] = useState<Language>('English');
-  const [equipment, setEquipment] = useState('cones + ball');
+  const [equipment, setEquipment] = useState<string[]>(['Cones', 'Footballs']);
+  
+  const EQUIPMENT_OPTIONS = [
+    "Cones", "Bibs / Pinnies", "Footballs", "Basketballs", 
+    "Volleyballs", "Tennis Balls", "Whistle", "Stopwatch", 
+    "Agility Ladders", "Skipping Ropes", "Hula Hoops", "Mats"
+  ];
   
   const [plan, setPlan] = useState<LessonPlan | null>(null);
   const [isSaved, setIsSaved] = useState(false);
@@ -54,7 +60,7 @@ const AIPlanner: React.FC = () => {
         duration, 
         date,
         language,
-        equipment
+        equipment.join(', ') || 'None'
       );
       
       setPlan({ 
@@ -246,14 +252,53 @@ const AIPlanner: React.FC = () => {
               <input type="text" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm" value={sport} onChange={e => setSport(e.target.value)} />
             </div>
 
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Specific Topic</label>
-              <input type="text" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm" value={topic} onChange={e => setTopic(e.target.value)} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="group">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Specific Topic</label>
+                <input type="text" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm" value={topic} onChange={e => setTopic(e.target.value)} />
+              </div>
+              <div className="group">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Duration</label>
+                <select 
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm"
+                  value={duration}
+                  onChange={e => setDuration(e.target.value)}
+                >
+                  <option value="30 min">30 Minutes</option>
+                  <option value="40 min">40 Minutes</option>
+                  <option value="45 min">45 Minutes</option>
+                  <option value="50 min">50 Minutes</option>
+                  <option value="60 min">60 Minutes</option>
+                  <option value="90 min">90 Minutes</option>
+                </select>
+              </div>
             </div>
 
             <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Smart Equipment-Based Planning</label>
-              <input type="text" placeholder="e.g., cones + ball" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 text-sm" value={equipment} onChange={e => setEquipment(e.target.value)} />
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1 flex justify-between items-center">
+                <span>Smart Equipment</span>
+                <span className="text-indigo-500 normal-case font-bold">{equipment.length} selected</span>
+              </label>
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-wrap gap-2 max-h-48 overflow-y-auto">
+                {EQUIPMENT_OPTIONS.map(item => {
+                  const isSelected = equipment.includes(item);
+                  return (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setEquipment(prev => isSelected ? prev.filter(i => i !== item) : [...prev, item])}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center ${
+                        isSelected 
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
+                          : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+                      }`}
+                    >
+                      {isSelected && <CheckCircle2 size={12} className="mr-1" />}
+                      <span>{item}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <button 

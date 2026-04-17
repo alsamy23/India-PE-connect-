@@ -3,7 +3,7 @@
  * Utility for exporting content to PDF and Word
  */
 
-import html2canvas from 'html2canvas';
+import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
 
 export const exportToPdf = async (element: HTMLElement | null, filename: string) => {
@@ -12,23 +12,22 @@ export const exportToPdf = async (element: HTMLElement | null, filename: string)
     return;
   }
 
+  const hiddenElements = Array.from(element.querySelectorAll('.print\\:hidden')) as HTMLElement[];
+  const originalDisplays = hiddenElements.map(el => el.style.display);
+
   try {
-    // Show a loading indication if possible (caller should ideally handle this)
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
+    // Hide print:hidden elements temporarily
+    hiddenElements.forEach(el => { el.style.display = 'none'; });
+
+    // We use html-to-image instead of html2canvas to natively support modern CSS like oklch from Tailwind v4.
+    const imgData = await htmlToImage.toJpeg(element, {
+      quality: 0.98,
       backgroundColor: '#ffffff',
-      onclone: (document) => {
-        const hiddenElements = document.querySelectorAll('.print\\:hidden');
-        hiddenElements.forEach((el) => {
-          (el as HTMLElement).style.display = 'none';
-        });
-      }
+      pixelRatio: 2 // High resolution
     });
 
-    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+    // Restore hidden elements
+    hiddenElements.forEach((el, i) => { el.style.display = originalDisplays[i]; });
     
     // Calculate PDF dimensions (A4 portrait)
     const pdf = new jsPDF({
@@ -40,14 +39,18 @@ export const exportToPdf = async (element: HTMLElement | null, filename: string)
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     
+    // Create an image element to get the intrinsic dimensions
+    const img = new Image();
+    img.src = imgData;
+    await new Promise((resolve) => { img.onload = resolve; });
+
     // Calculate image dimensions to fit PDF page margin
     const margin = 10;
     const imgWidth = pdfWidth - (margin * 2);
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgHeight = (img.height * imgWidth) / img.width;
     
     let heightLeft = imgHeight;
     let position = margin;
-    let pageData = 0;
 
     // First page
     pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
@@ -67,6 +70,9 @@ export const exportToPdf = async (element: HTMLElement | null, filename: string)
     console.error("PDF export failed:", err);
     alert(`Failed to export PDF: ${err?.message || err}. Try printing the page instead (Ctrl+P / Cmd+P).`);
     window.print();
+  } finally {
+    // Ensure hidden elements are restored even if an error occurs
+    hiddenElements.forEach((el, i) => { el.style.display = originalDisplays[i]; });
   }
 };
 
