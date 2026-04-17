@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { BoardType, YearlyPlan, Language } from '../types.ts';
 import { generateYearlyPlan } from '../services/geminiService.ts';
+import { exportToPdf, exportToWord } from '../lib/exportUtils.ts';
 
 declare var html2pdf: any;
 
@@ -71,27 +72,7 @@ const YearlyPlanner: React.FC = () => {
   };
 
   const handleExportPdf = () => {
-    if (!contentRef.current) {
-      alert("Error: Print area not found.");
-      return;
-    }
-
-    // @ts-ignore
-    if (typeof html2pdf === 'undefined') {
-      alert("PDF library is still loading. Please try again in a moment.");
-      return;
-    }
-
-    const opt = {
-      margin: 10,
-      filename: `PE_Yearly_Plan_Grade${grade}_${board}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-    // @ts-ignore
-    html2pdf().set(opt).from(contentRef.current).save();
+    exportToPdf(contentRef.current, `PE_Yearly_Plan_Grade${grade}_${board}`);
   };
 
   const handleExportWord = () => {
@@ -104,10 +85,10 @@ const YearlyPlanner: React.FC = () => {
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>
       <head><meta charset='utf-8'><title>PE Yearly Plan</title>
       <style>
-        body { font-family: Calibri, Arial, sans-serif; }
-        h1 { color: #1e3a8a; text-transform: uppercase; }
-        h2 { color: #4f46e5; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }
-        h3 { color: #374151; margin-top: 20px; }
+        body { font-family: Calibri, Arial, sans-serif; padding: 20px; }
+        h1 { color: #1e3a8a; text-transform: uppercase; font-size: 22px; }
+        h2 { color: #4f46e5; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; font-size: 18px; margin-top: 20px; }
+        h3 { color: #374151; margin-top: 20px; font-size: 16px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 11px; }
         th { background-color: #f3f4f6; font-weight: bold; }
@@ -155,13 +136,7 @@ const YearlyPlanner: React.FC = () => {
 
     html += `</body></html>`;
 
-    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `PE_Yearly_Plan_Grade${grade}.doc`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToWord(html, `PE_Yearly_Plan_Grade${grade}`);
   };
 
   const handleExportExcel = () => {

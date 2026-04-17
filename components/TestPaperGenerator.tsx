@@ -23,6 +23,8 @@ import {
 import { TestPaper, Language } from '../types.ts';
 import { generateTestPaper } from '../services/geminiService.ts';
 import { storageService } from '../services/storageService.ts';
+import { exportToPdf, exportToWord } from '../lib/exportUtils.ts';
+import { useRef } from 'react';
 
 const TestPaperGenerator: React.FC = () => {
   const [grade, setGrade] = useState('12');
@@ -35,6 +37,7 @@ const TestPaperGenerator: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TestPaper | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
@@ -70,6 +73,93 @@ const TestPaperGenerator: React.FC = () => {
     setResult(null);
     setTopic('');
     setError(null);
+  };
+
+  const handleExportPdf = () => {
+    exportToPdf(contentRef.current, `TestPaper_${topic.slice(0, 15)}_${grade}`);
+  };
+
+  const handleExportWord = () => {
+    if (!result) return;
+    
+    let html = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>
+      <head><meta charset='utf-8'><title>${result.title}</title>
+      <style>
+        body { font-family: Calibri, Arial, sans-serif; padding: 40px; }
+        h1 { text-align: center; text-transform: uppercase; font-size: 20px; margin-bottom: 5px; }
+        .school-header { text-align: center; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        .exam-meta { display: table; width: 100%; margin-bottom: 20px; font-weight: bold; font-size: 12px; }
+        .meta-row { display: table-row; }
+        .meta-cell { display: table-cell; padding: 5px; }
+        .instructions { font-size: 11px; margin-bottom: 20px; border: 1px solid #000; padding: 10px; }
+        .section-header { background-color: #f3f4f6; padding: 5px; font-weight: bold; margin-top: 20px; border: 1px solid #000; font-size: 12px; }
+        .question-box { margin-top: 15px; display: table; width: 100%; }
+        .q-num { display: table-cell; width: 30px; font-weight: bold; }
+        .q-text { display: table-cell; }
+        .q-marks { display: table-cell; width: 60px; text-align: right; font-weight: bold; }
+        .options { margin-left: 30px; margin-top: 10px; display: table; width: 100%; }
+        .opt-row { display: table-row; }
+        .opt-cell { display: table-cell; padding: 3px; font-size: 11px; }
+      </style>
+      </head>
+      <body>
+        <div class="school-header">
+            <h1>${result.title}</h1>
+            <div>Subject: Physical Education</div>
+        </div>
+
+        <div class="exam-meta">
+            <div class="meta-row">
+                <div class="meta-cell">Class: ${result.displayGrade || result.grade}</div>
+                <div class="meta-cell" style="text-align:right">Max Marks: ${result.maxMarks}</div>
+            </div>
+            <div class="meta-row">
+                <div class="meta-cell">Time Allowed: ${result.timeAllowed}</div>
+                <div class="meta-cell" style="text-align:right">Date: ___________</div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <b>General Instructions:</b>
+            <ul>
+                ${result.generalInstructions.map(i => `<li>${i}</li>`).join('')}
+            </ul>
+        </div>
+
+        ${result.sections.map(section => `
+            <div class="section-header">
+                SECTION ${section.sectionId} ${section.heading ? `- ${section.heading}` : ''}
+                <br/><small>${section.instructions}</small>
+            </div>
+            ${section.questions.map((q, i) => `
+                <div class="question-box">
+                    <div class="q-num">${q.questionNumber || i+1}.</div>
+                    <div class="q-text">
+                        ${q.question}
+                        ${q.caseStudyText ? `<div style="margin-top:10px; font-style:italic; background:#f9f9f9; padding:5px; border-left:3px solid #ccc">${q.caseStudyText}</div>` : ''}
+                        ${q.options ? `
+                            <div class="options">
+                                <div class="opt-row">
+                                    <div class="opt-cell">(A) ${q.options[0]}</div>
+                                    <div class="opt-cell">(B) ${q.options[1] || ''}</div>
+                                </div>
+                                <div class="opt-row">
+                                    <div class="opt-cell">(C) ${q.options[2] || ''}</div>
+                                    <div class="opt-cell">(D) ${q.options[3] || ''}</div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="q-marks">(${q.marks})</div>
+                </div>
+            `).join('')}
+        `).join('')}
+      </body>
+      </html>
+    `;
+    
+    exportToWord(html, `TestPaper_${result.title}`);
   };
 
   return (
@@ -286,13 +376,19 @@ const TestPaperGenerator: React.FC = () => {
                 {isSaved ? <CheckCircle2 size={16} /> : <Save size={16} />}
                 <span>{isSaved ? 'Saved' : 'Save'}</span>
               </button>
-              <button className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center space-x-2">
+              <button 
+                onClick={handleExportWord}
+                className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center space-x-2"
+              >
                 <Download size={16} />
                 <span>Export DOCX</span>
               </button>
-              <button className="px-6 py-3 bg-emerald-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center space-x-2">
+              <button 
+                onClick={handleExportPdf}
+                className="px-6 py-3 bg-emerald-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center space-x-2"
+              >
                 <Printer size={16} />
-                <span>Print</span>
+                <span>PDF / PRINT</span>
               </button>
             </div>
           </div>
@@ -303,6 +399,7 @@ const TestPaperGenerator: React.FC = () => {
               key={result.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              ref={contentRef}
               className="bg-white rounded-[3rem] p-16 border border-slate-100 shadow-2xl max-w-4xl mx-auto print:shadow-none print:border-none print:p-0 relative overflow-hidden"
             >
               {/* Decorative Background */}

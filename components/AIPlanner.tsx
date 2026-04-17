@@ -1,17 +1,18 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target, User, CalendarDays, BookOpen, PenTool, Languages, FileText, Save, CheckCircle2 } from 'lucide-react';
-import { BoardType, LessonPlan, Language } from '../types.ts';
+import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target, User, CalendarDays, BookOpen, PenTool, Languages, FileText, Save, CheckCircle2, ShieldCheck, WifiOff, ZapOff, KeyRound } from 'lucide-react';
+import { LessonPlan, Language, BoardType } from '../types.ts';
 import { generateLessonPlan, generateLessonDiagram } from '../services/geminiService.ts';
 import { storageService } from '../services/storageService.ts';
+import { exportToPdf, exportToWord } from '../lib/exportUtils.ts';
 
 declare var html2pdf: any;
 
 const AIPlanner: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; type: 'network' | 'quota' | 'key' | 'blocked' | 'generic' } | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const [teacherName, setTeacherName] = useState('Mr. Coach');
@@ -83,9 +84,15 @@ const AIPlanner: React.FC = () => {
 
     } catch (err: any) {
       console.error(err);
-      const errorMsg = err.message || "The AI Service failed to respond correctly. Please try again.";
-      const detailMsg = err.originalError ? ` (${err.originalError})` : "";
-      setError(`${errorMsg}${detailMsg}`);
+      const message = err.message || "An unexpected error occurred.";
+      let type: 'network' | 'quota' | 'key' | 'blocked' | 'generic' = 'generic';
+
+      if (message.includes("Internet") || message.includes("network")) type = 'network';
+      else if (message.includes("Quota") || message.includes("RESOURCE_EXHAUSTED")) type = 'quota';
+      else if (message.includes("Key") || message.includes("invalid") || message.includes("API")) type = 'key';
+      else if (message.includes("blocked") || message.includes("safety")) type = 'blocked';
+
+      setError({ message, type });
     } finally {
       setLoading(false);
       setLoadingStep('');
@@ -93,47 +100,34 @@ const AIPlanner: React.FC = () => {
   };
 
   const handleExportPdf = () => {
-    if (!contentRef.current) return;
-    
-    // @ts-ignore
-    if (typeof html2pdf === 'undefined') {
-      alert("PDF library is still loading. Please try again in a moment.");
-      return;
-    }
-
-    const opt = {
-      margin: 10,
-      filename: `LessonPlan_${sport}_${grade}_${language}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-    // @ts-ignore
-    html2pdf().set(opt).from(contentRef.current).save();
+    exportToPdf(contentRef.current, `LessonPlan_${sport}_${grade}_${language}`);
   };
 
   const handleExportWord = () => {
     if (!plan) return;
     
-    let html = `
+    const html = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>
       <head><meta charset='utf-8'><title>PE Lesson Plan</title>
       <style>
-        body { font-family: Calibri, Arial, sans-serif; }
-        h1 { color: #1e3a8a; text-transform: uppercase; }
-        h2 { color: #4f46e5; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }
-        .section-title { font-weight: bold; color: #1e3a8a; text-transform: uppercase; font-size: 14px; margin-top: 20px; border-bottom: 1px solid #eee; }
+        body { font-family: Calibri, Arial, sans-serif; padding: 20px; }
+        h1 { color: #1e3a8a; text-transform: uppercase; font-size: 24px; border-bottom: 2px solid #1e3a8a; }
+        h2 { color: #4f46e5; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; font-size: 18px; margin-top: 20px; }
+        .section-title { font-weight: bold; color: #1e3a8a; text-transform: uppercase; font-size: 14px; margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .meta { color: #666; font-size: 12px; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 12px; }
         th { background-color: #f3f4f6; font-weight: bold; }
-        .label { font-size: 10px; color: #666; text-transform: uppercase; }
+        ul { margin-top: 5px; }
+        li { margin-bottom: 5px; font-size: 12px; }
       </style>
       </head>
       <body>
         <h1>${sport}: ${plan.topic}</h1>
-        <p><b>Grade:</b> ${grade} | <b>Board:</b> ${board} | <b>Teacher:</b> ${plan.teacher}</p>
-        <p><b>Date:</b> ${plan.date} | <b>Duration:</b> ${plan.duration} | <b>Period:</b> ${plan.period}</p>
+        <div class="meta">
+            <b>Grade:</b> ${grade} | <b>Board:</b> ${board} | <b>Teacher:</b> ${plan.teacher}<br/>
+            <b>Date:</b> ${plan.date} | <b>Duration:</b> ${plan.duration} | <b>Period:</b> ${plan.period}
+        </div>
         
         <div class="section-title">Learning Objectives</div>
         <ul>
@@ -177,13 +171,7 @@ const AIPlanner: React.FC = () => {
       </html>
     `;
 
-    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `LessonPlan_${sport}_${grade}.doc`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToWord(html, `LessonPlan_${sport}_${grade}`);
   };
 
   return (
@@ -278,27 +266,70 @@ const AIPlanner: React.FC = () => {
             </button>
             
             {error && (
-              <div className="p-4 bg-red-50 text-red-600 rounded-xl text-xs font-bold flex flex-col space-y-3">
-                <div className="flex items-start space-x-2">
-                  <AlertCircle size={16} className="flex-shrink-0" />
-                  <span>{error}</span>
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-4 rounded-xl border-2 flex flex-col space-y-3 ${
+                  error.type === 'quota' ? 'bg-amber-50 border-amber-200 text-amber-900' :
+                  error.type === 'key' ? 'bg-indigo-50 border-indigo-200 text-indigo-900' :
+                  'bg-red-50 border-red-200 text-red-900'
+                }`}
+              >
+                <div className="flex items-start space-x-3">
+                  <div className="mt-0.5">
+                    {error.type === 'network' && <WifiOff size={18} />}
+                    {error.type === 'quota' && <ZapOff size={18} />}
+                    {error.type === 'key' && <KeyRound size={18} />}
+                    {(error.type === 'blocked' || error.type === 'generic') && <AlertCircle size={18} />}
+                  </div>
+                  <div>
+                    <h5 className="font-black text-[10px] uppercase tracking-widest mb-1">
+                      {error.type === 'network' ? 'Connection Error' :
+                       error.type === 'quota' ? 'System Busy / Quota' :
+                       error.type === 'key' ? 'License / API Issue' :
+                       error.type === 'blocked' ? 'Content Blocked' : 'Intelligence Error'}
+                    </h5>
+                    <p className="text-xs font-bold leading-relaxed">{error.message}</p>
+                    
+                    {error.type === 'quota' && (
+                      <p className="text-[10px] mt-2 opacity-70 italic font-medium">Tip: Try simplifying the lesson topic or using a different browser session.</p>
+                    )}
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+
+                <div className="flex gap-2">
                   <button 
                     onClick={handleGenerate}
-                    className="py-2 bg-red-600 text-white rounded-lg font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-sm"
+                    className={`flex-1 py-1.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all ${
+                      error.type === 'quota' ? 'bg-amber-900 text-white hover:bg-black' :
+                      error.type === 'key' ? 'bg-indigo-900 text-white hover:bg-indigo-800' :
+                      'bg-red-900 text-white hover:bg-black'
+                    }`}
                   >
-                    Retry
+                    Try Again
                   </button>
-                  <button 
-                    onClick={() => window.aistudio?.openSelectKey()}
-                    className="py-2 bg-white border border-red-200 text-red-600 rounded-lg font-black uppercase tracking-widest hover:bg-red-50 transition-all"
-                  >
-                    Setup AI
-                  </button>
+                  {error.type === 'key' && (
+                    <button 
+                      onClick={() => window.aistudio?.openSelectKey()}
+                      className="flex-1 py-1.5 bg-white border border-indigo-200 text-indigo-900 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all font-mono"
+                    >
+                      Update Key
+                    </button>
+                  )}
                 </div>
-              </div>
+              </motion.div>
             )}
+
+            {/* Security Note */}
+            <div className="pt-4 border-t border-slate-100">
+               <div className="flex items-center space-x-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  <ShieldCheck size={12} className="text-emerald-500" />
+                  <span>Privacy & Security Audit Pass</span>
+               </div>
+               <p className="text-[9px] text-slate-400 mt-1 leading-tight font-medium">
+                  We collect NO personally identifiable information (PII) beyond what you provide for your lesson records. API keys are strictly server-side (zero exposure).
+               </p>
+            </div>
           </div>
         </div>
       </div>

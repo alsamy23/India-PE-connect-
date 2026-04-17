@@ -22,6 +22,8 @@ import {
 import { BoardType, TheoryContent, Language } from '../types.ts';
 import { generateTheoryContent, generateMindMap } from '../services/geminiService.ts';
 import { storageService } from '../services/storageService.ts';
+import { exportToPdf, exportToWord } from '../lib/exportUtils.ts';
+import { useRef } from 'react';
 
 const CHAPTERS_11 = [
   "Changing Trends & Career in Physical Education",
@@ -63,6 +65,7 @@ const TheoryHub: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TheoryContent | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const handleSaveToHistory = () => {
     if (!result) return;
@@ -74,6 +77,48 @@ const TheoryHub: React.FC = () => {
     });
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
+  };
+
+  const handleExportPdf = () => {
+    exportToPdf(contentRef.current, `Theory_${result?.title}_Grade${grade}`);
+  };
+
+  const handleExportWord = () => {
+    if (!result) return;
+    
+    const html = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>
+      <head><meta charset='utf-8'><title>PE Theory: ${result.title}</title>
+      <style>
+        body { font-family: Calibri, Arial, sans-serif; padding: 20px; }
+        h1 { color: #1e3a8a; font-size: 24px; border-bottom: 2px solid #1e3a8a; margin-bottom: 10px; }
+        .meta { color: #666; font-size: 11px; margin-bottom: 20px; }
+        .content { font-size: 13px; line-height: 1.6; white-space: pre-wrap; margin-bottom: 30px; }
+        .question-box { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; }
+        .question { font-weight: bold; margin-bottom: 10px; }
+        .answer { color: #059669; font-style: italic; }
+      </style>
+      </head>
+      <body>
+        <h1>${result.title}</h1>
+        <div class="meta">Class ${grade} • ${selectedChapter} • ${contentType}</div>
+        
+        <div class="content">${result.content}</div>
+        
+        ${result.questions && result.questions.length > 0 ? `
+          <h2>Questions & Answers</h2>
+          ${result.questions.map((q, i) => `
+            <div class="question-box">
+              <div class="question">${i+1}. ${q.question}</div>
+              <div class="answer"><b>Answer:</b> ${q.answer}</div>
+            </div>
+          `).join('')}
+        ` : ''}
+      </body>
+      </html>
+    `;
+    
+    exportToWord(html, `Theory_${result.title}_Grade${grade}`);
   };
 
   const chapters = grade === '11' ? CHAPTERS_11 : CHAPTERS_12;
@@ -438,16 +483,19 @@ const TheoryHub: React.FC = () => {
                       {isSaved ? <CheckCircle2 size={20} /> : <Save size={20} />}
                       {isSaved && <span className="text-[10px] font-black uppercase tracking-widest">Saved</span>}
                     </button>
-                    <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors">
-                      <Share2 size={20} />
+                    <button onClick={handleExportWord} className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-blue-600 transition-colors" title="Export to Word">
+                      <FileText size={20} />
                     </button>
-                    <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors">
+                    <button onClick={handleExportPdf} className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors" title="Export to PDF">
+                      <Download size={20} />
+                    </button>
+                    <button onClick={() => window.print()} className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-slate-900 transition-colors" title="Print">
                       <Printer size={20} />
                     </button>
                   </div>
                 </div>
 
-                <div className="prose prose-slate max-w-none">
+                <div className="prose prose-slate max-w-none" ref={contentRef}>
                   {result.content && (
                     <div className="mb-12 text-slate-600 font-medium leading-relaxed whitespace-pre-wrap bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
                       {result.content}
