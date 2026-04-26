@@ -55,7 +55,7 @@ const StudentManagement: React.FC = () => {
     };
 
     let unsub: (() => void) | undefined;
-    fetchProfileAndStudents().then(u => unsub = u);
+    fetchProfileAndStudents().then(u => unsub = u).catch(console.error);
     
     return () => unsub?.();
   }, []);

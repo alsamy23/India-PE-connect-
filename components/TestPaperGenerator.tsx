@@ -123,16 +123,16 @@ const TestPaperGenerator: React.FC = () => {
         <div class="instructions">
             <b>General Instructions:</b>
             <ul>
-                ${result.generalInstructions.map(i => `<li>${i}</li>`).join('')}
+                ${(result.generalInstructions || []).map(i => `<li>${i}</li>`).join('')}
             </ul>
         </div>
 
-        ${result.sections.map(section => `
+        ${(result.sections || []).map(section => `
             <div class="section-header">
-                SECTION ${section.sectionId} ${section.heading ? `- ${section.heading}` : ''}
-                <br/><small>${section.instructions}</small>
+                SECTION ${section.sectionId || ''} ${section.heading ? `- ${section.heading}` : ''}
+                <br/><small>${section.instructions || ''}</small>
             </div>
-            ${section.questions.map((q, i) => `
+            ${(section.questions || []).map((q, i) => `
                 <div class="question-box">
                     <div class="q-num">${q.questionNumber || i+1}.</div>
                     <div class="q-text">

@@ -60,7 +60,7 @@ const TeamManagement: React.FC = () => {
     };
 
     let unsub: (() => void) | undefined;
-    fetchProfileAndData().then(u => unsub = u);
+    fetchProfileAndData().then(u => unsub = u).catch(console.error);
     
     return () => unsub?.();
   }, []);

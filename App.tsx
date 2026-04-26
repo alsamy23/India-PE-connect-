@@ -258,18 +258,20 @@ const App: React.FC = () => {
     return false;
   };
 
-  if (!isAuthReady) {
-    return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary" size={48} />
-      </div>
-    );
-  }
-
   const renderContent = () => {
-    if (isProtectedTab(activeTab) && !user) {
-      if (isAuthView) return <Auth onBack={() => setIsAuthView(false)} />;
-      return <FitnessManagementIntro onLogin={() => setIsAuthView(true)} onTryDemo={() => setActiveTab('fitness')} />;
+    if (isProtectedTab(activeTab)) {
+      if (!isAuthReady) {
+        return (
+          <div className="h-full min-h-[400px] flex flex-col items-center justify-center">
+            <Loader2 className="animate-spin text-primary mb-4" size={48} />
+            <p className="text-slate-500 font-medium">Verifying access...</p>
+          </div>
+        );
+      }
+      if (!user) {
+        if (isAuthView) return <Auth onBack={() => setIsAuthView(false)} />;
+        return <FitnessManagementIntro onLogin={() => setIsAuthView(true)} onTryDemo={() => setActiveTab('fitness')} />;
+      }
     }
 
     switch (activeTab) {

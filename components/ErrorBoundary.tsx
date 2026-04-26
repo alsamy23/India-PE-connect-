@@ -22,7 +22,27 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+    console.error('Uncaught rendering error:', error, errorInfo);
+  }
+
+  private handleGlobalError = (event: ErrorEvent) => {
+    console.error('Caught global error:', event.error);
+    this.setState({ hasError: true, error: event.error || new Error(event.message) });
+  };
+
+  private handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+    console.error('Caught unhandled promise rejection:', event.reason);
+    this.setState({ hasError: true, error: event.reason instanceof Error ? event.reason : new Error(String(event.reason)) });
+  };
+
+  public componentDidMount() {
+    window.addEventListener('error', this.handleGlobalError);
+    window.addEventListener('unhandledrejection', this.handleUnhandledRejection);
+  }
+
+  public componentWillUnmount() {
+    window.removeEventListener('error', this.handleGlobalError);
+    window.removeEventListener('unhandledrejection', this.handleUnhandledRejection);
   }
 
   private handleReset = () => {

@@ -41,8 +41,11 @@ export const exportToPdf = async (element: HTMLElement | null, filename: string)
     
     // Create an image element to get the intrinsic dimensions
     const img = new Image();
-    img.src = imgData;
-    await new Promise((resolve) => { img.onload = resolve; });
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error('Failed to load image data for PDF export'));
+      img.src = imgData;
+    });
 
     // Calculate image dimensions to fit PDF page margin
     const margin = 10;

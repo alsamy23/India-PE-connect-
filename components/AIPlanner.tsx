@@ -137,42 +137,42 @@ const AIPlanner: React.FC = () => {
         
         <div class="section-title">Learning Objectives</div>
         <ul>
-          <li><b>Know:</b> ${plan.objectives.know}</li>
-          <li><b>Understand:</b> ${plan.objectives.understand}</li>
-          <li><b>Apply:</b> ${plan.objectives.beAbleTo}</li>
+          <li><b>Know:</b> ${plan.objectives?.know || 'TBD'}</li>
+          <li><b>Understand:</b> ${plan.objectives?.understand || 'TBD'}</li>
+          <li><b>Apply:</b> ${plan.objectives?.beAbleTo || 'TBD'}</li>
         </ul>
 
         <div class="section-title">Success Criteria</div>
         <ul>
-          <li><b>All:</b> ${plan.successCriteria.all}</li>
-          <li><b>Most:</b> ${plan.successCriteria.most}</li>
-          <li><b>Some:</b> ${plan.successCriteria.some}</li>
+          <li><b>All:</b> ${plan.successCriteria?.all || 'TBD'}</li>
+          <li><b>Most:</b> ${plan.successCriteria?.most || 'TBD'}</li>
+          <li><b>Some:</b> ${plan.successCriteria?.some || 'TBD'}</li>
         </ul>
 
         <div class="section-title">Equipment & Safety</div>
-        <p><b>Equipment:</b> ${plan.equipment?.join(', ')}</p>
-        <p><b>Teaching Aids:</b> ${plan.teachingAids?.join(', ')}</p>
-        <p><b>Safety:</b> ${plan.safety?.join(', ')}</p>
-        <p><b>Vocabulary:</b> ${plan.keyVocabulary?.join(', ')}</p>
+        <p><b>Equipment:</b> ${plan.equipment?.join(', ') || 'None'}</p>
+        <p><b>Teaching Aids:</b> ${plan.teachingAids?.join(', ') || 'None'}</p>
+        <p><b>Safety:</b> ${plan.safety?.join(', ') || 'Standard PE safety protocols'}</p>
+        <p><b>Vocabulary:</b> ${plan.keyVocabulary?.join(', ') || 'None'}</p>
 
-        <div class="section-title">1. Starter Activity (${plan.starter.time})</div>
-        <p><b>${plan.starter.title}</b></p>
-        <p>${plan.starter.description}</p>
+        <div class="section-title">1. Starter Activity (${plan.starter?.time || '10 min'})</div>
+        <p><b>${plan.starter?.title || 'Warm-up'}</b></p>
+        <p>${plan.starter?.description || 'General warm-up.'}</p>
 
-        <div class="section-title">2. Main Activities (${plan.mainActivity.time})</div>
-        ${plan.mainActivity.activities.map((act, i) => `
-          <p><b>${i+1}. ${act.title}</b></p>
-          <p>${act.description}</p>
-          <p><i>Coaching Points: ${act.coachingPoints.join(', ')}</i></p>
+        <div class="section-title">2. Main Activities (${plan.mainActivity?.time || '30 min'})</div>
+        ${(plan.mainActivity?.activities || []).map((act, i) => `
+          <p><b>${i+1}. ${act.title || 'Activity'}</b></p>
+          <p>${act.description || ''}</p>
+          <p><i>Coaching Points: ${(act.coachingPoints || []).join(', ')}</i></p>
         `).join('')}
 
-        <div class="section-title">3. Plenary & Cooling Down (${plan.plenary.time})</div>
-        <p><b>${plan.plenary.title}</b></p>
-        <p>${plan.plenary.description}</p>
+        <div class="section-title">3. Plenary & Cooling Down (${plan.plenary?.time || '10 min'})</div>
+        <p><b>${plan.plenary?.title || 'Cool Down'}</b></p>
+        <p>${plan.plenary?.description || 'Gentle stretching and review.'}</p>
 
         <div class="section-title">Differentiation & Assessment</div>
-        <p><b>Differentiation:</b> ${plan.differentiation}</p>
-        <p><b>Assessment:</b> ${plan.criticalThinking}</p>
+        <p><b>Differentiation:</b> ${plan.differentiation || 'N/A'}</p>
+        <p><b>Assessment:</b> ${plan.criticalThinking || 'N/A'}</p>
       </body>
       </html>
     `;
