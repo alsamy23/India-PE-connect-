@@ -27,12 +27,12 @@ class ErrorBoundary extends Component<Props, State> {
 
   private handleGlobalError = (event: ErrorEvent) => {
     console.error('Caught global error:', event.error);
-    this.setState({ hasError: true, error: event.error || new Error(event.message) });
+    // Suppress global errors from crashing the UI
   };
 
   private handleUnhandledRejection = (event: PromiseRejectionEvent) => {
     console.error('Caught unhandled promise rejection:', event.reason);
-    this.setState({ hasError: true, error: event.reason instanceof Error ? event.reason : new Error(String(event.reason)) });
+    // Suppress unhandled promise rejections from crashing the UI
   };
 
   public componentDidMount() {

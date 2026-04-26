@@ -32,35 +32,42 @@ const TeamManagement: React.FC = () => {
     if (!auth.currentUser) return;
 
     const fetchProfileAndData = async () => {
-      const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
-      setUserProfile(profile);
+      try {
+        const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
+        setUserProfile(profile);
 
-      if (profile) {
-        const isAdmin = profile.role === 'admin';
-        const unsubTeams = fitnessService.subscribeToTeams(
-          auth.currentUser!.uid,
-          profile.schoolId,
-          isAdmin,
-          setTeams
-        );
-        const unsubStudents = fitnessService.subscribeToStudents(
-          auth.currentUser!.uid,
-          profile.schoolId,
-          isAdmin,
-          (data) => {
-            setStudents(data);
-            setLoading(false);
-          }
-        );
-        return () => {
-          unsubTeams();
-          unsubStudents();
-        };
+        if (profile) {
+          const isAdmin = profile.role === 'admin';
+          const unsubTeams = fitnessService.subscribeToTeams(
+            auth.currentUser!.uid,
+            profile.schoolId,
+            isAdmin,
+            setTeams
+          );
+          const unsubStudents = fitnessService.subscribeToStudents(
+            auth.currentUser!.uid,
+            profile.schoolId,
+            isAdmin,
+            (data) => {
+              setStudents(data);
+              setLoading(false);
+            }
+          );
+          return () => {
+            unsubTeams();
+            unsubStudents();
+          };
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error(err);
+        setLoading(false);
       }
     };
 
     let unsub: (() => void) | undefined;
-    fetchProfileAndData().then(u => unsub = u).catch(console.error);
+    fetchProfileAndData().then(u => { if (u) unsub = u; });
     
     return () => unsub?.();
   }, []);
@@ -69,17 +76,22 @@ const TeamManagement: React.FC = () => {
     e.preventDefault();
     if (!newTeam.name || !auth.currentUser || !userProfile) return;
 
-    const team: Team = {
-      ...newTeam as Team,
-      id: Math.random().toString(36).substr(2, 9),
-      teacherId: auth.currentUser.uid,
-      schoolId: userProfile.schoolId,
-      studentIds: [] // Initially empty
-    };
+    try {
+      const team: Team = {
+        ...newTeam as Team,
+        id: Math.random().toString(36).substr(2, 9),
+        teacherId: auth.currentUser.uid,
+        schoolId: userProfile.schoolId,
+        studentIds: [] // Initially empty
+      };
 
-    await fitnessService.saveTeam(team);
-    setIsAdding(false);
-    setNewTeam({ name: '', grade: '', section: '', studentIds: [] });
+      await fitnessService.saveTeam(team);
+      setIsAdding(false);
+      setNewTeam({ name: '', grade: '', section: '', studentIds: [] });
+    } catch (err) {
+      console.error(err);
+      alert('Failed to add team. Please try again.');
+    }
   };
 
   if (loading) {

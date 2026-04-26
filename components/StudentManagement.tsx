@@ -36,26 +36,33 @@ const StudentManagement: React.FC = () => {
     if (!auth.currentUser) return;
 
     const fetchProfileAndStudents = async () => {
-      const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
-      setUserProfile(profile);
+      try {
+        const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
+        setUserProfile(profile);
 
-      if (profile) {
-        const isAdmin = profile.role === 'admin';
-        const unsub = fitnessService.subscribeToStudents(
-          auth.currentUser!.uid,
-          profile.schoolId,
-          isAdmin,
-          (data) => {
-            setStudents(data);
-            setLoading(false);
-          }
-        );
-        return unsub;
+        if (profile) {
+          const isAdmin = profile.role === 'admin';
+          const unsub = fitnessService.subscribeToStudents(
+            auth.currentUser!.uid,
+            profile.schoolId,
+            isAdmin,
+            (data) => {
+              setStudents(data);
+              setLoading(false);
+            }
+          );
+          return unsub;
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error(err);
+        setLoading(false);
       }
     };
 
     let unsub: (() => void) | undefined;
-    fetchProfileAndStudents().then(u => unsub = u).catch(console.error);
+    fetchProfileAndStudents().then(u => { if (u) unsub = u; });
     
     return () => unsub?.();
   }, []);
@@ -64,28 +71,38 @@ const StudentManagement: React.FC = () => {
     e.preventDefault();
     if (!newStudent.name || !newStudent.rollNumber || !auth.currentUser || !userProfile) return;
 
-    const student: Student = {
-      ...newStudent as Student,
-      id: Math.random().toString(36).substr(2, 9),
-      teacherId: auth.currentUser.uid,
-      schoolId: userProfile.schoolId
-    };
+    try {
+      const student: Student = {
+        ...newStudent as Student,
+        id: Math.random().toString(36).substr(2, 9),
+        teacherId: auth.currentUser.uid,
+        schoolId: userProfile.schoolId
+      };
 
-    await fitnessService.saveStudent(student);
-    setIsAdding(false);
-    setNewStudent({
-      name: '',
-      rollNumber: '',
-      grade: '1',
-      section: 'A',
-      gender: 'Male',
-      age: 6
-    });
+      await fitnessService.saveStudent(student);
+      setIsAdding(false);
+      setNewStudent({
+        name: '',
+        rollNumber: '',
+        grade: '1',
+        section: 'A',
+        gender: 'Male',
+        age: 6
+      });
+    } catch (err) {
+      console.error(err);
+      alert('Failed to add student. Please try again.');
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this student?')) {
-      await fitnessService.deleteStudent(id);
+      try {
+        await fitnessService.deleteStudent(id);
+      } catch (err) {
+        console.error(err);
+        alert('Failed to delete student. Please try again.');
+      }
     }
   };
 

@@ -81,8 +81,12 @@ const App: React.FC = () => {
   }, []);
 
   const handleLogout = async () => {
-    if (window.confirm('Are you sure you want to log out?')) {
-      await signOut(auth);
+    try {
+      if (window.confirm('Are you sure you want to log out?')) {
+        await signOut(auth);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -157,9 +161,13 @@ const App: React.FC = () => {
     // Check if key was selected if we're still missing it, but less frequently
     const interval = setInterval(async () => {
       if (apiStatus === 'missing' && window.aistudio) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        if (hasKey) {
-          checkApiStatus();
+        try {
+          const hasKey = await window.aistudio.hasSelectedApiKey();
+          if (hasKey) {
+            checkApiStatus();
+          }
+        } catch (e) {
+          console.error("Error checking API key:", e);
         }
       }
     }, 10000); // 10 seconds is enough
@@ -168,18 +176,26 @@ const App: React.FC = () => {
   }, []); // Only run once on mount
 
   const handleSelectKey = async () => {
-    if (window.aistudio) {
-      await window.aistudio.openSelectKey();
-      // Assume success as per guidelines
-      setApiStatus('ok');
-      setIsKeyDialogOpen(false);
-      // Re-check health after a short delay to be sure
-      setTimeout(checkApiStatus, 3000);
+    try {
+      if (window.aistudio) {
+        await window.aistudio.openSelectKey();
+        // Assume success as per guidelines
+        setApiStatus('ok');
+        setIsKeyDialogOpen(false);
+        // Re-check health after a short delay to be sure
+        setTimeout(checkApiStatus, 3000);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
   const triggerKeySelector = async () => {
-    await handleSelectKey();
+    try {
+      await handleSelectKey();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleTestConnection = async () => {
@@ -214,10 +230,14 @@ const App: React.FC = () => {
   };
 
   const handleResetKey = async () => {
-    if (window.aistudio) {
-      // There isn't a direct 'clear' but we can re-open or just refresh
-      await window.aistudio.openSelectKey();
-      checkApiStatus();
+    try {
+      if (window.aistudio) {
+        // There isn't a direct 'clear' but we can re-open or just refresh
+        await window.aistudio.openSelectKey();
+        checkApiStatus();
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 

@@ -31,14 +31,19 @@ const SchoolAdmin: React.FC = () => {
     if (!auth.currentUser) return;
 
     const fetchData = async () => {
-      const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
-      setUserProfile(profile);
+      try {
+        const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
+        setUserProfile(profile);
 
-      if (profile && profile.role === 'admin') {
-        const schoolMembers = await fitnessService.getSchoolMembers(profile.schoolId);
-        setMembers(schoolMembers);
+        if (profile && profile.role === 'admin') {
+          const schoolMembers = await fitnessService.getSchoolMembers(profile.schoolId);
+          setMembers(schoolMembers);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchData();

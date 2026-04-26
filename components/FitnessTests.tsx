@@ -101,35 +101,40 @@ const FitnessTests: React.FC = () => {
       return;
     }
     
-    // Save to general history
-    storageService.saveItem({
-      type: 'Tool',
-      title: `${selectedTest?.name} Assessment`,
-      content: result,
-      metadata: { age, gender, category: selectedBattery?.category, test: selectedTest?.name, value: testValue }
-    });
-
-    // Save to school database if student is selected
-    if (selectedStudentId) {
-      const student = students.find(s => s.id === selectedStudentId);
-      await fitnessService.saveResult({
-        id: Math.random().toString(36).substr(2, 9),
-        teacherId: auth.currentUser.uid,
-        schoolId: student?.schoolId || '',
-        studentId: selectedStudentId,
-        testId: selectedTest?.id || '',
-        testName: selectedTest?.name || '',
-        value: testValue,
-        unit: selectedTest?.unit || '',
-        date: new Date().toISOString(),
-        term: 'Term 1', // Default
-        rating: result.tests[0]?.rating,
-        percentile: parseFloat(result.tests[0]?.percentile)
+    try {
+      // Save to general history
+      storageService.saveItem({
+        type: 'Tool',
+        title: `${selectedTest?.name} Assessment`,
+        content: result,
+        metadata: { age, gender, category: selectedBattery?.category, test: selectedTest?.name, value: testValue }
       });
-    }
 
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+      // Save to school database if student is selected
+      if (selectedStudentId) {
+        const student = students.find(s => s.id === selectedStudentId);
+        await fitnessService.saveResult({
+          id: Math.random().toString(36).substr(2, 9),
+          teacherId: auth.currentUser.uid,
+          schoolId: student?.schoolId || '',
+          studentId: selectedStudentId,
+          testId: selectedTest?.id || '',
+          testName: selectedTest?.name || '',
+          value: testValue,
+          unit: selectedTest?.unit || '',
+          date: new Date().toISOString(),
+          term: 'Term 1', // Default
+          rating: result.tests[0]?.rating,
+          percentile: parseFloat(result.tests[0]?.percentile)
+        });
+      }
+
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to save result. Please try again.");
+    }
   };
 
   return (

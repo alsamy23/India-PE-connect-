@@ -32,43 +32,50 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate }) => {
     if (!auth.currentUser) return;
 
     const fetchProfileAndData = async () => {
-      const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
-      setUserProfile(profile);
+      try {
+        const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
+        setUserProfile(profile);
 
-      if (profile) {
-        const isAdmin = profile.role === 'admin';
-        const unsubResults = fitnessService.subscribeToResults(
-          auth.currentUser!.uid,
-          profile.schoolId,
-          isAdmin,
-          setResults
-        );
-        const unsubTeams = fitnessService.subscribeToTeams(
-          auth.currentUser!.uid,
-          profile.schoolId,
-          isAdmin,
-          setTeams
-        );
-        const unsubStudents = fitnessService.subscribeToStudents(
-          auth.currentUser!.uid,
-          profile.schoolId,
-          isAdmin,
-          (data) => {
-            setStudents(data);
-            setLoading(false);
-          }
-        );
+        if (profile) {
+          const isAdmin = profile.role === 'admin';
+          const unsubResults = fitnessService.subscribeToResults(
+            auth.currentUser!.uid,
+            profile.schoolId,
+            isAdmin,
+            setResults
+          );
+          const unsubTeams = fitnessService.subscribeToTeams(
+            auth.currentUser!.uid,
+            profile.schoolId,
+            isAdmin,
+            setTeams
+          );
+          const unsubStudents = fitnessService.subscribeToStudents(
+            auth.currentUser!.uid,
+            profile.schoolId,
+            isAdmin,
+            (data) => {
+              setStudents(data);
+              setLoading(false);
+            }
+          );
 
-        return () => {
-          unsubResults();
-          unsubTeams();
-          unsubStudents();
-        };
+          return () => {
+            unsubResults?.();
+            unsubTeams?.();
+            unsubStudents?.();
+          };
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error(err);
+        setLoading(false);
       }
     };
 
     let unsub: (() => void) | undefined;
-    fetchProfileAndData().then(u => unsub = u).catch(console.error);
+    fetchProfileAndData().then(u => { if (u) unsub = u; });
     
     return () => unsub?.();
   }, []);
