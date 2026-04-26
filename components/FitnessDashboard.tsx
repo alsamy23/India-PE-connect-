@@ -75,7 +75,9 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate }) => {
     };
 
     let unsub: (() => void) | undefined;
-    fetchProfileAndData().then(u => { if (u) unsub = u; });
+    fetchProfileAndData()
+      .then(u => { if (u) unsub = u; })
+      .catch(err => console.error("Error in FitnessDashboard effect:", err));
     
     return () => unsub?.();
   }, []);

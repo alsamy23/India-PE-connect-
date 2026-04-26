@@ -62,7 +62,9 @@ const StudentManagement: React.FC = () => {
     };
 
     let unsub: (() => void) | undefined;
-    fetchProfileAndStudents().then(u => { if (u) unsub = u; });
+    fetchProfileAndStudents()
+      .then(u => { if (u) unsub = u; })
+      .catch(err => console.error("Error in StudentManagement effect:", err));
     
     return () => unsub?.();
   }, []);

@@ -67,7 +67,9 @@ const TeamManagement: React.FC = () => {
     };
 
     let unsub: (() => void) | undefined;
-    fetchProfileAndData().then(u => { if (u) unsub = u; });
+    fetchProfileAndData()
+      .then(u => { if (u) unsub = u; })
+      .catch(err => console.error("Error in TeamManagement effect:", err));
     
     return () => unsub?.();
   }, []);
