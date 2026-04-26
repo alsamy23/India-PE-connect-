@@ -193,8 +193,9 @@ service cloud.firestore {
     }
 
     match /schoolMembers/{uid} {
-      allow read: if isAuthenticated() && (isOwner(uid) || isSchoolMember(resource.data.schoolId));
+      allow read: if isAuthenticated() && (isOwner(uid) || (resource != null && isSchoolMember(resource.data.schoolId)) || request.auth.token.email != null);
       allow create, update: if isAuthenticated() && (isOwner(uid) || isSchoolAdmin(request.resource.data.schoolId)) && isValidSchoolMember(request.resource.data);
+      allow delete: if isAuthenticated() && (isSchoolAdmin(resource.data.schoolId) || (resource != null && resource.data.email == request.auth.token.email));
     }
 
     match /students/{studentId} {

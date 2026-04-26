@@ -279,6 +279,11 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
+    // If the user wants to login/signup, show Auth component everywhere! (Except if they are already logged in and it's dismissed)
+    if (!user && isAuthView) {
+      return <Auth onBack={() => setIsAuthView(false)} />;
+    }
+
     if (isProtectedTab(activeTab)) {
       if (!isAuthReady) {
         return (
@@ -289,7 +294,6 @@ const App: React.FC = () => {
         );
       }
       if (!user) {
-        if (isAuthView) return <Auth onBack={() => setIsAuthView(false)} />;
         return <FitnessManagementIntro onLogin={() => setIsAuthView(true)} onTryDemo={() => setActiveTab('fitness')} />;
       }
     }
@@ -312,7 +316,7 @@ const App: React.FC = () => {
       case 'testpaper': return <TestPaperGenerator />;
       case 'parentletters': return <ParentLetters />;
       case 'widgets': return <ClassroomWidgets />;
-      case 'school-overview': return <FitnessManagementIntro onLogin={() => setIsAuthView(true)} onTryDemo={() => setActiveTab('fitness')} />;
+      case 'school-overview': return <FitnessManagementIntro onLogin={() => user ? setActiveTab('school-results') : setIsAuthView(true)} onTryDemo={() => setActiveTab('fitness')} />;
       default: return <Dashboard apiStatus={apiStatus} debugInfo={debugInfo} onTestConnection={handleTestConnection} isTesting={isTesting} onNavigate={setActiveTab} />;
     }
   };

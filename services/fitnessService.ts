@@ -231,6 +231,8 @@ export const fitnessService = {
     }
     return onSnapshot(q, (snapshot: any) => {
       callback(snapshot.docs.map((doc: any) => doc.data() as Student));
+    }, (error: any) => {
+      console.error("Firestore Error in students subscription:", error);
     });
   },
 
@@ -243,6 +245,8 @@ export const fitnessService = {
     }
     return onSnapshot(q, (snapshot: any) => {
       callback(snapshot.docs.map((doc: any) => doc.data() as Team));
+    }, (error: any) => {
+      console.error("Firestore Error in teams subscription:", error);
     });
   },
 

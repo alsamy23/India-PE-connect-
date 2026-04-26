@@ -12,8 +12,13 @@ const ComplianceAdvisor: React.FC = () => {
 
   const handleAnalyze = async () => {
     setLoading(true);
-    const text = await getStateRegulationInsights(state, board);
-    setInsights(text || "No insights found.");
+    try {
+      const text = await getStateRegulationInsights(state, board);
+      setInsights(text || "No insights found.");
+    } catch (e) {
+      console.error(e);
+      setInsights("Failed to fetch compliance guidelines. Please check your AI connection.");
+    }
     setLoading(false);
   };
 
