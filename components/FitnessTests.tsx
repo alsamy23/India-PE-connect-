@@ -40,12 +40,18 @@ const FitnessTests: React.FC = () => {
   const [selectedStudentId, setSelectedStudentId] = useState('');
 
   useEffect(() => {
-    if (!auth.currentUser) return;
-    // For testing, we subscribe to teacher's students. 
-    // In a full school context, this would be filtered by schoolId if admin.
-    const unsub = fitnessService.subscribeToStudents(auth.currentUser.uid, undefined, false, setStudents);
-    return () => unsub();
-  }, []);
+    let unsub: (() => void) | undefined;
+
+    if (auth.currentUser) {
+      try {
+        unsub = fitnessService.subscribeToStudents(auth.currentUser.uid, undefined, false, setStudents);
+      } catch (err) {
+        console.error("Error subscribing to students in FitnessTests:", err);
+      }
+    }
+    
+    return () => unsub?.();
+  }, [auth.currentUser?.uid]);
 
   const handleBatteryClick = (battery: KIFTBattery) => {
     setSelectedBattery(battery);

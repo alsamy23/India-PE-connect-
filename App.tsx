@@ -74,8 +74,12 @@ const App: React.FC = () => {
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser: FirebaseUser | null) => {
+      console.log("Auth state changed:", currentUser?.email);
       setUser(currentUser);
       setIsAuthReady(true);
+      if (currentUser) {
+        setIsAuthView(false); // Reset auth view when user logs in
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -316,7 +320,13 @@ const App: React.FC = () => {
       case 'testpaper': return <TestPaperGenerator />;
       case 'parentletters': return <ParentLetters />;
       case 'widgets': return <ClassroomWidgets />;
-      case 'school-overview': return <FitnessManagementIntro onLogin={() => user ? setActiveTab('school-results') : setIsAuthView(true)} onTryDemo={() => setActiveTab('fitness')} />;
+      case 'school-overview': return <FitnessManagementIntro onLogin={() => {
+        if (auth.currentUser) {
+          setActiveTab('school-results');
+        } else {
+          setIsAuthView(true);
+        }
+      }} onTryDemo={() => setActiveTab('fitness')} />;
       default: return <Dashboard apiStatus={apiStatus} debugInfo={debugInfo} onTestConnection={handleTestConnection} isTesting={isTesting} onNavigate={setActiveTab} />;
     }
   };

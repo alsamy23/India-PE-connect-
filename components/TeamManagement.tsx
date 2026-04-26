@@ -29,23 +29,29 @@ const TeamManagement: React.FC = () => {
   });
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    let unsubTeams: (() => void) | undefined;
+    let unsubStudents: (() => void) | undefined;
 
     const fetchProfileAndData = async () => {
+      if (!auth.currentUser) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
+        const profile = await fitnessService.getSchoolMember(auth.currentUser.uid);
         setUserProfile(profile);
 
         if (profile) {
           const isAdmin = profile.role === 'admin';
-          const unsubTeams = fitnessService.subscribeToTeams(
-            auth.currentUser!.uid,
+          unsubTeams = fitnessService.subscribeToTeams(
+            auth.currentUser.uid,
             profile.schoolId,
             isAdmin,
             setTeams
           );
-          const unsubStudents = fitnessService.subscribeToStudents(
-            auth.currentUser!.uid,
+          unsubStudents = fitnessService.subscribeToStudents(
+            auth.currentUser.uid,
             profile.schoolId,
             isAdmin,
             (data) => {
@@ -53,26 +59,22 @@ const TeamManagement: React.FC = () => {
               setLoading(false);
             }
           );
-          return () => {
-            unsubTeams();
-            unsubStudents();
-          };
         } else {
           setLoading(false);
         }
       } catch (err) {
-        console.error(err);
+        console.error("Error in TeamManagement data fetch:", err);
         setLoading(false);
       }
     };
 
-    let unsub: (() => void) | undefined;
-    fetchProfileAndData()
-      .then(u => { if (u) unsub = u; })
-      .catch(err => console.error("Error in TeamManagement effect:", err));
+    fetchProfileAndData().catch(err => console.error("Unhandled error in TeamManagement fetch:", err));
     
-    return () => unsub?.();
-  }, []);
+    return () => {
+      unsubTeams?.();
+      unsubStudents?.();
+    };
+  }, [auth.currentUser?.uid]);
 
   const handleAddTeam = async (e: React.FormEvent) => {
     e.preventDefault();

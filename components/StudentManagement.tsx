@@ -33,17 +33,22 @@ const StudentManagement: React.FC = () => {
   });
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    let unsub: (() => void) | undefined;
 
     const fetchProfileAndStudents = async () => {
+      if (!auth.currentUser) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
+        const profile = await fitnessService.getSchoolMember(auth.currentUser.uid);
         setUserProfile(profile);
 
         if (profile) {
           const isAdmin = profile.role === 'admin';
-          const unsub = fitnessService.subscribeToStudents(
-            auth.currentUser!.uid,
+          unsub = fitnessService.subscribeToStudents(
+            auth.currentUser.uid,
             profile.schoolId,
             isAdmin,
             (data) => {
@@ -51,23 +56,19 @@ const StudentManagement: React.FC = () => {
               setLoading(false);
             }
           );
-          return unsub;
         } else {
           setLoading(false);
         }
       } catch (err) {
-        console.error(err);
+        console.error("Error in StudentManagement data fetch:", err);
         setLoading(false);
       }
     };
 
-    let unsub: (() => void) | undefined;
-    fetchProfileAndStudents()
-      .then(u => { if (u) unsub = u; })
-      .catch(err => console.error("Error in StudentManagement effect:", err));
+    fetchProfileAndStudents().catch(err => console.error("Unhandled error in StudentManagement fetch:", err));
     
     return () => unsub?.();
-  }, []);
+  }, [auth.currentUser?.uid]);
 
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();

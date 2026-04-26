@@ -28,7 +28,10 @@ const SchoolAdmin: React.FC = () => {
   const [userProfile, setUserProfile] = useState<SchoolMember | null>(null);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+      setLoading(false);
+      return;
+    }
 
     const fetchData = async () => {
       try {
@@ -40,14 +43,14 @@ const SchoolAdmin: React.FC = () => {
           setMembers(schoolMembers);
         }
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching school admin data:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, []);
+    fetchData().catch(err => console.error("Unhandled error in SchoolAdmin fetch:", err));
+  }, [auth.currentUser?.uid]);
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();

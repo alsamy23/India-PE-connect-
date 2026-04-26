@@ -29,29 +29,36 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate }) => {
   const [userProfile, setUserProfile] = useState<SchoolMember | null>(null);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    let unsubResults: (() => void) | undefined;
+    let unsubTeams: (() => void) | undefined;
+    let unsubStudents: (() => void) | undefined;
 
     const fetchProfileAndData = async () => {
+      if (!auth.currentUser) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
+        const profile = await fitnessService.getSchoolMember(auth.currentUser.uid);
         setUserProfile(profile);
 
         if (profile) {
           const isAdmin = profile.role === 'admin';
-          const unsubResults = fitnessService.subscribeToResults(
-            auth.currentUser!.uid,
+          unsubResults = fitnessService.subscribeToResults(
+            auth.currentUser.uid,
             profile.schoolId,
             isAdmin,
             setResults
           );
-          const unsubTeams = fitnessService.subscribeToTeams(
-            auth.currentUser!.uid,
+          unsubTeams = fitnessService.subscribeToTeams(
+            auth.currentUser.uid,
             profile.schoolId,
             isAdmin,
             setTeams
           );
-          const unsubStudents = fitnessService.subscribeToStudents(
-            auth.currentUser!.uid,
+          unsubStudents = fitnessService.subscribeToStudents(
+            auth.currentUser.uid,
             profile.schoolId,
             isAdmin,
             (data) => {
@@ -59,28 +66,25 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate }) => {
               setLoading(false);
             }
           );
-
-          return () => {
-            unsubResults?.();
-            unsubTeams?.();
-            unsubStudents?.();
-          };
         } else {
+          // If no profile yet, maybe it's still being created or they are not a member
+          // Try one more time after a short delay if they just logged in
           setLoading(false);
         }
       } catch (err) {
-        console.error(err);
+        console.error("Error in FitnessDashboard data fetch:", err);
         setLoading(false);
       }
     };
 
-    let unsub: (() => void) | undefined;
-    fetchProfileAndData()
-      .then(u => { if (u) unsub = u; })
-      .catch(err => console.error("Error in FitnessDashboard effect:", err));
+    fetchProfileAndData().catch(err => console.error("Unhandled error in dashboard fetch:", err));
     
-    return () => unsub?.();
-  }, []);
+    return () => {
+      unsubResults?.();
+      unsubTeams?.();
+      unsubStudents?.();
+    };
+  }, [auth.currentUser?.uid]);
 
   const stats = {
     totalStudents: students.length,
