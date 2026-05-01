@@ -51,7 +51,7 @@ const TestPaperGenerator: React.FC = () => {
       setResult(data);
     } catch (e: any) {
       console.error(e);
-      setError(e.message || "Failed to generate test paper.");
+      setError(e.message || "Failed to generate question paper (CBSE).");
     } finally {
       setLoading(false);
     }
@@ -175,9 +175,9 @@ const TestPaperGenerator: React.FC = () => {
               <FileText size={14} className="text-emerald-400" />
               <span className="text-[10px] font-black uppercase tracking-widest">Assessment Engine</span>
             </div>
-            <h1 className="text-4xl font-black tracking-tighter">Test <span className="text-emerald-500">Generator</span></h1>
+            <h1 className="text-4xl font-black tracking-tighter">Question Paper <span className="text-emerald-500">Generator (CBSE)</span></h1>
             <p className="text-slate-400 text-sm font-medium max-w-md">
-              Create professional tests in seconds using AI.
+              Create professional question papers in seconds using AI.
             </p>
           </div>
           

@@ -10,7 +10,10 @@ import {
   CheckCircle2,
   ClipboardList,
   UserPlus,
-  Zap
+  Zap,
+  Video,
+  Clock,
+  Layout
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -83,6 +86,57 @@ const FitnessManagementIntro: React.FC<FitnessManagementIntroProps> = ({ onLogin
           </button>
         </div>
       </div>
+
+      {/* Highlighted Feature: Skill Analysis */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
+        className="bg-indigo-600 rounded-[3rem] p-8 md:p-12 text-white shadow-2xl shadow-indigo-200 border-4 border-slate-900 relative overflow-hidden"
+      >
+        <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12">
+          <div className="lg:w-1/2 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20">
+              <span className="w-1.5 h-1.5 bg-rose-400 rounded-full animate-pulse" />
+              New Lab Tool
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none">
+              Skill Analysis <br />
+              <span className="text-indigo-200">Video Lab</span>
+            </h2>
+            <p className="text-indigo-100 font-medium text-lg leading-relaxed">
+              PE Teachers' favorite tool for instant feedback. Loop performance with a 5-30s delay—hands-free. Students watch themselves automatically after every turn.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
+                  <Clock size={20} className="text-indigo-200" />
+                </div>
+                <div className="text-xs font-bold uppercase tracking-widest">Adjustable Delay</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
+                  <Layout size={20} className="text-indigo-200" />
+                </div>
+                <div className="text-xs font-bold uppercase tracking-widest">Multi-Screen View</div>
+              </div>
+            </div>
+          </div>
+          <div className="lg:w-1/2 w-full">
+            <div className="aspect-video bg-slate-900 rounded-[2rem] border-4 border-slate-950 shadow-2xl relative overflow-hidden flex items-center justify-center border-indigo-400/30">
+              <Video className="text-indigo-500/20" size={120} />
+              <div className="absolute inset-0 bg-gradient-to-tr from-slate-900 via-transparent to-transparent opacity-60" />
+              <div className="absolute top-6 left-6 flex items-center gap-2">
+                <div className="px-3 py-1 bg-rose-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-white/20 shadow-lg">
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                  <span>Delayed Replay</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="absolute right-[-100px] bottom-[-100px] w-80 h-80 bg-white/10 rounded-full blur-[100px]" />
+      </motion.div>
 
       {/* Features Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

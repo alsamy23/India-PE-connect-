@@ -673,15 +673,15 @@ export const generateTestPaper = async (
 
   const response = await callAIBase({
     model: 'gemini-3-flash-preview',
-    contents: `Generate a Physical Education Test. 
+    contents: `Generate a Physical Education Question Paper (CBSE). 
     Grade: ${grade}, Topic: ${topic}, 
     Type: ${testType}, Time: ${timeAllowed}, Marks: ${maxMarks}, 
     Language: ${language}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
-      systemInstruction: `You are an expert Physical Education Examiner. 
+      systemInstruction: `You are an expert CBSE Physical Education Examiner. 
       Be decisive and do not ask for clarification.
-      Create a professional test following standard educational patterns.
+      Create a professional question paper following standard CBSE educational patterns.
       Include:
       1. Section A: MCQs (1 mark each).
       2. Section B: Very Short Answer (2 marks each).
@@ -689,7 +689,7 @@ export const generateTestPaper = async (
       4. Section D: Case Study based (4 marks each).
       5. Section E: Long Answer (5 marks each).
       Distribute marks to total exactly ${maxMarks}.
-      Ensure questions are high-quality and cover the topic: ${topic}.
+      Ensure questions are high-quality, relevant to the CBSE 2025-26 syllabus, and cover the topic: ${topic}.
       Language: ${language}.`,
       responseMimeType: "application/json",
       responseSchema: schema

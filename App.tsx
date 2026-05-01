@@ -27,7 +27,8 @@ import {
   UserCheck,
   Mail,
   Zap,
-  Shield
+  Shield,
+  Video
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import AIPlanner from './components/AIPlanner.tsx';
@@ -51,10 +52,11 @@ import ErrorBoundary from './components/ErrorBoundary.tsx';
 import Auth from './components/Auth.tsx';
 import FitnessManagementIntro from './components/FitnessManagementIntro.tsx';
 import SchoolAdmin from './components/SchoolAdmin.tsx';
+import SkillAnalysis from './components/SkillAnalysis.tsx';
 import { auth } from './services/firebase.ts';
 import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
 
-type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis';
 
 import { BoardType, Language } from './types.ts';
 
@@ -247,28 +249,38 @@ const App: React.FC = () => {
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { id: 'widgets', name: 'PE Classroom Widgets', icon: Zap, isNew: true },
-    { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true },
-    { id: 'testpaper', name: 'Test Generator', icon: ClipboardList, isNew: true },
-    { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange },
-    { id: 'planner', name: 'PE Lesson Plan', icon: Sparkles },
+    { id: 'planner', name: 'PE Lesson Plan', icon: Sparkles, subtitle: 'Generate today\'s PE lesson in under 60 seconds.' },
+    { id: 'testpaper', name: 'Question Paper Generator (CBSE)', icon: ClipboardList, isNew: true, subtitle: 'Create MCQ and theory papers for PE in one click.' },
+    
     { 
-      section: 'School Fitness Management',
+      section: 'Assessments',
       items: [
-        { id: 'school-overview', name: 'Overview & Guide', icon: Zap, isNew: true },
+        { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true, subtitle: 'All Khelo India Fitness tests pre-loaded.' },
+        { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, subtitle: 'Official battery tests and student profiles.' },
+        { id: 'school-overview', name: 'School Fitness Database', icon: Zap, isNew: true, subtitle: 'Store and track every student\'s scores.' },
         { id: 'school-results', name: 'Live Results', icon: Activity, isNew: true, protected: true },
         { id: 'school-students', name: 'Student Directory', icon: Users, protected: true },
         { id: 'school-teams', name: 'Teams/Classes', icon: UserCheck, protected: true },
-        { id: 'school-admin', name: 'Administration', icon: Shield, protected: true },
-        { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true },
       ]
     },
-    { id: 'khelo', name: 'Khelo India Battery', icon: Trophy },
-    { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true },
-    { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap },
-    { id: 'tools', name: 'AI Tool Center', icon: Wrench },
-    { id: 'skillmastery', name: 'Skill Progressions', icon: Target },
-    { id: 'compliance', name: 'State Compliance', icon: ShieldCheck },
+
+    { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true, subtitle: 'Draft ready-to-print letters for parents.' },
+    { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange, subtitle: 'Auto-map 40 weeks of PE for your classes.' },
+    { id: 'widgets', name: 'PE Classroom Widgets', icon: Zap, isNew: true, subtitle: 'Interactive timers and tools.' },
+    { id: 'skillmastery', name: 'Skill Progressions', icon: Target, subtitle: 'Long-term curriculum maps and checklists.' },
+    { id: 'skill-analysis', name: 'Skill Analysis Lab', icon: Video, isNew: true, subtitle: 'Compare and analyze sports techniques.' },
+    
+    { 
+      section: 'Administration',
+      items: [
+        { id: 'compliance', name: 'State Compliance', icon: ShieldCheck, subtitle: 'CBSE and NEP 2020 alignment.' },
+        { id: 'school-admin', name: 'School Settings', icon: Shield, protected: true },
+      ]
+    },
+
+    { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true, subtitle: 'Ask AI about sports rules and doubts.' },
+    { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap, subtitle: 'Resources matched to CBSE guidelines.' },
+    { id: 'tools', name: 'AI Tool Center', icon: Wrench, subtitle: 'AI tools that save you time daily.' },
   ];
 
   const isProtectedTab = (tabId: string) => {
@@ -320,6 +332,7 @@ const App: React.FC = () => {
       case 'testpaper': return <TestPaperGenerator />;
       case 'parentletters': return <ParentLetters />;
       case 'widgets': return <ClassroomWidgets />;
+      case 'skill-analysis': return <SkillAnalysis />;
       case 'school-overview': return <FitnessManagementIntro onLogin={() => {
         if (auth.currentUser) {
           setActiveTab('school-results');
