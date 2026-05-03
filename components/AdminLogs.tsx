@@ -18,11 +18,20 @@ const AdminLogs: React.FC = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      })) as any[];
-      setLogs(docs);
+      try {
+        const docs = snapshot.docs.map(doc => {
+          const data = doc.data();
+          // Ensure we don't crash if data is corrupted
+          return {
+            ...data,
+            id: doc.id,
+            timestamp: data.timestamp
+          };
+        }) as any[];
+        setLogs(docs);
+      } catch (err) {
+        console.error("Error processing logs snapshot:", err);
+      }
       setLoading(false);
     }, (error) => {
       console.warn("Log monitor failed to connect:", error);
@@ -106,7 +115,11 @@ const AdminLogs: React.FC = () => {
                     </span>
                     <div className="flex items-center text-slate-400 text-xs font-medium">
                       <Clock size={12} className="mr-1.5" />
-                      {log.timestamp?.toDate().toLocaleString() || 'Just now'}
+                      {log.timestamp && typeof log.timestamp.toDate === 'function' 
+                        ? log.timestamp.toDate().toLocaleString() 
+                        : log.timestamp 
+                          ? new Date(log.timestamp).toLocaleString()
+                          : 'Just now'}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded">

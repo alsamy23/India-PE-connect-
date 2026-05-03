@@ -76,7 +76,9 @@ const TestPaperGenerator: React.FC = () => {
   };
 
   const handleExportPdf = () => {
-    exportToPdf(contentRef.current, `TestPaper_${topic.slice(0, 15)}_${grade}`);
+    exportToPdf(contentRef.current, `TestPaper_${topic.slice(0, 15)}_${grade}`).catch(err => {
+      console.error("PDF Export error:", err);
+    });
   };
 
   const handleExportWord = () => {

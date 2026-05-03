@@ -107,95 +107,155 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
 export const fitnessService = {
   // School Management
   saveSchool: async (school: School) => {
-    await setDoc(doc(db, 'schools', school.id), school);
-    // Also set the admin as a member
-    await setDoc(doc(db, 'schoolMembers', school.adminId), {
-      uid: school.adminId,
-      schoolId: school.id,
-      role: 'admin'
-    });
+    try {
+      await setDoc(doc(db, 'schools', school.id), school);
+      // Also set the admin as a member
+      await setDoc(doc(db, 'schoolMembers', school.adminId), {
+        uid: school.adminId,
+        schoolId: school.id,
+        role: 'admin'
+      });
+    } catch (err) {
+      logError(err, 'error', { context: 'saveSchool failed', schoolId: school.id });
+      throw err;
+    }
   },
 
   getSchool: async (schoolId: string): Promise<School | null> => {
-    const docSnap = await getDoc(doc(db, 'schools', schoolId));
-    return docSnap.exists() ? docSnap.data() as School : null;
+    try {
+      const docSnap = await getDoc(doc(db, 'schools', schoolId));
+      return docSnap.exists() ? docSnap.data() as School : null;
+    } catch (err) {
+      logError(err, 'error', { context: 'getSchool failed', schoolId });
+      return null;
+    }
   },
 
   getSchoolMember: async (uid: string): Promise<SchoolMember | null> => {
-    const docSnap = await getDoc(doc(db, 'schoolMembers', uid));
-    return docSnap.exists() ? docSnap.data() as SchoolMember : null;
+    try {
+      const docSnap = await getDoc(doc(db, 'schoolMembers', uid));
+      return docSnap.exists() ? docSnap.data() as SchoolMember : null;
+    } catch (err) {
+      logError(err, 'error', { context: 'getSchoolMember failed', uid });
+      return null;
+    }
   },
 
   addTeamMember: async (member: SchoolMember) => {
-    await setDoc(doc(db, 'schoolMembers', member.uid), member);
+    try {
+      await setDoc(doc(db, 'schoolMembers', member.uid), member);
+    } catch (err) {
+      logError(err, 'error', { context: 'addTeamMember failed', memberUid: member.uid });
+      throw err;
+    }
   },
 
   getSchoolMembers: async (schoolId: string): Promise<SchoolMember[]> => {
-    const q = query(collection(db, 'schoolMembers'), where('schoolId', '==', schoolId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => doc.data() as SchoolMember);
+    try {
+      const q = query(collection(db, 'schoolMembers'), where('schoolId', '==', schoolId));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => doc.data() as SchoolMember);
+    } catch (err) {
+      logError(err, 'error', { context: 'getSchoolMembers failed', schoolId });
+      return [];
+    }
   },
 
   // Students
   saveStudent: async (student: Student) => {
-    await setDoc(doc(db, 'students', student.id), student);
+    try {
+      await setDoc(doc(db, 'students', student.id), student);
+    } catch (err) {
+      logError(err, 'error', { context: 'saveStudent failed', studentId: student.id });
+      throw err;
+    }
   },
   
   getStudents: async (teacherId: string, schoolId?: string, isAdmin = false): Promise<Student[]> => {
-    let q;
-    if (isAdmin && schoolId) {
-      q = query(collection(db, 'students'), where('schoolId', '==', schoolId));
-    } else {
-      q = query(collection(db, 'students'), where('teacherId', '==', teacherId));
+    try {
+      let q;
+      if (isAdmin && schoolId) {
+        q = query(collection(db, 'students'), where('schoolId', '==', schoolId));
+      } else {
+        q = query(collection(db, 'students'), where('teacherId', '==', teacherId));
+      }
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((doc: any) => doc.data() as Student);
+    } catch (err) {
+      logError(err, 'error', { context: 'getStudents failed', teacherId, schoolId, isAdmin });
+      return [];
     }
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc: any) => doc.data() as Student);
   },
 
   deleteStudent: async (id: string) => {
-    await deleteDoc(doc(db, 'students', id));
+    try {
+      await deleteDoc(doc(db, 'students', id));
+    } catch (err) {
+      logError(err, 'error', { context: 'deleteStudent failed', studentId: id });
+      throw err;
+    }
   },
 
   // Teams
   saveTeam: async (team: Team) => {
-    await setDoc(doc(db, 'teams', team.id), team);
+    try {
+      await setDoc(doc(db, 'teams', team.id), team);
+    } catch (err) {
+      logError(err, 'error', { context: 'saveTeam failed', teamId: team.id });
+      throw err;
+    }
   },
 
   getTeams: async (teacherId: string, schoolId?: string, isAdmin = false): Promise<Team[]> => {
-    let q;
-    if (isAdmin && schoolId) {
-      q = query(collection(db, 'teams'), where('schoolId', '==', schoolId));
-    } else {
-      q = query(collection(db, 'teams'), where('teacherId', '==', teacherId));
+    try {
+      let q;
+      if (isAdmin && schoolId) {
+        q = query(collection(db, 'teams'), where('schoolId', '==', schoolId));
+      } else {
+        q = query(collection(db, 'teams'), where('teacherId', '==', teacherId));
+      }
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((doc: any) => doc.data() as Team);
+    } catch (err) {
+      logError(err, 'error', { context: 'getTeams failed', teacherId, schoolId, isAdmin });
+      return [];
     }
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc: any) => doc.data() as Team);
   },
 
   // Results
   saveResult: async (result: FitnessResult) => {
-    await setDoc(doc(db, 'results', result.id), result);
+    try {
+      await setDoc(doc(db, 'results', result.id), result);
+    } catch (err) {
+      logError(err, 'error', { context: 'saveResult failed', resultId: result.id });
+      throw err;
+    }
   },
 
   getRecentResults: async (teacherId: string, schoolId?: string, isAdmin = false, limitCount = 10): Promise<FitnessResult[]> => {
-    let q;
-    if (isAdmin && schoolId) {
-      q = query(
-        collection(db, 'results'), 
-        where('schoolId', '==', schoolId),
-        orderBy('date', 'desc'),
-        limit(limitCount)
-      );
-    } else {
-      q = query(
-        collection(db, 'results'), 
-        where('teacherId', '==', teacherId),
-        orderBy('date', 'desc'),
-        limit(limitCount)
-      );
+    try {
+      let q;
+      if (isAdmin && schoolId) {
+        q = query(
+          collection(db, 'results'), 
+          where('schoolId', '==', schoolId),
+          orderBy('date', 'desc'),
+          limit(limitCount)
+        );
+      } else {
+        q = query(
+          collection(db, 'results'), 
+          where('teacherId', '==', teacherId),
+          orderBy('date', 'desc'),
+          limit(limitCount)
+        );
+      }
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((doc: any) => doc.data() as FitnessResult);
+    } catch (err) {
+      logError(err, 'error', { context: 'getRecentResults failed', teacherId, schoolId, isAdmin });
+      return [];
     }
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc: any) => doc.data() as FitnessResult);
   },
 
   // Real-time listeners

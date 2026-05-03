@@ -72,7 +72,9 @@ const YearlyPlanner: React.FC = () => {
   };
 
   const handleExportPdf = () => {
-    exportToPdf(contentRef.current, `PE_Yearly_Plan_Grade${grade}_${board}`);
+    exportToPdf(contentRef.current, `PE_Yearly_Plan_Grade${grade}_${board}`).catch(err => {
+      console.error("PDF Export error:", err);
+    });
   };
 
   const handleExportWord = () => {

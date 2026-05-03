@@ -80,7 +80,9 @@ const TheoryHub: React.FC = () => {
   };
 
   const handleExportPdf = () => {
-    exportToPdf(contentRef.current, `Theory_${result?.title}_Grade${grade}`);
+    exportToPdf(contentRef.current, `Theory_${result?.title}_Grade${grade}`).catch(err => {
+      console.error("PDF Export error:", err);
+    });
   };
 
   const handleExportWord = () => {

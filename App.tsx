@@ -85,6 +85,12 @@ const App: React.FC = () => {
       if (currentUser) {
         setIsAuthView(false); // Reset auth view when user logs in
       }
+    }, (error) => {
+      console.error("Auth state change error:", error);
+      try {
+        logError(error, 'error', { context: 'onAuthStateChanged failed' }).catch(() => {});
+      } catch (e) {}
+      setIsAuthReady(true);
     });
     return () => unsubscribe();
   }, []);
@@ -103,32 +109,31 @@ const App: React.FC = () => {
     try {
       console.log("Checking API health...");
       const response = await fetch(`/api/health?t=${Date.now()}`); // Cache busting
-      const text = await response.text();
       
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+
+      const text = await response.text();
       const contentType = response.headers.get("content-type");
+      
       if (!contentType || !contentType.includes("application/json")) {
-        console.error("Health check returned non-JSON response:", text);
-        
-        if (retryCount < 3) {
-          console.log(`Retrying health check (${retryCount + 1}/3)...`);
-          setTimeout(() => checkApiStatus(retryCount + 1).catch(console.error), 2000);
+        if (retryCount < 2) {
+          console.log(`Retrying health check (${retryCount + 1}/2)...`);
+          setTimeout(() => checkApiStatus(retryCount + 1).catch(() => {}), 2000);
           return;
         }
-        
         setApiStatus('missing');
-        setDebugInfo({ error: "Server returned non-JSON", detail: text.substring(0, 100) });
         return;
       }
 
       const data = JSON.parse(text);
-      console.log("API Health Data:", data);
       
       if (data.status === 'ok') {
         setApiStatus('ok');
         setAiProviders({ gemini: data.hasGemini, groq: data.hasGroq });
         setApiSource(data.hasGemini ? 'Gemini' : 'Groq');
         setDebugInfo(data);
-        // If we were missing a key and now have one, close the dialog
         if (isKeyDialogOpen && (data.hasGemini || data.hasGroq)) {
           setIsKeyDialogOpen(false);
         }
@@ -136,37 +141,51 @@ const App: React.FC = () => {
         setApiStatus('quota');
         setAiProviders({ gemini: false, groq: false });
         setApiSource('');
-        setDebugInfo(data);
-      } else if (data.status === 'error' && (
-        data.message?.toLowerCase().includes('expired') || 
-        data.message?.toLowerCase().includes('renew') || 
-        data.message?.toLowerCase().includes('invalid') ||
-        data.message?.toLowerCase().includes('not valid')
-      )) {
-        setApiStatus('missing'); 
-        setAiProviders({ gemini: false, groq: false });
-        setApiSource('Expired Key');
-        setDebugInfo(data);
       } else {
         setApiStatus('missing');
         setAiProviders({ gemini: false, groq: false });
         setApiSource('');
-        setDebugInfo(data);
       }
     } catch (error: any) {
       console.error("Health check failed:", error);
-      logError(error, 'error', { context: 'Health check failed' });
-      if (retryCount < 3) {
-        setTimeout(() => checkApiStatus(retryCount + 1).catch(console.error), 2000);
+      // Only log fatal/unexpected health check errors
+      if (error.name !== 'TypeError' && error.name !== 'AbortError') {
+        logError(error, 'error', { context: 'Health check failed' });
+      }
+      
+      if (retryCount < 2) {
+        setTimeout(() => checkApiStatus(retryCount + 1).catch(() => {}), 2000);
       } else {
         setApiStatus('missing');
-        setDebugInfo({ error: error.message });
       }
     }
   };
 
   useEffect(() => {
-    checkApiStatus().catch(console.error);
+    const handleRejection = (e: PromiseRejectionEvent) => {
+      // Suppress Vite's red error overlay for background promise rejections
+      e.preventDefault();
+      console.debug("Silenced background promise rejection:", e.reason);
+    };
+    const handleError = (e: ErrorEvent) => {
+      // Only prevent default if it's a known non-critical error or vite WebSocket error
+      if (e.message && (e.message.includes('WebSocket') || e.message.includes('fetch'))) {
+        e.preventDefault();
+      }
+    };
+    
+    window.addEventListener('unhandledrejection', handleRejection);
+    window.addEventListener('error', handleError);
+    
+    return () => {
+      window.removeEventListener('unhandledrejection', handleRejection);
+      window.removeEventListener('error', handleError);
+    };
+  }, []);
+
+  useEffect(() => {
+    checkApiStatus().catch(() => {});
+
     
     // Check if key was selected if we're still missing it, but less frequently
     const interval = setInterval(() => {
@@ -183,12 +202,12 @@ const App: React.FC = () => {
             console.debug("Background check silenced:", e);
           }
         };
-        checkKey();
+        checkKey().catch(() => {});
       }
-    }, 20000); // 20 seconds is sufficient for background checks
+    }, 45000); // 45 seconds is sufficient for background checks
     
     return () => clearInterval(interval);
-  }, []); // Only run once on mount
+  }, [apiStatus]); // Re-run when apiStatus changes to missing
 
   const handleSelectKey = async () => {
     try {

@@ -34,29 +34,29 @@ export interface LessonPlan {
   teachingAids: string[];
   safety: string[];
   keyVocabulary: string[];
-  sen: {
+  sen?: {
     wave1: string;
     wave2: string;
     wave3: string;
   };
-  objectives: {
+  objectives?: {
     know: string;
     understand: string;
     beAbleTo: string;
   };
-  successCriteria: {
+  successCriteria?: {
     all: string;
     most: string;
     some: string;
   };
 
   // Structure
-  starter: {
+  starter?: {
     time: string;
     title: string;
     description: string;
   };
-  mainActivity: {
+  mainActivity?: {
     time: string;
     activities: {
       title: string;
@@ -64,7 +64,7 @@ export interface LessonPlan {
       coachingPoints: string[];
     }[];
   };
-  plenary: {
+  plenary?: {
     time: string;
     title: string;
     description: string;

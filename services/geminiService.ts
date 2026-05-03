@@ -110,25 +110,33 @@ const callAIBase = async (payload: any, retries = 2) => {
   }
 };
 
-const safeParseJson = (text: string | undefined): any => {
-  if (!text) throw new Error("AI response was empty.");
+const safeParseJson = (data: any): any => {
+  if (!data) throw new Error("AI response was empty.");
   
-  let cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  // If it's already an object, return it (sometimes the proxy parses it)
+  if (typeof data === 'object') return data;
+  
+  // If it's a string, try to parse it
+  if (typeof data === 'string') {
+    let cleanText = data.replace(/```json/g, '').replace(/```/g, '').trim();
 
-  try {
-    return JSON.parse(cleanText);
-  } catch (e) {
-    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("The AI response was malformed. Please try again.");
-    }
-    
     try {
-      return JSON.parse(jsonMatch[0]);
-    } catch (innerE) {
-      throw new Error("The AI generated an invalid format. Try simplifying your request.");
+      return JSON.parse(cleanText);
+    } catch (e) {
+      const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("The AI response was malformed. Please try again.");
+      }
+      
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (innerE) {
+        throw new Error("The AI generated an invalid format. Try simplifying your request.");
+      }
     }
   }
+
+  return data;
 };
 
 export const generateLessonPlan = async (
@@ -143,6 +151,7 @@ export const generateLessonPlan = async (
   equipment: string
 ): Promise<LessonPlan> => {
   const schema = {
+    // ... schema remains same ...
     type: "OBJECT",
     properties: {
       teacher: { type: "STRING" },
@@ -248,7 +257,17 @@ export const generateLessonPlan = async (
       responseSchema: schema
     }
   });
-  return safeParseJson(response.text);
+
+  // Handle both { text: "..." } and direct object responses
+  const aiText = response.text || (typeof response === 'string' ? response : null);
+  if (aiText) return safeParseJson(aiText);
+  
+  // If it's already an object but not in .text (some proxies)
+  if (typeof response === 'object' && !Array.isArray(response) && Object.keys(response).length > 2) {
+    return response;
+  }
+  
+  throw new Error("AI returned an unexpected response format.");
 };
 
 export const generateYearlyPlan = async (
@@ -324,7 +343,7 @@ export const generateYearlyPlan = async (
     }
   });
 
-  const parsed = safeParseJson(response.text);
+  const parsed = safeParseJson(response.text || response);
   const terms = Array.isArray(parsed.terms) ? parsed.terms : [];
 
   return { 
@@ -373,12 +392,12 @@ export const generateMindMap = async (grade: string, chapter: string, board: Boa
     Provide 6-8 main branches with clear, academic titles and brief descriptions.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
-      systemInstruction: "You are a CBSE Physical Education Subject Matter Expert. Generate a structured, hierarchical mind map in JSON format. Ensure full coverage of the specified chapter according to the 2025-26 syllabus.",
+      systemInstruction: "You are a CBSE Physical Education Subject Matter Expert. Generate a structured, hierarchical mind map in JSON format. Ensure full coverage of the specified chapter according to the 2025-2026 syllabus.",
       responseMimeType: "application/json",
       responseSchema: schema
     }
   });
-  return safeParseJson(response.text);
+  return safeParseJson(response.text || response);
 };
 
 export const generateTheoryContent = async (grade: string, topic: string, board: BoardType, contentType: string, language: Language): Promise<TheoryContent> => {
@@ -427,7 +446,7 @@ export const generateTheoryContent = async (grade: string, topic: string, board:
       tools: isCBSE12 ? [{ urlContext: {} }] : undefined
     }
   });
-  return safeParseJson(response.text);
+  return safeParseJson(response.text || response);
 };
 
 export const generateAIToolContent = async (toolId: string, params: any) => {
@@ -456,7 +475,7 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
       responseSchema: schema
     }
   });
-  return safeParseJson(response.text);
+  return safeParseJson(response.text || response);
 };
 
 export const generateLessonDiagram = async (prompt: string, context: string = 'general') => {
@@ -511,7 +530,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
       responseSchema: schema
     }
   });
-  return safeParseJson(response.text);
+  return safeParseJson(response.text || response);
 };
 
 export const getStateRegulationInsights = async (state: string, board: BoardType) => {
@@ -573,7 +592,7 @@ export const evaluateFitnessTests = async (
       responseSchema: schema
     }
   });
-  return safeParseJson(response.text);
+  return safeParseJson(response.text || response);
 };
 
 export const evaluateKheloIndiaScores = async (
@@ -623,7 +642,7 @@ export const evaluateKheloIndiaScores = async (
       responseSchema: schema
     }
   });
-  return safeParseJson(response.text);
+  return safeParseJson(response.text || response);
 };
 
 export const generateTestPaper = async (
@@ -701,7 +720,7 @@ export const generateTestPaper = async (
       responseSchema: schema
     }
   });
-  return safeParseJson(response.text);
+  return safeParseJson(response.text || response);
 };
 
 export const explainBiomechanics = async (
@@ -731,7 +750,7 @@ export const explainBiomechanics = async (
       responseSchema: schema
     }
   });
-  return safeParseJson(response.text);
+  return safeParseJson(response.text || response);
 };
 
 export const getSportsRule = async (sport: string, query: string, language: Language) => {

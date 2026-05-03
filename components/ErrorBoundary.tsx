@@ -34,9 +34,14 @@ class ErrorBoundary extends Component<Props, State> {
 
   private handleUnhandledRejection = (event: PromiseRejectionEvent) => {
     let reason = event.reason;
+    if (!reason) return; // Ignore empty rejections
+
     let message = "Unknown promise rejection";
     
     if (reason instanceof Error) {
+      if (reason.name === 'AbortError' || reason.message.includes('WebSocket') || reason.message.includes('fetch')) {
+        return; // Ignore common network/abort errors
+      }
       message = reason.message;
     } else if (typeof reason === 'string') {
       message = reason;
@@ -48,12 +53,14 @@ class ErrorBoundary extends Component<Props, State> {
       }
     }
 
-    console.error('Caught unhandled promise rejection:', reason);
-    logError(message, 'promise_rejection', { 
-      rawReason: reason,
-      location: window.location.href,
-      userAgent: navigator.userAgent
-    });
+    console.warn('Caught unhandled promise rejection:', reason);
+    try {
+      logError(message, 'promise_rejection', { 
+        rawReason: reason,
+        location: window.location.href,
+        userAgent: navigator.userAgent
+      }).catch(() => {});
+    } catch (e) {}
   };
 
   public componentDidMount() {
