@@ -110,7 +110,7 @@ class ErrorBoundary extends Component<Props, State> {
                 <span>Reload App</span>
               </button>
               <button
-                onClick={() => window.location.href = '/'}
+                onClick={() => { window.location.assign('/'); }}
                 className="flex items-center justify-center space-x-2 py-4 bg-white border-2 border-slate-100 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
               >
                 <Home size={16} />

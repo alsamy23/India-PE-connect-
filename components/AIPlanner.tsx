@@ -511,15 +511,15 @@ const AIPlanner: React.FC = () => {
                         <div className="space-y-3">
                            <div className="flex items-start">
                              <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                             <p className="text-sm"><strong>Know:</strong> {typeof plan.objectives?.know === 'object' ? JSON.stringify(plan.objectives?.know) : plan.objectives?.know}</p>
+                             <p className="text-sm"><strong>Know:</strong> {plan.objectives?.know ? (typeof plan.objectives.know === 'object' ? JSON.stringify(plan.objectives.know) : String(plan.objectives.know)) : 'TBD'}</p>
                            </div>
                            <div className="flex items-start">
                              <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                             <p className="text-sm"><strong>Understand:</strong> {typeof plan.objectives?.understand === 'object' ? JSON.stringify(plan.objectives?.understand) : plan.objectives?.understand}</p>
+                             <p className="text-sm"><strong>Understand:</strong> {plan.objectives?.understand ? (typeof plan.objectives.understand === 'object' ? JSON.stringify(plan.objectives.understand) : String(plan.objectives.understand)) : 'TBD'}</p>
                            </div>
                            <div className="flex items-start">
                              <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                             <p className="text-sm"><strong>Apply:</strong> {typeof plan.objectives?.beAbleTo === 'object' ? JSON.stringify(plan.objectives?.beAbleTo) : plan.objectives?.beAbleTo}</p>
+                             <p className="text-sm"><strong>Apply:</strong> {plan.objectives?.beAbleTo ? (typeof plan.objectives.beAbleTo === 'object' ? JSON.stringify(plan.objectives.beAbleTo) : String(plan.objectives.beAbleTo)) : 'TBD'}</p>
                            </div>
                         </div>
                      </div>
