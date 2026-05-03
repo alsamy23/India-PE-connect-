@@ -28,7 +28,8 @@ import {
   Mail,
   Zap,
   Shield,
-  Video
+  Video,
+  Terminal
 } from 'lucide-react';
 import Dashboard from './components/Dashboard.tsx';
 import AIPlanner from './components/AIPlanner.tsx';
@@ -53,10 +54,12 @@ import Auth from './components/Auth.tsx';
 import FitnessManagementIntro from './components/FitnessManagementIntro.tsx';
 import SchoolAdmin from './components/SchoolAdmin.tsx';
 import SkillAnalysis from './components/SkillAnalysis.tsx';
+import AdminLogs from './components/AdminLogs.tsx';
+import { logError } from './services/logService.ts';
 import { auth } from './services/firebase.ts';
 import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
 
-type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs';
 
 import { BoardType, Language } from './types.ts';
 
@@ -108,7 +111,7 @@ const App: React.FC = () => {
         
         if (retryCount < 3) {
           console.log(`Retrying health check (${retryCount + 1}/3)...`);
-          setTimeout(() => checkApiStatus(retryCount + 1), 2000);
+          setTimeout(() => checkApiStatus(retryCount + 1).catch(console.error), 2000);
           return;
         }
         
@@ -152,8 +155,9 @@ const App: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Health check failed:", error);
+      logError(error, 'error', { context: 'Health check failed' });
       if (retryCount < 3) {
-        setTimeout(() => checkApiStatus(retryCount + 1), 2000);
+        setTimeout(() => checkApiStatus(retryCount + 1).catch(console.error), 2000);
       } else {
         setApiStatus('missing');
         setDebugInfo({ error: error.message });
@@ -162,21 +166,23 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    checkApiStatus();
+    checkApiStatus().catch(console.error);
     
     // Check if key was selected if we're still missing it, but less frequently
-    const interval = setInterval(async () => {
+    const interval = setInterval(() => {
       if (apiStatus === 'missing' && window.aistudio) {
-        try {
-          const hasKey = await window.aistudio.hasSelectedApiKey();
-          if (hasKey) {
-            checkApiStatus();
-          }
-        } catch (e) {
-          console.error("Error checking API key:", e);
-        }
+        window.aistudio.hasSelectedApiKey()
+          .then(hasKey => {
+            if (hasKey) {
+              return checkApiStatus();
+            }
+          })
+          .catch(e => {
+            console.warn("Background API check silenced:", e);
+            // Don't log this to Firestore to avoid cluttering, just silence the rejection
+          });
       }
-    }, 10000); // 10 seconds is enough
+    }, 15000); 
     
     return () => clearInterval(interval);
   }, []); // Only run once on mount
@@ -189,7 +195,7 @@ const App: React.FC = () => {
         setApiStatus('ok');
         setIsKeyDialogOpen(false);
         // Re-check health after a short delay to be sure
-        setTimeout(checkApiStatus, 3000);
+        setTimeout(() => checkApiStatus().catch(console.error), 3000);
       }
     } catch (err) {
       console.error(err);
@@ -221,7 +227,7 @@ const App: React.FC = () => {
       const data = JSON.parse(text);
       if (data.message) {
         alert("Success: " + data.message);
-        checkApiStatus();
+        checkApiStatus().catch(console.error);
       } else {
         const err = data.error || "Unknown error";
         setGlobalError(err);
@@ -240,7 +246,7 @@ const App: React.FC = () => {
       if (window.aistudio) {
         // There isn't a direct 'clear' but we can re-open or just refresh
         await window.aistudio.openSelectKey();
-        checkApiStatus();
+        checkApiStatus().catch(console.error);
       }
     } catch (err) {
       console.error(err);
@@ -275,6 +281,7 @@ const App: React.FC = () => {
       items: [
         { id: 'compliance', name: 'State Compliance', icon: ShieldCheck, subtitle: 'CBSE and NEP 2020 alignment.' },
         { id: 'school-admin', name: 'School Settings', icon: Shield, protected: true },
+        { id: 'logs', name: 'System Logs', icon: Terminal, protected: true, subtitle: 'Monitor real-time error reports.' },
       ]
     },
 
@@ -329,6 +336,7 @@ const App: React.FC = () => {
       case 'school-students': return <StudentManagement />;
       case 'school-teams': return <TeamManagement />;
       case 'school-admin': return <SchoolAdmin />;
+      case 'logs': return <AdminLogs />;
       case 'testpaper': return <TestPaperGenerator />;
       case 'parentletters': return <ParentLetters />;
       case 'widgets': return <ClassroomWidgets />;
@@ -511,7 +519,7 @@ const App: React.FC = () => {
                       >
                         <subItem.icon size={20} className={activeTab === subItem.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'} />
                         <span className="text-sm tracking-wide uppercase font-display">{subItem.name}</span>
-                        {subItem.isNew && activeTab !== subItem.id && (
+                        {(subItem as any).isNew && activeTab !== subItem.id && (
                           <span className="absolute right-4 top-4 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
                         )}
                         {activeTab === subItem.id && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"></div>}

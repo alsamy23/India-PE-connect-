@@ -219,6 +219,12 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId));
     }
 
+    match /system_logs/{logId} {
+      allow create: if request.resource.data.message is string 
+                    && request.resource.data.message.size() < 5000;
+      allow read, update, delete: if false;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

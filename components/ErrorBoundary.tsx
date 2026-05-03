@@ -1,6 +1,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCcw, Home } from 'lucide-react';
+import { logError } from '../services/logService';
 
 interface Props {
   children: ReactNode;
@@ -23,16 +24,17 @@ class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught rendering error:', error, errorInfo);
+    logError(error, 'react_error', { componentStack: errorInfo.componentStack });
   }
 
   private handleGlobalError = (event: ErrorEvent) => {
     console.error('Caught global error:', event.error);
-    // Suppress global errors from crashing the UI
+    logError(event.error || event.message, 'error');
   };
 
   private handleUnhandledRejection = (event: PromiseRejectionEvent) => {
     console.error('Caught unhandled promise rejection:', event.reason);
-    // Suppress unhandled promise rejections from crashing the UI
+    logError(event.reason, 'promise_rejection');
   };
 
   public componentDidMount() {

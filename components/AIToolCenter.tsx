@@ -111,7 +111,7 @@ const AIToolCenter: React.FC = () => {
                       Retry Generation
                     </button>
                     <button 
-                      onClick={() => window.aistudio?.openSelectKey()}
+                      onClick={() => window.aistudio?.openSelectKey().catch(e => console.error("Key selection cancelled:", e))}
                       className="px-6 py-2 bg-white text-red-600 border-2 border-red-100 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-50 transition-colors"
                     >
                       Fix AI Connection
@@ -147,10 +147,10 @@ const AIToolCenter: React.FC = () => {
                         <List size={16} className="mr-2 text-indigo-500" /> Key Items
                       </h4>
                       <ul className="space-y-3">
-                        {result.items.map((item: string, idx: number) => (
+                        {result.items.map((item: any, idx: number) => (
                           <li key={idx} className="flex items-start text-slate-700 font-medium text-sm">
                             <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                            {item}
+                            {typeof item === 'object' ? JSON.stringify(item) : item}
                           </li>
                         ))}
                       </ul>

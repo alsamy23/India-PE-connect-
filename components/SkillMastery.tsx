@@ -146,7 +146,18 @@ const SkillMastery: React.FC = () => {
                     {phase.drills?.map((drill, dIdx) => (
                       <div key={dIdx} className="flex items-start space-x-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-xl">
                         <ChevronRight size={14} className="mt-0.5 text-indigo-400 flex-shrink-0" />
-                        <span>{drill}</span>
+                        <span>
+                          {typeof drill === 'object' ? (
+                            <div className="space-y-1">
+                              <span className="font-bold block text-indigo-700">{(drill as any).name || (drill as any).title || 'Drill'}</span>
+                              {(drill as any).action && <p className="text-xs">{(drill as any).action}</p>}
+                              <div className="flex gap-4 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                {(drill as any).repetitions && <span>Reps: {(drill as any).repetitions}</span>}
+                                {(drill as any).sets && <span>Sets: {(drill as any).sets}</span>}
+                              </div>
+                            </div>
+                          ) : drill}
+                        </span>
                       </div>
                     ))}
                   </div>

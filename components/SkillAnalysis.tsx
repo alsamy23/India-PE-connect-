@@ -47,7 +47,7 @@ const SkillAnalysis: React.FC = () => {
     if (isLive && streamRef.current && livePreviewRef.current) {
       const video = livePreviewRef.current;
       video.srcObject = streamRef.current;
-      video.play().catch(e => console.error("Monitor play error:", e));
+      video.play().catch(e => console.warn("Monitor play silently failed (expected browser policy):", e.message));
     }
   }, [isLive]);
 
@@ -97,12 +97,20 @@ const SkillAnalysis: React.FC = () => {
       };
 
       // Add a race to handle potential infinite wait or internal browser timeouts
-      const stream = await Promise.race([
-        getStream(),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Camera request timed out (Hardware may be in use)')), 15000)
-        )
-      ]);
+      let timeoutId: any;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Camera request timed out (Hardware may be in use)')), 15000);
+      });
+
+      const getStreamWithTimeout = async () => {
+        try {
+          return await Promise.race([getStream(), timeoutPromise]);
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      };
+
+      const stream = await getStreamWithTimeout();
 
       if (!isMounted.current) {
         stream.getTracks().forEach(t => t.stop());

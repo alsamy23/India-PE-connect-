@@ -290,7 +290,7 @@ const TestPaperGenerator: React.FC = () => {
                         Retry
                       </button>
                       <button 
-                        onClick={() => window.aistudio?.openSelectKey()}
+                        onClick={() => window.aistudio?.openSelectKey().catch(e => console.error("Key selection cancelled:", e))}
                         className="py-3 bg-white border border-rose-200 text-rose-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 transition-all"
                       >
                         Setup AI
@@ -422,7 +422,7 @@ const TestPaperGenerator: React.FC = () => {
                 <div className="space-y-4">
                   <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs">General Instructions:</h4>
                   <ul className="space-y-2">
-                    {result.generalInstructions.map((inst, idx) => (
+                    {Array.isArray(result.generalInstructions) && result.generalInstructions.map((inst, idx) => (
                       <li key={idx} className="text-sm text-slate-600 font-medium flex items-start">
                         <span className="mr-3 text-slate-400">•</span>
                         {inst}
@@ -432,7 +432,7 @@ const TestPaperGenerator: React.FC = () => {
                 </div>
 
                 {/* Sections */}
-                {result.sections.map((section, sIdx) => (
+                {Array.isArray(result.sections) && result.sections.map((section, sIdx) => (
                   <motion.div 
                     key={sIdx} 
                     initial={{ opacity: 0, x: -20 }}
@@ -448,7 +448,7 @@ const TestPaperGenerator: React.FC = () => {
                     </div>
 
                     <div className="space-y-10">
-                      {section.questions.map((q, qIdx) => (
+                      {Array.isArray(section.questions) && section.questions.map((q, qIdx) => (
                         <div key={qIdx} className="space-y-6">
                           <div className="flex justify-between items-start gap-6">
                             <div className="flex-1 space-y-4">
@@ -459,7 +459,7 @@ const TestPaperGenerator: React.FC = () => {
                               
                               {q.options && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-10">
-                                  {q.options.map((opt, oIdx) => (
+                                  {Array.isArray(q.options) && q.options.map((opt, oIdx) => (
                                     <div key={oIdx} className="text-sm text-slate-600 font-medium flex items-center">
                                       <span className="w-6 h-6 bg-slate-50 rounded-md flex items-center justify-center text-[10px] font-black mr-3 border border-slate-100">
                                         {String.fromCharCode(65 + oIdx)}

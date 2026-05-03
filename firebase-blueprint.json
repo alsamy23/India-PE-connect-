@@ -92,6 +92,23 @@
         "percentile": { "type": "number" }
       },
       "required": ["id", "teacherId", "schoolId", "studentId", "testId", "value", "date"]
+    },
+    "AppErrorLog": {
+      "title": "AppErrorLog",
+      "description": "System error and crash reports",
+      "type": "object",
+      "properties": {
+        "message": { "type": "string" },
+        "stack": { "type": "string" },
+        "componentStack": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "platform": { "type": "string" },
+        "url": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "type": { "type": "string" }
+      },
+      "required": ["message", "timestamp", "type"]
     }
   },
   "firestore": {
@@ -100,6 +117,7 @@
     "/schoolMembers/{uid}": { "schema": "SchoolMember", "description": "School staff memberships" },
     "/students/{studentId}": { "schema": "Student", "description": "Student records" },
     "/teams/{teamId}": { "schema": "Team", "description": "Class/Team records" },
-    "/results/{resultId}": { "schema": "FitnessResult", "description": "Test results" }
+    "/results/{resultId}": { "schema": "FitnessResult", "description": "Test results" },
+    "/system_logs/{logId}": { "schema": "AppErrorLog", "description": "Remote application logs" }
   }
 }

@@ -355,7 +355,7 @@ const AIPlanner: React.FC = () => {
                   </button>
                   {error.type === 'key' && (
                     <button 
-                      onClick={() => window.aistudio?.openSelectKey()}
+                      onClick={() => window.aistudio?.openSelectKey().catch(e => console.error("Key selection cancelled:", e))}
                       className="flex-1 py-1.5 bg-white border border-indigo-200 text-indigo-900 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all font-mono"
                     >
                       Update Key
@@ -576,7 +576,9 @@ const AIPlanner: React.FC = () => {
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Coaching Points</span>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   {act.coachingPoints?.map((cp, cpi) => (
-                                    <span key={cpi} className="px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-600">{cp}</span>
+                                    <span key={cpi} className="px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-600">
+                                      {typeof cp === 'object' ? JSON.stringify(cp) : cp}
+                                    </span>
                                   ))}
                                 </div>
                               </div>

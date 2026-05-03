@@ -24,9 +24,21 @@ import {
   Dumbbell,
   Gamepad2,
   Layers,
-  X
+  X,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const speakText = (text: string) => {
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+  }
+};
 
 // --- Easy Rubric ---
 const EasyRubric = () => {
@@ -93,6 +105,7 @@ const RunLapTap = () => {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState<number[]>([]);
+  const [sayLouder, setSayLouder] = useState(false);
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
@@ -115,6 +128,14 @@ const RunLapTap = () => {
 
   const handleLap = () => {
     setLaps([time, ...laps]);
+    if (sayLouder) {
+      const min = Math.floor(time / 60000);
+      const sec = Math.floor((time % 60000) / 1000);
+      let timeStr = "";
+      if (min > 0) timeStr += `${min} minute${min > 1 ? 's' : ''} `;
+      if (sec > 0 || min === 0) timeStr += `${sec} second${sec !== 1 ? 's' : ''}`;
+      speakText(`Lap ${laps.length + 1}, at ${timeStr}`);
+    }
   };
 
   const handleReset = () => {
@@ -127,6 +148,13 @@ const RunLapTap = () => {
     <div className="space-y-6">
       <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white text-center relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 blur-[50px] rounded-full" />
+        <button 
+          onClick={() => setSayLouder(!sayLouder)}
+          className={`absolute top-6 left-6 p-2 rounded-full transition-all ${sayLouder ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400'}`}
+          title="Announce Laps"
+        >
+          {sayLouder ? <Volume2 size={20} /> : <VolumeX size={20} />}
+        </button>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-4">Run-Lap-Tap</p>
         <h3 className="text-6xl font-black tracking-tighter font-mono mb-8">{formatTime(time)}</h3>
         
@@ -183,7 +211,22 @@ const StationTimer = () => {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [currentStation, setCurrentStation] = useState(1);
   const [isRunning, setIsRunning] = useState(false);
+  const [sayLouder, setSayLouder] = useState(false);
   const timerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (isRunning && sayLouder) {
+      if (timeLeft <= 10 && timeLeft > 0) {
+        speakText(timeLeft.toString());
+      } else if (timeLeft === 0) {
+        if (currentStation < stations) {
+          speakText("Next station!");
+        } else {
+          speakText("Workout complete!");
+        }
+      }
+    }
+  }, [timeLeft, isRunning, sayLouder, currentStation, stations]);
 
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
@@ -222,7 +265,7 @@ const StationTimer = () => {
             className="w-full text-2xl font-black text-slate-800 outline-none bg-transparent"
           />
         </div>
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Duration (s)</label>
           <input 
             type="number" 
@@ -233,6 +276,13 @@ const StationTimer = () => {
             }}
             className="w-full text-2xl font-black text-slate-800 outline-none bg-transparent"
           />
+          <button 
+            onClick={() => setSayLouder(!sayLouder)}
+            className={`absolute top-4 right-4 p-2 rounded-full transition-all ${sayLouder ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'}`}
+            title="Voice Announcements"
+          >
+            {sayLouder ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </button>
         </div>
       </div>
 
@@ -370,7 +420,26 @@ const WorkoutTimer = () => {
   const [isWorkPhase, setIsWorkPhase] = useState(true);
   const [timeLeft, setTimeLeft] = useState(work);
   const [isRunning, setIsRunning] = useState(false);
+  const [sayLouder, setSayLouder] = useState(false);
   const timerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (isRunning && sayLouder) {
+      if (timeLeft <= 10 && timeLeft > 0) {
+        speakText(timeLeft.toString());
+      } else if (timeLeft === 0) {
+        if (isWorkPhase) {
+          speakText("Rest!");
+        } else {
+          if (currentRound < rounds) {
+            speakText("Work!");
+          } else {
+            speakText("Workout complete!");
+          }
+        }
+      }
+    }
+  }, [timeLeft, isRunning, sayLouder, isWorkPhase, currentRound, rounds]);
 
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
@@ -406,9 +475,16 @@ const WorkoutTimer = () => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Work</label>
           <input type="number" value={work} onChange={e => setWork(parseInt(e.target.value))} className="w-full font-black text-slate-800 outline-none bg-transparent" />
+          <button 
+            onClick={() => setSayLouder(!sayLouder)}
+            className={`absolute top-2 right-2 p-1.5 rounded-full transition-all ${sayLouder ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}
+            title="Voice Announcements"
+          >
+            {sayLouder ? <Volume2 size={14} /> : <VolumeX size={14} />}
+          </button>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Rest</label>
@@ -568,7 +644,7 @@ const ClassroomWidgets: React.FC = () => {
             <Zap size={14} className="text-orange-400" />
             <span className="text-[10px] font-black uppercase tracking-widest">7 Free Classroom Widgets</span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter mb-4">Gym <span className="text-orange-500">Essentials</span></h1>
+          <h1 className="text-4xl font-black tracking-tighter mb-4">Classroom <span className="text-orange-500">Essentials</span></h1>
           <p className="text-slate-400 text-sm font-medium max-w-md">
             Free tools teachers use in the gym every single lesson. No subscription required — free forever, no login needed.
           </p>

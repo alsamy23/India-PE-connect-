@@ -314,7 +314,7 @@ const TheoryHub: React.FC = () => {
                     <span>Try Again</span>
                   </button>
                   <button 
-                    onClick={() => (window as any).aistudio?.openSelectKey()}
+                    onClick={() => (window as any).aistudio?.openSelectKey().catch((e: any) => console.error("Key select cancelled:", e))}
                     className="px-8 py-4 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center space-x-2"
                   >
                     <ShieldCheck size={16} />
@@ -453,7 +453,7 @@ const TheoryHub: React.FC = () => {
                     Back to Mind Map
                   </button>
                   <button 
-                    onClick={() => (window as any).aistudio?.openSelectKey()}
+                    onClick={() => (window as any).aistudio?.openSelectKey().catch((e: any) => console.error("Key select cancelled:", e))}
                     className="px-8 py-4 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center space-x-2"
                   >
                     <ShieldCheck size={16} />
