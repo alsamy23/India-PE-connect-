@@ -34,10 +34,31 @@ const TestPaperGenerator: React.FC = () => {
   const [maxMarks, setMaxMarks] = useState(35);
   const [language, setLanguage] = useState<Language>('English');
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TestPaper | null>(null);
+  const [showMarkingScheme, setShowMarkingScheme] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleGradeChange = (newGrade: string) => {
+    setGrade(newGrade);
+    if (newGrade === '12' && (testType === 'Pre-Board' || testType === 'Final Exam')) {
+      setMaxMarks(70);
+      setTimeAllowed('3 Hours');
+    }
+  };
+
+  const handleTestTypeChange = (newType: string) => {
+    setTestType(newType);
+    if (grade === '12' && (newType === 'Pre-Board' || newType === 'Final Exam')) {
+      setMaxMarks(70);
+      setTimeAllowed('3 Hours');
+    } else if (newType === 'Unit Test') {
+      setMaxMarks(35);
+      setTimeAllowed('1.5 Hours');
+    }
+  };
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
@@ -46,7 +67,13 @@ const TestPaperGenerator: React.FC = () => {
     }
     setLoading(true);
     setError(null);
+    setLoadingStep("Analyzing Curriculum...");
+    
     try {
+      setTimeout(() => setLoadingStep("Architecting Questions..."), 2000);
+      setTimeout(() => setLoadingStep("Optimizing Marks Distribution..."), 5000);
+      setTimeout(() => setLoadingStep("Finalizing Formatting..."), 8000);
+      
       const data = await generateTestPaper(grade, topic, testType, timeAllowed, maxMarks, language);
       setResult(data);
     } catch (e: any) {
@@ -185,13 +212,13 @@ const TestPaperGenerator: React.FC = () => {
           
           <div className="flex bg-white/5 backdrop-blur-md p-1.5 rounded-2xl border border-white/10">
             <button 
-              onClick={() => setGrade('11')}
+              onClick={() => handleGradeChange('11')}
               className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${grade === '11' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
             >
               Class 11
             </button>
             <button 
-              onClick={() => setGrade('12')}
+              onClick={() => handleGradeChange('12')}
               className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${grade === '12' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
             >
               Class 12
@@ -204,6 +231,14 @@ const TestPaperGenerator: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Configuration Panel */}
           <div className="lg:col-span-1 space-y-6">
+            {grade === '12' && maxMarks === 70 && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl flex items-center space-x-3">
+                <CheckCircle2 size={18} className="text-emerald-500" />
+                <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
+                  CBSE 048 Blueprint Enabled
+                </p>
+              </div>
+            )}
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
               <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight flex items-center">
                 <Settings className="mr-2 text-emerald-500" size={20} />
@@ -215,7 +250,7 @@ const TestPaperGenerator: React.FC = () => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Test Type</label>
                   <select 
                     value={testType}
-                    onChange={e => setTestType(e.target.value)}
+                    onChange={e => handleTestTypeChange(e.target.value)}
                     className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-200 font-bold text-slate-700"
                   >
                     <option>Unit Test</option>
@@ -315,9 +350,9 @@ const TestPaperGenerator: React.FC = () => {
                     >
                       <Loader2 size={24} />
                     </motion.div>
-                    <div className="flex flex-col items-start">
-                      <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Architecting</span>
-                      <span className="text-xs font-black uppercase tracking-widest">Generating Paper...</span>
+                    <div className="flex flex-col items-start translate-y-0.5">
+                      <span className="text-[10px] font-black uppercase tracking-widest opacity-50 leading-none mb-1">{loadingStep || 'Architecting'}</span>
+                      <span className="text-xs font-black uppercase tracking-widest leading-none">Generating Paper...</span>
                     </div>
                   </div>
                 ) : (
@@ -370,6 +405,15 @@ const TestPaperGenerator: React.FC = () => {
               <span>Generate New</span>
             </button>
             <div className="flex space-x-3">
+              {result.markingScheme && (
+                <button 
+                  onClick={() => setShowMarkingScheme(!showMarkingScheme)}
+                  className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center space-x-2 ${showMarkingScheme ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-indigo-600 hover:bg-indigo-50'}`}
+                >
+                  <Sparkles size={16} />
+                  <span>{showMarkingScheme ? 'View Question Paper' : 'View Marking Scheme'}</span>
+                </button>
+              )}
               <button 
                 onClick={handleSave}
                 disabled={isSaved}
@@ -398,96 +442,151 @@ const TestPaperGenerator: React.FC = () => {
           {/* Test Preview */}
           <AnimatePresence mode="wait">
             <motion.div 
-              key={result.title}
+              key={showMarkingScheme ? 'marking-scheme' : 'question-paper'}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               ref={contentRef}
               className="bg-white rounded-[3rem] p-16 border border-slate-100 shadow-2xl max-w-4xl mx-auto print:shadow-none print:border-none print:p-0 relative overflow-hidden"
             >
-              {/* Decorative Background */}
-              <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
-                <FileText size={200} />
-              </div>
-
-              <div className="text-center space-y-4 mb-12 border-b-2 border-slate-900 pb-12">
-                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">{result.title}</h2>
-                <div className="flex justify-center items-center space-x-8 text-sm font-black uppercase tracking-widest text-slate-500">
-                  <span>Class: {result.displayGrade || result.grade}</span>
-                  <span>Subject: Physical Education</span>
-                  <span>Marks: {result.maxMarks}</span>
-                  <span>Time: {result.timeAllowed}</span>
-                </div>
-              </div>
-
-              <div className="space-y-12">
-                {/* Instructions */}
-                <div className="space-y-4">
-                  <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs">General Instructions:</h4>
-                  <ul className="space-y-2">
-                    {Array.isArray(result.generalInstructions) && result.generalInstructions.map((inst, idx) => (
-                      <li key={idx} className="text-sm text-slate-600 font-medium flex items-start">
-                        <span className="mr-3 text-slate-400">•</span>
-                        {typeof inst === 'object' ? JSON.stringify(inst) : inst}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Sections */}
-                {Array.isArray(result.sections) && result.sections.map((section, sIdx) => (
-                  <motion.div 
-                    key={sIdx} 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: sIdx * 0.1 }}
-                    className="space-y-8"
-                  >
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center">
-                      <h4 className="font-black text-slate-900 uppercase tracking-widest text-sm">
-                        Section {section.sectionId} {section.heading && `- ${section.heading}`}
-                      </h4>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{section.instructions}</span>
+              {showMarkingScheme ? (
+                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
+                  <div className="text-center space-y-4 mb-12 border-b-2 border-slate-900 pb-12">
+                    <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Marking Scheme</h2>
+                    <p className="text-sm font-black uppercase text-slate-500">{result.title}</p>
+                    <div className="flex justify-center items-center space-x-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      <span>Subject Code: 048</span>
+                      <span>Marks: {result.maxMarks}</span>
                     </div>
+                  </div>
 
-                    <div className="space-y-10">
-                      {Array.isArray(section.questions) && section.questions.map((q, qIdx) => (
-                        <div key={qIdx} className="space-y-6">
-                          <div className="flex justify-between items-start gap-6">
-                            <div className="flex-1 space-y-4">
-                              <p className="text-lg font-bold text-slate-800 leading-tight">
-                                <span className="mr-4 text-slate-400">{q.questionNumber || qIdx + 1}.</span>
-                                {typeof q.question === 'object' ? JSON.stringify(q.question) : q.question}
-                              </p>
-                              
-                              {q.options && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-10">
-                                  {Array.isArray(q.options) && q.options.map((opt, oIdx) => (
-                                    <div key={oIdx} className="text-sm text-slate-600 font-medium flex items-center">
-                                      <span className="w-6 h-6 bg-slate-50 rounded-md flex items-center justify-center text-[10px] font-black mr-3 border border-slate-100">
-                                        {String.fromCharCode(65 + oIdx)}
-                                      </span>
-                                      {typeof opt === 'object' ? JSON.stringify(opt) : opt}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {q.caseStudyText && (
-                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-sm text-slate-600 italic leading-relaxed">
-                                  {typeof q.caseStudyText === 'object' ? JSON.stringify(q.caseStudyText) : q.caseStudyText}
-                                </div>
-                              )}
+                  <div className="space-y-10">
+                    {result.markingScheme?.sections.map((section, sIdx) => (
+                      <div key={sIdx} className="space-y-6">
+                        <h4 className="font-black text-slate-900 uppercase tracking-widest text-sm bg-slate-50 p-3 rounded-lg border border-slate-100">
+                          Section {section.sectionId}
+                        </h4>
+                        <div className="divide-y divide-slate-100">
+                          {section.items.map((item, iIdx) => (
+                            <div key={iIdx} className="py-6 flex gap-6">
+                              <span className="w-12 font-black text-slate-400 text-sm">{item.qNo}</span>
+                              <div className="flex-1 space-y-2">
+                                <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap">{item.answer}</div>
+                                {item.marks && <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">[{item.marks}]</div>}
+                              </div>
                             </div>
-                            <span className="bg-slate-100 px-3 py-1 rounded-lg text-[10px] font-black text-slate-500 uppercase">
-                              {q.marks} Mark{q.marks > 1 ? 's' : ''}
-                            </span>
-                          </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Decorative Background */}
+                  <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
+                    <FileText size={200} />
+                  </div>
+
+                  <div className="text-center space-y-4 mb-12 border-b-2 border-slate-900 pb-12">
+                    <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">{result.title}</h2>
+                    <div className="flex justify-center items-center space-x-8 text-sm font-black uppercase tracking-widest text-slate-500">
+                      <span>Class: {result.displayGrade || result.grade}</span>
+                      <span>Subject: Physical Education</span>
+                      <span>Marks: {result.maxMarks}</span>
+                      <span>Time: {result.timeAllowed}</span>
                     </div>
-                  </motion.div>
-                ))}
-              </div>
+                  </div>
+
+                  <div className="space-y-12">
+                    {/* Instructions */}
+                    <div className="space-y-4">
+                      <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs">General Instructions:</h4>
+                      <ul className="space-y-2">
+                        {Array.isArray(result.generalInstructions) && result.generalInstructions.map((inst, idx) => (
+                          <li key={idx} className="text-sm text-slate-600 font-medium flex items-start">
+                            <span className="mr-3 text-slate-400">•</span>
+                            {typeof inst === 'object' ? JSON.stringify(inst) : inst}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Sections */}
+                    {Array.isArray(result.sections) && result.sections.map((section, sIdx) => (
+                      <motion.div 
+                        key={sIdx} 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: sIdx * 0.1 }}
+                        className="space-y-8"
+                      >
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center">
+                          <h4 className="font-black text-slate-900 uppercase tracking-widest text-sm">
+                            Section {section.sectionId} {section.heading && `- ${section.heading}`}
+                          </h4>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{section.instructions}</span>
+                        </div>
+
+                        <div className="space-y-10">
+                          {Array.isArray(section.questions) && section.questions.map((q, qIdx) => (
+                            <div key={qIdx} className="space-y-6">
+                              <div className="flex justify-between items-start gap-6">
+                                <div className="flex-1 space-y-4">
+                                  <p className="text-lg font-bold text-slate-800 leading-tight">
+                                    <span className="mr-4 text-slate-400">{q.questionNumber || qIdx + 1}.</span>
+                                    {typeof q.question === 'object' ? JSON.stringify(q.question) : q.question}
+                                  </p>
+                                  
+                                  {q.options && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-10">
+                                      {Array.isArray(q.options) && q.options.map((opt, oIdx) => (
+                                        <div key={oIdx} className="text-sm text-slate-600 font-medium flex items-center">
+                                          <span className="w-6 h-6 bg-slate-50 rounded-md flex items-center justify-center text-[10px] font-black mr-3 border border-slate-100">
+                                            {String.fromCharCode(65 + oIdx)}
+                                          </span>
+                                          {typeof opt === 'object' ? JSON.stringify(opt) : opt}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {q.caseStudyText && (
+                                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-sm text-slate-600 italic leading-relaxed">
+                                      {typeof q.caseStudyText === 'object' ? JSON.stringify(q.caseStudyText) : q.caseStudyText}
+                                    </div>
+                                  )}
+
+                                  {q.subQuestions && (
+                                    <div className="space-y-6 pl-10 mt-6 border-l-2 border-slate-100">
+                                      {q.subQuestions.map((sq, sqIdx) => (
+                                        <div key={sqIdx} className="space-y-3">
+                                          <p className="text-sm font-bold text-slate-700">({sqIdx + 1}) {sq.question}</p>
+                                          {sq.options && (
+                                            <div className="grid grid-cols-2 gap-3">
+                                              {sq.options.map((sopt, soidx) => (
+                                                <div key={soidx} className="text-[11px] text-slate-500 font-medium">
+                                                  ({String.fromCharCode(97 + soidx)}) {sopt}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="bg-slate-100 px-3 py-1 rounded-lg text-[10px] font-black text-slate-500 uppercase flex-shrink-0">
+                                  {q.marks} Mark{q.marks > 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>

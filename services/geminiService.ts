@@ -683,7 +683,18 @@ export const generateTestPaper = async (
                   marks: { type: "NUMBER" },
                   options: { type: "ARRAY", items: { type: "STRING" } },
                   answer: { type: "STRING" },
-                  caseStudyText: { type: "STRING" }
+                  caseStudyText: { type: "STRING" },
+                  subQuestions: {
+                    type: "ARRAY",
+                    items: {
+                      type: "OBJECT",
+                      properties: {
+                        question: { type: "STRING" },
+                        options: { type: "ARRAY", items: { type: "STRING" } },
+                        answer: { type: "STRING" }
+                      }
+                    }
+                  }
                 },
                 required: ["question", "marks"]
               }
@@ -691,10 +702,41 @@ export const generateTestPaper = async (
           },
           required: ["sectionId", "instructions", "questions"]
         }
+      },
+      markingScheme: {
+        type: "OBJECT",
+        properties: {
+          header: { type: "STRING" },
+          sections: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                sectionId: { type: "STRING" },
+                items: {
+                  type: "ARRAY",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      qNo: { type: "STRING" },
+                      answer: { type: "STRING" },
+                      marks: { type: "STRING" }
+                    },
+                    required: ["qNo", "answer", "marks"]
+                  }
+                }
+              },
+              required: ["sectionId", "items"]
+            }
+          }
+        },
+        required: ["header", "sections"]
       }
     },
-    required: ["title", "grade", "maxMarks", "sections", "generalInstructions"]
+    required: ["title", "grade", "maxMarks", "sections", "generalInstructions", "markingScheme"]
   };
+
+  const isCBSE12 = (grade === '12' || grade === 'Class 12') && (topic.toLowerCase().includes('cbse') || true); // Assuming CBSE if 70 marks or grade 12 for this context
 
   const response = await callAIBase({
     model: 'gemini-1.5-flash',
@@ -706,15 +748,25 @@ export const generateTestPaper = async (
       thinkingConfig: { thinkingLevel: "LOW" },
       systemInstruction: `You are an expert CBSE Physical Education Examiner. 
       Be decisive and do not ask for clarification.
-      Create a professional question paper following standard CBSE educational patterns.
-      Include:
-      1. Section A: MCQs (1 mark each).
-      2. Section B: Very Short Answer (2 marks each).
-      3. Section C: Short Answer (3 marks each).
-      4. Section D: Case Study based (4 marks each).
-      5. Section E: Long Answer (5 marks each).
-      Distribute marks to total exactly ${maxMarks}.
-      Ensure questions are high-quality, relevant to the CBSE 2025-26 syllabus, and cover the topic: ${topic}.
+      Create a professional question paper following standard CBSE 2025-26 educational patterns for Code 048.
+      
+      ${isCBSE12 && maxMarks === 70 ? `
+      STRICT STRUCTURE FOR 70 MARKS (CBSE CLASS 12 PHYSICAL EDUCATION - 048):
+      1. Section A: Q1-Q18 (18 Questions) - 1 mark each, MCQs. All compulsory.
+      2. Section B: Q19-Q24 (6 Questions) - 2 marks each, Very Short Answer (60-90 words). Students must attempt any 5.
+      3. Section C: Q25-Q30 (6 Questions) - 3 marks each, Short Answer (100-150 words). Students must attempt any 5.
+      4. Section D: Q31-Q33 (3 Questions) - 4 marks each, Case Studies based on scenarios/pictures. All compulsory.
+      5. Section E: Q34-Q37 (4 Questions) - 5 marks each, Long Answer (200-300 words). Students must attempt any 3.
+      Total Marks MUST equal exactly 70.
+      
+      MARKING SCHEME:
+      You MUST also generate a detailed 'markingScheme' following the board's solution pattern. 
+      Point-wise answers for 2, 3, and 5 marks.
+      ` : `
+      Distribute marks to total exactly ${maxMarks} using sections A, B, C, D, and E as appropriate.
+      `}
+      
+      Ensure questions are high-quality, relevant to the CBSE 2025-26 syllabus (NCERT based), and cover the topic: ${topic}.
       Language: ${language}.`,
       responseMimeType: "application/json",
       responseSchema: schema

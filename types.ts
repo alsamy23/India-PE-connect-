@@ -219,6 +219,17 @@ export interface TestPaper {
       visuallyImpairedAlternative?: string;
     }[];
   }[];
+  markingScheme?: {
+    header: string;
+    sections: {
+      sectionId: string;
+      items: {
+        qNo: string;
+        answer: string;
+        marks: string;
+      }[];
+    }[];
+  };
 }
 
 export interface Student {
