@@ -170,19 +170,22 @@ const App: React.FC = () => {
     
     // Check if key was selected if we're still missing it, but less frequently
     const interval = setInterval(() => {
+      // Small optimization: only check if we are in missing state and the api key might have been set
       if (apiStatus === 'missing' && window.aistudio) {
-        window.aistudio.hasSelectedApiKey()
-          .then(hasKey => {
+        const checkKey = async () => {
+          try {
+            const hasKey = await window.aistudio!.hasSelectedApiKey();
             if (hasKey) {
-              return checkApiStatus();
+              await checkApiStatus();
             }
-          })
-          .catch(e => {
-            console.warn("Background API check silenced:", e);
-            // Don't log this to Firestore to avoid cluttering, just silence the rejection
-          });
+          } catch (e) {
+            // Silently catch background errors to avoid annoying the user
+            console.debug("Background check silenced:", e);
+          }
+        };
+        checkKey();
       }
-    }, 15000); 
+    }, 20000); // 20 seconds is sufficient for background checks
     
     return () => clearInterval(interval);
   }, []); // Only run once on mount

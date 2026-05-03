@@ -425,7 +425,7 @@ const TestPaperGenerator: React.FC = () => {
                     {Array.isArray(result.generalInstructions) && result.generalInstructions.map((inst, idx) => (
                       <li key={idx} className="text-sm text-slate-600 font-medium flex items-start">
                         <span className="mr-3 text-slate-400">•</span>
-                        {inst}
+                        {typeof inst === 'object' ? JSON.stringify(inst) : inst}
                       </li>
                     ))}
                   </ul>
@@ -454,7 +454,7 @@ const TestPaperGenerator: React.FC = () => {
                             <div className="flex-1 space-y-4">
                               <p className="text-lg font-bold text-slate-800 leading-tight">
                                 <span className="mr-4 text-slate-400">{q.questionNumber || qIdx + 1}.</span>
-                                {q.question}
+                                {typeof q.question === 'object' ? JSON.stringify(q.question) : q.question}
                               </p>
                               
                               {q.options && (
@@ -464,7 +464,7 @@ const TestPaperGenerator: React.FC = () => {
                                       <span className="w-6 h-6 bg-slate-50 rounded-md flex items-center justify-center text-[10px] font-black mr-3 border border-slate-100">
                                         {String.fromCharCode(65 + oIdx)}
                                       </span>
-                                      {opt}
+                                      {typeof opt === 'object' ? JSON.stringify(opt) : opt}
                                     </div>
                                   ))}
                                 </div>
@@ -472,7 +472,7 @@ const TestPaperGenerator: React.FC = () => {
 
                               {q.caseStudyText && (
                                 <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-sm text-slate-600 italic leading-relaxed">
-                                  {q.caseStudyText}
+                                  {typeof q.caseStudyText === 'object' ? JSON.stringify(q.caseStudyText) : q.caseStudyText}
                                 </div>
                               )}
                             </div>

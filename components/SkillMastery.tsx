@@ -131,8 +131,8 @@ const SkillMastery: React.FC = () => {
                   </div>
                 </div>
                 
-                <h4 className="font-black text-slate-800 text-lg mb-2 leading-tight">{phase.phaseName}</h4>
-                <p className="text-xs text-indigo-600 font-bold mb-6 uppercase tracking-wider">Focus: {phase.technicalFocus}</p>
+                <h4 className="font-black text-slate-800 text-lg mb-2 leading-tight">{typeof phase.phaseName === 'object' ? JSON.stringify(phase.phaseName) : phase.phaseName}</h4>
+                <p className="text-xs text-indigo-600 font-bold mb-6 uppercase tracking-wider">Focus: {typeof phase.technicalFocus === 'object' ? JSON.stringify(phase.technicalFocus) : phase.technicalFocus}</p>
 
                 {phase.diagramUrl && (
                   <div className="mb-6 rounded-2xl overflow-hidden aspect-square border border-slate-100 shadow-inner bg-slate-50">
@@ -149,11 +149,11 @@ const SkillMastery: React.FC = () => {
                         <span>
                           {typeof drill === 'object' ? (
                             <div className="space-y-1">
-                              <span className="font-bold block text-indigo-700">{(drill as any).name || (drill as any).title || 'Drill'}</span>
-                              {(drill as any).action && <p className="text-xs">{(drill as any).action}</p>}
+                               <span className="font-bold block text-indigo-700">{typeof (drill as any).name === 'object' ? JSON.stringify((drill as any).name) : ((drill as any).name || (drill as any).title || 'Drill')}</span>
+                              {(drill as any).action && <p className="text-xs">{typeof (drill as any).action === 'object' ? JSON.stringify((drill as any).action) : (drill as any).action}</p>}
                               <div className="flex gap-4 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                {(drill as any).repetitions && <span>Reps: {(drill as any).repetitions}</span>}
-                                {(drill as any).sets && <span>Sets: {(drill as any).sets}</span>}
+                                {(drill as any).repetitions && <span>Reps: {typeof (drill as any).repetitions === 'object' ? JSON.stringify((drill as any).repetitions) : (drill as any).repetitions}</span>}
+                                {(drill as any).sets && <span>Sets: {typeof (drill as any).sets === 'object' ? JSON.stringify((drill as any).sets) : (drill as any).sets}</span>}
                               </div>
                             </div>
                           ) : drill}

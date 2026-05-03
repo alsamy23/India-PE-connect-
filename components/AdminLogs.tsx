@@ -24,6 +24,9 @@ const AdminLogs: React.FC = () => {
       })) as any[];
       setLogs(docs);
       setLoading(false);
+    }, (error) => {
+      console.warn("Log monitor failed to connect:", error);
+      setLoading(false);
     });
 
     return () => unsubscribe();

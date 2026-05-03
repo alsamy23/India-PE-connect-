@@ -362,7 +362,7 @@ const TheoryHub: React.FC = () => {
                   <div className="flex justify-center mb-16">
                     <div className="w-80 bg-slate-900 rounded-[2rem] p-8 text-center shadow-2xl border-4 border-rose-500 relative">
                       <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-1 h-16 bg-gradient-to-b from-rose-500 to-slate-200" />
-                      <span className="text-white font-black text-xl leading-tight uppercase tracking-tighter">{mindMapData.center}</span>
+                      <span className="text-white font-black text-xl leading-tight uppercase tracking-tighter">{typeof mindMapData.center === 'object' ? JSON.stringify(mindMapData.center) : mindMapData.center}</span>
                     </div>
                   </div>
 
@@ -376,8 +376,8 @@ const TheoryHub: React.FC = () => {
                         <div className="absolute -top-4 -left-4 w-10 h-10 bg-rose-500 rounded-xl flex items-center justify-center text-white font-black shadow-lg">
                           {idx + 1}
                         </div>
-                        <h4 className="font-black text-slate-800 text-lg mb-3 uppercase tracking-tight leading-tight group-hover:text-rose-600 transition-colors">{branch.title}</h4>
-                        <p className="text-xs text-slate-400 font-medium mb-6 leading-relaxed">{branch.description}</p>
+                        <h4 className="font-black text-slate-800 text-lg mb-3 uppercase tracking-tight leading-tight group-hover:text-rose-600 transition-colors">{typeof branch.title === 'object' ? JSON.stringify(branch.title) : branch.title}</h4>
+                        <p className="text-xs text-slate-400 font-medium mb-6 leading-relaxed">{typeof branch.description === 'object' ? JSON.stringify(branch.description) : branch.description}</p>
                         
                         {branch.subTopics && branch.subTopics.length > 0 && (
                           <div className="flex flex-wrap gap-2 mb-6">
@@ -498,7 +498,7 @@ const TheoryHub: React.FC = () => {
                 <div className="prose prose-slate max-w-none" ref={contentRef}>
                   {result.content && (
                     <div className="mb-12 text-slate-600 font-medium leading-relaxed whitespace-pre-wrap bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
-                      {result.content}
+                      {typeof result.content === 'object' ? JSON.stringify(result.content) : result.content}
                     </div>
                   )}
 
@@ -518,11 +518,13 @@ const TheoryHub: React.FC = () => {
                                 {idx + 1}
                               </span>
                               <div className="flex-1 space-y-4">
-                                <p className="font-bold text-slate-800 text-lg leading-tight">{q.question}</p>
+                                <p className="font-bold text-slate-800 text-lg leading-tight">
+                                  {typeof q.question === 'object' ? JSON.stringify(q.question) : q.question}
+                                </p>
                                 <div className="p-5 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
                                   <p className="text-sm text-emerald-700 font-bold">
                                     <span className="text-[10px] uppercase tracking-widest opacity-60 block mb-1">Correct Answer / Explanation</span>
-                                    {q.answer}
+                                    {typeof q.answer === 'object' ? JSON.stringify(q.answer) : q.answer}
                                   </p>
                                 </div>
                               </div>

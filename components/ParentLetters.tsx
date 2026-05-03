@@ -224,7 +224,7 @@ const ParentLetters: React.FC = () => {
           <div className="bg-white rounded-[3rem] p-12 md:p-16 border border-slate-100 shadow-2xl max-w-4xl mx-auto print:shadow-none print:border-none print:p-0">
             <div className="prose prose-slate max-w-none">
               <div className="whitespace-pre-wrap font-serif text-slate-800 leading-relaxed text-lg">
-                {result}
+                {typeof result === 'object' ? JSON.stringify(result) : result}
               </div>
             </div>
           </div>

@@ -300,23 +300,23 @@ const YearlyPlanner: React.FC = () => {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                           {term.months?.map((month, mIdx) => (
                             <div key={mIdx} className="bg-white border-2 border-slate-50 rounded-[2.5rem] p-8 shadow-sm hover:shadow-md transition-shadow">
-                               <h5 className="font-black text-indigo-600 mb-6 uppercase tracking-widest text-sm border-b pb-4">{month.monthName}</h5>
+                               <h5 className="font-black text-indigo-600 mb-6 uppercase tracking-widest text-sm border-b pb-4">{typeof month.monthName === 'object' ? JSON.stringify(month.monthName) : month.monthName}</h5>
                                <div className="space-y-4">
                                  {month.weeks?.map((week, wIdx) => (
                                    <div key={wIdx} className={`p-5 rounded-2xl border transition-colors ${week.status === 'Instructional' ? 'bg-slate-50/50 border-slate-100 hover:bg-white' : 'bg-orange-50/50 border-orange-100'}`}>
                                       <div className="flex justify-between items-center text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">
                                         <span className="flex items-center"><CalendarDays size={10} className="mr-1" /> Week {week.weekNumber}</span>
-                                        <span>{week.dates}</span>
+                                        <span>{typeof week.dates === 'object' ? JSON.stringify(week.dates) : week.dates}</span>
                                       </div>
                                       <input 
                                         className="w-full font-black text-slate-800 bg-transparent outline-none focus:text-indigo-600 transition-colors" 
-                                        value={week.topic} 
+                                        value={typeof week.topic === 'object' ? JSON.stringify(week.topic) : week.topic} 
                                         onChange={(e) => handleUpdatePlan(tIdx, mIdx, wIdx, 'topic', e.target.value)} 
                                       />
-                                      <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">{week.details}</p>
+                                      <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">{typeof week.details === 'object' ? JSON.stringify(week.details) : week.details}</p>
                                       <div className="mt-3 flex items-center">
                                         <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${week.status === 'Instructional' ? 'bg-indigo-100 text-indigo-600' : 'bg-orange-100 text-orange-600'}`}>
-                                          {week.status}
+                                          {typeof week.status === 'object' ? JSON.stringify(week.status) : week.status}
                                         </span>
                                       </div>
                                    </div>

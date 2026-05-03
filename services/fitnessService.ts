@@ -13,6 +13,7 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { logError } from './logService';
 import { 
   Student, 
   Team, 
@@ -219,6 +220,7 @@ export const fitnessService = {
       callback(snapshot.docs.map((doc: any) => doc.data() as FitnessResult));
     }, (error: any) => {
       console.error("Firestore Error:", error);
+      logError(error, 'error', { context: 'Results subscription failed' });
     });
   },
 
@@ -233,6 +235,7 @@ export const fitnessService = {
       callback(snapshot.docs.map((doc: any) => doc.data() as Student));
     }, (error: any) => {
       console.error("Firestore Error in students subscription:", error);
+      logError(error, 'error', { context: 'Students subscription failed' });
     });
   },
 
@@ -247,6 +250,7 @@ export const fitnessService = {
       callback(snapshot.docs.map((doc: any) => doc.data() as Team));
     }, (error: any) => {
       console.error("Firestore Error in teams subscription:", error);
+      logError(error, 'error', { context: 'Teams subscription failed' });
     });
   },
 

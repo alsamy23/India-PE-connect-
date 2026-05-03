@@ -509,15 +509,15 @@ const AIPlanner: React.FC = () => {
                         <div className="space-y-3">
                            <div className="flex items-start">
                              <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                             <p className="text-sm"><strong>Know:</strong> {plan.objectives.know}</p>
+                             <p className="text-sm"><strong>Know:</strong> {typeof plan.objectives.know === 'object' ? JSON.stringify(plan.objectives.know) : plan.objectives.know}</p>
                            </div>
                            <div className="flex items-start">
                              <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                             <p className="text-sm"><strong>Understand:</strong> {plan.objectives.understand}</p>
+                             <p className="text-sm"><strong>Understand:</strong> {typeof plan.objectives.understand === 'object' ? JSON.stringify(plan.objectives.understand) : plan.objectives.understand}</p>
                            </div>
                            <div className="flex items-start">
                              <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                             <p className="text-sm"><strong>Apply:</strong> {plan.objectives.beAbleTo}</p>
+                             <p className="text-sm"><strong>Apply:</strong> {typeof plan.objectives.beAbleTo === 'object' ? JSON.stringify(plan.objectives.beAbleTo) : plan.objectives.beAbleTo}</p>
                            </div>
                         </div>
                      </div>
@@ -526,15 +526,15 @@ const AIPlanner: React.FC = () => {
                         <div className="space-y-3">
                            <div className="flex items-start">
                              <Target size={14} className="mt-1 mr-3 text-emerald-500 flex-shrink-0" />
-                             <p className="text-sm"><strong>All:</strong> {plan.successCriteria.all}</p>
+                             <p className="text-sm"><strong>All:</strong> {typeof plan.successCriteria.all === 'object' ? JSON.stringify(plan.successCriteria.all) : plan.successCriteria.all}</p>
                            </div>
                            <div className="flex items-start">
                              <Target size={14} className="mt-1 mr-3 text-emerald-500 flex-shrink-0" />
-                             <p className="text-sm"><strong>Most:</strong> {plan.successCriteria.most}</p>
+                             <p className="text-sm"><strong>Most:</strong> {typeof plan.successCriteria.most === 'object' ? JSON.stringify(plan.successCriteria.most) : plan.successCriteria.most}</p>
                            </div>
                            <div className="flex items-start">
                              <Target size={14} className="mt-1 mr-3 text-emerald-500 flex-shrink-0" />
-                             <p className="text-sm"><strong>Some:</strong> {plan.successCriteria.some}</p>
+                             <p className="text-sm"><strong>Some:</strong> {typeof plan.successCriteria.some === 'object' ? JSON.stringify(plan.successCriteria.some) : plan.successCriteria.some}</p>
                            </div>
                         </div>
                      </div>
@@ -546,10 +546,10 @@ const AIPlanner: React.FC = () => {
                     <div className="border-l-4 border-indigo-500 pl-6 py-2">
                        <div className="flex justify-between items-center mb-2">
                           <h4 className="font-black text-slate-800 text-lg">1. Starter Activity</h4>
-                          <span className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-black rounded-full uppercase">{plan.starter.time}</span>
+                          <span className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-black rounded-full uppercase">{typeof plan.starter.time === 'object' ? JSON.stringify(plan.starter.time) : plan.starter.time}</span>
                        </div>
-                       <p className="font-bold text-slate-700 mb-1">{plan.starter.title}</p>
-                       <p className="text-slate-600 text-sm mb-4 leading-relaxed">{plan.starter.description}</p>
+                       <p className="font-bold text-slate-700 mb-1">{typeof plan.starter.title === 'object' ? JSON.stringify(plan.starter.title) : plan.starter.title}</p>
+                       <p className="text-slate-600 text-sm mb-4 leading-relaxed">{typeof plan.starter.description === 'object' ? JSON.stringify(plan.starter.description) : plan.starter.description}</p>
                        {plan.warmupDiagramUrl && (
                          <div className="w-48 h-32 bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
                            <img src={plan.warmupDiagramUrl} className="w-full h-full object-cover" alt="Warmup" />
@@ -561,7 +561,7 @@ const AIPlanner: React.FC = () => {
                     <div className="border-l-4 border-orange-500 pl-6 py-2">
                        <div className="flex justify-between items-center mb-4">
                           <h4 className="font-black text-slate-800 text-lg">2. Main Activities</h4>
-                          <span className="px-3 py-1 bg-orange-50 text-orange-700 text-xs font-black rounded-full uppercase">{plan.mainActivity.time}</span>
+                          <span className="px-3 py-1 bg-orange-50 text-orange-700 text-xs font-black rounded-full uppercase">{typeof plan.mainActivity.time === 'object' ? JSON.stringify(plan.mainActivity.time) : plan.mainActivity.time}</span>
                        </div>
                        
                        <div className="space-y-6">
@@ -569,9 +569,9 @@ const AIPlanner: React.FC = () => {
                            <div key={i} className="bg-slate-50 p-5 rounded-2xl print:bg-transparent print:p-0 print:mb-4">
                               <h5 className="font-bold text-slate-800 mb-2 flex items-center">
                                 <span className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs mr-2">{i+1}</span>
-                                {act.title}
+                                {typeof act.title === 'object' ? JSON.stringify(act.title) : act.title}
                               </h5>
-                              <p className="text-slate-600 text-sm mb-3 leading-relaxed">{act.description}</p>
+                              <p className="text-slate-600 text-sm mb-3 leading-relaxed">{typeof act.description === 'object' ? JSON.stringify(act.description) : act.description}</p>
                               <div>
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Coaching Points</span>
                                 <div className="flex flex-wrap gap-2 mt-2">
@@ -606,10 +606,10 @@ const AIPlanner: React.FC = () => {
                     <div className="border-l-4 border-emerald-500 pl-6 py-2">
                        <div className="flex justify-between items-center mb-2">
                           <h4 className="font-black text-slate-800 text-lg">3. Plenary & Cooling Down</h4>
-                          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-black rounded-full uppercase">{plan.plenary.time}</span>
+                          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-black rounded-full uppercase">{typeof plan.plenary.time === 'object' ? JSON.stringify(plan.plenary.time) : plan.plenary.time}</span>
                        </div>
-                       <p className="font-bold text-slate-700 mb-1">{plan.plenary.title}</p>
-                       <p className="text-slate-600 text-sm leading-relaxed">{plan.plenary.description}</p>
+                       <p className="font-bold text-slate-700 mb-1">{typeof plan.plenary.title === 'object' ? JSON.stringify(plan.plenary.title) : plan.plenary.title}</p>
+                       <p className="text-slate-600 text-sm leading-relaxed">{typeof plan.plenary.description === 'object' ? JSON.stringify(plan.plenary.description) : plan.plenary.description}</p>
                     </div>
                   </div>
 
@@ -617,11 +617,11 @@ const AIPlanner: React.FC = () => {
                   <div className="grid grid-cols-2 gap-8 pt-8 border-t border-slate-200 mt-8">
                      <div>
                        <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Differentiation (SEN/High Ability)</h5>
-                       <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg">{plan.differentiation}</p>
+                       <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg">{typeof plan.differentiation === 'object' ? JSON.stringify(plan.differentiation) : plan.differentiation}</p>
                      </div>
                      <div>
                        <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Assessment Opportunities</h5>
-                       <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg">{plan.criticalThinking}</p>
+                       <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg">{typeof plan.criticalThinking === 'object' ? JSON.stringify(plan.criticalThinking) : plan.criticalThinking}</p>
                      </div>
                   </div>
                </div>

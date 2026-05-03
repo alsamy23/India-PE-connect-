@@ -1,5 +1,7 @@
 import express from "express";
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import * as genAiPackage from "@google/genai";
+const { GoogleGenAI } = genAiPackage;
+const ThinkingLevel = (genAiPackage as any).ThinkingLevel;
 import Groq from "groq-sdk";
 import "dotenv/config";
 import path from "path";
@@ -134,7 +136,7 @@ apiRouter.post("/ai/generate", async (req, res) => {
             
             // Ensure thinkingLevel is LOW for speed if not specified, but ONLY for models that support it
             const finalConfig = { ...config };
-            const supportsThinking = currentModel.includes("gemini-2.0") || currentModel.includes("gemini-3");
+            const supportsThinking = (currentModel.includes("gemini-2.0") || currentModel.includes("gemini-3")) && ThinkingLevel;
             
             if (supportsThinking && !finalConfig.thinkingConfig) {
               finalConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
@@ -295,7 +297,7 @@ async function startServer() {
     res.status(404).json({ error: "API endpoint not found" });
   });
 
-  if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  if (!process.env.VERCEL || process.env.NODE_ENV !== "production") {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });

@@ -52,12 +52,12 @@ const Biomechanics: React.FC = () => {
       {result && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-              <h3 className="text-2xl font-black text-slate-800 mb-4">{result.concept}</h3>
+              <h3 className="text-2xl font-black text-slate-800 mb-4">{typeof result.concept === 'object' ? JSON.stringify(result.concept) : result.concept}</h3>
               <div className="prose prose-slate">
-                <p className="text-lg font-medium text-slate-600 mb-6">{result.explanation}</p>
+                <p className="text-lg font-medium text-slate-600 mb-6">{typeof result.explanation === 'object' ? JSON.stringify(result.explanation) : result.explanation}</p>
                 <div className="bg-indigo-50 p-6 rounded-2xl border-l-4 border-indigo-500">
                   <h4 className="font-bold text-indigo-900 mb-2 uppercase text-xs tracking-widest">Real World Analogy</h4>
-                  <p className="text-indigo-800">{result.analogy}</p>
+                  <p className="text-indigo-800">{typeof result.analogy === 'object' ? JSON.stringify(result.analogy) : result.analogy}</p>
                 </div>
               </div>
            </div>

@@ -33,8 +33,27 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-    console.error('Caught unhandled promise rejection:', event.reason);
-    logError(event.reason, 'promise_rejection');
+    let reason = event.reason;
+    let message = "Unknown promise rejection";
+    
+    if (reason instanceof Error) {
+      message = reason.message;
+    } else if (typeof reason === 'string') {
+      message = reason;
+    } else if (reason !== null && typeof reason === 'object') {
+      try {
+        message = JSON.stringify(reason);
+      } catch (e) {
+        message = "Object rejection (could not stringify)";
+      }
+    }
+
+    console.error('Caught unhandled promise rejection:', reason);
+    logError(message, 'promise_rejection', { 
+      rawReason: reason,
+      location: window.location.href,
+      userAgent: navigator.userAgent
+    });
   };
 
   public componentDidMount() {

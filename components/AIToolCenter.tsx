@@ -138,7 +138,7 @@ const AIToolCenter: React.FC = () => {
                 
                 <div className="space-y-8">
                   <div className="prose max-w-none text-slate-600 leading-loose font-medium">
-                    {result.content}
+                    {typeof result.content === 'object' ? JSON.stringify(result.content) : result.content}
                   </div>
 
                   {result.items && result.items.length > 0 && (
@@ -149,7 +149,7 @@ const AIToolCenter: React.FC = () => {
                       <ul className="space-y-3">
                         {result.items.map((item: any, idx: number) => (
                           <li key={idx} className="flex items-start text-slate-700 font-medium text-sm">
-                            <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            <span className="w-1.5 h-1.5 bg-indigo-50 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                             {typeof item === 'object' ? JSON.stringify(item) : item}
                           </li>
                         ))}
@@ -162,7 +162,7 @@ const AIToolCenter: React.FC = () => {
                       <Sparkles className="flex-shrink-0 text-orange-400" />
                       <div>
                         <h4 className="font-bold text-sm uppercase tracking-wider mb-1 text-indigo-200">AI Summary</h4>
-                        <p className="text-sm opacity-90">{result.summary}</p>
+                        <p className="text-sm opacity-90">{typeof result.summary === 'object' ? JSON.stringify(result.summary) : result.summary}</p>
                       </div>
                     </div>
                   )}
