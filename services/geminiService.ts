@@ -746,6 +746,7 @@ export const generateTestPaper = async (
     Language: ${language}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
+      maxOutputTokens: 8192,
       systemInstruction: `You are an expert CBSE Physical Education Examiner. 
       Be decisive and do not ask for clarification.
       Create a professional question paper following standard CBSE 2025-26 educational patterns for Code 048.
@@ -755,13 +756,16 @@ export const generateTestPaper = async (
       1. Section A: Q1-Q18 (18 Questions) - 1 mark each, MCQs. All compulsory.
       2. Section B: Q19-Q24 (6 Questions) - 2 marks each, Very Short Answer (60-90 words). Students must attempt any 5.
       3. Section C: Q25-Q30 (6 Questions) - 3 marks each, Short Answer (100-150 words). Students must attempt any 5.
-      4. Section D: Q31-Q33 (3 Questions) - 4 marks each, Case Studies based on scenarios/pictures. All compulsory.
+      4. Section D: Q31-Q33 (3 Questions) - 4 marks each. Each question is a CASE STUDY. 
+         FORMAT FOR SECTION D: Provide a descriptive scenario or observation text in 'caseStudyText'. Then provide exactly 4 MCQs in the 'subQuestions' array. Each MCQ sub-question is worth 1 mark (Total 4 per case study).
       5. Section E: Q34-Q37 (4 Questions) - 5 marks each, Long Answer (200-300 words). Students must attempt any 3.
       Total Marks MUST equal exactly 70.
       
       MARKING SCHEME:
-      You MUST also generate a detailed 'markingScheme' following the board's solution pattern. 
-      Point-wise answers for 2, 3, and 5 marks.
+      You MUST generate a COMPLETE 'markingScheme' for EVERY SINGLE QUESTION from Q1 to Q37. 
+      - For Section A & D MCQs: Provide the correct option (A, B, C or D) and the explanation/text.
+      - For Section B, C, and E: Provide exhaustive point-wise answers and a clear marking breakdown.
+      Do NOT omit any questions. The marking scheme must be 100% complete.
       ` : `
       Distribute marks to total exactly ${maxMarks} using sections A, B, C, D, and E as appropriate.
       `}

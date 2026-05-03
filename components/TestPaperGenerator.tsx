@@ -461,20 +461,39 @@ const TestPaperGenerator: React.FC = () => {
 
                   <div className="space-y-10">
                     {result.markingScheme?.sections.map((section, sIdx) => (
-                      <div key={sIdx} className="space-y-6">
-                        <h4 className="font-black text-slate-900 uppercase tracking-widest text-sm bg-slate-50 p-3 rounded-lg border border-slate-100">
-                          Section {section.sectionId}
-                        </h4>
-                        <div className="divide-y divide-slate-100">
-                          {section.items.map((item, iIdx) => (
-                            <div key={iIdx} className="py-6 flex gap-6">
-                              <span className="w-12 font-black text-slate-400 text-sm">{item.qNo}</span>
-                              <div className="flex-1 space-y-2">
-                                <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap">{item.answer}</div>
-                                {item.marks && <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">[{item.marks}]</div>}
-                              </div>
-                            </div>
-                          ))}
+                      <div key={sIdx} className="space-y-4">
+                        <div className="bg-slate-900 px-6 py-3 rounded-xl border border-slate-800">
+                          <h4 className="font-black text-white uppercase tracking-widest text-xs">
+                             Marking Guide • Section {section.sectionId}
+                          </h4>
+                        </div>
+                        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 border-b border-slate-200">
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">Q.No</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Expected Answer / Value Points</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-24 text-right">Marks</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {section.items.map((item, iIdx) => (
+                                <tr key={iIdx} className="group hover:bg-slate-50/50 transition-colors">
+                                  <td className="px-6 py-5 align-top font-black text-slate-400 text-sm">{item.qNo}</td>
+                                  <td className="px-6 py-5 align-top">
+                                    <div className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                                      {item.answer}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-5 align-top text-right">
+                                    <span className="inline-flex items-center justify-center bg-emerald-50 text-emerald-700 text-[10px] font-black px-2.5 py-1 rounded-md border border-emerald-100 uppercase tracking-widest">
+                                      {item.marks}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     ))}
@@ -557,21 +576,33 @@ const TestPaperGenerator: React.FC = () => {
                                   )}
 
                                   {q.subQuestions && (
-                                    <div className="space-y-6 pl-10 mt-6 border-l-2 border-slate-100">
-                                      {q.subQuestions.map((sq, sqIdx) => (
-                                        <div key={sqIdx} className="space-y-3">
-                                          <p className="text-sm font-bold text-slate-700">({sqIdx + 1}) {sq.question}</p>
-                                          {sq.options && (
-                                            <div className="grid grid-cols-2 gap-3">
-                                              {sq.options.map((sopt, soidx) => (
-                                                <div key={soidx} className="text-[11px] text-slate-500 font-medium">
-                                                  ({String.fromCharCode(97 + soidx)}) {sopt}
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
-                                        </div>
-                                      ))}
+                                    <div className="space-y-6 mt-6 pt-6 border-t border-slate-100">
+                                      <div className="flex items-center space-x-2 text-emerald-600 mb-4">
+                                        <Target size={14} className="font-black" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest leading-none">Analysis Questions</span>
+                                      </div>
+                                      <div className="grid grid-cols-1 gap-6">
+                                        {q.subQuestions.map((sq, sqIdx) => (
+                                          <div key={sqIdx} className="space-y-3 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                                            <p className="text-sm font-bold text-slate-700 leading-snug">
+                                              <span className="mr-2 text-indigo-500 font-black">{q.questionNumber || qIdx + 1}.{sqIdx + 1}</span>
+                                              {sq.question}
+                                            </p>
+                                            {sq.options && (
+                                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6">
+                                                {sq.options.map((sopt, soidx) => (
+                                                  <div key={soidx} className="text-[11px] text-slate-600 font-medium flex items-center">
+                                                    <span className="w-5 h-5 bg-white rounded flex items-center justify-center text-[10px] font-black mr-2 border border-slate-200">
+                                                      {String.fromCharCode(97 + soidx)}
+                                                    </span>
+                                                    {sopt}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
                                   )}
                                 </div>
