@@ -511,15 +511,15 @@ const AIPlanner: React.FC = () => {
                         <div className="space-y-3">
                            <div className="flex items-start">
                              <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                             <p className="text-sm"><strong>Know:</strong> {plan.objectives?.know ? (typeof plan.objectives.know === 'object' ? JSON.stringify(plan.objectives.know) : String(plan.objectives.know)) : 'TBD'}</p>
+                             <p className="text-sm"><strong>Know:</strong> {plan.objectives?.know || 'TBD'}</p>
                            </div>
                            <div className="flex items-start">
                              <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                             <p className="text-sm"><strong>Understand:</strong> {plan.objectives?.understand ? (typeof plan.objectives.understand === 'object' ? JSON.stringify(plan.objectives.understand) : String(plan.objectives.understand)) : 'TBD'}</p>
+                             <p className="text-sm"><strong>Understand:</strong> {plan.objectives?.understand || 'TBD'}</p>
                            </div>
                            <div className="flex items-start">
                              <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                             <p className="text-sm"><strong>Apply:</strong> {plan.objectives?.beAbleTo ? (typeof plan.objectives.beAbleTo === 'object' ? JSON.stringify(plan.objectives.beAbleTo) : String(plan.objectives.beAbleTo)) : 'TBD'}</p>
+                             <p className="text-sm"><strong>Apply:</strong> {plan.objectives?.beAbleTo || 'TBD'}</p>
                            </div>
                         </div>
                      </div>
@@ -528,15 +528,15 @@ const AIPlanner: React.FC = () => {
                         <div className="space-y-3">
                            <div className="flex items-start">
                              <Target size={14} className="mt-1 mr-3 text-emerald-500 flex-shrink-0" />
-                             <p className="text-sm"><strong>All:</strong> {typeof plan.successCriteria?.all === 'object' ? JSON.stringify(plan.successCriteria?.all) : plan.successCriteria?.all}</p>
+                             <p className="text-sm"><strong>All:</strong> {plan.successCriteria?.all || 'TBD'}</p>
                            </div>
                            <div className="flex items-start">
                              <Target size={14} className="mt-1 mr-3 text-emerald-500 flex-shrink-0" />
-                             <p className="text-sm"><strong>Most:</strong> {typeof plan.successCriteria?.most === 'object' ? JSON.stringify(plan.successCriteria?.most) : plan.successCriteria?.most}</p>
+                             <p className="text-sm"><strong>Most:</strong> {plan.successCriteria?.most || 'TBD'}</p>
                            </div>
                            <div className="flex items-start">
                              <Target size={14} className="mt-1 mr-3 text-emerald-500 flex-shrink-0" />
-                             <p className="text-sm"><strong>Some:</strong> {typeof plan.successCriteria?.some === 'object' ? JSON.stringify(plan.successCriteria?.some) : plan.successCriteria?.some}</p>
+                             <p className="text-sm"><strong>Some:</strong> {plan.successCriteria?.some || 'TBD'}</p>
                            </div>
                         </div>
                      </div>

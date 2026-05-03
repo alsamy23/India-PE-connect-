@@ -119,41 +119,57 @@ apiRouter.post("/ai/generate", async (req, res) => {
     // 1. Try Gemini first (with rotation and model fallback)
     if (geminiKeys.length > 0) {
       const shuffledKeys = [...geminiKeys].sort(() => Math.random() - 0.5);
-      // Use stable models
+      
+      // Determine which models we can try
       const modelsToTry = [
-        model || "gemini-1.5-flash", 
+        model || "gemini-1.5-flash",
+        "gemini-1.5-flash", 
         "gemini-1.5-pro",
+        "gemini-2.0-flash-exp",
         "gemini-2.0-flash"
       ];
       
+      // Filter out duplicates but keep order
+      const uniqueModels = [...new Set(modelsToTry)];
+
       for (const key of shuffledKeys) {
-        let keyFailed = false;
-        for (const currentModel of modelsToTry) {
-          if (keyFailed) break;
+        const ai = new GoogleGenAI({ apiKey: key });
+        
+        for (const currentModel of uniqueModels) {
           try {
             console.log(`Attempting generation with ${currentModel}...`);
-            const ai = new GoogleGenAI({ apiKey: key });
+            const genModel = ai.getGenerativeModel({ model: currentModel });
             
-            // Ensure thinkingLevel is LOW for speed if not specified, but ONLY for models that support it
+            // Prepare contents
+            const formattedContents = Array.isArray(contents) 
+              ? contents 
+              : (typeof contents === 'string' ? [{ role: 'user', parts: [{ text: contents }] }] : [contents]);
+
+            // Ensure thinkingLevel is only used if supported
             const finalConfig = { ...config };
-            const supportsThinking = (currentModel.includes("gemini-2.0") || currentModel.includes("gemini-3")) && ThinkingLevel;
+            const is20Flash = currentModel.includes("gemini-2.0-flash");
             
-            if (supportsThinking && !finalConfig.thinkingConfig) {
-              finalConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
-            } else if (!supportsThinking && finalConfig.thinkingConfig) {
-              // Remove thinkingConfig for models that don't support it to avoid errors
+            if (is20Flash && ThinkingLevel) {
+              if (!finalConfig.thinkingConfig) {
+                finalConfig.thinkingConfig = { thinkingLevel: (ThinkingLevel as any).LOW || "LOW" };
+              }
+            } else {
+              // Always remove thinkingConfig for safety on 1.5 models or if ThinkingLevel enum is missing
               delete finalConfig.thinkingConfig;
             }
 
-            const response = await ai.models.generateContent({
-              model: currentModel,
-              contents: Array.isArray(contents) ? contents : (typeof contents === 'string' ? [{ role: 'user', parts: [{ text: contents }] }] : contents),
-              config: finalConfig
+            const result = await genModel.generateContent({
+              contents: formattedContents,
+              generationConfig: finalConfig,
+              systemInstruction: config?.systemInstruction
             });
+
+            const response = await result.response;
+            const textValue = response.text();
 
             console.log(`Success with Gemini model: ${currentModel}`);
             return res.json({
-              text: response.text,
+              text: textValue,
               provider: "gemini",
               model: currentModel,
               candidates: response.candidates
@@ -162,33 +178,35 @@ apiRouter.post("/ai/generate", async (req, res) => {
             lastError = error;
             const errorMsg = (error.message || "").toLowerCase();
             
-            const isQuotaError = errorMsg.includes("429") || error.status === 429 || errorMsg.includes("resource_exhausted") || errorMsg.includes("quota");
-            
-            // Only mark key as failed if it's a definitive auth/expired error
+            // Log the specific error for debugging
+            console.warn(`Gemini error with model ${currentModel}:`, errorMsg);
+
+            // Handle safety blocks
+            if (errorMsg.includes("safety") || errorMsg.includes("blocked")) {
+              console.error("Safety block triggered. Skipping to next provider/model.");
+              break; // Skip this key, try next model or provider
+            }
+
+            // If it's a definitive auth/expired error, try NEXT KEY
             const isDefinitiveBadKey = errorMsg.includes("expired") || 
-                                      errorMsg.includes("renew the api key") ||
+                                      errorMsg.includes("renew") ||
                                       errorMsg.includes("api key not valid") ||
                                       errorMsg.includes("api_key_invalid") ||
                                       (error.status === 401);
 
-            if (!isDefinitiveBadKey && !isQuotaError) {
-              console.error(`Gemini error with model ${currentModel}:`, error.message);
+            if (isDefinitiveBadKey) {
+              console.error(`Definitive bad key detected (${key}). Trying next key.`);
+              break; // Break inner loop to try next key
             }
 
-            if (isQuotaError || isDefinitiveBadKey) {
-              if (isQuotaError) console.warn("Gemini key hit quota error. Trying next key...");
-              keyFailed = true; 
-              break; 
-            }
-            
-            // If it's a 400 error (Invalid Argument) or Model Not Found (404), try NEXT MODEL on SAME KEY
-            // because "API key not valid" for 2.0-flash often just means "no access to 2.0"
-            if (error.status === 400 || error.status === 404 || errorMsg.includes("model") || errorMsg.includes("not found") || errorMsg.includes("404")) {
-              console.warn(`Model ${currentModel} failed on this key, trying next available model...`);
-              continue;
+            // Handle Quota
+            const isQuotaError = errorMsg.includes("429") || error.status === 429 || errorMsg.includes("resource_exhausted") || errorMsg.includes("quota");
+            if (isQuotaError) {
+              console.warn("Quota exceeded for this key. Trying next key.");
+              break; // Break inner loop to try next key
             }
 
-            // For other errors, try next model
+            // For other errors (like 400 Bad Request if config is invalid), try next model on same key
             continue;
           }
         }
@@ -201,21 +219,28 @@ apiRouter.post("/ai/generate", async (req, res) => {
         console.log("Falling back to Groq...");
         const groq = new Groq({ apiKey: groqKey });
         
-        // Convert Gemini format to OpenAI/Groq format
         let prompt = "";
+        const processedContents = Array.isArray(contents) ? contents : (contents?.contents || contents);
+        
         if (typeof contents === 'string') {
           prompt = contents;
+        } else if (Array.isArray(processedContents)) {
+          prompt = processedContents.map((c: any) => {
+            if (typeof c === 'string') return c;
+            if (c.parts) return c.parts.map((p: any) => p.text).join("\n");
+            return "";
+          }).join("\n");
         } else if (contents?.parts) {
           prompt = contents.parts.map((p: any) => p.text).join("\n");
-        } else if (Array.isArray(contents)) {
-          prompt = contents.map((c: any) => typeof c === 'string' ? c : (c.parts ? c.parts.map((p: any) => p.text).join("\n") : "")).join("\n");
         }
 
-        const systemPrompt = config?.systemInstruction || "You are a helpful assistant.";
+        const systemPrompt = typeof config?.systemInstruction === 'string' 
+          ? config.systemInstruction 
+          : (config?.systemInstruction?.parts ? config.systemInstruction.parts.map((p: any) => p.text).join("\n") : "You are a professional assistant.");
         
         const completion = await groq.chat.completions.create({
           messages: [
-            { role: "system", content: systemPrompt + (config?.responseMimeType === "application/json" ? "\n\nPlease output valid json." : "") },
+            { role: "system", content: systemPrompt + (config?.responseMimeType === "application/json" ? "\n\nIMPORTANT: Return ONLY valid JSON that strictly follows this schema structure:\n" + JSON.stringify(config.responseSchema || {}) : "") },
             { role: "user", content: prompt }
           ],
           model: "llama-3.3-70b-versatile",
@@ -229,12 +254,7 @@ apiRouter.post("/ai/generate", async (req, res) => {
         });
       } catch (groqError: any) {
         console.error("Groq fallback failed:", groqError);
-        const groqMsg = groqError.message || "";
-        if (groqMsg.toLowerCase().includes("api_key_invalid") || groqMsg.toLowerCase().includes("invalid api key")) {
-          lastError = new Error("Groq API key is invalid. Please check your GROQ_API_KEY in the Environment Variables.");
-        } else {
-          lastError = groqError;
-        }
+        lastError = groqError;
       }
     }
 

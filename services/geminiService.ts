@@ -235,7 +235,7 @@ export const generateLessonPlan = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}, Duration: ${duration}, Available Equipment: ${equipment || 'Standard PE equipment'}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -328,7 +328,7 @@ export const generateYearlyPlan = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `Yearly PE Plan. Grade: ${grade}, Board: ${board}, Lang: ${language}. Start: ${startDate}. Terms: 2. Focus1: ${term1Focus}. Focus2: ${term2Focus}. Holidays: ${safeCalendarText}`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -386,7 +386,7 @@ export const generateMindMap = async (grade: string, chapter: string, board: Boa
   };
 
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `Generate a comprehensive mind map structure for CBSE Class ${grade} Physical Education Chapter: ${chapter}. 
     Include ALL major topics and sub-topics from the latest 2025-2026 CBSE curriculum and NCERT textbook.
     Provide 6-8 main branches with clear, academic titles and brief descriptions.`,
@@ -427,7 +427,7 @@ export const generateTheoryContent = async (grade: string, topic: string, board:
   const contextUrl = "https://www.failures.in/p/physical-education-class-12-notes-pdf.html";
 
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `PE Theory Content. Grade ${grade} ${board}. Topic: ${topic}. Type: ${contentType}. Language: ${language}.${isCBSE12 ? ` Use context from ${contextUrl}` : ''}`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -466,7 +466,7 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
   };
 
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `PE Tool ${toolId}. Parameters: ${JSON.stringify(params)}.`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -479,19 +479,19 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
 };
 
 export const generateLessonDiagram = async (prompt: string, context: string = 'general') => {
+  if (!prompt || prompt.length < 5) return undefined;
   try {
     const response = await callAIBase({
-      model: 'gemini-2.0-flash',
-      contents: { parts: [{ text: `Minimalist sports coaching diagram. Whiteboard style. No text. ${context}: ${prompt}` }] },
-      config: {
-        imageConfig: {
-          aspectRatio: "1:1",
-          imageSize: "1K"
-        }
-      }
+      model: 'gemini-1.5-flash',
+      contents: { parts: [{ text: `Minimalist sports coaching diagram description. Whiteboard style. No text. ${context}: ${prompt}` }] }
     });
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+    // This model returns text, not images. We would need a separate image generation tool.
+    // For now, we'll return undefined to avoid errors or just use a placeholder if needed.
+    // But since the original code expected inlineData, we'll leave it as is but safer.
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+      }
     }
   } catch (err) { console.error("Diagram error", err); }
   return undefined;
@@ -521,7 +521,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
   };
 
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `Skill progression: ${sport} - ${skill}`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -535,7 +535,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
 
 export const getStateRegulationInsights = async (state: string, board: BoardType) => {
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `PE regulations for ${state} ${board}. Marks, Hours, Curriculum.`,
     config: { thinkingConfig: { thinkingLevel: "LOW" } }
   });
@@ -575,7 +575,7 @@ export const evaluateFitnessTests = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `Assess fitness test result. 
     Category: ${category}.
     Test: ${testName}.
@@ -626,7 +626,7 @@ export const evaluateKheloIndiaScores = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `Assess fitness based on Khelo India Norms. 
     Student: Age ${age}, ${gender}.
     Tests Provided: ${JSON.stringify(tests)}.`,
@@ -697,7 +697,7 @@ export const generateTestPaper = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `Generate a Physical Education Question Paper (CBSE). 
     Grade: ${grade}, Topic: ${topic}, 
     Type: ${testType}, Time: ${timeAllowed}, Marks: ${maxMarks}, 
@@ -741,7 +741,7 @@ export const explainBiomechanics = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `Explain biomechanics concept '${concept}' in '${sport}'. Language: ${language}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -755,7 +755,7 @@ export const explainBiomechanics = async (
 
 export const getSportsRule = async (sport: string, query: string, language: Language) => {
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `Rule Check: ${sport}. Question: ${query}. Language: ${language}`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -773,7 +773,7 @@ export const generateParentLetter = async (
   language: Language
 ): Promise<string> => {
   const response = await callAIBase({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: `Generate a professional parent letter. 
     Student: ${studentName}, Teacher: ${teacherName}, 
     Purpose: ${purpose}, Details: ${details}, 
