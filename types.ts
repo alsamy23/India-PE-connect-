@@ -142,6 +142,22 @@ export interface SkillProgression {
   }[];
 }
 
+export interface YearlyPlanWeek {
+  weekNumber: number;
+  status: 'Instructional' | 'Holiday' | 'Exam' | 'Event';
+  dates: string;
+  topic: string;
+  details: string;
+  /** The sport/game being taught this week (e.g. "Football") */
+  sport?: string;
+  /** Specific skill focus for the week (e.g. "Passing – chest pass") */
+  weeklySkill?: string;
+  /** Description of how to teach/execute the skill */
+  description?: string;
+  /** Coaching cues / teacher tips for the session */
+  coachingNotes?: string;
+}
+
 export interface YearlyPlan {
   grade: string;
   board: string;
@@ -150,15 +166,11 @@ export interface YearlyPlan {
   generatedDate: string;
   terms: {
     termName: string;
+    /** Games/sports covered this term (e.g. ["Football", "Basketball"]) */
+    games?: string[];
     months: {
       monthName: string;
-      weeks: {
-        weekNumber: number;
-        status: 'Instructional' | 'Holiday' | 'Exam' | 'Event';
-        dates: string;
-        topic: string;
-        details: string;
-      }[];
+      weeks: YearlyPlanWeek[];
     }[];
   }[];
 }
