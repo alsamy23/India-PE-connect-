@@ -32,6 +32,9 @@ const SkillAnalysis: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const playbackTimeoutRefs = useRef<any[]>([]);
   const videoUrlsRef = useRef<string[]>([]);
+  const mediaSources = useRef<(MediaSource | null)[]>([]);
+  const sourceBuffers = useRef<(SourceBuffer | null)[]>([]);
+  const queueRefs = useRef<ArrayBuffer[][]>([]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -47,7 +50,7 @@ const SkillAnalysis: React.FC = () => {
     if (isLive && streamRef.current && livePreviewRef.current) {
       const video = livePreviewRef.current;
       video.srcObject = streamRef.current;
-      video.play().catch(e => console.warn("Monitor play silently failed (expected browser policy):", e.message));
+      video.play().catch(e => console.warn("Monitor play silently failed:", e.message));
     }
   }, [isLive]);
 
@@ -79,38 +82,14 @@ const SkillAnalysis: React.FC = () => {
         throw new Error("Your browser does not support camera access.");
       }
 
-      // Helper for flexible constraints
-      const getStream = async () => {
-        try {
-          return await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-              facingMode: 'user', 
-              width: { ideal: 1280 }, 
-              height: { ideal: 720 } 
-            }, 
-            audio: false 
-          });
-        } catch (e) {
-          console.warn("Retrying with broader constraints...", e);
-          return await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        }
-      };
-
-      // Add a race to handle potential infinite wait or internal browser timeouts
-      let timeoutId: any;
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('Camera request timed out (Hardware may be in use)')), 15000);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user', 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 } 
+        }, 
+        audio: false 
       });
-
-      const getStreamWithTimeout = async () => {
-        try {
-          return await Promise.race([getStream(), timeoutPromise]);
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      };
-
-      const stream = await getStreamWithTimeout();
 
       if (!isMounted.current) {
         stream.getTracks().forEach(t => t.stop());
@@ -119,7 +98,14 @@ const SkillAnalysis: React.FC = () => {
 
       streamRef.current = stream;
       setIsLive(true);
-      startDelayedBuffering(stream);
+      
+      // Delay source setup slightly to ensure video elements are rendered
+      setTimeout(() => {
+        if (isMounted.current && streamRef.current) {
+          setupMediaSources();
+          startDelayedBuffering(streamRef.current);
+        }
+      }, 500);
     } catch (err: any) {
       console.error("Camera access error:", err);
       if (isMounted.current) {
@@ -130,6 +116,43 @@ const SkillAnalysis: React.FC = () => {
         setIsCameraLoading(false);
       }
     }
+  };
+
+  const setupMediaSources = () => {
+    queueRefs.current = Array.from({ length: 4 }).map(() => []);
+    
+    // Revoke old URLs if any
+    videoUrlsRef.current.forEach(url => {
+      try { URL.revokeObjectURL(url); } catch (e) {}
+    });
+    videoUrlsRef.current = [];
+
+    mediaSources.current = Array.from({ length: 4 }).map((_, i) => {
+      const ms = new MediaSource();
+      ms.onsourceopen = () => {
+        try {
+          const sb = ms.addSourceBuffer('video/webm; codecs="vp8"');
+          sourceBuffers.current[i] = sb;
+          sb.onupdateend = () => {
+            const queue = queueRefs.current[i];
+            if (queue && queue.length > 0 && !sb.updating) {
+              sb.appendBuffer(queue.shift()!);
+            }
+          };
+        } catch (e) {
+          console.error("SourceBuffer creation error:", e);
+        }
+      };
+      
+      const video = videoRefs.current[i];
+      if (video) {
+        const url = URL.createObjectURL(ms);
+        video.src = url;
+        videoUrlsRef.current.push(url);
+      }
+      
+      return ms;
+    });
   };
 
   const stopCamera = () => {
@@ -147,13 +170,22 @@ const SkillAnalysis: React.FC = () => {
     playbackTimeoutRefs.current.forEach(t => clearTimeout(t));
     playbackTimeoutRefs.current = [];
     
-    // Cleanup URLs
     videoUrlsRef.current.forEach(url => {
-      try {
-        URL.revokeObjectURL(url);
-      } catch (e) {}
+      try { URL.revokeObjectURL(url); } catch (e) {}
     });
     videoUrlsRef.current = [];
+
+    // Reset video sources
+    videoRefs.current.forEach(video => {
+      if (video) {
+        video.src = "";
+        video.load();
+      }
+    });
+
+    sourceBuffers.current = [];
+    mediaSources.current = [];
+    queueRefs.current = [];
     
     if (isMounted.current) {
       setIsLive(false);
@@ -162,83 +194,73 @@ const SkillAnalysis: React.FC = () => {
   };
 
   const startDelayedBuffering = (stream: MediaStream) => {
-    const chunkDuration = 2000; // 2 second chunks
-    
-    // Fallback mimeTypes
-    const types = [
-      'video/webm;codecs=vp8,opus',
-      'video/webm;codecs=vp8',
-      'video/webm',
-      'video/mp4'
-    ];
-    const mimeType = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+    const chunkDuration = 1000; // 1 second chunks for responsiveness
     
     try {
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs="vp8"' });
       mediaRecorderRef.current = recorder;
 
-      recorder.ondataavailable = (e) => {
-        try {
-          if (e.data.size > 0 && isMounted.current) {
-            const blob = e.data;
-            const url = URL.createObjectURL(blob);
-            videoUrlsRef.current.push(url);
+      recorder.ondataavailable = async (e) => {
+        if (e.data.size > 0 && isMounted.current) {
+          const arrayBuffer = await e.data.arrayBuffer();
+          
+          videoRefs.current.forEach((video, idx) => {
+            if (!video) return;
             
-            // Pass to each screen with its respective delay
-            videoRefs.current.forEach((video, idx) => {
-              if (!video) return;
+            const screenDelay = (delay + (idx * 5)) * 1000;
+            const timeout = setTimeout(() => {
+              if (!isMounted.current || !isLive) return;
               
-              // The first chunk arrives at T=2s. 
-              // If delay is 10s, we want to play this first chunk at T=10s.
-              // So the timeout should be (delay - chunkDuration/1000) if we want absolute precision,
-              // but (delay + idx*5) is fine for relative offset.
-              const screenDelay = (delay + (idx * 5)) * 1000;
-              
-              const timeout = setTimeout(() => {
-                if (!isMounted.current || !isLive) {
-                  URL.revokeObjectURL(url);
-                  return;
-                }
-                if (video) {
+              const sb = sourceBuffers.current[idx];
+              if (sb) {
+                if (sb.updating) {
+                  queueRefs.current[idx].push(arrayBuffer);
+                } else {
                   try {
-                    video.src = url;
-                    // Ensure video is muted for autoplay
-                    video.muted = true;
-                    const playPromise = video.play();
-                    if (playPromise !== undefined) {
-                      playPromise.catch(() => {
-                        // Silent catch for auto-play policy issues
-                      });
-                    }
-                  } catch (vErr) {
-                    console.error("Video element error:", vErr);
+                    sb.appendBuffer(arrayBuffer);
+                    if (video.paused) video.play().catch(() => {});
+                  } catch (err) {
+                    console.error("Append error for screen", idx, err);
                   }
                 }
-              }, screenDelay);
-              
-              playbackTimeoutRefs.current.push(timeout);
-            });
-            
-            // Keep a limit on stored URLs to avoid memory leaks
-            if (videoUrlsRef.current.length > 100) {
-              const oldUrl = videoUrlsRef.current.shift();
-              if (oldUrl) {
-                try {
-                  URL.revokeObjectURL(oldUrl);
-                } catch(e) {}
               }
-            }
-          }
-        } catch (dataErr) {
-          console.error("Data available error:", dataErr);
+            }, screenDelay);
+            playbackTimeoutRefs.current.push(timeout);
+          });
         }
       };
 
       recorder.start(chunkDuration);
     } catch (err) {
-      console.error("Recorder error:", err);
-      setError("Analysis engine failed to start. Try a different browser.");
+      console.error("Recorder initialization error:", err);
+      // Fallback to simpler blob swapping if MediaSource fails or codec unsupported
+      startSimpleDelayedBuffering(stream);
     }
+  };
+
+  const startSimpleDelayedBuffering = (stream: MediaStream) => {
+    const chunkDuration = 2000;
+    const recorder = new MediaRecorder(stream);
+    mediaRecorderRef.current = recorder;
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0 && isMounted.current) {
+        const url = URL.createObjectURL(e.data);
+        videoUrlsRef.current.push(url);
+        
+        videoRefs.current.forEach((video, idx) => {
+          if (!video) return;
+          const screenDelay = (delay + (idx * 5)) * 1000;
+          const timeout = setTimeout(() => {
+            if (!isMounted.current || !isLive) return;
+            video.src = url;
+            video.play().catch(() => {});
+          }, screenDelay);
+          playbackTimeoutRefs.current.push(timeout);
+        });
+      }
+    };
+    recorder.start(chunkDuration);
   };
 
   const [isRecordingSession, setIsRecordingSession] = useState(false);
