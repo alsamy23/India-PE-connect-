@@ -294,20 +294,52 @@ export const generateMindMap = async (grade: string, chapter: string, board: Boa
     : `Chapter: ${chapter}`;
 
   const res = await callAIBase({
+<<<<<<< HEAD
     model: "gemini-1.5-flash",
     contents: `Generate a detailed CBSE Class ${grade} PE Mind Map for: "${chapter}".
 ${topicsContext}
 Return JSON: { "center": "${chapter}", "branches": [{ "title": string, "description": string, "subTopics": string[] }] }`,
     config: {
       systemInstruction: `CBSE PE Expert. Use EXACT curriculum topics provided. Each topic MUST be a branch. Return ONLY valid JSON.`,
+=======
+    model: "claude-sonnet",
+    contents: `Generate a detailed CBSE Class ${grade} PE Mind Map for the chapter: "${chapter}".
+${topicsContext}
+
+Return EXACTLY this JSON structure:
+{
+  "center": "${chapter}",
+  "branches": [
+    {
+      "title": "Topic Name",
+      "description": "Brief overview of the topic",
+      "subTopics": ["Sub-topic 1", "Sub-topic 2"]
+    }
+  ]
+}`,
+    config: {
+      systemInstruction: `You are a CBSE Physical Education expert. 
+1. Use the EXACT curriculum topics provided in the prompt.
+2. Each topic MUST be a main branch.
+3. Return ONLY valid JSON. No markdown formatting.`,
+>>>>>>> 8356801 (fix: Theory Master mind map generation with curriculum fallback and robust 37-question extraction)
       responseMimeType: "application/json",
     },
   });
 
+<<<<<<< HEAD
   const text = res?.text || (typeof res === 'string' ? res : JSON.stringify(res));
   const parsed = safeParseJson(text);
 
   if (!parsed || !Array.isArray(parsed.branches) || parsed.branches.length === 0) {
+=======
+  // Handle various response formats from the proxy
+  const rawText = res?.text || (typeof res === 'string' ? res : JSON.stringify(res));
+  const parsed = safeParseJson(rawText);
+
+  if (!parsed || !Array.isArray(parsed.branches) || parsed.branches.length === 0) {
+    // If AI failed to return branches, create a skeleton based on the curriculum
+>>>>>>> 8356801 (fix: Theory Master mind map generation with curriculum fallback and robust 37-question extraction)
     if (exactTopics.length > 0) {
       return {
         center: chapter,
@@ -320,6 +352,10 @@ Return JSON: { "center": "${chapter}", "branches": [{ "title": string, "descript
     }
     throw new Error("AI failed to generate curriculum branches. Please try again.");
   }
+<<<<<<< HEAD
+=======
+  
+>>>>>>> 8356801 (fix: Theory Master mind map generation with curriculum fallback and robust 37-question extraction)
   return parsed;
 };
 
@@ -357,6 +393,36 @@ export const generateTheoryContent = async (
     throw new Error("AI failed to generate content. Please try again.");
   }
 
+<<<<<<< HEAD
+=======
+  const res = await callAIBase({
+    model: "claude-sonnet",
+    contents: `CBSE Class ${grade} PE ${contentType}: "${topic}". Language: ${language}.${exactContext ? "\n\nCurriculum Context: " + exactContext : ""}`,
+    config: {
+      systemInstruction: `You are an expert CBSE Physical Education Teacher specializing in current NCERT textbook content (2025-26 session).
+Return JSON: { "title": string, "contentType": string, "content": string, "questions": [{ "question": string, "options": string[], "answer": string, "type": string }] }
+
+CRITICAL RULES:
+- "content" MUST be a single string. Use \n for newlines.
+- Do NOT return "content" as an object or array.
+- Use EXACT terminology from the latest NCERT Physical Education textbook for Class ${grade}.
+- Content Language: ${language}
+- For Notes: Provide high-quality, exam-ready notes with structured bullet points and headers.
+- For MCQ: 5 questions (CBSE pattern), 4 options each, provide clear string answers.
+- For CaseStudy: A realistic scenario followed by 4 questions.
+- Maintain 100% academic integrity to NCERT material.`,
+      responseMimeType: "application/json",
+    },
+  });
+
+  const text = res?.text || (typeof res === 'string' ? res : JSON.stringify(res));
+  const parsed = safeParseJson(text);
+  
+  if (!parsed || (!parsed.content && (!parsed.questions || parsed.questions.length === 0))) {
+    throw new Error("AI failed to generate content for this topic. Please try again.");
+  }
+
+>>>>>>> 8356801 (fix: Theory Master mind map generation with curriculum fallback and robust 37-question extraction)
   return {
     title: parsed.title || topic,
     contentType: parsed.contentType || contentType,
@@ -423,12 +489,41 @@ const normalizeQuestionPaper = (rawPaper: any, grade: string, testType: string, 
         { sectionId: 'D', heading: 'SECTION D', count: 2, marks: 5, instructions: 'Q14-15 carry 5 marks each.' },
       ];
 
+<<<<<<< HEAD
   let questionsPool: any[] = [];
+=======
+  // Build a flat, ordered question list from all AI sections
+  // Improved extraction: check sections, top-level questions, and common AI response variations
+  let questionsPool: any[] = [];
+  
+>>>>>>> 8356801 (fix: Theory Master mind map generation with curriculum fallback and robust 37-question extraction)
   if (Array.isArray(rawPaper?.sections)) {
     questionsPool = rawPaper.sections.flatMap((s: any) => s?.questions || []);
   } else if (Array.isArray(rawPaper?.questions)) {
     questionsPool = rawPaper.questions;
   }
+<<<<<<< HEAD
+=======
+
+  const flattenedQuestions = questionsPool
+    .map((question: any) => ({
+      question: String(question?.question || '').trim(),
+      marks: Number(question?.marks || 0),
+      options: Array.isArray(question?.options) ? question.options.map((option: any) => String(option)) : undefined,
+      answer: question?.answer ? String(question.answer) : undefined,
+      caseStudyText: question?.caseStudyText ? String(question.caseStudyText).trim() : undefined,
+      caseStudyImagePrompt: question?.caseStudyImagePrompt ? String(question.caseStudyImagePrompt).trim() : undefined,
+      internalChoice: question?.internalChoice ? String(question.internalChoice).trim() : undefined,
+      subQuestions: Array.isArray(question?.subQuestions) ? question.subQuestions.map((sq: any) => ({
+        question: String(sq?.question || '').trim(),
+        options: Array.isArray(sq?.options) ? sq.options.map((opt: any) => String(opt)) : [],
+        answer: String(sq?.answer || '')
+      })) : undefined,
+      figureLabel: question?.figureLabel ? String(question.figureLabel).trim() : undefined,
+      visuallyImpairedAlternative: question?.visuallyImpairedAlternative ? String(question.visuallyImpairedAlternative).trim() : undefined,
+    }))
+    .filter((question: any) => question.question);
+>>>>>>> 8356801 (fix: Theory Master mind map generation with curriculum fallback and robust 37-question extraction)
 
   const flattened = questionsPool.filter(q => q && q.question);
   let cursor = 0;

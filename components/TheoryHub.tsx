@@ -132,12 +132,10 @@ const TheoryHub: React.FC = () => {
     setViewMode('mindmap');
     try {
       const data = await generateMindMap(grade, chapter, board);
-      if (!data || !data.branches) throw new Error("Invalid mind map data received.");
       setMindMapData(data);
     } catch (e: any) {
       console.error(e);
       setError(e.message || "Failed to generate mind map. Please try again.");
-      // Don't reset view mode, let the error state show in the mindmap view
     } finally {
       setLoading(false);
     }
@@ -176,7 +174,7 @@ const TheoryHub: React.FC = () => {
       setResult(data);
     } catch (e: any) {
       console.error(e);
-      setError(e.message || "Failed to generate topic content. Please try again.");
+      setError(e.message || "Failed to generate content.");
     } finally {
       setLoading(false);
     }
@@ -201,7 +199,6 @@ const TheoryHub: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      {/* Header Section */}
       <div className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[2.5rem] p-10 text-white shadow-2xl border border-white/5 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/10 blur-[100px] rounded-full" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full" />
@@ -235,11 +232,9 @@ const TheoryHub: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className="min-h-[600px]">
         {viewMode === 'chapters' && (
           <div className="space-y-8">
-            {/* Search Bar */}
             <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center space-x-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -327,7 +322,6 @@ const TheoryHub: React.FC = () => {
               </div>
             ) : mindMapData && (
               <div className="space-y-8">
-                {/* Full Chapter Actions */}
                 <div className="bg-slate-900 rounded-[2rem] p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
                   <div className="flex items-center space-x-4">
                     <div className="p-3 bg-rose-500 rounded-2xl">
@@ -339,78 +333,39 @@ const TheoryHub: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <button 
-                      onClick={() => handleFullChapterGenerate('Notes')}
-                      className="px-6 py-3 bg-white/10 hover:bg-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10"
-                    >
-                      Full Notes
-                    </button>
-                    <button 
-                      onClick={() => handleFullChapterGenerate('MCQ')}
-                      className="px-6 py-3 bg-white/10 hover:bg-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10"
-                    >
-                      Full MCQs
-                    </button>
-                    <button 
-                      onClick={() => handleFullChapterGenerate('CaseStudy')}
-                      className="px-6 py-3 bg-white/10 hover:bg-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10"
-                    >
-                      Full Cases
-                    </button>
+                    <button onClick={() => handleFullChapterGenerate('Notes')} className="px-6 py-3 bg-white/10 hover:bg-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10">Full Notes</button>
+                    <button onClick={() => handleFullChapterGenerate('MCQ')} className="px-6 py-3 bg-white/10 hover:bg-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10">Full MCQs</button>
+                    <button onClick={() => handleFullChapterGenerate('CaseStudy')} className="px-6 py-3 bg-white/10 hover:bg-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10">Full Cases</button>
                   </div>
                 </div>
 
                 <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-sm min-h-[600px]">
-                  {/* Central Node */}
                   <div className="flex justify-center mb-16">
                     <div className="w-80 bg-slate-900 rounded-[2rem] p-8 text-center shadow-2xl border-4 border-rose-500 relative">
                       <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-1 h-16 bg-gradient-to-b from-rose-500 to-slate-200" />
-                      <span className="text-white font-black text-xl leading-tight uppercase tracking-tighter">{typeof mindMapData.center === 'object' ? JSON.stringify(mindMapData.center) : mindMapData.center}</span>
+                      <span className="text-white font-black text-xl leading-tight uppercase tracking-tighter">{mindMapData.center}</span>
                     </div>
                   </div>
 
-                  {/* Branches Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {mindMapData.branches.map((branch: any, idx: number) => (
-                      <div 
-                        key={idx}
-                        className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-lg hover:border-rose-500 hover:shadow-rose-100 transition-all group relative"
-                      >
-                        <div className="absolute -top-4 -left-4 w-10 h-10 bg-rose-500 rounded-xl flex items-center justify-center text-white font-black shadow-lg">
-                          {idx + 1}
-                        </div>
-                        <h4 className="font-black text-slate-800 text-lg mb-3 uppercase tracking-tight leading-tight group-hover:text-rose-600 transition-colors">{typeof branch.title === 'object' ? JSON.stringify(branch.title) : branch.title}</h4>
-                        <p className="text-xs text-slate-400 font-medium mb-6 leading-relaxed">{typeof branch.description === 'object' ? JSON.stringify(branch.description) : branch.description}</p>
+                      <div key={idx} className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-lg hover:border-rose-500 hover:shadow-rose-100 transition-all group relative">
+                        <div className="absolute -top-4 -left-4 w-10 h-10 bg-rose-500 rounded-xl flex items-center justify-center text-white font-black shadow-lg">{idx + 1}</div>
+                        <h4 className="font-black text-slate-800 text-lg mb-3 uppercase tracking-tight leading-tight group-hover:text-rose-600 transition-colors">{branch.title}</h4>
+                        <p className="text-xs text-slate-400 font-medium mb-6 leading-relaxed">{branch.description}</p>
                         
                         {branch.subTopics && branch.subTopics.length > 0 && (
                           <div className="flex flex-wrap gap-2 mb-6">
                             {branch.subTopics.slice(0, 3).map((st: string, sidx: number) => (
-                              <span key={sidx} className="text-[9px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 px-2 py-1 rounded-md">
-                                {st}
-                              </span>
+                              <span key={sidx} className="text-[9px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 px-2 py-1 rounded-md">{st}</span>
                             ))}
                           </div>
                         )}
 
                         <div className="grid grid-cols-3 gap-2">
-                          <button 
-                            onClick={() => handleBranchSelect(branch, 'Notes')}
-                            className="py-3 bg-slate-50 hover:bg-rose-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
-                          >
-                            Notes
-                          </button>
-                          <button 
-                            onClick={() => handleBranchSelect(branch, 'MCQ')}
-                            className="py-3 bg-slate-50 hover:bg-rose-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
-                          >
-                            MCQs
-                          </button>
-                          <button 
-                            onClick={() => handleBranchSelect(branch, 'CaseStudy')}
-                            className="py-3 bg-slate-50 hover:bg-rose-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
-                          >
-                            Cases
-                          </button>
+                          <button onClick={() => handleBranchSelect(branch, 'Notes')} className="py-3 bg-slate-50 hover:bg-rose-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Notes</button>
+                          <button onClick={() => handleBranchSelect(branch, 'MCQ')} className="py-3 bg-slate-50 hover:bg-rose-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">MCQs</button>
+                          <button onClick={() => handleBranchSelect(branch, 'CaseStudy')} className="py-3 bg-slate-50 hover:bg-rose-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Cases</button>
                         </div>
                       </div>
                     ))}
@@ -429,9 +384,7 @@ const TheoryHub: React.FC = () => {
                 <span>Back to Mind Map</span>
               </button>
               <div className="flex items-center space-x-4">
-                <span className="bg-rose-100 text-rose-700 text-[10px] font-black uppercase px-3 py-1 rounded-full">
-                  {contentType === 'CaseStudy' ? 'Case-Based Study' : contentType}
-                </span>
+                <span className="bg-rose-100 text-rose-700 text-[10px] font-black uppercase px-3 py-1 rounded-full">{contentType}</span>
                 <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">{selectedBranch?.title}</h2>
               </div>
             </div>
@@ -449,16 +402,8 @@ const TheoryHub: React.FC = () => {
                 <h3 className="text-xl font-black text-slate-800 mb-2 uppercase tracking-tight">Generation Failed</h3>
                 <p className="text-slate-400 text-sm mb-8 max-w-md">{error}</p>
                 <div className="flex flex-wrap gap-4 justify-center">
-                  <button 
-                    onClick={() => backToMindMap()}
-                    className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all"
-                  >
-                    Back to Mind Map
-                  </button>
-                  <button 
-                    onClick={() => (window as any).aistudio?.openSelectKey().catch((e: any) => console.error("Key select cancelled:", e))}
-                    className="px-8 py-4 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center space-x-2"
-                  >
+                  <button onClick={() => backToMindMap()} className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all">Back to Mind Map</button>
+                  <button onClick={() => (window as any).aistudio?.openSelectKey().catch((e: any) => console.error("Key select cancelled:", e))} className="px-8 py-4 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center space-x-2">
                     <ShieldCheck size={16} />
                     <span>Connect AI</span>
                   </button>
@@ -468,66 +413,42 @@ const TheoryHub: React.FC = () => {
               <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-sm">
                 <div className="flex justify-between items-center mb-10 pb-6 border-b border-slate-100">
                   <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-rose-500 rounded-2xl text-white shadow-lg shadow-rose-200">
-                      {contentType === 'Notes' ? <FileText size={24} /> : <HelpCircle size={24} />}
-                    </div>
+                    <div className="p-3 bg-rose-500 rounded-2xl text-white shadow-lg shadow-rose-200">{contentType === 'Notes' ? <FileText size={24} /> : <HelpCircle size={24} />}</div>
                     <div>
                       <h3 className="text-2xl font-black text-slate-800 tracking-tight">{result.title}</h3>
                       <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">CBSE Class {grade} • {selectedChapter}</p>
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <button 
-                      onClick={handleSaveToHistory}
-                      disabled={isSaved}
-                      className={`p-3 rounded-xl transition-all flex items-center space-x-2 ${isSaved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-400 hover:text-rose-600'}`}
-                      title="Save to History"
-                    >
+                    <button onClick={handleSaveToHistory} disabled={isSaved} className={`p-3 rounded-xl transition-all flex items-center space-x-2 ${isSaved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-400 hover:text-rose-600'}`}>
                       {isSaved ? <CheckCircle2 size={20} /> : <Save size={20} />}
                       {isSaved && <span className="text-[10px] font-black uppercase tracking-widest">Saved</span>}
                     </button>
-                    <button onClick={handleExportWord} className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-blue-600 transition-colors" title="Export to Word">
-                      <FileText size={20} />
-                    </button>
-                    <button onClick={handleExportPdf} className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors" title="Export to PDF">
-                      <Download size={20} />
-                    </button>
-                    <button onClick={() => window.print()} className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-slate-900 transition-colors" title="Print">
-                      <Printer size={20} />
-                    </button>
+                    <button onClick={handleExportWord} className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-blue-600 transition-colors"><FileText size={20} /></button>
+                    <button onClick={handleExportPdf} className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-rose-600 transition-colors"><Download size={20} /></button>
+                    <button onClick={() => window.print()} className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:text-slate-900 transition-colors"><Printer size={20} /></button>
                   </div>
                 </div>
 
                 <div className="prose prose-slate max-w-none" ref={contentRef}>
-                  {result.content && (
-                    <div className="mb-12 text-slate-600 font-medium leading-relaxed whitespace-pre-wrap bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
-                      {typeof result.content === 'object' ? JSON.stringify(result.content) : result.content}
-                    </div>
-                  )}
-
+                  {result.content && <div className="mb-12 text-slate-600 font-medium leading-relaxed whitespace-pre-wrap bg-slate-50 p-8 rounded-[2rem] border border-slate-100">{result.content}</div>}
                   {result.questions && result.questions.length > 0 && (
                     <div className="space-y-8">
                       <div className="flex items-center space-x-3 mb-6">
                         <div className="w-1.5 h-8 bg-rose-500 rounded-full" />
-                        <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight">
-                          {contentType === 'CaseStudy' ? 'Case Analysis & Questions' : 'Practice Assessment'}
-                        </h4>
+                        <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight">{contentType === 'CaseStudy' ? 'Case Analysis & Questions' : 'Practice Assessment'}</h4>
                       </div>
                       <div className="grid grid-cols-1 gap-6">
                         {result.questions.map((q, idx) => (
                           <div key={idx} className="bg-white p-8 rounded-[2rem] border border-slate-100 hover:border-rose-200 transition-all group shadow-sm">
                             <div className="flex items-start space-x-4">
-                              <span className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-xs font-black text-white shadow-sm">
-                                {idx + 1}
-                              </span>
+                              <span className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-xs font-black text-white shadow-sm">{idx + 1}</span>
                               <div className="flex-1 space-y-4">
-                                <p className="font-bold text-slate-800 text-lg leading-tight">
-                                  {typeof q.question === 'object' ? JSON.stringify(q.question) : q.question}
-                                </p>
+                                <p className="font-bold text-slate-800 text-lg leading-tight">{q.question}</p>
                                 <div className="p-5 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
                                   <p className="text-sm text-emerald-700 font-bold">
                                     <span className="text-[10px] uppercase tracking-widest opacity-60 block mb-1">Correct Answer / Explanation</span>
-                                    {typeof q.answer === 'object' ? JSON.stringify(q.answer) : q.answer}
+                                    {q.answer}
                                   </p>
                                 </div>
                               </div>
@@ -544,30 +465,23 @@ const TheoryHub: React.FC = () => {
         )}
       </div>
 
-      {/* Footer Info */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-8 rounded-[2rem] border border-slate-100 flex items-start space-x-4">
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-            <Zap size={24} />
-          </div>
+          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl"><Zap size={24} /></div>
           <div>
             <h4 className="font-black text-slate-800 uppercase tracking-tight text-sm mb-1">NCERT Reference</h4>
             <p className="text-[10px] text-slate-400 font-medium leading-relaxed">Content generated using NCERT and CBSE 2025-26 latest guidelines.</p>
           </div>
         </div>
         <div className="bg-white p-8 rounded-[2rem] border border-slate-100 flex items-start space-x-4">
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
-            <Target size={24} />
-          </div>
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><Target size={24} /></div>
           <div>
             <h4 className="font-black text-slate-800 uppercase tracking-tight text-sm mb-1">Board Pattern</h4>
             <p className="text-[10px] text-slate-400 font-medium leading-relaxed">Case-based studies and MCQs follow the latest board sample paper patterns.</p>
           </div>
         </div>
         <div className="bg-white p-8 rounded-[2rem] border border-slate-100 flex items-start space-x-4">
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl">
-            <Languages size={24} />
-          </div>
+          <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl"><Languages size={24} /></div>
           <div>
             <h4 className="font-black text-slate-800 uppercase tracking-tight text-sm mb-1">Short & Precise</h4>
             <p className="text-[10px] text-slate-400 font-medium leading-relaxed">Explanations designed for quick understanding and high retention.</p>
