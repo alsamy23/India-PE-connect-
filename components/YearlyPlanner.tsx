@@ -36,15 +36,15 @@ const YearlyPlanner: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   
-  const [grade, setGrade] = useState('12');
+  const [grade, setGrade] = useState('6');
   const [board, setBoard] = useState<BoardType>(BoardType.CBSE);
   const [frequency, setFrequency] = useState('2');
-  const [duration, setDuration] = useState('45 min');
+  const [duration, setDuration] = useState('40 min');
   const [startDate, setStartDate] = useState('2026-04-01');
   const [language, setLanguage] = useState<Language>('English');
   const [calendarText, setCalendarText] = useState(SAMPLE_CALENDAR_TEXT);
-  const [term1Focus, setTerm1Focus] = useState('Volleyball & Fitness');
-  const [term2Focus, setTerm2Focus] = useState('Yoga & Major Games');
+  const [term1Focus, setTerm1Focus] = useState('Locomotor Skills & Basic Fitness');
+  const [term2Focus, setTerm2Focus] = useState('Football & Team Games');
   
   const [plan, setPlan] = useState<YearlyPlan | null>(null);
 
@@ -114,9 +114,8 @@ const YearlyPlanner: React.FC = () => {
                 <th width="50">Week</th>
                 <th width="100">Dates</th>
                 <th width="80">Status</th>
-                <th width="100">Sport/Game</th>
-                <th width="150">Topic/Skill</th>
-                <th>Plan & Coaching Notes</th>
+                <th width="150">Topic</th>
+                <th>Details</th>
               </tr>
             </thead>
             <tbody>
@@ -128,12 +127,8 @@ const YearlyPlanner: React.FC = () => {
               <td>${week.weekNumber}</td>
               <td>${week.dates || '-'}</td>
               <td>${week.status}</td>
-              <td>${week.sport || '-'}</td>
-              <td><b>${week.weeklySkill || week.topic || '-'}</b></td>
-              <td>
-                ${week.description || week.details || '-'}
-                ${week.coachingNotes ? `<br><i>Coaching Notes: ${week.coachingNotes}</i>` : ''}
-              </td>
+              <td><b>${week.topic || '-'}</b></td>
+              <td>${week.details || '-'}</td>
             </tr>
           `;
         });
@@ -142,6 +137,7 @@ const YearlyPlanner: React.FC = () => {
     });
 
     html += `</body></html>`;
+
     exportToWord(html, `PE_Yearly_Plan_Grade${grade}`);
   };
 
@@ -150,8 +146,10 @@ const YearlyPlanner: React.FC = () => {
       alert("No data available to export.");
       return;
     }
-    let csv = "\uFEFF"; 
-    csv += "Term,Month,Week,Dates,Status,Sport,Skill,Topic,Plan,CoachingNotes\n";
+
+    let csv = "\uFEFF"; // BOM for UTF-8
+    csv += "Term,Month,Week,Dates,Status,Topic,Details\n";
+    
     plan.terms.forEach(term => {
       const safeTerm = term.termName.replace(/"/g, '""');
       term.months?.forEach(month => {
@@ -163,16 +161,14 @@ const YearlyPlanner: React.FC = () => {
             `"${week.weekNumber}"`,
             `"${(week.dates || '').replace(/"/g, '""')}"`,
             `"${week.status}"`,
-            `"${(week.sport || '').replace(/"/g, '""')}"`,
-            `"${(week.weeklySkill || '').replace(/"/g, '""')}"`,
             `"${(week.topic || '').replace(/"/g, '""')}"`,
-            `"${(week.description || week.details || '').replace(/"/g, '""')}"`,
-            `"${(week.coachingNotes || '').replace(/"/g, '""')}"`
+            `"${(week.details || '').replace(/"/g, '""')}"`
           ];
           csv += row.join(",") + "\n";
         });
       });
     });
+
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -196,12 +192,6 @@ const YearlyPlanner: React.FC = () => {
         </div>
 
         <div className="mt-8">
-          {error && (
-            <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center space-x-3 text-rose-600 animate-in fade-in slide-in-from-top-4">
-              <AlertCircle size={20} />
-              <p className="font-bold text-sm">{error}</p>
-            </div>
-          )}
           {step === 1 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in">
               <div className="space-y-6">
@@ -215,10 +205,6 @@ const YearlyPlanner: React.FC = () => {
                      {Object.values(BoardType).map(b => <option key={b} value={b}>{b}</option>)}
                    </select>
                 </div>
-                <div>
-                   <label className="block text-xs font-black text-slate-400 uppercase mb-2">Sessions per Week</label>
-                   <input type="number" value={frequency} onChange={e => setFrequency(e.target.value)} className="w-full p-4 bg-slate-50 border rounded-xl font-bold" min="1" max="10" />
-                </div>
               </div>
               <div className="space-y-6">
                 <div><label className="block text-xs font-black text-slate-400 uppercase mb-2">Duration</label>
@@ -226,6 +212,7 @@ const YearlyPlanner: React.FC = () => {
                 <div><label className="block text-xs font-black text-slate-400 uppercase mb-2">Start Date</label>
                 <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full p-4 bg-slate-50 border rounded-xl font-bold" /></div>
                 
+                {/* Language Selector */}
                 <div>
                    <label className="block text-xs font-black text-slate-400 uppercase mb-2 flex items-center">
                      <Languages size={14} className="mr-1" /> Language
@@ -275,7 +262,7 @@ const YearlyPlanner: React.FC = () => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b pb-6 print:hidden gap-4">
                    <div>
                      <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Grade {plan.grade} Plan</h3>
-                     <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">{plan.academicYear} | {plan.board}</p>
+                     <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">{plan.academicYear} | ${plan.board}</p>
                    </div>
                    <div className="flex flex-wrap gap-2 md:gap-3">
                      <button onClick={handleExportExcel} className="flex items-center space-x-2 px-4 md:px-6 py-2.5 md:py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold hover:bg-emerald-100 transition-colors text-xs md:text-sm">
@@ -310,12 +297,15 @@ const YearlyPlanner: React.FC = () => {
                         <div className="flex items-center space-x-4 mb-8">
                            <div className="h-8 w-2 bg-indigo-600 rounded-full"></div>
                            <h4 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">{term.termName}</h4>
+                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-l pl-4">Indian Academic Cycle</span>
                         </div>
                         
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                           {term.months?.map((month, mIdx) => (
                             <div key={mIdx} className="bg-white border-2 border-slate-50 rounded-[2.5rem] p-8 shadow-sm hover:shadow-md transition-shadow">
-                               <h5 className="font-black text-indigo-600 mb-6 uppercase tracking-widest text-sm border-b pb-4">{month.monthName}</h5>
+                               <h5 className="font-black text-indigo-600 mb-6 uppercase tracking-widest text-sm border-b pb-4">
+                                 {month.monthName}
+                               </h5>
                                <div className="space-y-4">
                                  {month.weeks?.map((week, wIdx) => (
                                    <div key={wIdx} className={`p-5 rounded-2xl border transition-colors ${week.status === 'Instructional' ? 'bg-slate-50/50 border-slate-100 hover:bg-white' : 'bg-orange-50/50 border-orange-100'}`}>
@@ -328,19 +318,22 @@ const YearlyPlanner: React.FC = () => {
                                         value={week.topic} 
                                         onChange={(e) => handleUpdatePlan(tIdx, mIdx, wIdx, 'topic', e.target.value)} 
                                       />
-                                      {week.sport && (
-                                        <div className="mt-2 flex items-center space-x-2">
-                                          <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md">{week.sport}</span>
-                                          {week.weeklySkill && <span className="text-[10px] font-bold text-indigo-500 uppercase">{week.weeklySkill}</span>}
+                                      
+                                      {week.status === 'Instructional' && week.details && (
+                                        <div className="mt-3 pt-3 border-t border-slate-100/50">
+                                          <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1">Instructional Guide:</span>
+                                          <p className="text-xs text-slate-600 font-medium leading-relaxed italic">
+                                            {week.details}
+                                          </p>
                                         </div>
                                       )}
-                                      <p className="text-xs text-slate-600 mt-2 font-medium leading-relaxed">{week.description || week.details}</p>
-                                      {week.coachingNotes && (
-                                        <div className="mt-2 p-2 bg-indigo-50/50 rounded-lg border border-indigo-100">
-                                          <p className="text-[9px] font-black text-indigo-400 uppercase mb-1">Coaching Notes</p>
-                                          <p className="text-[10px] text-indigo-700 italic font-medium">{week.coachingNotes}</p>
-                                        </div>
+
+                                      {week.status !== 'Instructional' && (
+                                        <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-wide">
+                                          {week.details}
+                                        </p>
                                       )}
+
                                       <div className="mt-3 flex items-center">
                                         <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${week.status === 'Instructional' ? 'bg-indigo-100 text-indigo-600' : 'bg-orange-100 text-orange-600'}`}>
                                           {week.status}
