@@ -24,6 +24,7 @@ import {
   Activity,
   AlertCircle,
   ClipboardList,
+  FileText,
   UserCheck,
   Mail,
   Zap,
@@ -53,13 +54,14 @@ import ErrorBoundary from './components/ErrorBoundary.tsx';
 import Auth from './components/Auth.tsx';
 import FitnessManagementIntro from './components/FitnessManagementIntro.tsx';
 import SchoolAdmin from './components/SchoolAdmin.tsx';
+import FitnessReports from './components/FitnessReports.tsx';
 import SkillAnalysis from './components/SkillAnalysis.tsx';
 import AdminLogs from './components/AdminLogs.tsx';
 import { logError } from './services/logService.ts';
 import { auth } from './services/firebase.ts';
 import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
 
-type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports';
 
 import { BoardType, Language } from './types.ts';
 
@@ -286,6 +288,7 @@ const App: React.FC = () => {
         { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true, subtitle: 'All Khelo India Fitness tests pre-loaded.' },
         { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, subtitle: 'Official battery tests and student profiles.' },
         { id: 'school-overview', name: 'School Fitness Database', icon: Zap, isNew: true, subtitle: 'Store and track every student\'s scores.' },
+        { id: 'fitness-reports', name: 'Fitness Reports', icon: FileText, isNew: true, protected: true, subtitle: 'Generate progress and performance reports.' },
         { id: 'school-results', name: 'Live Results', icon: Activity, isNew: true, protected: true },
         { id: 'school-students', name: 'Student Directory', icon: Users, protected: true },
         { id: 'school-teams', name: 'Teams/Classes', icon: UserCheck, protected: true },
@@ -359,6 +362,7 @@ const App: React.FC = () => {
       case 'school-teams': return <TeamManagement />;
       case 'school-admin': return <SchoolAdmin />;
       case 'logs': return <AdminLogs />;
+      case 'fitness-reports': return <FitnessReports />;
       case 'testpaper': return <TestPaperGenerator />;
       case 'parentletters': return <ParentLetters />;
       case 'widgets': return <ClassroomWidgets />;

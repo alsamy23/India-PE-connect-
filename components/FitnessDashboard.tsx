@@ -293,11 +293,17 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate }) => {
           <div className="bg-indigo-50 rounded-[2.5rem] p-8 border-2 border-indigo-100">
             <h3 className="text-lg font-black text-indigo-900 uppercase tracking-tight mb-4">Quick Reports</h3>
             <div className="space-y-3">
-              <button className="w-full p-4 bg-white rounded-2xl border border-indigo-100 text-left hover:shadow-md transition-all group">
+              <button 
+                onClick={() => onNavigate('fitness-reports')}
+                className="w-full p-4 bg-white rounded-2xl border border-indigo-100 text-left hover:shadow-md transition-all group"
+              >
                 <span className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Term 1</span>
                 <span className="block font-bold text-indigo-900">Class Progress Report</span>
               </button>
-              <button className="w-full p-4 bg-white rounded-2xl border border-indigo-100 text-left hover:shadow-md transition-all group">
+              <button 
+                onClick={() => onNavigate('fitness-reports')}
+                className="w-full p-4 bg-white rounded-2xl border border-indigo-100 text-left hover:shadow-md transition-all group"
+              >
                 <span className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Health</span>
                 <span className="block font-bold text-indigo-900">BMI Distribution</span>
               </button>

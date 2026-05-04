@@ -38,6 +38,7 @@ const FitnessTests: React.FC = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [selectedTerm, setSelectedTerm] = useState('Baseline');
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
@@ -118,7 +119,7 @@ const FitnessTests: React.FC = () => {
 
       // Save to school database if student is selected
       if (selectedStudentId) {
-        const student = students.find(s => s.id === selectedStudentId);
+          const student = students.find(s => s.id === selectedStudentId);
         await fitnessService.saveResult({
           id: Math.random().toString(36).substr(2, 9),
           teacherId: auth.currentUser.uid,
@@ -129,7 +130,7 @@ const FitnessTests: React.FC = () => {
           value: testValue,
           unit: selectedTest?.unit || '',
           date: new Date().toISOString(),
-          term: 'Term 1', // Default
+          term: selectedTerm,
           rating: result.tests[0]?.rating,
           percentile: parseFloat(result.tests[0]?.percentile)
         });
@@ -253,6 +254,19 @@ const FitnessTests: React.FC = () => {
                           <option key={s.id} value={s.id}>{s.name} (Grade {s.grade} {s.section})</option>
                         ))}
                       </select>
+                      <div className="flex-1 min-w-[150px]">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Assessment Term</label>
+                        <select 
+                          className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                          value={selectedTerm}
+                          onChange={e => setSelectedTerm(e.target.value)}
+                        >
+                          <option value="Baseline">Baseline</option>
+                          <option value="Term 1">Term 1</option>
+                          <option value="Term 2">Term 2</option>
+                          <option value="Final">Final Report</option>
+                        </select>
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap gap-6 mb-8">
