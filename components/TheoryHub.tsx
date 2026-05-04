@@ -132,7 +132,10 @@ const TheoryHub: React.FC = () => {
     setViewMode('mindmap');
     try {
       const data = await generateMindMap(grade, chapter, board);
-      if (!data || !data.branches) throw new Error("Invalid mind map data received.");
+      if (!data || !data.branches || !Array.isArray(data.branches)) {
+        console.error("Malformed mind map response:", data);
+        throw new Error("Invalid mind map data received from AI. Please try again.");
+      }
       setMindMapData(data);
     } catch (e: any) {
       console.error(e);

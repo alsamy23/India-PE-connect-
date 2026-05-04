@@ -407,15 +407,25 @@ export const generateMindMap = async (grade: string, chapter: string, board: Boa
     model: 'gemini-1.5-flash',
     contents: `Generate a comprehensive mind map structure for CBSE Class ${grade} Physical Education Chapter: ${chapter}. 
     Include ALL major topics and sub-topics from the latest 2025-2026 CBSE curriculum and NCERT textbook.
-    Provide 6-8 main branches with clear, academic titles and brief descriptions.`,
+    Provide exactly 6 to 8 main branches with clear, academic titles and brief descriptions.
+    Each branch should have 3-5 sub-topics.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
-      systemInstruction: "You are a CBSE Physical Education Subject Matter Expert. Generate a structured, hierarchical mind map in JSON format. Ensure full coverage of the specified chapter according to the 2025-2026 syllabus.",
+      systemInstruction: `You are a CBSE Physical Education Subject Matter Expert. 
+      Generate a structured, hierarchical mind map in JSON format. 
+      Ensure 'center' is a string and 'branches' is an array of objects.
+      Each branch object MUST have 'title', 'description', and 'subTopics' (array of strings).
+      Ensure full coverage of the specified chapter according to the 2025-2026 syllabus.`,
       responseMimeType: "application/json",
       responseSchema: schema
     }
   });
-  return safeParseJson(response.text || response);
+  
+  const parsed = safeParseJson(response.text || response);
+  if (!parsed || !parsed.branches) {
+    throw new Error("The AI failed to generate segments for this chapter. Please try again.");
+  }
+  return parsed;
 };
 
 export const generateTheoryContent = async (grade: string, topic: string, board: BoardType, contentType: string, language: Language): Promise<TheoryContent> => {
@@ -763,29 +773,30 @@ export const generateTestPaper = async (
       Be decisive and do not ask for clarification.
       Create a professional question paper following standard CBSE 2025-26 educational patterns for Code 048.
       
+      ${maxMarks === 35 ? `
+      STRICT STRUCTURE FOR 35 MARKS:
+      Total 13 Questions (Strictly 35 Marks):
+      1. Section A: Q1 to Q6 (6 Questions) - 1 mark each, MCQs.
+      2. Section B: Q7 to Q9 (3 Questions) - 3 marks each, Short Answer.
+      3. Section C: Q10 to Q13 (4 Questions) - 5 marks each, Long Answer.
+      
+      CRITICAL: You MUST provide Exactly 13 questions. Use the 6-3-5 mark distribution to reach exactly 35 marks. 
+      ` : ''}
+
       ${isCBSE12 && maxMarks === 70 ? `
       STRICT STRUCTURE FOR 70 MARKS (CBSE CLASS 12 PHYSICAL EDUCATION - 048):
-      This EXAM MUST ALWAYS HAVE EXACTLY 37 QUESTIONS. DO NOT TRUNCATE. GENERATE ALL 37 QUESTIONS.
+      This EXAM MUST ALWAYS HAVE EXACTLY 37 QUESTIONS. DO NOT TRUNCATE. 
       1. Section A: Q1 to Q18 (18 Questions) - 1 mark each, MCQs.
       2. Section B: Q19 to Q24 (6 Questions) - 2 marks each, Very Short Answer.
       3. Section C: Q25 to Q30 (6 Questions) - 3 marks each, Short Answer.
-      4. Section D: Q31 to Q33 (3 Questions) - 4 marks each. 
-         - FORMAT: Q31, Q32, and Q33 are CASE STUDIES.
-         - Provide Exactly 4 MCQs in 'subQuestions' for each.
+      4. Section D: Q31 to Q33 (3 Questions) - 4 marks each (Case Studies with 4 sub-questions each).
       5. Section E: Q34 to Q37 (4 Questions) - 5 marks each, Long Answer.
       
-      CRITICAL: You MUST finish the JSON until question number 37. Do not leave Section E out.
-      
-      TOTAL QUESTIONS: 37. TOTAL MARKS: 70.
-      
-      ${maxMarks === 35 ? `
-      STRICT STRUCTURE FOR 35 MARKS:
-      Total 13 Questions:
-      1. Section A: Q1 to Q5 (5 Questions) - 1 mark each, MCQs.
-      2. Section B: Q6 to Q10 (5 Questions) - 3 marks each, Short Answer.
-      3. Section C: Q11 to Q13 (3 Questions) - 5 marks each, Long Answer.
-      Total = 35 Marks. 
+      CRITICAL: You MUST finish the JSON until question 37. If you are running out of tokens, keep the answers in the marking scheme very brief but finish all questions.
       ` : ''}
+      
+      TOTAL QUESTIONS FOR 70 MARKS: 37.
+      TOTAL QUESTIONS FOR 35 MARKS: 13.
       
       CONTENT DISTRIBUTION:
       - The user has selected multiple chapters (Units).
@@ -793,17 +804,11 @@ export const generateTestPaper = async (
       - Do NOT focus only on one chapter. Ensure a balanced coverage of the entire selected syllabus.
       
       MARKING SCHEME:
-      - You MUST generate a COMPLETE 'markingScheme' for EVERY SINGLE QUESTION from Q1 to Q37. 
-      - For Section A (Q1-18) and Section D (Q31-33 subQuestions): Provide the correct option (A, B, C or D) and the text.
-      - For Section B, C, and E: Provide exhaustive point-wise answers and a clear marking breakdown (e.g. 1+1=2 or 2+3=5).
-      - The Marking Scheme must be 100% complete and matches the Question Paper numbers exactly.
-      ` : `
-      Distribute marks to total exactly ${maxMarks} using sections A, B, C, D, and E as appropriate.
-      Ensure balance across all provided chapters.
-      `}
-      
-      If a difficulty level is mentioned in the topic string, adjust question complexity accordingly.
-      Generate the content now.`,
+      - You MUST generate a COMPLETE 'markingScheme' for EVERY SINGLE QUESTION from Q1 to Q37 (for 70 marks) or Q1 to Q13 (for 35 marks). 
+      - For Section A (MCQs) and Section D: Provide the correct option (A, B, C or D) and the text.
+      - For Short and Long Answers: Provide exhaustive point-wise answers and a clear marking breakdown.
+      - The Marking Scheme must be 100% complete and match the Question Paper numbers exactly.
+      `,
       responseMimeType: "application/json",
       responseSchema: schema
     }
