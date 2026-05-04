@@ -78,6 +78,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isAuthView, setIsAuthView] = useState(false);
+  const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(null);
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser: FirebaseUser | null) => {
@@ -357,12 +358,12 @@ const App: React.FC = () => {
       case 'khelo': return <KheloIndia />;
       case 'rules': return <RulesBot />;
       case 'fitness': return <FitnessTests />;
-      case 'school-results': return <FitnessDashboard onNavigate={setActiveTab} />;
-      case 'school-students': return <StudentManagement />;
+      case 'school-results': return <FitnessDashboard onNavigate={setActiveTab} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} />;
+      case 'school-students': return <StudentManagement onNavigate={setActiveTab} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} />;
       case 'school-teams': return <TeamManagement />;
       case 'school-admin': return <SchoolAdmin />;
       case 'logs': return <AdminLogs />;
-      case 'fitness-reports': return <FitnessReports />;
+      case 'fitness-reports': return <FitnessReports initialStudentId={selectedReportStudentId || undefined} />;
       case 'testpaper': return <TestPaperGenerator />;
       case 'parentletters': return <ParentLetters />;
       case 'widgets': return <ClassroomWidgets />;

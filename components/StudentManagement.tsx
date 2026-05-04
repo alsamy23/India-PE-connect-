@@ -9,6 +9,7 @@ import {
   Edit2, 
   UserPlus,
   FileUp,
+  FileText,
   Download,
   Filter,
   Loader2
@@ -17,7 +18,12 @@ import { motion } from 'motion/react';
 import { fitnessService, Student, SchoolMember } from '../services/fitnessService.ts';
 import { auth } from '../services/firebase.ts';
 
-const StudentManagement: React.FC = () => {
+interface StudentManagementProps {
+  onNavigate?: (tab: any) => void;
+  onSelectStudent?: (id: string) => void;
+}
+
+const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSelectStudent }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -218,6 +224,14 @@ const StudentManagement: React.FC = () => {
                   </td>
                   <td className="p-6 text-right">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => onSelectStudent?.(student.id)}
+                        className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors flex items-center gap-1"
+                        title="View Performance Report"
+                      >
+                        <FileText size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">Report</span>
+                      </button>
                       <button className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors">
                         <Edit2 size={16} />
                       </button>

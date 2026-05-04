@@ -19,9 +19,10 @@ import { auth } from '../services/firebase.ts';
 
 interface FitnessDashboardProps {
   onNavigate: (tab: any) => void;
+  onSelectStudent?: (id: string) => void;
 }
 
-const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate }) => {
+const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelectStudent }) => {
   const [results, setResults] = useState<FitnessResult[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -228,7 +229,11 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate }) => {
                 </div>
               ) : (
                 results.slice(0, 10).map((result) => (
-                  <div key={result.id} className="p-6 hover:bg-slate-50 transition-colors flex items-center justify-between group">
+                  <button 
+                    key={result.id} 
+                    onClick={() => onSelectStudent?.(result.studentId)}
+                    className="w-full p-6 hover:bg-slate-50 transition-colors flex items-center justify-between group text-left border-none"
+                  >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-black">
                         {getStudentName(result.studentId).substring(0, 2).toUpperCase()}
@@ -247,9 +252,12 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate }) => {
                         <div className="text-xl font-black text-slate-900">{result.value} {result.unit}</div>
                         <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{result.rating || 'Good'}</div>
                       </div>
-                      <ChevronRight size={20} className="text-slate-200 group-hover:text-indigo-600 transition-colors" />
+                      <div className="flex items-center gap-2">
+                         <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">View Report</span>
+                         <ChevronRight size={20} className="text-slate-200 group-hover:text-indigo-600 transition-colors" />
+                      </div>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>

@@ -21,14 +21,26 @@ import { motion, AnimatePresence } from 'motion/react';
 import { fitnessService, Student, FitnessResult, Team, SchoolMember, KIFT_BATTERIES } from '../services/fitnessService.ts';
 import { auth } from '../services/firebase.ts';
 
-const FitnessReports: React.FC = () => {
+interface FitnessReportsProps {
+  initialStudentId?: string;
+}
+
+const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [results, setResults] = useState<FitnessResult[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<'individual' | 'class' | 'school'>('individual');
-  const [selectedId, setSelectedId] = useState<string>('');
+  const [selectedId, setSelectedId] = useState<string>(initialStudentId || '');
   const [reportData, setReportData] = useState<any>(null);
+
+  useEffect(() => {
+    if (initialStudentId) {
+      setSelectedId(initialStudentId);
+      setSelectedType('individual');
+    }
+  }, [initialStudentId]);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [userProfile, setUserProfile] = useState<SchoolMember | null>(null);
 
@@ -88,7 +100,21 @@ const FitnessReports: React.FC = () => {
     };
   }, [auth.currentUser?.uid]);
 
-  const generateReport = () => {
+  const calculateAvg = (resultsList: FitnessResult[]) => {
+    if (resultsList.length === 0) return 'N/A';
+    const sum = resultsList.reduce((acc, r) => acc + parseFloat(r.value), 0);
+    return (sum / resultsList.length).toFixed(1);
+  };
+
+  const groupCount = (list: any[], key: string) => {
+    return list.reduce((acc, item) => {
+      const val = item[key];
+      acc[val] = (acc[val] || 0) + 1;
+      return acc;
+    }, {});
+  };
+
+  const generateReport = React.useCallback(() => {
     if (!selectedId && selectedType !== 'school') return;
     
     setIsGenerating(true);
@@ -143,21 +169,13 @@ const FitnessReports: React.FC = () => {
       setReportData(data);
       setIsGenerating(false);
     }, 1000);
-  };
+  }, [selectedId, selectedType, students, results, teams]);
 
-  const calculateAvg = (resultsList: FitnessResult[]) => {
-    if (resultsList.length === 0) return 'N/A';
-    const sum = resultsList.reduce((acc, r) => acc + parseFloat(r.value), 0);
-    return (sum / resultsList.length).toFixed(1);
-  };
-
-  const groupCount = (list: any[], key: string) => {
-    return list.reduce((acc, item) => {
-      const val = item[key];
-      acc[val] = (acc[val] || 0) + 1;
-      return acc;
-    }, {});
-  };
+  useEffect(() => {
+    if (initialStudentId && students.length > 0 && results.length > 0) {
+      generateReport();
+    }
+  }, [initialStudentId, students.length, results.length, generateReport]);
 
   const handlePrint = () => {
     window.print();
