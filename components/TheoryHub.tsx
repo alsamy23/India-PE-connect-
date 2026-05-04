@@ -169,13 +169,14 @@ const TheoryHub: React.FC = () => {
     setSelectedBranch(branch);
     setContentType(type);
     setLoading(true);
+    setError(null);
     setViewMode('content');
     try {
       const data = await generateTheoryContent(grade, `${selectedChapter}: ${branch.title}`, board, type, language);
       setResult(data);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Failed to generate content.");
+      setError(e.message || "Failed to generate topic content. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -481,19 +481,13 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
 export const generateLessonDiagram = async (prompt: string, context: string = 'general') => {
   if (!prompt || prompt.length < 5) return undefined;
   try {
-    const response = await callAIBase({
-      model: 'gemini-1.5-flash',
-      contents: { parts: [{ text: `Minimalist sports coaching diagram description. Whiteboard style. No text. ${context}: ${prompt}` }] }
-    });
-    // This model returns text, not images. We would need a separate image generation tool.
-    // For now, we'll return undefined to avoid errors or just use a placeholder if needed.
-    // But since the original code expected inlineData, we'll leave it as is but safer.
-    if (response.candidates?.[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
-      }
-    }
-  } catch (err) { console.error("Diagram error", err); }
+    // Using a free image generation service (Pollinations AI) to provide actual visuals for drills
+    const seed = Math.floor(Math.random() * 10000);
+    const encodedPrompt = encodeURIComponent(`Professional sports coaching diagram, minimalist, whiteboard style, overhead view, ${context}: ${prompt}`);
+    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${seed}`;
+  } catch (err) { 
+    console.error("Diagram URL generation error:", err); 
+  }
   return undefined;
 };
 
@@ -753,25 +747,36 @@ export const generateTestPaper = async (
       
       ${isCBSE12 && maxMarks === 70 ? `
       STRICT STRUCTURE FOR 70 MARKS (CBSE CLASS 12 PHYSICAL EDUCATION - 048):
-      1. Section A: Q1-Q18 (18 Questions) - 1 mark each, MCQs. All compulsory.
-      2. Section B: Q19-Q24 (6 Questions) - 2 marks each, Very Short Answer (60-90 words). Students must attempt any 5.
-      3. Section C: Q25-Q30 (6 Questions) - 3 marks each, Short Answer (100-150 words). Students must attempt any 5.
-      4. Section D: Q31-Q33 (3 Questions) - 4 marks each. Each question is a CASE STUDY. 
-         FORMAT FOR SECTION D: Provide a descriptive scenario or observation text in 'caseStudyText'. Then provide exactly 4 MCQs in the 'subQuestions' array. Each MCQ sub-question is worth 1 mark (Total 4 per case study).
-      5. Section E: Q34-Q37 (4 Questions) - 5 marks each, Long Answer (200-300 words). Students must attempt any 3.
-      Total Marks MUST equal exactly 70.
+      This EXAM MUST ALWAYS HAVE EXACTLY 37 QUESTIONS. DO NOT TRUNCATE. GENERATE ALL 37 QUESTIONS.
+      1. Section A: Q1 to Q18 (18 Questions) - 1 mark each, MCQs.
+      2. Section B: Q19 to Q24 (6 Questions) - 2 marks each, Very Short Answer.
+      3. Section C: Q25 to Q30 (6 Questions) - 3 marks each, Short Answer.
+      4. Section D: Q31 to Q33 (3 Questions) - 4 marks each. 
+         - FORMAT: Q31, Q32, and Q33 are CASE STUDIES.
+         - Provide Exactly 4 MCQs in 'subQuestions' for each.
+      5. Section E: Q34 to Q37 (4 Questions) - 5 marks each, Long Answer.
+      
+      CRITICAL: You MUST finish the JSON until question number 37. Do not leave Section E out.
+      
+      TOTAL QUESTIONS: 37. TOTAL MARKS: 70.
+      
+      CONTENT DISTRIBUTION:
+      - The user has selected multiple chapters (Units).
+      - You MUST distribute the questions proportionally across ALL chapters mentioned in the topic: ${topic}.
+      - Do NOT focus only on one chapter. Ensure a balanced coverage of the entire selected syllabus.
       
       MARKING SCHEME:
-      You MUST generate a COMPLETE 'markingScheme' for EVERY SINGLE QUESTION from Q1 to Q37. 
-      - For Section A & D MCQs: Provide the correct option (A, B, C or D) and the explanation/text.
-      - For Section B, C, and E: Provide exhaustive point-wise answers and a clear marking breakdown.
-      Do NOT omit any questions. The marking scheme must be 100% complete.
+      - You MUST generate a COMPLETE 'markingScheme' for EVERY SINGLE QUESTION from Q1 to Q37. 
+      - For Section A (Q1-18) and Section D (Q31-33 subQuestions): Provide the correct option (A, B, C or D) and the text.
+      - For Section B, C, and E: Provide exhaustive point-wise answers and a clear marking breakdown (e.g. 1+1=2 or 2+3=5).
+      - The Marking Scheme must be 100% complete and matches the Question Paper numbers exactly.
       ` : `
       Distribute marks to total exactly ${maxMarks} using sections A, B, C, D, and E as appropriate.
+      Ensure balance across all provided chapters.
       `}
       
-      Ensure questions are high-quality, relevant to the CBSE 2025-26 syllabus (NCERT based), and cover the topic: ${topic}.
-      Language: ${language}.`,
+      If a difficulty level is mentioned in the topic string, adjust question complexity accordingly.
+      Generate the content now.`,
       responseMimeType: "application/json",
       responseSchema: schema
     }

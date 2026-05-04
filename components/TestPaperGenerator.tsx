@@ -28,7 +28,9 @@ import { useRef } from 'react';
 
 const TestPaperGenerator: React.FC = () => {
   const [grade, setGrade] = useState('12');
+  const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
   const [topic, setTopic] = useState('');
+  const [difficulty, setDifficulty] = useState('Medium');
   const [testType, setTestType] = useState('Unit Test');
   const [timeAllowed, setTimeAllowed] = useState('1.5 Hours');
   const [maxMarks, setMaxMarks] = useState(35);
@@ -41,8 +43,45 @@ const TestPaperGenerator: React.FC = () => {
   const [isSaved, setIsSaved] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const chapters12 = [
+    "Management of Sporting Events",
+    "Children & Women in Sports",
+    "Yoga as Preventive measure for Lifestyle Disease",
+    "Physical Education & Sports for CWSN",
+    "Sports & Nutrition",
+    "Test & Measurement in Sports",
+    "Physiology & Injuries in Sports",
+    "Biomechanics & Sports",
+    "Psychology & Sports",
+    "Training in Sports"
+  ];
+
+  const chapters11 = [
+    "Changing Trends & Career in Physical Education",
+    "Olympic Value Education",
+    "Physical Fitness, Wellness & Lifestyle",
+    "Physical Education & Sports for CWSN",
+    "Yoga",
+    "Physical Activity & Leadership Training",
+    "Test, Measurement & Evaluation",
+    "Fundamentals of Anatomy, Physiology & Kinesiology in Sports",
+    "Psychology & Sports",
+    "Training & Doping in Sports"
+  ];
+
+  const currentChapters = grade === '12' ? chapters12 : chapters11;
+
+  const toggleChapter = (chapter: string) => {
+    setSelectedChapters(prev => 
+      prev.includes(chapter) 
+        ? prev.filter(c => c !== chapter) 
+        : [...prev, chapter]
+    );
+  };
+
   const handleGradeChange = (newGrade: string) => {
     setGrade(newGrade);
+    setSelectedChapters([]);
     if (newGrade === '12' && (testType === 'Pre-Board' || testType === 'Final Exam')) {
       setMaxMarks(70);
       setTimeAllowed('3 Hours');
@@ -61,8 +100,8 @@ const TestPaperGenerator: React.FC = () => {
   };
 
   const handleGenerate = async () => {
-    if (!topic.trim()) {
-      setError("Please enter a topic or chapter name.");
+    if (selectedChapters.length === 0) {
+      setError("Please select at least one chapter.");
       return;
     }
     setLoading(true);
@@ -74,7 +113,8 @@ const TestPaperGenerator: React.FC = () => {
       setTimeout(() => setLoadingStep("Optimizing Marks Distribution..."), 5000);
       setTimeout(() => setLoadingStep("Finalizing Formatting..."), 8000);
       
-      const data = await generateTestPaper(grade, topic, testType, timeAllowed, maxMarks, language);
+      const topicString = `Units: ${selectedChapters.join(', ')}. Difficulty: ${difficulty}. Custom context: ${topic}`;
+      const data = await generateTestPaper(grade, topicString, testType, timeAllowed, maxMarks, language);
       setResult(data);
     } catch (e: any) {
       console.error(e);
@@ -300,17 +340,58 @@ const TestPaperGenerator: React.FC = () => {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm h-full flex flex-col">
               <div className="flex-1 space-y-8">
-                <div className="space-y-4">
-                  <h3 className="text-2xl font-black text-slate-800 tracking-tight">What should the test cover?</h3>
-                  <p className="text-slate-500 text-sm font-medium">
-                    Enter the chapter name, specific topics, or paste a syllabus outline.
-                  </p>
-                  <textarea 
-                    value={topic}
-                    onChange={e => setTopic(e.target.value)}
-                    placeholder="e.g. Management of Sporting Events, Children and Women in Sports..."
-                    className="w-full h-48 p-8 bg-slate-50 border border-slate-100 rounded-[2rem] outline-none focus:ring-2 focus:ring-emerald-200 font-bold text-slate-700 resize-none"
-                  />
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">Select Chapters</h3>
+                    <button 
+                      onClick={() => setSelectedChapters(selectedChapters.length === currentChapters.length ? [] : currentChapters)}
+                      className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:text-emerald-700"
+                    >
+                      {selectedChapters.length === currentChapters.length ? 'Deselect All' : 'Select All'}
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {currentChapters.map((ch, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => toggleChapter(ch)}
+                        className={`p-4 rounded-2xl text-left border transition-all flex items-start space-x-3 group ${
+                          selectedChapters.includes(ch)
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-900 shadow-sm'
+                            : 'bg-white border-slate-100 text-slate-600 hover:border-emerald-200'
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border transition-colors ${
+                          selectedChapters.includes(ch) ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200'
+                        }`}>
+                          {selectedChapters.includes(ch) && <CheckCircle2 size={12} />}
+                        </div>
+                        <span className="text-xs font-bold leading-tight">{ch}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-4 pt-6 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-lg font-black text-slate-800 uppercase tracking-tight">Difficulty & Customization</h4>
+                      <select 
+                        value={difficulty}
+                        onChange={e => setDifficulty(e.target.value)}
+                        className="p-2 bg-slate-50 border border-slate-100 rounded-lg outline-none font-bold text-[10px] uppercase text-slate-600 tracking-widest"
+                      >
+                        <option>Easy</option>
+                        <option>Medium</option>
+                        <option>Hard</option>
+                      </select>
+                    </div>
+                    <textarea 
+                      value={topic}
+                      onChange={e => setTopic(e.target.value)}
+                      placeholder="Optional: Add specific focus points or special requirements..."
+                      className="w-full h-32 p-6 bg-slate-50 border border-slate-100 rounded-[2rem] outline-none focus:ring-2 focus:ring-emerald-200 font-bold text-slate-700 resize-none"
+                    />
+                  </div>
                 </div>
 
                 {error && (

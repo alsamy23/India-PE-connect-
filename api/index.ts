@@ -1,6 +1,6 @@
 import express from "express";
+import { GoogleGenAI } from "@google/genai";
 import * as genAiPackage from "@google/genai";
-const { GoogleGenAI } = genAiPackage;
 const ThinkingLevel = (genAiPackage as any).ThinkingLevel;
 import Groq from "groq-sdk";
 import "dotenv/config";
@@ -80,7 +80,7 @@ apiRouter.get("/ai/test", async (req, res) => {
       const ai = new GoogleGenAI({ apiKey: geminiKeys[0] });
       const response = await ai.models.generateContent({
         model: "gemini-2.0-flash",
-        contents: "Say 'Gemini Connection Successful'"
+        contents: [{ role: 'user', parts: [{ text: "Say 'Gemini Connection Successful'" }] }]
       });
       return res.json({ message: response.text, provider: "gemini" });
     }
@@ -138,7 +138,6 @@ apiRouter.post("/ai/generate", async (req, res) => {
         for (const currentModel of uniqueModels) {
           try {
             console.log(`Attempting generation with ${currentModel}...`);
-            const genModel = ai.getGenerativeModel({ model: currentModel });
             
             // Prepare contents
             const formattedContents = Array.isArray(contents) 
@@ -158,14 +157,13 @@ apiRouter.post("/ai/generate", async (req, res) => {
               delete finalConfig.thinkingConfig;
             }
 
-            const result = await genModel.generateContent({
+            const response = await ai.models.generateContent({
+              model: currentModel,
               contents: formattedContents,
-              generationConfig: finalConfig,
-              systemInstruction: config?.systemInstruction
+              config: finalConfig,
             });
 
-            const response = await result.response;
-            const textValue = response.text();
+            const textValue = response.text;
 
             console.log(`Success with Gemini model: ${currentModel}`);
             return res.json({
