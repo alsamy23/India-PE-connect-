@@ -70,6 +70,17 @@ const ParentLetters: React.FC = () => {
     setTimeout(() => setIsSaved(false), 3000);
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!result) return;
+    const text = `Parent Letter for ${studentName}\n\n${result}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
   const reset = () => {
     setResult(null);
     setStudentName('');
@@ -212,16 +223,24 @@ const ParentLetters: React.FC = () => {
                 {isSaved ? <CheckCircle2 size={16} /> : <Save size={16} />}
                 <span>{isSaved ? 'Saved' : 'Save'}</span>
               </button>
-              <button className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:text-rose-600 transition-colors">
+              <button 
+                onClick={handleShareWhatsApp}
+                className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:text-emerald-600 transition-colors"
+                title="Share via WhatsApp"
+              >
                 <Share2 size={20} />
               </button>
-              <button className="p-3 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-all">
+              <button 
+                onClick={handlePrint}
+                className="p-3 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-all"
+                title="Print Letter"
+              >
                 <Printer size={20} />
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-[3rem] p-12 md:p-16 border border-slate-100 shadow-2xl max-w-4xl mx-auto print:shadow-none print:border-none print:p-0">
+          <div className="bg-white rounded-[3rem] p-12 md:p-16 border border-slate-100 shadow-2xl max-w-4xl mx-auto print:shadow-none print:border-none print:p-0 print-letter-target">
             <div className="prose prose-slate max-w-none">
               <div className="whitespace-pre-wrap font-serif text-slate-800 leading-relaxed text-lg">
                 {typeof result === 'object' ? JSON.stringify(result) : result}

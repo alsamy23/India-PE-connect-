@@ -45,15 +45,6 @@ const SkillAnalysis: React.FC = () => {
     };
   }, []);
 
-  // Handle live preview stream assignment when isLive changes
-  useEffect(() => {
-    if (isLive && streamRef.current && livePreviewRef.current) {
-      const video = livePreviewRef.current;
-      video.srcObject = streamRef.current;
-      video.play().catch(e => console.warn("Monitor play silently failed:", e.message));
-    }
-  }, [isLive]);
-
   const [bufferingCount, setBufferingCount] = useState<number[]>([]);
 
   useEffect(() => {
@@ -72,6 +63,90 @@ const SkillAnalysis: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [isLive, numScreens, delay]);
+
+  // Handle live preview stream assignment and screen changes
+  useEffect(() => {
+    if (isLive && streamRef.current) {
+      if (livePreviewRef.current) {
+        livePreviewRef.current.srcObject = streamRef.current;
+      }
+      
+      // Stop and restart buffering to re-align with new screen count or delay
+      stopBuffering();
+      
+      // Short delay to ensure video elements are ready
+      setTimeout(() => {
+        if (isMounted.current && streamRef.current) {
+          setupMediaSources();
+          startDelayedBuffering(streamRef.current);
+        }
+      }, 500);
+    } else {
+      stopBuffering();
+    }
+  }, [isLive, numScreens]); // Re-setup if live status or screen count changes
+
+  const setupMediaSources = () => {
+    // Clear existing
+    stopBufferingOnly();
+    
+    queueRefs.current = Array.from({ length: 4 }).map(() => []);
+    mediaSources.current = Array.from({ length: 4 }).map((_, i) => {
+      const ms = new MediaSource();
+      ms.onsourceopen = () => {
+        try {
+          const sb = ms.addSourceBuffer('video/webm; codecs="vp8"');
+          sourceBuffers.current[i] = sb;
+          sb.onupdateend = () => {
+            const queue = queueRefs.current[i];
+            if (queue && queue.length > 0 && !sb.updating) {
+              const buffer = queue.shift();
+              if (buffer) sb.appendBuffer(buffer);
+            }
+          };
+        } catch (e) {
+          console.error("SourceBuffer error:", e);
+        }
+      };
+      
+      const video = videoRefs.current[i];
+      if (video && i < numScreens) {
+        const url = URL.createObjectURL(ms);
+        video.src = url;
+        videoUrlsRef.current.push(url);
+      }
+      
+      return ms;
+    });
+  };
+
+  const stopBufferingOnly = () => {
+    playbackTimeoutRefs.current.forEach(t => clearTimeout(t));
+    playbackTimeoutRefs.current = [];
+    
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try { mediaRecorderRef.current.stop(); } catch (e) {}
+    }
+    
+    videoUrlsRef.current.forEach(url => {
+      try { URL.revokeObjectURL(url); } catch (e) {}
+    });
+    videoUrlsRef.current = [];
+    
+    sourceBuffers.current = [];
+    mediaSources.current = [];
+    queueRefs.current = [];
+  };
+
+  const stopBuffering = () => {
+    stopBufferingOnly();
+    videoRefs.current.forEach(v => {
+      if (v) {
+        v.src = "";
+        v.load();
+      }
+    });
+  };
 
   const startCamera = async () => {
     if (isLive || isCameraLoading) return;
@@ -98,16 +173,8 @@ const SkillAnalysis: React.FC = () => {
 
       streamRef.current = stream;
       setIsLive(true);
-      
-      // Delay source setup slightly to ensure video elements are rendered
-      setTimeout(() => {
-        if (isMounted.current && streamRef.current) {
-          setupMediaSources();
-          startDelayedBuffering(streamRef.current);
-        }
-      }, 500);
     } catch (err: any) {
-      console.error("Camera access error:", err);
+      console.error("Camera error:", err);
       if (isMounted.current) {
         setError(`Camera Error: ${err.message || 'Access Denied'}`);
       }
@@ -118,74 +185,17 @@ const SkillAnalysis: React.FC = () => {
     }
   };
 
-  const setupMediaSources = () => {
-    queueRefs.current = Array.from({ length: 4 }).map(() => []);
-    
-    // Revoke old URLs if any
-    videoUrlsRef.current.forEach(url => {
-      try { URL.revokeObjectURL(url); } catch (e) {}
-    });
-    videoUrlsRef.current = [];
-
-    mediaSources.current = Array.from({ length: 4 }).map((_, i) => {
-      const ms = new MediaSource();
-      ms.onsourceopen = () => {
-        try {
-          const sb = ms.addSourceBuffer('video/webm; codecs="vp8"');
-          sourceBuffers.current[i] = sb;
-          sb.onupdateend = () => {
-            const queue = queueRefs.current[i];
-            if (queue && queue.length > 0 && !sb.updating) {
-              sb.appendBuffer(queue.shift()!);
-            }
-          };
-        } catch (e) {
-          console.error("SourceBuffer creation error:", e);
-        }
-      };
-      
-      const video = videoRefs.current[i];
-      if (video) {
-        const url = URL.createObjectURL(ms);
-        video.src = url;
-        videoUrlsRef.current.push(url);
-      }
-      
-      return ms;
-    });
-  };
-
   const stopCamera = () => {
     try {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-      }
     } catch (e) {
-      console.error("Error stopping camera/recorder:", e);
+      console.error("Error stopping camera:", e);
     }
-    playbackTimeoutRefs.current.forEach(t => clearTimeout(t));
-    playbackTimeoutRefs.current = [];
     
-    videoUrlsRef.current.forEach(url => {
-      try { URL.revokeObjectURL(url); } catch (e) {}
-    });
-    videoUrlsRef.current = [];
-
-    // Reset video sources
-    videoRefs.current.forEach(video => {
-      if (video) {
-        video.src = "";
-        video.load();
-      }
-    });
-
-    sourceBuffers.current = [];
-    mediaSources.current = [];
-    queueRefs.current = [];
+    stopBuffering();
     
     if (isMounted.current) {
       setIsLive(false);
@@ -194,18 +204,46 @@ const SkillAnalysis: React.FC = () => {
   };
 
   const startDelayedBuffering = (stream: MediaStream) => {
-    const chunkDuration = 1000; // 1 second chunks for responsiveness
+    const chunkDuration = 1000;
     
     try {
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs="vp8"' });
+      const mimeType = 'video/webm; codecs="vp8"';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        throw new Error("VP8 codec not supported");
+      }
+
+      const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
 
+      let isFirstChunk = true;
+      let firstChunk: ArrayBuffer | null = null;
+
       recorder.ondataavailable = async (e) => {
-        if (e.data.size > 0 && isMounted.current) {
+        if (e.data.size > 0 && isMounted.current && isLive) {
           const arrayBuffer = await e.data.arrayBuffer();
           
+          if (isFirstChunk) {
+            firstChunk = arrayBuffer;
+            isFirstChunk = false;
+            
+            // Append header to all screens immediately so they initialize
+            sourceBuffers.current.forEach((sb, idx) => {
+              if (sb && !sb.updating) {
+                try {
+                  sb.appendBuffer(arrayBuffer);
+                  const video = videoRefs.current[idx];
+                  if (video) video.play().catch(() => {});
+                } catch (err) {
+                  console.error("Header append error", idx, err);
+                }
+              }
+            });
+            return;
+          }
+
+          // Data chunks are delayed
           videoRefs.current.forEach((video, idx) => {
-            if (!video) return;
+            if (!video || idx >= numScreens) return;
             
             const screenDelay = (delay + (idx * 5)) * 1000;
             const timeout = setTimeout(() => {
@@ -218,9 +256,11 @@ const SkillAnalysis: React.FC = () => {
                 } else {
                   try {
                     sb.appendBuffer(arrayBuffer);
-                    if (video.paused) video.play().catch(() => {});
+                    if (video.paused && video.readyState >= 2) {
+                      video.play().catch(() => {});
+                    }
                   } catch (err) {
-                    console.error("Append error for screen", idx, err);
+                    console.error("Data append error", idx, err);
                   }
                 }
               }
@@ -233,8 +273,7 @@ const SkillAnalysis: React.FC = () => {
       recorder.start(chunkDuration);
     } catch (err) {
       console.error("Recorder initialization error:", err);
-      // Fallback to simpler blob swapping if MediaSource fails or codec unsupported
-      startSimpleDelayedBuffering(stream);
+      setError("High-performance replay failed. Try a different browser.");
     }
   };
 

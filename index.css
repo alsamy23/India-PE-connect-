@@ -58,3 +58,43 @@
     @apply bg-slate-800 rounded-full;
   }
 }
+
+@media print {
+  @page {
+    margin: 2cm;
+    size: auto;
+  }
+
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide navigation, sidebars and headers */
+  .no-print,
+  nav,
+  header,
+  aside,
+  button,
+  .disclaimer-banner {
+    display: none !important;
+  }
+
+  /* Ensure the main content stretches */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* Target the letter container specifically if needed */
+  .print-letter-target {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+}
