@@ -113,31 +113,37 @@ const FitnessTests: React.FC = () => {
   const handleSaveDirectly = async () => {
     if (!auth.currentUser || !selectedTest || !testValue) return;
 
+    const schoolId = students.find(s => s.id === selectedStudentId)?.schoolId || userProfile?.schoolId;
+
+    if (!schoolId) {
+      setError("Unable to identify your school. Please ensure you have set up your school profile in the 'School Admin' tab.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      // If we don't have a result, we'll save with 'N/A' rating for now
-      // Ideally we'd run handleCalculate first, but user wants a direct save
-      
-      const student = students.find(s => s.id === selectedStudentId);
       await fitnessService.saveResult({
         id: Math.random().toString(36).substr(2, 9),
         teacherId: auth.currentUser.uid,
-        schoolId: student?.schoolId || userProfile?.schoolId || '',
-        studentId: selectedStudentId || 'manual',
+        schoolId: schoolId,
+        studentId: selectedStudentId || 'manual_entry',
         testId: selectedTest.id,
         testName: selectedTest.name,
         value: testValue,
         unit: selectedTest.unit,
         date: new Date().toISOString(),
         term: selectedTerm,
-        rating: 'Recorded', // Placeholder
+        rating: 'Recorded',
         percentile: 0
       });
 
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Failed to save result.");
+      setError(`Save failed: ${err.message || 'Database error'}. Ensure all fields are filled.`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -159,13 +165,20 @@ const FitnessTests: React.FC = () => {
       });
 
       // Save to school database if student is selected
-      if (selectedStudentId) {
+      if (selectedStudentId || userProfile?.schoolId) {
           const student = students.find(s => s.id === selectedStudentId);
+          const schoolId = student?.schoolId || userProfile?.schoolId;
+          
+          if (!schoolId) {
+            setError("Unable to identify school ID. Save aborted.");
+            return;
+          }
+
         await fitnessService.saveResult({
           id: Math.random().toString(36).substr(2, 9),
           teacherId: auth.currentUser.uid,
-          schoolId: student?.schoolId || '',
-          studentId: selectedStudentId,
+          schoolId: schoolId,
+          studentId: selectedStudentId || 'manual_entry',
           testId: selectedTest?.id || '',
           testName: selectedTest?.name || '',
           value: testValue,
@@ -187,6 +200,20 @@ const FitnessTests: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in pb-20">
+      {/* School Setup Warning */}
+      {!userProfile?.schoolId && (
+        <div className="bg-orange-50 border-2 border-orange-100 p-6 rounded-[2rem] flex items-start gap-4">
+          <AlertCircle className="text-orange-600 flex-shrink-0" size={24} />
+          <div>
+            <h4 className="font-black text-orange-900 uppercase tracking-tight mb-1 text-sm">School Profile Required</h4>
+            <p className="text-orange-700/70 text-xs font-medium leading-relaxed">
+              To save fitness results, you must first register your school in the <strong className="text-orange-900">School Admin</strong> tab. 
+              Currently, results can only be analyzed but not saved to the permanent database.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-indigo-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
         <div className="relative z-10 max-w-2xl">
@@ -284,7 +311,7 @@ const FitnessTests: React.FC = () => {
                   {/* Input Card */}
                   <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <div className="mb-8">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Select Student (Optional)</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Link to Registered Student</label>
                       <select 
                         className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                         value={selectedStudentId}
@@ -354,7 +381,7 @@ const FitnessTests: React.FC = () => {
                             title="Analyze Performance"
                           >
                             {loading ? <Loader2 className="animate-spin" size={16} /> : <Calculator size={16} />}
-                            <span className="hidden md:inline">Assess</span>
+                            <span className="hidden md:inline">Analyze Performance</span>
                           </button>
                           <button 
                             onClick={async () => {
@@ -400,12 +427,14 @@ const FitnessTests: React.FC = () => {
                         <button 
                           onClick={handleSave}
                           disabled={isSaved}
-                          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                            isSaved ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400 hover:text-indigo-600'
+                          className={`flex items-center space-x-2 px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
+                            isSaved 
+                              ? 'bg-emerald-500 text-white' 
+                              : 'bg-indigo-600 text-white hover:bg-indigo-700'
                           }`}
                         >
-                          {isSaved ? <CheckCircle2 size={16} /> : <History size={16} />}
-                          <span>{isSaved ? 'Saved to History' : 'Save Result'}</span>
+                          {isSaved ? <CheckCircle2 size={16} /> : <Save size={16} />}
+                          <span>{isSaved ? 'Student Result Saved' : 'Confirm & Save Result'}</span>
                         </button>
                       </div>
 

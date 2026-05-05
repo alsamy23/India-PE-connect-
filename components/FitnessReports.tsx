@@ -151,14 +151,21 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           byTerm[r.term].push(r);
         });
 
-        // Prep chart data
-        const radarData = studentResults.filter(r => r.term === 'Baseline').map(r => ({
+        // Prep chart data - use latest for radar
+        const latestByTest: Record<string, FitnessResult> = {};
+        studentResults.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).forEach(r => {
+          if (!latestByTest[r.testId]) {
+            latestByTest[r.testId] = r;
+          }
+        });
+
+        const radarData = Object.values(latestByTest).map(r => ({
           subject: r.testName.split('(')[0].trim(),
           A: parseFloat(r.value) || 0,
           fullMark: 100
         }));
 
-        const progressData = results.filter(r => r.studentId === selectedId).reduce((acc: any, r) => {
+        const progressData = studentResults.reduce((acc: any, r) => {
           const existing = acc.find((item: any) => item.term === r.term);
           if (existing) {
             existing[r.testName] = parseFloat(r.value);
@@ -179,7 +186,8 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           terms: ['Baseline', 'Term 1', 'Term 2', 'Final'].filter(t => byTerm[t]),
           overallSummary: studentResults.length > 0 ? "Consistently showing improvement across most physical benchmarks." : "Insufficient data for detailed analysis.",
           radarData,
-          progressData
+          progressData,
+          latestByTest
         };
       } else if (selectedType === 'class') {
         const team = teams.find(t => t.id === selectedId);
@@ -395,71 +403,132 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                       </div>
 
                       {/* Infographic Section */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Radar Chart: Baseline Profile */}
-                        <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 min-h-[400px] flex flex-col">
-                          <div className="flex items-center gap-2 mb-6">
-                            <Zap size={20} className="text-orange-500" />
-                            <h4 className="font-black uppercase tracking-tight text-slate-800">Baseline Fitness Profile</h4>
-                          </div>
-                          <div className="flex-1 w-full flex items-center justify-center">
-                            {reportData.radarData.length > 2 ? (
-                              <ResponsiveContainer width="100%" height={300}>
-                                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={reportData.radarData}>
-                                  <PolarGrid stroke="#e2e8f0" />
-                                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
-                                  <Radar
-                                    name={reportData.student?.name}
-                                    dataKey="A"
-                                    stroke="#4f46e5"
-                                    fill="#4f46e5"
-                                    fillOpacity={0.6}
-                                  />
-                                </RadarChart>
-                              </ResponsiveContainer>
-                            ) : (
-                              <div className="text-center text-slate-400">
-                                <p className="text-xs font-bold">Add at least 3 test values to see the radar profile.</p>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Profile Section */}
+                        <div className="space-y-8">
+                          {/* Radar Chart: Baseline Profile */}
+                          <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm flex flex-col">
+                            <div className="flex items-center justify-between mb-6">
+                              <div className="flex items-center gap-2">
+                                <Zap size={20} className="text-orange-500" />
+                                <h4 className="font-black uppercase tracking-tight text-slate-800">Fitness Profile</h4>
                               </div>
-                            )}
+                              <span className="text-[10px] font-black px-3 py-1 bg-slate-50 text-slate-400 rounded-full uppercase tracking-widest">
+                                {reportData.terms[0] || 'Baseline'}
+                              </span>
+                            </div>
+                            <div className="flex-1 w-full flex items-center justify-center min-h-[300px]">
+                              {reportData.radarData.length > 2 ? (
+                                <ResponsiveContainer width="100%" height={300}>
+                                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={reportData.radarData}>
+                                    <PolarGrid stroke="#e2e8f0" />
+                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                    <Radar
+                                      name={reportData.student?.name}
+                                      dataKey="A"
+                                      stroke="#4f46e5"
+                                      fill="#4f46e5"
+                                      fillOpacity={0.6}
+                                    />
+                                  </RadarChart>
+                                </ResponsiveContainer>
+                              ) : (
+                                <div className="text-center p-12 bg-slate-50 rounded-3xl w-full">
+                                  <Activity size={40} className="mx-auto mb-4 text-slate-200" />
+                                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest leading-relaxed">
+                                    Need values for at least 3 tests<br/>to generate your fitness radar.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Key Performance Indicators */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="p-6 bg-slate-900 rounded-[2rem] text-white">
+                              <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-1">Flexibility</p>
+                              <div className="text-2xl font-black">
+                                {reportData.latestByTest['sit_reach']?.value || '--'}
+                                <span className="text-xs ml-1 opacity-50">cm</span>
+                              </div>
+                            </div>
+                            <div className="p-6 bg-indigo-600 rounded-[2rem] text-white">
+                              <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-1">Balance</p>
+                              <div className="text-2xl font-black">
+                                {reportData.latestByTest['flamingo']?.value || '--'}
+                                <span className="text-xs ml-1 opacity-50">sec</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Progress Chart */}
-                        <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 min-h-[400px] flex flex-col">
-                          <div className="flex items-center gap-2 mb-6">
-                            <TrendingUp size={20} className="text-indigo-600" />
-                            <h4 className="font-black uppercase tracking-tight text-slate-800">Term-wise Progress</h4>
-                          </div>
-                          <div className="flex-1 w-full flex items-center justify-center">
-                            {reportData.progressData.length > 1 ? (
-                              <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={reportData.progressData}>
-                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                  <XAxis dataKey="term" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
-                                  <YAxis hide />
-                                  <Tooltip 
-                                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                    itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }}
-                                  />
-                                  <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', paddingTop: '20px' }} />
-                                  {Object.keys(reportData.progressData[0] || {}).filter(k => k !== 'term').map((key, idx) => (
-                                    <Line 
-                                      key={key} 
-                                      type="monotone" 
-                                      dataKey={key} 
-                                      stroke={['#4f46e5', '#10b981', '#f59e0b', '#ef4444'][idx % 4]} 
-                                      strokeWidth={3} 
-                                      dot={{ r: 6, strokeWidth: 2, fill: 'white' }}
-                                    />
-                                  ))}
-                                </LineChart>
-                              </ResponsiveContainer>
-                            ) : (
-                              <div className="text-center text-slate-400">
-                                <p className="text-xs font-bold">Record data for Term 1 or 2 to see the progress trend.</p>
+                        {/* Analysis Section */}
+                        <div className="space-y-8">
+                          {/* Progress Chart or Empty State */}
+                          <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm flex flex-col">
+                            <div className="flex items-center justify-between mb-6">
+                              <div className="flex items-center gap-2">
+                                <TrendingUp size={20} className="text-indigo-600" />
+                                <h4 className="font-black uppercase tracking-tight text-slate-800">Growth Analysis</h4>
                               </div>
-                            )}
+                              {reportData.terms.length > 1 && (
+                                <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-black uppercase tracking-widest">
+                                  <span>Improving</span>
+                                  <ChevronRight size={10} className="rotate-[-90deg]" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 w-full flex items-center justify-center min-h-[300px]">
+                              {reportData.progressData.length > 1 ? (
+                                <ResponsiveContainer width="100%" height={300}>
+                                  <LineChart data={reportData.progressData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="term" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                    <YAxis hide />
+                                    <Tooltip 
+                                      contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '16px' }}
+                                      itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', padding: '4px 0' }}
+                                    />
+                                    <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', paddingTop: '20px' }} />
+                                    {Object.keys(reportData.progressData[0] || {}).filter(k => k !== 'term').map((key, idx) => (
+                                      <Line 
+                                        key={key} 
+                                        type="monotone" 
+                                        dataKey={key} 
+                                        stroke={['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][idx % 5]} 
+                                        strokeWidth={4} 
+                                        dot={{ r: 6, strokeWidth: 3, fill: 'white' }}
+                                        activeDot={{ r: 8, strokeWidth: 0 }}
+                                      />
+                                    ))}
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              ) : (
+                                <div className="text-center p-12 bg-indigo-50/50 rounded-3xl w-full border-2 border-dashed border-indigo-100">
+                                  <BarChart3 size={40} className="mx-auto mb-4 text-indigo-200" />
+                                  <h5 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-2">Baseline Established</h5>
+                                  <p className="text-[10px] font-bold text-indigo-400 max-w-[200px] mx-auto leading-relaxed">
+                                    Next assessment phase (Term 1) will unlock comparative progress charts.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Insight Card */}
+                          <div className="bg-emerald-500 p-8 rounded-[2.5rem] text-white shadow-lg relative overflow-hidden">
+                            <Activity className="absolute right-[-10px] top-[-10px] w-24 h-24 text-white/10 -rotate-12" />
+                            <h4 className="font-black uppercase tracking-tight mb-4 flex items-center gap-2">
+                              <Info size={18} />
+                              <span>Instructor Notes</span>
+                            </h4>
+                            <p className="text-xs font-bold leading-relaxed opacity-90 mb-6">
+                              {reportData.overallSummary} Focus on agility drills to improve shuttle run scores in the next term.
+                            </p>
+                            <div className="flex gap-2">
+                              <div className="px-3 py-1 bg-white/20 rounded-full text-[8px] font-black uppercase tracking-widest">Active</div>
+                              <div className="px-3 py-1 bg-white/20 rounded-full text-[8px] font-black uppercase tracking-widest">Developing</div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -475,9 +544,9 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                             <thead>
                               <tr className="bg-slate-900 text-white">
                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest">Test Name</th>
-                                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-center">Baseline</th>
-                                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-center">Term 1</th>
-                                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-center">Term 2</th>
+                                {['Baseline', 'Term 1', 'Term 2', 'Final'].filter(t => reportData.terms.includes(t)).map(term => (
+                                  <th key={term} className="p-4 text-[10px] font-black uppercase tracking-widest text-center">{term}</th>
+                                ))}
                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest text-right">Trend</th>
                               </tr>
                             </thead>
@@ -485,18 +554,18 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                               {/* Group results by test name for row-wise display */}
                               {Object.entries(
                                 results.filter(r => r.studentId === selectedId).reduce((acc: any, r) => {
-                                  if (!acc[r.testName]) acc[r.testName] = { baseline: '-', term1: '-', term2: '-' };
-                                  if (r.term === 'Baseline') acc[r.testName].baseline = `${r.value} ${r.unit}`;
-                                  if (r.term === 'Term 1') acc[r.testName].term1 = `${r.value} ${r.unit}`;
-                                  if (r.term === 'Term 2') acc[r.testName].term2 = `${r.value} ${r.unit}`;
+                                  if (!acc[r.testName]) acc[r.testName] = {};
+                                  acc[r.testName][r.term] = `${r.value} ${r.unit}`;
                                   return acc;
                                 }, {})
-                              ).map(([testName, data]: [string, any]) => (
+                              ).map(([testName, termValues]: [string, any]) => (
                                 <tr key={testName}>
                                   <td className="p-4 font-black text-sm uppercase tracking-tight">{testName}</td>
-                                  <td className="p-4 text-sm font-bold text-slate-500 text-center">{data.baseline}</td>
-                                  <td className="p-4 text-sm font-bold text-indigo-600 text-center">{data.term1}</td>
-                                  <td className="p-4 text-sm font-bold text-indigo-600 text-center">{data.term2}</td>
+                                  {['Baseline', 'Term 1', 'Term 2', 'Final'].filter(t => reportData.terms.includes(t)).map(term => (
+                                    <td key={term} className="p-4 text-sm font-bold text-slate-500 text-center">
+                                      {termValues[term] || '-'}
+                                    </td>
+                                  ))}
                                   <td className="p-4 text-right">
                                     <div className="flex items-center justify-end text-emerald-500 font-black text-[10px] gap-1">
                                       <TrendingUp size={12} />

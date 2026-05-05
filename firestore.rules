@@ -172,7 +172,7 @@ service cloud.firestore {
              data.testId is string &&
              data.value is string &&
              data.date is string && isValidDate(data.date) &&
-             (!('term' in data) || data.term in ['Term 1', 'Term 2', 'Term 3']) &&
+             (!('term' in data) || data.term in ['Baseline', 'Term 1', 'Term 2', 'Term 3', 'Final']) &&
              (!('percentile' in data) || data.percentile is number);
     }
 
