@@ -129,7 +129,7 @@ service cloud.firestore {
     }
 
     function isValidSchool(data) {
-      return hasOnlyAllowedFields(['id', 'name', 'adminId', 'createdAt']) &&
+      return hasOnlyAllowedFields(['id', 'name', 'adminId', 'address', 'createdAt']) &&
              data.id is string &&
              data.name is string && data.name.size() > 0 &&
              data.adminId is string && data.adminId == request.auth.uid;
@@ -143,7 +143,7 @@ service cloud.firestore {
     }
 
     function isValidStudent(data) {
-      return hasOnlyAllowedFields(['id', 'teacherId', 'schoolId', 'name', 'rollNumber', 'grade', 'section', 'gender', 'age', 'dob']) &&
+      return hasOnlyAllowedFields(['id', 'teacherId', 'schoolId', 'name', 'rollNumber', 'grade', 'section', 'gender', 'age', 'dob', 'attendance', 'performance', 'lastAssessment']) &&
              data.id is string &&
              data.teacherId is string && data.teacherId == request.auth.uid &&
              data.schoolId is string &&
@@ -151,6 +151,8 @@ service cloud.firestore {
              data.grade is string &&
              (!('gender' in data) || data.gender in ['Male', 'Female']) &&
              (!('age' in data) || data.age is number) &&
+             (!('attendance' in data) || data.attendance is number) &&
+             (!('performance' in data) || data.performance in ['Excellent', 'Good', 'Average', 'Needs Improvement']) &&
              (!('dob' in data) || isValidDate(data.dob));
     }
 
@@ -194,7 +196,7 @@ service cloud.firestore {
 
     match /schoolMembers/{uid} {
       allow read: if isAuthenticated() && (isOwner(uid) || (resource != null && isSchoolMember(resource.data.schoolId)) || request.auth.token.email != null);
-      allow create, update: if isAuthenticated() && (isOwner(uid) || isSchoolAdmin(request.resource.data.schoolId)) && isValidSchoolMember(request.resource.data);
+      allow create, update: if isAuthenticated() && (isOwner(uid) || isSchoolMember(request.resource.data.schoolId)) && isValidSchoolMember(request.resource.data);
       allow delete: if isAuthenticated() && (isSchoolAdmin(resource.data.schoolId) || (resource != null && resource.data.email == request.auth.token.email));
     }
 

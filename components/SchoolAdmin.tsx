@@ -123,15 +123,15 @@ const SchoolAdmin: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">School Administration</h2>
-          <p className="text-slate-500 font-medium">Manage your school's teaching staff and permissions.</p>
+          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">School Network</h2>
+          <p className="text-slate-500 font-medium text-sm">Grant access to other teachers or admins in your school.</p>
         </div>
         <button 
           onClick={() => setIsAdding(true)}
           className="px-6 py-3 bg-indigo-600 text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] flex items-center gap-2"
         >
           <UserPlus size={16} />
-          <span>Add Team Member</span>
+          <span>Grant Access</span>
         </button>
       </div>
 
@@ -201,7 +201,7 @@ const SchoolAdmin: React.FC = () => {
             animate={{ scale: 1, opacity: 1 }}
             className="bg-white rounded-[2.5rem] border-4 border-slate-900 p-10 max-w-xl w-full shadow-2xl"
           >
-            <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-8">Add Team Member</h3>
+            <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-8">Grant School Access</h3>
             <form onSubmit={handleAddMember} className="space-y-6">
               <div className="space-y-4">
                 <div>
@@ -263,7 +263,7 @@ const SchoolAdmin: React.FC = () => {
                   disabled={loading}
                   className="flex-1 py-4 bg-indigo-600 text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] flex items-center justify-center gap-2"
                 >
-                  {loading ? <Loader2 className="animate-spin" size={20} /> : 'Add Member'}
+                  {loading ? <Loader2 className="animate-spin" size={20} /> : 'Grant Access'}
                 </button>
               </div>
             </form>

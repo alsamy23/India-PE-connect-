@@ -259,11 +259,20 @@ export const fitnessService = {
   },
 
   deleteStudent: async (id: string) => {
-    const path = `students/${id}`;
+    const studentPath = `students/${id}`;
     try {
+      // Get all results for this student
+      const q = query(collection(db, 'results'), where('studentId', '==', id));
+      const snapshot = await getDocs(q);
+      
+      // Delete results (could use writeBatch for efficiency)
+      const deletePromises = snapshot.docs.map(docSnap => deleteDoc(doc(db, 'results', docSnap.id)));
+      await Promise.all(deletePromises);
+      
+      // Delete student
       await deleteDoc(doc(db, 'students', id));
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, path);
+      handleFirestoreError(err, OperationType.DELETE, studentPath);
     }
   },
 

@@ -155,6 +155,19 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     }
   };
 
+  const formatFitnessError = (err: any): string => {
+    try {
+      const parsed = JSON.parse(err.message);
+      if (parsed.error) {
+        if (parsed.error.includes('permission') || parsed.error.includes('insufficient')) {
+          return "Access denied. Check if your school profile is properly registered.";
+        }
+        return `Error: ${parsed.error}`;
+      }
+    } catch (e) {}
+    return err.message || "An unexpected error occurred.";
+  };
+
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStudent.name || !newStudent.rollNumber || !auth.currentUser || !userProfile) {
@@ -182,9 +195,9 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
         gender: 'Male',
         age: 6
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to add student. Please try again.');
+      alert(formatFitnessError(err));
     }
   };
 
