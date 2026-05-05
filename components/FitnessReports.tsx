@@ -46,6 +46,7 @@ interface FitnessReportsProps {
 const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [results, setResults] = useState<FitnessResult[]>([]);
+  const [studentSpecificResults, setStudentSpecificResults] = useState<FitnessResult[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<'individual' | 'class' | 'school'>('individual');
@@ -118,6 +119,18 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
     };
   }, [auth.currentUser?.uid]);
 
+  useEffect(() => {
+    let unsubStudentResults: (() => void) | undefined;
+
+    if (selectedType === 'individual' && selectedId) {
+      unsubStudentResults = fitnessService.subscribeToStudentResults(selectedId, setStudentSpecificResults);
+    } else {
+      setStudentSpecificResults([]);
+    }
+
+    return () => unsubStudentResults?.();
+  }, [selectedId, selectedType]);
+
   const calculateAvg = (resultsList: FitnessResult[]) => {
     if (resultsList.length === 0) return 'N/A';
     const sum = resultsList.reduce((acc, r) => acc + parseFloat(r.value), 0);
@@ -132,6 +145,15 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
     }, {});
   };
 
+  const parseValue = (val: string) => {
+    if (!val) return 0;
+    if (val.includes(':')) {
+      const [min, sec] = val.split(':').map(Number);
+      return min + (sec / 60);
+    }
+    return parseFloat(val) || 0;
+  };
+
   const generateReport = React.useCallback(() => {
     if (!selectedId && selectedType !== 'school') return;
     
@@ -143,7 +165,10 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
       
       if (selectedType === 'individual') {
         const student = students.find(s => s.id === selectedId);
-        const studentResults = results.filter(r => r.studentId === selectedId);
+        // Use studentSpecificResults if available, fallback to general results filter
+        const studentResults = studentSpecificResults.length > 0 
+          ? studentSpecificResults 
+          : results.filter(r => r.studentId === selectedId);
         
         // Group by term
         const byTerm: Record<string, FitnessResult[]> = {};
@@ -162,16 +187,16 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
 
         const radarData = Object.values(latestByTest).map(r => ({
           subject: r.testName.split('(')[0].trim(),
-          A: parseFloat(r.value) || 0,
+          A: parseValue(r.value),
           fullMark: 100
         }));
 
         const progressData = studentResults.reduce((acc: any, r) => {
           const existing = acc.find((item: any) => item.term === r.term);
           if (existing) {
-            existing[r.testName] = parseFloat(r.value);
+            existing[r.testName] = parseValue(r.value);
           } else {
-            acc.push({ term: r.term, [r.testName]: parseFloat(r.value) });
+            acc.push({ term: r.term, [r.testName]: parseValue(r.value) });
           }
           return acc;
         }, []).sort((a: any, b: any) => {
@@ -183,6 +208,7 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           title: `Fitness Report: ${student?.name}`,
           subtitle: `Roll No: ${student?.rollNumber} | Grade: ${student?.grade}-${student?.section}`,
           student,
+          studentResults, // Store filtered results directly
           byTerm,
           terms: ['Baseline', 'Term 1', 'Term 2', 'Final'].filter(t => byTerm[t]),
           overallSummary: studentResults.length > 0 ? "Consistently showing improvement across most physical benchmarks." : "Insufficient data for detailed analysis.",
@@ -205,19 +231,48 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           testCounts: groupCount(teamResults, 'testName')
         };
       } else {
+        // School-wide analysis
+        const gradeStats: Record<string, { total: number, results: number, avg: number }> = {};
+        
+        results.forEach(r => {
+          const student = students.find(s => s.id === r.studentId);
+          if (!student) return;
+          
+          if (!gradeStats[student.grade]) {
+            gradeStats[student.grade] = { total: 0, results: 0, avg: 0 };
+          }
+          
+          const val = parseValue(r.value);
+          gradeStats[student.grade].avg += val;
+          gradeStats[student.grade].results += 1;
+        });
+
+        Object.keys(gradeStats).forEach(grade => {
+          gradeStats[grade].avg = gradeStats[grade].avg / gradeStats[grade].results;
+        });
+
+        // Identify grades needing improvement (bottom 30% or below a certain threshold)
+        const sortedGrades = Object.entries(gradeStats)
+          .sort((a, b) => a[1].avg - b[1].avg);
+        
+        const focusGrades = sortedGrades.slice(0, Math.ceil(sortedGrades.length * 0.3)).map(g => g[0]);
+
         data = {
           title: "School-wide Fitness Overview",
           subtitle: `Total Students: ${students.length} | Academic Year: 2024-25`,
           totalResults: results.length,
           topPerformers: students.slice(0, 5), // Mock
-          testDistribution: groupCount(results, 'testName')
+          testDistribution: groupCount(results, 'testName'),
+          gradeStats,
+          focusGrades,
+          totalStudents: students.length
         };
       }
       
       setReportData(data);
       setIsGenerating(false);
     }, 1000);
-  }, [selectedId, selectedType, students, results, teams]);
+  }, [selectedId, selectedType, students, results, teams, studentSpecificResults]);
 
   useEffect(() => {
     if (initialStudentId && students.length > 0 && results.length > 0) {
@@ -225,8 +280,57 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
     }
   }, [initialStudentId, students.length, results.length, generateReport]);
 
+  // Also trigger if student results subscription updates for the selected student
+  useEffect(() => {
+    if (selectedType === 'individual' && selectedId && studentSpecificResults.length > 0) {
+      generateReport();
+    }
+  }, [studentSpecificResults.length, selectedId, selectedType]);
+
   const handlePrint = () => {
     window.print();
+  };
+
+  const exportToCSV = () => {
+    if (!reportData) return;
+
+    let csvContent = "";
+    const filename = `${reportData.title.replace(/\s+/g, '_').toLowerCase()}_export.csv`;
+
+    if (selectedType === 'individual') {
+      const headers = ["Test Name", "Baseline", "Term 1", "Term 2", "Final", "Unit"];
+      csvContent += headers.join(",") + "\n";
+
+      const testGroups = (reportData.studentResults || []).reduce((acc: any, r: FitnessResult) => {
+        if (!acc[r.testName]) acc[r.testName] = { baseline: '', term1: '', term2: '', final: '', unit: r.unit };
+        if (r.term === 'Baseline') acc[r.testName].baseline = r.value;
+        if (r.term === 'Term 1') acc[r.testName].term1 = r.value;
+        if (r.term === 'Term 2') acc[r.testName].term2 = r.value;
+        if (r.term === 'Final') acc[r.testName].final = r.value;
+        return acc;
+      }, {});
+
+      Object.entries(testGroups).forEach(([name, data]: [string, any]) => {
+        csvContent += `"${name}",${data.baseline},${data.term1},${data.term2},${data.final},"${data.unit}"\n`;
+      });
+    } else if (selectedType === 'class') {
+      const headers = ["Test Name", "Assessment Count"];
+      csvContent += headers.join(",") + "\n";
+      
+      Object.entries(reportData.testDistribution || reportData.testCounts || {}).forEach(([name, count]) => {
+        csvContent += `"${name}",${count}\n`;
+      });
+    }
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (loading) {
@@ -368,7 +472,10 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                     >
                       <Printer size={20} />
                     </button>
-                    <button className="p-3 bg-indigo-600 text-white border-2 border-slate-900 rounded-xl hover:bg-indigo-700 transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+                    <button 
+                      onClick={exportToCSV}
+                      className="p-3 bg-indigo-600 text-white border-2 border-slate-900 rounded-xl hover:bg-indigo-700 transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                    >
                       <Download size={20} />
                     </button>
                   </div>
@@ -554,7 +661,7 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                             <tbody className="divide-y divide-slate-100">
                               {/* Group results by test name for row-wise display */}
                               {Object.entries(
-                                results.filter(r => r.studentId === selectedId).reduce((acc: any, r) => {
+                                (reportData.studentResults || []).reduce((acc: any, r: FitnessResult) => {
                                   if (!acc[r.testName]) acc[r.testName] = {};
                                   acc[r.testName][r.term] = `${r.value} ${r.unit}`;
                                   return acc;
@@ -595,29 +702,72 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                     </>
                   ) : (
                     <>
-                      {/* Class Stats */}
+                      {/* School stats */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="p-8 bg-indigo-50 rounded-[2rem] border-2 border-indigo-100">
                           <div className="text-indigo-600 mb-4"><Users size={32} /></div>
-                          <div className="text-4xl font-black text-indigo-900 mb-1">{reportData.participation || 'N/A'}</div>
-                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Active Participation</p>
+                          <div className="text-4xl font-black text-indigo-900 mb-1">{reportData.totalStudents}</div>
+                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Enrolled Students</p>
                         </div>
                         <div className="p-8 bg-emerald-50 rounded-[2rem] border-2 border-emerald-100">
                           <div className="text-emerald-600 mb-4"><Activity size={32} /></div>
-                          <div className="text-4xl font-black text-emerald-900 mb-1">{reportData.avgBmi || 'N/A'}</div>
-                          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Average BMI</p>
+                          <div className="text-4xl font-black text-emerald-900 mb-1">{reportData.totalResults}</div>
+                          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Tests Recorded</p>
                         </div>
                         <div className="p-8 bg-orange-50 rounded-[2rem] border-2 border-orange-100">
-                          <div className="text-orange-600 mb-4"><TrendingUp size={32} /></div>
+                          <div className="text-orange-600 mb-4"><Zap size={32} /></div>
                           <div className="text-4xl font-black text-orange-900 mb-1">
-                            {reportData.overallSummary || 'Good'}
+                            {reportData.focusGrades.length > 0 ? `Grade ${reportData.focusGrades[0]}` : 'None'}
                           </div>
-                          <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Avg. Performance</p>
+                          <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Requires Improvement</p>
+                        </div>
+                      </div>
+
+                      {/* Grade Analysis Section */}
+                      <div className="space-y-6">
+                        <h4 className="font-black text-xl uppercase tracking-tight flex items-center gap-2">
+                          <BarChart3 size={20} className="text-indigo-600" />
+                          <span>Performance by Grade</span>
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {Object.entries(reportData.gradeStats).map(([grade, stats]: [string, any]) => {
+                            const needsFix = reportData.focusGrades.includes(grade);
+                            return (
+                              <div key={grade} className={`p-6 rounded-3xl border-2 transition-all ${
+                                needsFix ? 'bg-orange-50 border-orange-200' : 'bg-white border-slate-100'
+                              }`}>
+                                <div className="flex justify-between items-start mb-4">
+                                  <h5 className="font-black text-lg uppercase tracking-tight">Grade {grade}</h5>
+                                  {needsFix && (
+                                    <span className="px-2 py-1 bg-orange-200 text-orange-700 text-[8px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1">
+                                      <Info size={10} />
+                                      Focus Needed
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    <span>Avg Score</span>
+                                    <span className={needsFix ? 'text-orange-600' : 'text-slate-900'}>{stats.avg.toFixed(1)}</span>
+                                  </div>
+                                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full ${needsFix ? 'bg-orange-500' : 'bg-indigo-600'}`}
+                                      style={{ width: `${Math.min(stats.avg, 100)}%` }}
+                                    />
+                                  </div>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-2">
+                                    {stats.results} assessments completed
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
 
                       {/* Test counts */}
-                      <div className="space-y-6">
+                      <div className="space-y-6 pt-6">
                         <h4 className="font-black text-xl uppercase tracking-tight">Test Distribution</h4>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           {Object.entries(reportData.testDistribution || reportData.testCounts || {}).map(([name, count]: [string, any]) => (

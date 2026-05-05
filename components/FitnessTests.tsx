@@ -70,21 +70,22 @@ const FitnessTests: React.FC = () => {
   useEffect(() => {
     let unsub: (() => void) | undefined;
 
-    const fetchProfile = async () => {
+    const fetchProfileData = async () => {
       if (auth.currentUser) {
         const profile = await fitnessService.getSchoolMember(auth.currentUser.uid);
         setUserProfile(profile);
+        
+        // Subscribe to students after profile is loaded to know if admin
+        try {
+          const isAdmin = profile?.role === 'admin';
+          const schoolId = profile?.schoolId;
+          unsub = fitnessService.subscribeToStudents(auth.currentUser.uid, schoolId, isAdmin, setStudents);
+        } catch (err) {
+          console.error("Error subscribing to students in FitnessTests:", err);
+        }
       }
     };
-    fetchProfile();
-
-    if (auth.currentUser) {
-      try {
-        unsub = fitnessService.subscribeToStudents(auth.currentUser.uid, undefined, false, setStudents);
-      } catch (err) {
-        console.error("Error subscribing to students in FitnessTests:", err);
-      }
-    }
+    fetchProfileData();
     
     return () => unsub?.();
   }, [auth.currentUser?.uid]);
@@ -340,16 +341,26 @@ const FitnessTests: React.FC = () => {
                     <div className="mb-8">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Link to Registered Student</label>
                       <select 
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                        className={`w-full p-4 border-2 rounded-2xl font-bold outline-none transition-all ${
+                          selectedStudentId 
+                            ? 'bg-indigo-50 border-indigo-200 text-indigo-900 focus:ring-2 focus:ring-indigo-500' 
+                            : 'bg-slate-50 border-slate-100 text-slate-600 focus:ring-2 focus:ring-indigo-500'
+                        }`}
                         value={selectedStudentId}
                         onChange={e => handleStudentChange(e.target.value)}
                       >
-                        <option value="">Manual Entry</option>
+                        <option value="">Manual Entry (Not Linked)</option>
                         {students.map(s => (
                           <option key={s.id} value={s.id}>{s.name} (Grade {s.grade} {s.section})</option>
                         ))}
                       </select>
-                      <div className="flex-1 min-w-[150px]">
+                      {selectedStudentId && (
+                        <p className="mt-2 text-[10px] font-bold text-indigo-500 flex items-center gap-1">
+                          <CheckCircle2 size={12} />
+                          <span>Linked to {students.find(s => s.id === selectedStudentId)?.name}</span>
+                        </p>
+                      )}
+                      <div className="mt-6 flex-1 min-w-[150px]">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Assessment Term</label>
                         <select 
                           className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"

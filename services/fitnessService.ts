@@ -221,6 +221,17 @@ export const fitnessService = {
       handleFirestoreError(err, OperationType.WRITE, path);
     }
   },
+
+  bulkSaveStudents: async (students: Student[]) => {
+    // For smaller batches, we can iterate, but for larger we'd use writeBatch
+    // Let's use individual setDoc for now as it's easier to track errors if any
+    const promises = students.map(student => setDoc(doc(db, 'students', student.id), student));
+    try {
+      await Promise.all(promises);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'bulk_students');
+    }
+  },
   
   getStudents: async (teacherId: string, schoolId?: string, isAdmin = false): Promise<Student[]> => {
     try {
@@ -332,6 +343,20 @@ export const fitnessService = {
     }, (error: any) => {
       console.error("Firestore Error:", error);
       logError(error, 'error', { context: 'Results subscription failed' });
+    });
+  },
+
+  subscribeToStudentResults: (studentId: string, callback: (results: FitnessResult[]) => void) => {
+    const q = query(
+      collection(db, 'results'),
+      where('studentId', '==', studentId),
+      orderBy('date', 'desc')
+    );
+    return onSnapshot(q, (snapshot: any) => {
+      callback(snapshot.docs.map((doc: any) => doc.data() as FitnessResult));
+    }, (error: any) => {
+      console.error("Firestore Error in student results subscription:", error);
+      logError(error, 'error', { context: 'Student results subscription failed', studentId });
     });
   },
 
