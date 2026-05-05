@@ -42,6 +42,31 @@ const FitnessTests: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState('Baseline');
   const [userProfile, setUserProfile] = useState<any>(null);
 
+  const formatFitnessError = (err: any): string => {
+    try {
+      // Try to parse the JSON error string from handleFirestoreError
+      const parsed = JSON.parse(err.message);
+      if (parsed.error) {
+        if (parsed.error.includes('permission') || parsed.error.includes('insufficient')) {
+          return "Access Denied: You don't have permission to perform this action. Check if your school profile is properly registered.";
+        }
+        if (parsed.error.includes('offline') || parsed.error.includes('unavailable')) {
+          return "Network Error: Please check your internet connection and try again.";
+        }
+        if (parsed.error.includes('quota')) {
+          return "Quota Exceeded: The daily limit for database operations has been reached. Please try again later.";
+        }
+        return `Database Error: ${parsed.error}`;
+      }
+    } catch (e) {
+      // Fallback for non-JSON errors
+      if (err.message?.includes('network') || err.message?.includes('failed to fetch')) {
+        return "Connection Error: Unable to reach the server. Please check your network.";
+      }
+    }
+    return err.message || "An unexpected error occurred. Please try again.";
+  };
+
   useEffect(() => {
     let unsub: (() => void) | undefined;
 
@@ -141,7 +166,7 @@ const FitnessTests: React.FC = () => {
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err: any) {
       console.error(err);
-      setError(`Save failed: ${err.message || 'Database error'}. Ensure all fields are filled.`);
+      setError(formatFitnessError(err));
     } finally {
       setLoading(false);
     }
@@ -192,9 +217,11 @@ const FitnessTests: React.FC = () => {
 
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Failed to save result. Please try again.");
+      setError(formatFitnessError(err));
+    } finally {
+      setLoading(false);
     }
   };
 

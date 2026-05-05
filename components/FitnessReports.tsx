@@ -16,6 +16,7 @@ import {
   BarChart3,
   Trophy,
   Zap,
+  Info,
   Loader2
 } from 'lucide-react';
 import { 
@@ -598,17 +599,19 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="p-8 bg-indigo-50 rounded-[2rem] border-2 border-indigo-100">
                           <div className="text-indigo-600 mb-4"><Users size={32} /></div>
-                          <div className="text-4xl font-black text-indigo-900 mb-1">{reportData.participation}</div>
+                          <div className="text-4xl font-black text-indigo-900 mb-1">{reportData.participation || 'N/A'}</div>
                           <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Active Participation</p>
                         </div>
                         <div className="p-8 bg-emerald-50 rounded-[2rem] border-2 border-emerald-100">
                           <div className="text-emerald-600 mb-4"><Activity size={32} /></div>
-                          <div className="text-4xl font-black text-emerald-900 mb-1">{reportData.avgBmi}</div>
+                          <div className="text-4xl font-black text-emerald-900 mb-1">{reportData.avgBmi || 'N/A'}</div>
                           <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Average BMI</p>
                         </div>
                         <div className="p-8 bg-orange-50 rounded-[2rem] border-2 border-orange-100">
                           <div className="text-orange-600 mb-4"><TrendingUp size={32} /></div>
-                          <div className="text-4xl font-black text-orange-900 mb-1">Good</div>
+                          <div className="text-4xl font-black text-orange-900 mb-1">
+                            {reportData.overallSummary || 'Good'}
+                          </div>
                           <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Avg. Performance</p>
                         </div>
                       </div>

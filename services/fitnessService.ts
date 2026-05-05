@@ -12,7 +12,7 @@ import {
   onSnapshot,
   getDoc
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import { logError } from './logService';
 import { 
   Student, 
@@ -23,6 +23,56 @@ import {
   KIFTBattery,
   KIFTGradeCategory
 } from '../types';
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  
+  const errorString = JSON.stringify(errInfo);
+  console.error('Firestore Error: ', errorString);
+  logError(error, 'error', errInfo);
+  throw new Error(errorString);
+}
 
 export type { 
   Student, 
@@ -108,6 +158,7 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
 export const fitnessService = {
   // School Management
   saveSchool: async (school: School) => {
+    const path = `schools/${school.id}`;
     try {
       await setDoc(doc(db, 'schools', school.id), school);
       // Also set the admin as a member
@@ -117,8 +168,7 @@ export const fitnessService = {
         role: 'admin'
       });
     } catch (err) {
-      logError(err, 'error', { context: 'saveSchool failed', schoolId: school.id });
-      throw err;
+      handleFirestoreError(err, OperationType.WRITE, path);
     }
   },
 
@@ -164,11 +214,11 @@ export const fitnessService = {
 
   // Students
   saveStudent: async (student: Student) => {
+    const path = `students/${student.id}`;
     try {
       await setDoc(doc(db, 'students', student.id), student);
     } catch (err) {
-      logError(err, 'error', { context: 'saveStudent failed', studentId: student.id });
-      throw err;
+      handleFirestoreError(err, OperationType.WRITE, path);
     }
   },
   
@@ -189,21 +239,21 @@ export const fitnessService = {
   },
 
   deleteStudent: async (id: string) => {
+    const path = `students/${id}`;
     try {
       await deleteDoc(doc(db, 'students', id));
     } catch (err) {
-      logError(err, 'error', { context: 'deleteStudent failed', studentId: id });
-      throw err;
+      handleFirestoreError(err, OperationType.DELETE, path);
     }
   },
 
   // Teams
   saveTeam: async (team: Team) => {
+    const path = `teams/${team.id}`;
     try {
       await setDoc(doc(db, 'teams', team.id), team);
     } catch (err) {
-      logError(err, 'error', { context: 'saveTeam failed', teamId: team.id });
-      throw err;
+      handleFirestoreError(err, OperationType.WRITE, path);
     }
   },
 
@@ -225,11 +275,11 @@ export const fitnessService = {
 
   // Results
   saveResult: async (result: FitnessResult) => {
+    const path = `results/${result.id}`;
     try {
       await setDoc(doc(db, 'results', result.id), result);
     } catch (err) {
-      logError(err, 'error', { context: 'saveResult failed', resultId: result.id });
-      throw err;
+      handleFirestoreError(err, OperationType.WRITE, path);
     }
   },
 
