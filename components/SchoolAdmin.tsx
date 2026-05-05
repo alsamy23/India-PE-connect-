@@ -38,7 +38,7 @@ const SchoolAdmin: React.FC = () => {
         const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
         setUserProfile(profile);
 
-        if (profile && profile.role === 'admin') {
+        if (profile) {
           const schoolMembers = await fitnessService.getSchoolMembers(profile.schoolId);
           setMembers(schoolMembers);
         }
@@ -52,9 +52,28 @@ const SchoolAdmin: React.FC = () => {
     fetchData().catch(err => console.error("Unhandled error in SchoolAdmin fetch:", err));
   }, [auth.currentUser?.uid]);
 
+  const handleDeleteMember = async (uid: string) => {
+    if (!userProfile) return;
+    if (!window.confirm("Remove this team member? They will lose access to school data.")) return;
+
+    setLoading(true);
+    try {
+      await fitnessService.deleteSchoolMember(uid);
+      setSuccess("Member removed successfully.");
+      
+      // Refresh list
+      const schoolMembers = await fitnessService.getSchoolMembers(userProfile.schoolId);
+      setMembers(schoolMembers);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userProfile || userProfile.role !== 'admin') return;
+    if (!userProfile) return;
 
     setLoading(true);
     setError(null);
@@ -87,14 +106,14 @@ const SchoolAdmin: React.FC = () => {
     );
   }
 
-  if (userProfile?.role !== 'admin') {
+  if (!userProfile) {
     return (
       <div className="p-20 text-center space-y-6">
         <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto">
           <Shield size={32} className="text-red-400" />
         </div>
-        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Access Denied</h3>
-        <p className="text-slate-500 max-w-md mx-auto">Only school administrators can manage team members and school-wide settings.</p>
+        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Profile Missing</h3>
+        <p className="text-slate-500 max-w-md mx-auto">Please set up your teacher profile or join a school first.</p>
       </div>
     );
   }
@@ -160,7 +179,10 @@ const SchoolAdmin: React.FC = () => {
                 </td>
                 <td className="p-6 text-right">
                   {member.uid !== auth.currentUser?.uid && (
-                    <button className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                    <button 
+                      onClick={() => handleDeleteMember(member.uid)}
+                      className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    >
                       <Trash2 size={16} />
                     </button>
                   )}

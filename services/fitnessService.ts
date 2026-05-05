@@ -182,6 +182,15 @@ export const fitnessService = {
     }
   },
 
+  deleteSchoolMember: async (uid: string) => {
+    const path = `schoolMembers/${uid}`;
+    try {
+      await deleteDoc(doc(db, 'schoolMembers', uid));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, path);
+    }
+  },
+
   getSchoolMember: async (uid: string): Promise<SchoolMember | null> => {
     try {
       const docSnap = await getDoc(doc(db, 'schoolMembers', uid));
@@ -321,6 +330,15 @@ export const fitnessService = {
   },
 
   // Real-time listeners
+  deleteResult: async (id: string) => {
+    const path = `results/${id}`;
+    try {
+      await deleteDoc(doc(db, 'results', id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, path);
+    }
+  },
+
   subscribeToResults: (teacherId: string, schoolId: string | undefined, isAdmin: boolean, callback: (results: FitnessResult[]) => void) => {
     let q;
     if (isAdmin && schoolId) {

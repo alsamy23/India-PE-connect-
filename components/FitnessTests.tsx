@@ -165,9 +165,11 @@ const FitnessTests: React.FC = () => {
 
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
+      setError(null);
     } catch (err: any) {
-      console.error(err);
-      setError(formatFitnessError(err));
+      console.error("Direct save failed:", err);
+      const errorMsg = formatFitnessError(err);
+      setError(errorMsg + " (Verification failed - check school ID)");
     } finally {
       setLoading(false);
     }
@@ -218,9 +220,11 @@ const FitnessTests: React.FC = () => {
 
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
+      setError(null);
     } catch (err: any) {
-      console.error(err);
-      setError(formatFitnessError(err));
+      console.error("AI Save failed:", err);
+      const errorMsg = formatFitnessError(err);
+      setError(errorMsg + " (AI Save error)");
     } finally {
       setLoading(false);
     }

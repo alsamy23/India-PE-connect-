@@ -139,6 +139,22 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     return () => unsub?.();
   }, [auth.currentUser?.uid]);
 
+  const handleDeleteStudent = async (studentId: string) => {
+    if (!auth.currentUser || !userProfile) return;
+    if (!window.confirm("Are you sure you want to delete this student and all their fitness records? This cannot be undone.")) return;
+
+    setLoading(true);
+    try {
+      await fitnessService.deleteStudent(studentId);
+      // The real-time listener will update the list
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete student.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStudent.name || !newStudent.rollNumber || !auth.currentUser || !userProfile) {
@@ -307,7 +323,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                         <Edit2 size={16} />
                       </button>
                       <button 
-                        onClick={() => handleDelete(student.id)}
+                        onClick={() => handleDeleteStudent(student.id)}
                         className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
                       >
                         <Trash2 size={16} />

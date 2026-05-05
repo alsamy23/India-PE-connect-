@@ -11,7 +11,8 @@ import {
   Clock,
   Trophy,
   ArrowUpRight,
-  Loader2
+  Loader2,
+  Trash2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { fitnessService, FitnessResult, Team, Student, SchoolMember } from '../services/fitnessService.ts';
@@ -86,6 +87,17 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
       unsubStudents?.();
     };
   }, [auth.currentUser?.uid]);
+
+  const handleDeleteResult = async (e: React.MouseEvent, resultId: string) => {
+    e.stopPropagation();
+    if (!window.confirm("Delete this result forever?")) return;
+    try {
+      await fitnessService.deleteResult(resultId);
+    } catch (err) {
+      console.error(err);
+      alert("Delete failed.");
+    }
+  };
 
   const stats = {
     totalStudents: students.length,
@@ -247,11 +259,18 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-3">
                       <div className="text-right">
                         <div className="text-xl font-black text-slate-900">{result.value} {result.unit}</div>
                         <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{result.rating || 'Good'}</div>
                       </div>
+                      <button 
+                        onClick={(e) => handleDeleteResult(e, result.id)}
+                        className="p-3 hover:bg-red-50 text-red-400 hover:text-red-600 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                        title="Delete Result"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                       <div className="flex items-center gap-2">
                          <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">View Report</span>
                          <ChevronRight size={20} className="text-slate-200 group-hover:text-indigo-600 transition-colors" />

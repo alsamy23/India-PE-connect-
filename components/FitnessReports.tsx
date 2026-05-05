@@ -333,6 +333,18 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
     document.body.removeChild(link);
   };
 
+  const handleDeleteResult = async (resultId: string) => {
+    if (!window.confirm("Are you sure you want to delete this fitness result? This action cannot be undone.")) return;
+    
+    try {
+      await fitnessService.deleteResult(resultId);
+      // The real-time listener will update the UI automatically
+    } catch (err) {
+      console.error("Error deleting result:", err);
+      alert("Failed to delete result. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
