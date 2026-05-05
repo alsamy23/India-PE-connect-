@@ -15,7 +15,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { fitnessService, FitnessResult, Team, Student, SchoolMember } from '../services/fitnessService.ts';
+import { fitnessService, FitnessResult, Team, Student, SchoolMember, School } from '../services/fitnessService.ts';
 import { auth } from '../services/firebase.ts';
 
 interface FitnessDashboardProps {

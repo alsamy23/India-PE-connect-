@@ -56,7 +56,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
       
       let schoolId = userProfile?.schoolId;
       if (!schoolId) {
-        schoolId = isSuperAdmin ? 'master_registry' : `personal_${auth.currentUser.uid}`;
+        schoolId = isSuperAdmin ? 'master_registry' : `personal_${auth.currentUser?.uid}`;
       }
       
       // Skip header
@@ -72,7 +72,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
           section: values[3].trim(),
           gender: values[4].trim() as any,
           age: parseInt(values[5].trim()) || 6,
-          teacherId: auth.currentUser.uid,
+          teacherId: auth.currentUser?.uid || 'temp',
           schoolId: schoolId,
           attendance: 0,
           performance: 'Average'
@@ -183,7 +183,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     try {
       let schoolId = userProfile?.schoolId;
       if (!schoolId) {
-        schoolId = isSuperAdmin ? 'master_registry' : `personal_${auth.currentUser.uid}`;
+        schoolId = isSuperAdmin ? 'master_registry' : `personal_${auth.currentUser?.uid}`;
       }
 
       const student: Student = {

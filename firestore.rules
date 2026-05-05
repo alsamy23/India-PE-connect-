@@ -93,16 +93,23 @@ service cloud.firestore {
       return isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
     }
 
-    function getMemberData() {
-      return get(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)).data;
-    }
-
     function isSchoolMember(schoolId) {
-      return isAuthenticated() && (isSuperAdmin() || getMemberData().schoolId == schoolId);
+      return isAuthenticated() && (
+        isSuperAdmin() ||
+        schoolId == 'master_registry' ||
+        schoolId == 'personal_' + request.auth.uid ||
+        (exists(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)).data.schoolId == schoolId)
+      );
     }
 
     function isSchoolAdmin(schoolId) {
-      return isSuperAdmin() || (isSchoolMember(schoolId) && getMemberData().role == 'admin');
+      return isAuthenticated() && (
+        isSuperAdmin() ||
+        (exists(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)).data.schoolId == schoolId &&
+         get(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)).data.role == 'admin')
+      );
     }
 
     function isDocOwner() {
