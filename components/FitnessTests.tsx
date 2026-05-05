@@ -17,7 +17,8 @@ import {
   Info,
   Trophy,
   History,
-  Activity
+  Activity,
+  Save
 } from 'lucide-react';
 import { evaluateFitnessTests } from '../services/geminiService.ts';
 import { FitnessAssessment, KIFTBattery, KIFTTest } from '../types.ts';
@@ -39,9 +40,18 @@ const FitnessTests: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedTerm, setSelectedTerm] = useState('Baseline');
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
+
+    const fetchProfile = async () => {
+      if (auth.currentUser) {
+        const profile = await fitnessService.getSchoolMember(auth.currentUser.uid);
+        setUserProfile(profile);
+      }
+    };
+    fetchProfile();
 
     if (auth.currentUser) {
       try {
@@ -97,6 +107,37 @@ const FitnessTests: React.FC = () => {
       setError(e.message || "Assessment failed. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveDirectly = async () => {
+    if (!auth.currentUser || !selectedTest || !testValue) return;
+
+    try {
+      // If we don't have a result, we'll save with 'N/A' rating for now
+      // Ideally we'd run handleCalculate first, but user wants a direct save
+      
+      const student = students.find(s => s.id === selectedStudentId);
+      await fitnessService.saveResult({
+        id: Math.random().toString(36).substr(2, 9),
+        teacherId: auth.currentUser.uid,
+        schoolId: student?.schoolId || userProfile?.schoolId || '',
+        studentId: selectedStudentId || 'manual',
+        testId: selectedTest.id,
+        testName: selectedTest.name,
+        value: testValue,
+        unit: selectedTest.unit,
+        date: new Date().toISOString(),
+        term: selectedTerm,
+        rating: 'Recorded', // Placeholder
+        percentile: 0
+      });
+
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to save result.");
     }
   };
 
@@ -294,22 +335,50 @@ const FitnessTests: React.FC = () => {
                         </select>
                       </div>
                       <div className="flex-[2] min-w-[250px]">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Result ({selectedTest.unit})</label>
-                        <div className="relative">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Value & Action</label>
+                        <div className="flex gap-4">
                           <input 
                             type="text"
-                            placeholder={`Enter value in ${selectedTest.unit}`}
-                            className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                            placeholder={selectedTest.unit}
+                            className="flex-1 p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                             value={testValue}
-                            onChange={e => setTestValue(e.target.value)}
+                            onChange={e => {
+                              setTestValue(e.target.value);
+                              setResult(null); // Reset result if value changes
+                            }}
                           />
                           <button 
                             onClick={handleCalculate}
                             disabled={loading || !testValue}
-                            className="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white px-6 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center space-x-2"
+                            className="bg-indigo-600 text-white px-6 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center space-x-2"
+                            title="Analyze Performance"
                           >
                             {loading ? <Loader2 className="animate-spin" size={16} /> : <Calculator size={16} />}
-                            <span>Assess</span>
+                            <span className="hidden md:inline">Assess</span>
+                          </button>
+                          <button 
+                            onClick={async () => {
+                              if (!testValue) return;
+                              // If no result yet, save with default rating
+                              if (!result) {
+                                setLoading(true);
+                                try {
+                                  // Trigger a quick evaluation if possible, or save directly
+                                  await handleSaveDirectly();
+                                } finally {
+                                  setLoading(false);
+                                }
+                              } else {
+                                handleSave();
+                              }
+                            }}
+                            disabled={loading || !testValue}
+                            className={`px-6 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center space-x-2 ${
+                              isSaved ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white hover:bg-slate-800'
+                            }`}
+                          >
+                            {isSaved ? <CheckCircle2 size={16} /> : <Save size={16} />}
+                            <span>{isSaved ? 'Saved' : 'Save'}</span>
                           </button>
                         </div>
                       </div>

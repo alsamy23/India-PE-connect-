@@ -15,8 +15,25 @@ import {
   Calendar,
   BarChart3,
   Trophy,
+  Zap,
   Loader2
 } from 'lucide-react';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  Radar,
+  LineChart,
+  Line,
+  Legend
+} from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { fitnessService, Student, FitnessResult, Team, SchoolMember, KIFT_BATTERIES } from '../services/fitnessService.ts';
 import { auth } from '../services/firebase.ts';
@@ -134,13 +151,35 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           byTerm[r.term].push(r);
         });
 
+        // Prep chart data
+        const radarData = studentResults.filter(r => r.term === 'Baseline').map(r => ({
+          subject: r.testName.split('(')[0].trim(),
+          A: parseFloat(r.value) || 0,
+          fullMark: 100
+        }));
+
+        const progressData = results.filter(r => r.studentId === selectedId).reduce((acc: any, r) => {
+          const existing = acc.find((item: any) => item.term === r.term);
+          if (existing) {
+            existing[r.testName] = parseFloat(r.value);
+          } else {
+            acc.push({ term: r.term, [r.testName]: parseFloat(r.value) });
+          }
+          return acc;
+        }, []).sort((a: any, b: any) => {
+          const order = ['Baseline', 'Term 1', 'Term 2', 'Final'];
+          return order.indexOf(a.term) - order.indexOf(b.term);
+        });
+
         data = {
           title: `Fitness Report: ${student?.name}`,
           subtitle: `Roll No: ${student?.rollNumber} | Grade: ${student?.grade}-${student?.section}`,
           student,
           byTerm,
           terms: ['Baseline', 'Term 1', 'Term 2', 'Final'].filter(t => byTerm[t]),
-          overallSummary: studentResults.length > 0 ? "Consistently showing improvement across most physical benchmarks." : "Insufficient data for detailed analysis."
+          overallSummary: studentResults.length > 0 ? "Consistently showing improvement across most physical benchmarks." : "Insufficient data for detailed analysis.",
+          radarData,
+          progressData
         };
       } else if (selectedType === 'class') {
         const team = teams.find(t => t.id === selectedId);
@@ -330,16 +369,99 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                 <div className="p-10 space-y-12">
                   {selectedType === 'individual' ? (
                     <>
-                      {/* Individual Stats */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {reportData.terms.map((term: string) => (
-                          <div key={term} className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">{term}</span>
-                            <div className="text-2xl font-black text-slate-900">
-                              {reportData.byTerm[term]?.length || 0} <span className="text-xs text-slate-400">Tests</span>
-                            </div>
+                      {/* Top Summary Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="p-8 bg-indigo-600 rounded-[2.5rem] text-white shadow-lg">
+                          <Trophy className="mb-4 opacity-50" size={32} />
+                          <div className="text-4xl font-black mb-1">
+                            {reportData.terms.length > 0 ? reportData.terms[reportData.terms.length - 1] : 'No Data'}
                           </div>
-                        ))}
+                          <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Current Assessment Phase</p>
+                        </div>
+                        <div className="p-8 bg-slate-900 rounded-[2.5rem] text-white shadow-lg">
+                          <Activity className="mb-4 opacity-50 text-emerald-400" size={32} />
+                          <div className="text-4xl font-black mb-1">
+                            {Object.keys(reportData.byTerm).reduce((acc: number, t: string) => acc + reportData.byTerm[t].length, 0)}
+                          </div>
+                          <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Total Tests Completed</p>
+                        </div>
+                        <div className="p-8 bg-emerald-500 rounded-[2.5rem] text-white shadow-lg">
+                          <TrendingUp className="mb-4 opacity-50" size={32} />
+                          <div className="text-4xl font-black mb-1">
+                            {reportData.terms.length > 1 ? 'Improving' : 'Baseline'}
+                          </div>
+                          <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Overall Progress Status</p>
+                        </div>
+                      </div>
+
+                      {/* Infographic Section */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Radar Chart: Baseline Profile */}
+                        <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 min-h-[400px] flex flex-col">
+                          <div className="flex items-center gap-2 mb-6">
+                            <Zap size={20} className="text-orange-500" />
+                            <h4 className="font-black uppercase tracking-tight text-slate-800">Baseline Fitness Profile</h4>
+                          </div>
+                          <div className="flex-1 w-full flex items-center justify-center">
+                            {reportData.radarData.length > 2 ? (
+                              <ResponsiveContainer width="100%" height={300}>
+                                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={reportData.radarData}>
+                                  <PolarGrid stroke="#e2e8f0" />
+                                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                  <Radar
+                                    name={reportData.student?.name}
+                                    dataKey="A"
+                                    stroke="#4f46e5"
+                                    fill="#4f46e5"
+                                    fillOpacity={0.6}
+                                  />
+                                </RadarChart>
+                              </ResponsiveContainer>
+                            ) : (
+                              <div className="text-center text-slate-400">
+                                <p className="text-xs font-bold">Add at least 3 test values to see the radar profile.</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Progress Chart */}
+                        <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 min-h-[400px] flex flex-col">
+                          <div className="flex items-center gap-2 mb-6">
+                            <TrendingUp size={20} className="text-indigo-600" />
+                            <h4 className="font-black uppercase tracking-tight text-slate-800">Term-wise Progress</h4>
+                          </div>
+                          <div className="flex-1 w-full flex items-center justify-center">
+                            {reportData.progressData.length > 1 ? (
+                              <ResponsiveContainer width="100%" height={300}>
+                                <LineChart data={reportData.progressData}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                  <XAxis dataKey="term" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                  <YAxis hide />
+                                  <Tooltip 
+                                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                    itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }}
+                                  />
+                                  <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', paddingTop: '20px' }} />
+                                  {Object.keys(reportData.progressData[0] || {}).filter(k => k !== 'term').map((key, idx) => (
+                                    <Line 
+                                      key={key} 
+                                      type="monotone" 
+                                      dataKey={key} 
+                                      stroke={['#4f46e5', '#10b981', '#f59e0b', '#ef4444'][idx % 4]} 
+                                      strokeWidth={3} 
+                                      dot={{ r: 6, strokeWidth: 2, fill: 'white' }}
+                                    />
+                                  ))}
+                                </LineChart>
+                              </ResponsiveContainer>
+                            ) : (
+                              <div className="text-center text-slate-400">
+                                <p className="text-xs font-bold">Record data for Term 1 or 2 to see the progress trend.</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       {/* Performance Table */}

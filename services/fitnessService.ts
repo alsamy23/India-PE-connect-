@@ -43,7 +43,8 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
       { id: 'bmi', name: 'BMI (Height & Weight)', unit: 'kg/m²', description: 'Body Mass Index calculation.' },
       { id: 'flamingo', name: 'Flamingo Balance Test', unit: 'seconds', description: 'Stand on one leg for as long as possible.' },
       { id: 'plate_tapping', name: 'Plate Tapping Test', unit: 'seconds', description: 'Hand speed and coordination test.' },
-      { id: 'sit_reach', name: 'Sit and Reach Test', unit: 'cm', description: 'Lower back and hamstring flexibility.' }
+      { id: 'sit_reach', name: 'Sit and Reach Test', unit: 'cm', description: 'Lower back and hamstring flexibility.' },
+      { id: 'shuttle_run', name: 'Shuttle Run (4x10m)', unit: 'seconds', description: 'Agility and coordination test.' }
     ]
   },
   {
