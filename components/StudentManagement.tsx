@@ -45,15 +45,19 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !auth.currentUser || !userProfile) return;
+    if (!file || !auth.currentUser) return;
 
     const reader = new FileReader();
     reader.onload = async (event) => {
       const text = event.target?.result as string;
       const lines = text.split('\n').filter(line => line.trim());
-      const header = lines[0].split(',');
       
       const newStudents: Student[] = [];
+      
+      let schoolId = userProfile?.schoolId;
+      if (!schoolId) {
+        schoolId = isSuperAdmin ? 'master_registry' : `personal_${auth.currentUser.uid}`;
+      }
       
       // Skip header
       for (let i = 1; i < lines.length; i++) {
@@ -69,7 +73,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
           gender: values[4].trim() as any,
           age: parseInt(values[5].trim()) || 6,
           teacherId: auth.currentUser.uid,
-          schoolId: userProfile.schoolId,
+          schoolId: schoolId,
           attendance: 0,
           performance: 'Average'
         };
@@ -101,6 +105,8 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     age: 6
   });
 
+  const isSuperAdmin = auth.currentUser?.email === 'alsamy36@gmail.com';
+
   useEffect(() => {
     let unsub: (() => void) | undefined;
 
@@ -114,20 +120,19 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
         const profile = await fitnessService.getSchoolMember(auth.currentUser.uid);
         setUserProfile(profile);
 
-        if (profile) {
-          const isAdmin = profile.role === 'admin';
-          unsub = fitnessService.subscribeToStudents(
-            auth.currentUser.uid,
-            profile.schoolId,
-            isAdmin,
-            (data) => {
-              setStudents(data);
-              setLoading(false);
-            }
-          );
-        } else {
-          setLoading(false);
-        }
+        const isAdmin = profile?.role === 'admin' || isSuperAdmin;
+        const schoolId = profile?.schoolId;
+
+        // Subscribe to students (Super Admin will get all via service logic)
+        unsub = fitnessService.subscribeToStudents(
+          auth.currentUser.uid,
+          schoolId,
+          isAdmin,
+          (data) => {
+            setStudents(data);
+            setLoading(false);
+          }
+        );
       } catch (err) {
         console.error("Error in StudentManagement data fetch:", err);
         setLoading(false);
@@ -170,17 +175,22 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
 
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudent.name || !newStudent.rollNumber || !auth.currentUser || !userProfile) {
-      alert('Please ensure you are logged in and your school profile is set up.');
+    if (!newStudent.name || !newStudent.rollNumber || !auth.currentUser) {
+      alert('Please ensure you are logged in.');
       return;
     }
 
     try {
+      let schoolId = userProfile?.schoolId;
+      if (!schoolId) {
+        schoolId = isSuperAdmin ? 'master_registry' : `personal_${auth.currentUser.uid}`;
+      }
+
       const student: Student = {
         ...newStudent as Student,
         id: Math.random().toString(36).substr(2, 9),
         teacherId: auth.currentUser.uid,
-        schoolId: userProfile.schoolId,
+        schoolId: schoolId,
         attendance: 0,
         performance: 'Average'
       };

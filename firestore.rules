@@ -85,8 +85,12 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isSuperAdmin() {
+      return isAuthenticated() && request.auth.token.email == 'alsamy36@gmail.com' && request.auth.token.email_verified == true;
+    }
+
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
     }
 
     function getMemberData() {
@@ -94,15 +98,15 @@ service cloud.firestore {
     }
 
     function isSchoolMember(schoolId) {
-      return isAuthenticated() && getMemberData().schoolId == schoolId;
+      return isAuthenticated() && (isSuperAdmin() || getMemberData().schoolId == schoolId);
     }
 
     function isSchoolAdmin(schoolId) {
-      return isSchoolMember(schoolId) && getMemberData().role == 'admin';
+      return isSuperAdmin() || (isSchoolMember(schoolId) && getMemberData().role == 'admin');
     }
 
     function isDocOwner() {
-      return isAuthenticated() && request.auth.uid == resource.data.teacherId;
+      return isAuthenticated() && (isSuperAdmin() || request.auth.uid == resource.data.teacherId);
     }
 
     function isValidEmail(email) {
@@ -185,7 +189,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isAuthenticated();
       allow create: if isOwner(uid) && isValidUser(request.resource.data);
-      allow update: if isOwner(uid) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role;
+      allow update: if isOwner(uid) && isValidUser(request.resource.data) && (isSuperAdmin() || request.resource.data.role == resource.data.role);
     }
 
     match /schools/{schoolId} {
@@ -195,9 +199,9 @@ service cloud.firestore {
     }
 
     match /schoolMembers/{uid} {
-      allow read: if isAuthenticated() && (isOwner(uid) || (resource != null && isSchoolMember(resource.data.schoolId)) || request.auth.token.email != null);
-      allow create, update: if isAuthenticated() && (isOwner(uid) || isSchoolMember(request.resource.data.schoolId)) && isValidSchoolMember(request.resource.data);
-      allow delete: if isAuthenticated() && (isSchoolAdmin(resource.data.schoolId) || (resource != null && resource.data.email == request.auth.token.email));
+      allow read: if isAuthenticated() && (isOwner(uid) || (resource != null && isSchoolMember(resource.data.schoolId)) || isSuperAdmin() || request.auth.token.email != null);
+      allow create, update: if isAuthenticated() && (isOwner(uid) || isSchoolMember(request.resource.data.schoolId) || isSuperAdmin()) && isValidSchoolMember(request.resource.data);
+      allow delete: if isAuthenticated() && (isSchoolAdmin(resource.data.schoolId) || isSuperAdmin() || (resource != null && resource.data.email == request.auth.token.email));
     }
 
     match /students/{studentId} {

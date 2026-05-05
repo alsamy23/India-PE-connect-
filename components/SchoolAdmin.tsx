@@ -26,6 +26,9 @@ const SchoolAdmin: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<SchoolMember | null>(null);
+  const [allSchools, setAllSchools] = useState<any[]>([]);
+
+  const isSuperAdmin = auth.currentUser?.email === 'alsamy36@gmail.com';
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -38,7 +41,15 @@ const SchoolAdmin: React.FC = () => {
         const profile = await fitnessService.getSchoolMember(auth.currentUser!.uid);
         setUserProfile(profile);
 
-        if (profile) {
+        if (isSuperAdmin) {
+          const schools = await fitnessService.getAllSchools();
+          setAllSchools(schools);
+          // For super admin, we might want to show members of the first school by default or something else
+          if (schools.length > 0) {
+            const members = await fitnessService.getSchoolMembers(schools[0].id);
+            setMembers(members);
+          }
+        } else if (profile) {
           const schoolMembers = await fitnessService.getSchoolMembers(profile.schoolId);
           setMembers(schoolMembers);
         }
@@ -106,7 +117,7 @@ const SchoolAdmin: React.FC = () => {
     );
   }
 
-  if (!userProfile) {
+  if (!userProfile && !isSuperAdmin) {
     return (
       <div className="p-20 text-center space-y-6">
         <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto">
@@ -123,17 +134,42 @@ const SchoolAdmin: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">School Network</h2>
-          <p className="text-slate-500 font-medium text-sm">Grant access to other teachers or admins in your school.</p>
+          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">
+            {isSuperAdmin ? 'Global School Registry' : 'School Network'}
+          </h2>
+          <p className="text-slate-500 font-medium text-sm">
+            {isSuperAdmin 
+              ? 'Overseeing all registered schools and their teaching staff platform-wide.' 
+              : 'Grant access to other teachers or admins in your school.'}
+          </p>
         </div>
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="px-6 py-3 bg-indigo-600 text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] flex items-center gap-2"
-        >
-          <UserPlus size={16} />
-          <span>Grant Access</span>
-        </button>
+        {!isSuperAdmin && (
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="px-6 py-3 bg-indigo-600 text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] flex items-center gap-2"
+          >
+            <UserPlus size={16} />
+            <span>Grant Access</span>
+          </button>
+        )}
       </div>
+
+      {isSuperAdmin && allSchools.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {allSchools.map(school => (
+            <button
+              key={school.id}
+              onClick={async () => {
+                const members = await fitnessService.getSchoolMembers(school.id);
+                setMembers(members);
+              }}
+              className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 hover:border-indigo-200 transition-all"
+            >
+              {school.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {success && (
         <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-xs font-bold flex items-center justify-between">

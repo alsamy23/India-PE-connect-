@@ -224,6 +224,10 @@ export const fitnessService = {
   // Students
   saveStudent: async (student: Student) => {
     const path = `students/${student.id}`;
+    // Default schoolId for records not specifically linked
+    if (!student.schoolId) {
+      student.schoolId = `personal_${student.teacherId}`;
+    }
     try {
       await setDoc(doc(db, 'students', student.id), student);
     } catch (err) {
@@ -242,10 +246,26 @@ export const fitnessService = {
     }
   },
   
+  isSuperAdmin: () => {
+    return auth.currentUser?.email === 'alsamy36@gmail.com';
+  },
+
+  getAllSchools: async (): Promise<School[]> => {
+    try {
+      const snapshot = await getDocs(collection(db, 'schools'));
+      return snapshot.docs.map(doc => doc.data() as School);
+    } catch (err) {
+      logError(err, 'error', { context: 'getAllSchools failed' });
+      return [];
+    }
+  },
+
   getStudents: async (teacherId: string, schoolId?: string, isAdmin = false): Promise<Student[]> => {
     try {
       let q;
-      if (isAdmin && schoolId) {
+      if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+        q = query(collection(db, 'students'));
+      } else if (isAdmin && schoolId) {
         q = query(collection(db, 'students'), where('schoolId', '==', schoolId));
       } else {
         q = query(collection(db, 'students'), where('teacherId', '==', teacherId));
@@ -289,7 +309,9 @@ export const fitnessService = {
   getTeams: async (teacherId: string, schoolId?: string, isAdmin = false): Promise<Team[]> => {
     try {
       let q;
-      if (isAdmin && schoolId) {
+      if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+        q = query(collection(db, 'teams'));
+      } else if (isAdmin && schoolId) {
         q = query(collection(db, 'teams'), where('schoolId', '==', schoolId));
       } else {
         q = query(collection(db, 'teams'), where('teacherId', '==', teacherId));
@@ -305,6 +327,10 @@ export const fitnessService = {
   // Results
   saveResult: async (result: FitnessResult) => {
     const path = `results/${result.id}`;
+    // Default schoolId for records not specifically linked
+    if (!result.schoolId) {
+      result.schoolId = `personal_${result.teacherId}`;
+    }
     try {
       await setDoc(doc(db, 'results', result.id), result);
     } catch (err) {
@@ -315,7 +341,13 @@ export const fitnessService = {
   getRecentResults: async (teacherId: string, schoolId?: string, isAdmin = false, limitCount = 10): Promise<FitnessResult[]> => {
     try {
       let q;
-      if (isAdmin && schoolId) {
+      if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+        q = query(
+          collection(db, 'results'), 
+          orderBy('date', 'desc'),
+          limit(limitCount)
+        );
+      } else if (isAdmin && schoolId) {
         q = query(
           collection(db, 'results'), 
           where('schoolId', '==', schoolId),
@@ -350,7 +382,13 @@ export const fitnessService = {
 
   subscribeToResults: (teacherId: string, schoolId: string | undefined, isAdmin: boolean, callback: (results: FitnessResult[]) => void) => {
     let q;
-    if (isAdmin && schoolId) {
+    if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+      q = query(
+        collection(db, 'results'),
+        orderBy('date', 'desc'),
+        limit(100)
+      );
+    } else if (isAdmin && schoolId) {
       q = query(
         collection(db, 'results'),
         where('schoolId', '==', schoolId),
@@ -389,7 +427,9 @@ export const fitnessService = {
 
   subscribeToStudents: (teacherId: string, schoolId: string | undefined, isAdmin: boolean, callback: (students: Student[]) => void) => {
     let q;
-    if (isAdmin && schoolId) {
+    if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+      q = query(collection(db, 'students'));
+    } else if (isAdmin && schoolId) {
       q = query(collection(db, 'students'), where('schoolId', '==', schoolId));
     } else {
       q = query(collection(db, 'students'), where('teacherId', '==', teacherId));
@@ -404,7 +444,9 @@ export const fitnessService = {
 
   subscribeToTeams: (teacherId: string, schoolId: string | undefined, isAdmin: boolean, callback: (teams: Team[]) => void) => {
     let q;
-    if (isAdmin && schoolId) {
+    if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+      q = query(collection(db, 'teams'));
+    } else if (isAdmin && schoolId) {
       q = query(collection(db, 'teams'), where('schoolId', '==', schoolId));
     } else {
       q = query(collection(db, 'teams'), where('teacherId', '==', teacherId));

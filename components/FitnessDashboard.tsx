@@ -27,8 +27,11 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
   const [results, setResults] = useState<FitnessResult[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<SchoolMember | null>(null);
+
+  const isSuperAdmin = auth.currentUser?.email === 'alsamy36@gmail.com';
 
   useEffect(() => {
     let unsubResults: (() => void) | undefined;
@@ -45,34 +48,35 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
         const profile = await fitnessService.getSchoolMember(auth.currentUser.uid);
         setUserProfile(profile);
 
-        if (profile) {
-          const isAdmin = profile.role === 'admin';
-          unsubResults = fitnessService.subscribeToResults(
-            auth.currentUser.uid,
-            profile.schoolId,
-            isAdmin,
-            setResults
-          );
-          unsubTeams = fitnessService.subscribeToTeams(
-            auth.currentUser.uid,
-            profile.schoolId,
-            isAdmin,
-            setTeams
-          );
-          unsubStudents = fitnessService.subscribeToStudents(
-            auth.currentUser.uid,
-            profile.schoolId,
-            isAdmin,
-            (data) => {
-              setStudents(data);
-              setLoading(false);
-            }
-          );
-        } else {
-          // If no profile yet, maybe it's still being created or they are not a member
-          // Try one more time after a short delay if they just logged in
-          setLoading(false);
+        if (isSuperAdmin) {
+          const allSchools = await fitnessService.getAllSchools();
+          setSchools(allSchools);
         }
+
+        const isAdmin = profile?.role === 'admin' || isSuperAdmin;
+        const schoolId = profile?.schoolId;
+
+        unsubResults = fitnessService.subscribeToResults(
+          auth.currentUser.uid,
+          schoolId,
+          isAdmin,
+          setResults
+        );
+        unsubTeams = fitnessService.subscribeToTeams(
+          auth.currentUser.uid,
+          schoolId,
+          isAdmin,
+          setTeams
+        );
+        unsubStudents = fitnessService.subscribeToStudents(
+          auth.currentUser.uid,
+          schoolId,
+          isAdmin,
+          (data) => {
+            setStudents(data);
+            setLoading(false);
+          }
+        );
       } catch (err) {
         console.error("Error in FitnessDashboard data fetch:", err);
         setLoading(false);
@@ -108,7 +112,13 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
 
   const getStudentName = (id: string) => {
     const student = students.find(s => s.id === id);
-    return student ? student.name : `Student ${id.substring(0, 4)}`;
+    if (!student) return `Student ${id.substring(0, 4)}`;
+    
+    if (isSuperAdmin) {
+      const school = schools.find(s => s.id === student.schoolId);
+      return `${student.name} (${school?.name || 'Manual'})`;
+    }
+    return student.name;
   };
 
   if (loading) {
@@ -126,10 +136,10 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
         <div>
           <div className="flex items-center space-x-2 text-indigo-600 mb-1">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Live Results</span>
+            <span className="text-[10px] font-black uppercase tracking-widest">{isSuperAdmin ? 'Global Platform' : 'Live Results'}</span>
           </div>
-          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">School Overview</h2>
-          <p className="text-slate-500 font-medium">Real-time fitness data from every student in your school.</p>
+          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">{isSuperAdmin ? 'Super Admin Dashboard' : 'School Overview'}</h2>
+          <p className="text-slate-500 font-medium">{isSuperAdmin ? 'Full platform oversight for alsamy36@gmail.com' : 'Real-time fitness data from every student in your school.'}</p>
         </div>
         <div className="flex items-center gap-3">
           <button 

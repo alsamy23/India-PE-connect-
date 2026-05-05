@@ -139,11 +139,20 @@ const FitnessTests: React.FC = () => {
   const handleSaveDirectly = async () => {
     if (!auth.currentUser || !selectedTest || !testValue) return;
 
-    const schoolId = students.find(s => s.id === selectedStudentId)?.schoolId || userProfile?.schoolId;
+    // Determine schoolId: 
+    // 1. From selected student
+    // 2. From user's school profile
+    // 3. Super Admin global fallback
+    // 4. Personal fallback for teachers without schools
+    const student = students.find(s => s.id === selectedStudentId);
+    let schoolId = student?.schoolId || userProfile?.schoolId;
 
     if (!schoolId) {
-      setError("Unable to identify your school. Please ensure you have set up your school profile in the 'School Admin' tab.");
-      return;
+      if (auth.currentUser.email === 'alsamy36@gmail.com') {
+        schoolId = 'master_registry';
+      } else {
+        schoolId = `personal_${auth.currentUser.uid}`;
+      }
     }
 
     setLoading(true);
@@ -193,13 +202,16 @@ const FitnessTests: React.FC = () => {
       });
 
       // Save to school database if student is selected
-      if (selectedStudentId || userProfile?.schoolId) {
+      if (selectedStudentId || userProfile?.schoolId || auth.currentUser.email === 'alsamy36@gmail.com') {
           const student = students.find(s => s.id === selectedStudentId);
-          const schoolId = student?.schoolId || userProfile?.schoolId;
+          let schoolId = student?.schoolId || userProfile?.schoolId;
           
           if (!schoolId) {
-            setError("Unable to identify school ID. Save aborted.");
-            return;
+            if (auth.currentUser.email === 'alsamy36@gmail.com') {
+              schoolId = 'master_registry';
+            } else {
+              schoolId = `personal_${auth.currentUser.uid}`;
+            }
           }
 
         await fitnessService.saveResult({
