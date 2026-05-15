@@ -21,9 +21,10 @@ import { auth } from '../services/firebase.ts';
 interface StudentManagementProps {
   onNavigate?: (tab: any) => void;
   onSelectStudent?: (id: string) => void;
+  highlightStudentId?: string | null;
 }
 
-const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSelectStudent }) => {
+const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSelectStudent, highlightStudentId }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,6 +144,15 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     
     return () => unsub?.();
   }, [auth.currentUser?.uid]);
+
+  useEffect(() => {
+    if (highlightStudentId && students.length > 0) {
+      const student = students.find(s => s.id === highlightStudentId);
+      if (student) {
+        setSearchTerm(student.name);
+      }
+    }
+  }, [highlightStudentId, students]);
 
   const handleDeleteStudent = async (studentId: string) => {
     if (!auth.currentUser || !userProfile) return;
@@ -312,10 +322,10 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
               </tr>
             ) : (
               filteredStudents.map(student => (
-                <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
+                <tr key={student.id} className={`transition-colors group ${highlightStudentId === student.id ? 'bg-indigo-50/50' : 'hover:bg-slate-50'}`}>
                   <td className="p-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-black text-xs">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${highlightStudentId === student.id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-indigo-50 text-indigo-600'}`}>
                         {student.name.substring(0, 2).toUpperCase()}
                       </div>
                       <span className="font-black text-slate-900 uppercase tracking-tight">{student.name}</span>

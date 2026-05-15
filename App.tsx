@@ -57,6 +57,7 @@ import SchoolAdmin from './components/SchoolAdmin.tsx';
 import FitnessReports from './components/FitnessReports.tsx';
 import SkillAnalysis from './components/SkillAnalysis.tsx';
 import AdminLogs from './components/AdminLogs.tsx';
+import { GlobalSearch } from './components/GlobalSearch.tsx';
 import { logError } from './services/logService.ts';
 import { auth } from './services/firebase.ts';
 import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
@@ -79,6 +80,7 @@ const App: React.FC = () => {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isAuthView, setIsAuthView] = useState(false);
   const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(null);
+  const [highlightStudentId, setHighlightStudentId] = useState<string | null>(null);
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser: FirebaseUser | null) => {
@@ -280,40 +282,50 @@ const App: React.FC = () => {
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { id: 'planner', name: 'PE Lesson Plan', icon: Sparkles, subtitle: 'Generate today\'s PE lesson in under 60 seconds.' },
-    { id: 'testpaper', name: 'Question Paper Generator (CBSE)', icon: ClipboardList, isNew: true, subtitle: 'Create MCQ and theory papers for PE in one click.' },
     
     { 
-      section: 'Assessments',
+      section: 'Plan',
+      items: [
+        { id: 'planner', name: 'PE Lesson Plan', icon: Sparkles, subtitle: 'Generate today\'s PE lesson in under 60 seconds.' },
+        { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange, subtitle: 'Auto-map 40 weeks of PE for your classes.' },
+        { id: 'skillmastery', name: 'Skill Progressions', icon: Target, subtitle: 'Long-term curriculum maps and checklists.' },
+        { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap, subtitle: 'Resources matched to CBSE guidelines.' },
+      ]
+    },
+
+    { 
+      section: 'Assess',
       items: [
         { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true, subtitle: 'All Khelo India Fitness tests pre-loaded.' },
         { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, subtitle: 'Official battery tests and student profiles.' },
-        { id: 'school-overview', name: 'School Fitness Database', icon: Zap, isNew: true, subtitle: 'Store and track every student\'s scores.' },
-        { id: 'fitness-reports', name: 'Fitness Reports', icon: FileText, isNew: true, protected: true, subtitle: 'Generate progress and performance reports.' },
-        { id: 'school-results', name: 'Live Results', icon: Activity, isNew: true, protected: true },
-        { id: 'school-students', name: 'Student Directory', icon: Users, protected: true },
-        { id: 'school-teams', name: 'Teams/Classes', icon: UserCheck, protected: true },
+        { id: 'testpaper', name: 'Question Paper Generator', icon: ClipboardList, isNew: true, subtitle: 'Create MCQ and theory papers for PE.' },
+        { id: 'skill-analysis', name: 'Skill Analysis Lab', icon: Video, isNew: true, subtitle: 'Compare and analyze sports techniques.' },
+        { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true, subtitle: 'Ask AI about sports rules and doubts.' },
       ]
     },
 
-    { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true, subtitle: 'Draft ready-to-print letters for parents.' },
-    { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange, subtitle: 'Auto-map 40 weeks of PE for your classes.' },
-    { id: 'widgets', name: 'PE Classroom Widgets', icon: Zap, isNew: true, subtitle: 'Interactive timers and tools.' },
-    { id: 'skillmastery', name: 'Skill Progressions', icon: Target, subtitle: 'Long-term curriculum maps and checklists.' },
-    { id: 'skill-analysis', name: 'Skill Analysis Lab', icon: Video, isNew: true, subtitle: 'Compare and analyze sports techniques.' },
-    
     { 
-      section: 'Administration',
+      section: 'Record',
       items: [
+        { id: 'school-students', name: 'Student Directory', icon: Users, protected: true },
+        { id: 'school-overview', name: 'School Fitness Database', icon: Zap, isNew: true, subtitle: 'Store and track every student\'s scores.' },
+        { id: 'school-results', name: 'Live Results', icon: Activity, isNew: true, protected: true },
+        { id: 'fitness-reports', name: 'Fitness Reports', icon: FileText, isNew: true, protected: true, subtitle: 'Generate progress and performance reports.' },
+      ]
+    },
+
+    { 
+      section: 'Communicate & Admin',
+      items: [
+        { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true, subtitle: 'Draft ready-to-print letters for parents.' },
+        { id: 'school-teams', name: 'Teams/Classes', icon: UserCheck, protected: true },
+        { id: 'widgets', name: 'PE Classroom Widgets', icon: Zap, isNew: true, subtitle: 'Interactive timers and tools.' },
         { id: 'compliance', name: 'State Compliance', icon: ShieldCheck, subtitle: 'CBSE and NEP 2020 alignment.' },
+        { id: 'tools', name: 'AI Tool Center', icon: Wrench, subtitle: 'AI tools that save you time daily.' },
         { id: 'school-admin', name: 'School Settings', icon: Shield, protected: true },
         { id: 'logs', name: 'System Logs', icon: Terminal, protected: true, subtitle: 'Monitor real-time error reports.' },
       ]
-    },
-
-    { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true, subtitle: 'Ask AI about sports rules and doubts.' },
-    { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap, subtitle: 'Resources matched to CBSE guidelines.' },
-    { id: 'tools', name: 'AI Tool Center', icon: Wrench, subtitle: 'AI tools that save you time daily.' },
+    }
   ];
 
   const isProtectedTab = (tabId: string) => {
@@ -359,7 +371,7 @@ const App: React.FC = () => {
       case 'rules': return <RulesBot />;
       case 'fitness': return <FitnessTests />;
       case 'school-results': return <FitnessDashboard onNavigate={setActiveTab} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} />;
-      case 'school-students': return <StudentManagement onNavigate={setActiveTab} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} />;
+      case 'school-students': return <StudentManagement onNavigate={setActiveTab} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} highlightStudentId={highlightStudentId} />;
       case 'school-teams': return <TeamManagement />;
       case 'school-admin': return <SchoolAdmin />;
       case 'logs': return <AdminLogs />;
@@ -535,6 +547,7 @@ const App: React.FC = () => {
                         key={subItem.id}
                         onClick={() => {
                           setActiveTab(subItem.id as Tab);
+                          setHighlightStudentId(null);
                           setIsSidebarOpen(false);
                         }}
                         className={`
@@ -562,6 +575,7 @@ const App: React.FC = () => {
                   key={item.id}
                   onClick={() => {
                     setActiveTab(item.id as Tab);
+                    setHighlightStudentId(null);
                     setIsSidebarOpen(false);
                   }}
                   className={`
@@ -621,6 +635,16 @@ const App: React.FC = () => {
 
       {/* Content Area */}
       <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-20">
+        <div className="sticky top-0 z-40 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 px-4 py-3 md:px-6 md:py-4 print:hidden shadow-sm">
+          <GlobalSearch onNavigate={(tabId, data) => {
+            setActiveTab(tabId as Tab);
+            if (data?.studentId) {
+              setHighlightStudentId(data.studentId);
+            } else {
+              setHighlightStudentId(null);
+            }
+          }} />
+        </div>
         {globalError && (
           <div className="max-w-7xl mx-auto px-6 pt-6 md:px-12">
             <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 flex items-center space-x-4 text-red-700">
@@ -660,7 +684,10 @@ const App: React.FC = () => {
           ].map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id as Tab)}
+              onClick={() => {
+                setActiveTab(item.id as Tab);
+                setHighlightStudentId(null);
+              }}
               className={`flex flex-col items-center space-y-1 transition-all active:scale-90 ${activeTab === item.id ? 'text-primary' : 'text-slate-400'}`}
             >
               <item.icon size={20} className={activeTab === item.id ? 'scale-110' : ''} />
