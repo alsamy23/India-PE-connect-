@@ -84,7 +84,7 @@ const Dashboard: React.FC<{
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
             <div className="space-y-2">
               <div className="inline-flex items-center px-4 py-1 bg-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest mb-2">New Teacher Guide</div>
-              <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight">Welcome to SmartPE India</h3>
+              <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight">Welcome to smartpeindia</h3>
               <p className="text-slate-400 text-sm max-w-md font-medium">Follow these 3 steps to streamline your PE department today.</p>
             </div>
             
@@ -154,7 +154,7 @@ const Dashboard: React.FC<{
             className="inline-flex items-center space-x-3 bg-slate-900 text-white rounded-full px-6 py-2 shadow-lg"
           >
             <Sparkles size={16} className="text-[#FF6B00]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em]">SmartPE India v4.0</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em]">smartpeindia v4.0</span>
           </motion.div>
           
           <div className="space-y-6">
@@ -482,12 +482,12 @@ const Dashboard: React.FC<{
         </section>
       </div>
 
-      {/* Why SmartPE section - Trust Building */}
+      {/* Why smartpeindia section - Trust Building */}
       <section className="bg-slate-50 rounded-[3rem] p-12 md:p-20 border-4 border-slate-900 border-dashed">
         <div className="max-w-4xl mx-auto text-center space-y-12">
           <div className="space-y-4">
             <h3 className="text-3xl md:text-5xl font-black text-slate-900 uppercase tracking-tight">Built for Indian Schools</h3>
-            <p className="text-slate-500 font-medium text-lg leading-relaxed">SmartPE India isn't just another app. It's a specialized architecture designed to meet the unique challenges of PE departments in India.</p>
+            <p className="text-slate-500 font-medium text-lg leading-relaxed">smartpeindia isn't just another app. It's a specialized architecture designed to meet the unique challenges of PE departments in India.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-2">

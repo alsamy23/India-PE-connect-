@@ -296,7 +296,8 @@ async function startServer() {
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
-        hmr: { port: 24679 } // Use a different port for HMR to avoid conflicts
+        host: "0.0.0.0",
+        hmr: process.env.DISABLE_HMR === 'true' ? false : undefined
       },
       appType: "spa",
     });

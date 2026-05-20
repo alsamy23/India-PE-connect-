@@ -74,12 +74,12 @@ const Logo: React.FC<LogoProps> = ({ className = '', showText = true, variant = 
       {showText && (
         <div className="flex flex-col leading-tight">
           <div className={`text-2xl md:text-3xl font-black tracking-tighter uppercase flex items-baseline ${colors.text}`}>
-            Smart<span className={colors.brandPe}>PE</span>
+            smart<span className={colors.brandPe}>pe</span>
           </div>
           <div className="flex items-center gap-2">
             <div className={`h-[2px] ${isLight ? 'bg-white/20' : 'bg-[#FF6B00]'} flex-1`}></div>
             <span className={`text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] ${isLight ? 'text-white' : 'text-[#FF6B00]'}`}>
-              India
+              india
             </span>
             <div className={`h-[2px] ${isLight ? 'bg-white/20' : 'bg-[#FF6B00]'} flex-1`}></div>
           </div>

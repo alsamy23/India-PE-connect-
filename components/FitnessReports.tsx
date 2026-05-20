@@ -204,6 +204,20 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           return order.indexOf(a.term) - order.indexOf(b.term);
         });
 
+        // Comparison benchmarks - compare student averages vs school averages for same tests
+        const comparisonData = Object.values(latestByTest).map(r => {
+          const sameTestResults = results.filter(res => res.testId === r.testId);
+          const schoolAvg = sameTestResults.length > 0 
+            ? sameTestResults.reduce((sum, res) => sum + parseValue(res.value), 0) / sameTestResults.length
+            : 0;
+            
+          return {
+            name: r.testName.split('(')[0].trim(),
+            student: parseValue(r.value),
+            average: parseFloat(schoolAvg.toFixed(1))
+          };
+        });
+
         data = {
           title: `Fitness Report: ${student?.name}`,
           subtitle: `Roll No: ${student?.rollNumber} | Grade: ${student?.grade}-${student?.section}`,
@@ -214,13 +228,38 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           overallSummary: studentResults.length > 0 ? "Consistently showing improvement across most physical benchmarks." : "Insufficient data for detailed analysis.",
           radarData,
           progressData,
-          latestByTest
+          latestByTest,
+          comparisonData
         };
       } else if (selectedType === 'class') {
         const team = teams.find(t => t.id === selectedId);
         const teamStudents = students.filter(s => team?.studentIds.includes(s.id));
         const teamResults = results.filter(r => teamStudents.some(s => s.id === r.studentId));
         
+        // Distribution of tests
+        const testCounts = groupCount(teamResults, 'testName');
+        const distributionData = Object.entries(testCounts).map(([name, count]) => ({
+          name: name.split('(')[0].trim(),
+          count
+        }));
+
+        // Average scores by test for the class
+        const testAverages: Record<string, { sum: number, count: number, unit: string }> = {};
+        teamResults.forEach(r => {
+          if (!testAverages[r.testName]) {
+            testAverages[r.testName] = { sum: 0, count: 0, unit: r.unit };
+          }
+          const val = parseValue(r.value);
+          testAverages[r.testName].sum += val;
+          testAverages[r.testName].count += 1;
+        });
+
+        const classAverageData = Object.entries(testAverages).map(([name, stats]) => ({
+          name: name.split('(')[0].trim(),
+          average: parseFloat((stats.sum / stats.count).toFixed(1)),
+          unit: stats.unit
+        }));
+
         data = {
           title: `Class Progress Report: ${team?.name}`,
           subtitle: `Grade: ${team?.grade}-${team?.section} | Total Students: ${teamStudents.length}`,
@@ -228,24 +267,50 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           studentCount: teamStudents.length,
           avgBmi: calculateAvg(teamResults.filter(r => r.testId === 'bmi')),
           participation: `${Math.round((new Set(teamResults.map(r => r.studentId)).size / teamStudents.length) * 100)}%`,
-          testCounts: groupCount(teamResults, 'testName')
+          testCounts,
+          distributionData,
+          classAverageData,
+          totalAssessments: teamResults.length
         };
       } else {
         // School-wide analysis
-        const gradeStats: Record<string, { total: number, results: number, avg: number }> = {};
+        const gradeStats: Record<string, { total: number, results: number, avg: number, bmiSum: number, bmiCount: number }> = {};
+        const schoolTestAverages: Record<string, { sum: number, count: number }> = {};
         
         results.forEach(r => {
           const student = students.find(s => s.id === r.studentId);
           if (!student) return;
           
           if (!gradeStats[student.grade]) {
-            gradeStats[student.grade] = { total: 0, results: 0, avg: 0 };
+            gradeStats[student.grade] = { total: 0, results: 0, avg: 0, bmiSum: 0, bmiCount: 0 };
           }
           
           const val = parseValue(r.value);
           gradeStats[student.grade].avg += val;
           gradeStats[student.grade].results += 1;
+
+          if (r.testId === 'bmi') {
+            gradeStats[student.grade].bmiSum += val;
+            gradeStats[student.grade].bmiCount += 1;
+          }
+
+          if (!schoolTestAverages[r.testName]) {
+            schoolTestAverages[r.testName] = { sum: 0, count: 0 };
+          }
+          schoolTestAverages[r.testName].sum += val;
+          schoolTestAverages[r.testName].count += 1;
         });
+
+        const barChartData = Object.entries(gradeStats).map(([grade, stats]) => ({
+          grade: `Gen ${grade}`,
+          average: parseFloat((stats.avg / stats.results).toFixed(1)),
+          bmi: stats.bmiCount > 0 ? parseFloat((stats.bmiSum / stats.bmiCount).toFixed(1)) : 0
+        })).sort((a, b) => a.grade.localeCompare(b.grade));
+
+        const schoolAverages = Object.entries(schoolTestAverages).map(([name, stats]) => ({
+          name: name.split('(')[0].trim(),
+          average: parseFloat((stats.sum / stats.count).toFixed(1))
+        }));
 
         Object.keys(gradeStats).forEach(grade => {
           gradeStats[grade].avg = gradeStats[grade].avg / gradeStats[grade].results;
@@ -265,7 +330,9 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           testDistribution: groupCount(results, 'testName'),
           gradeStats,
           focusGrades,
-          totalStudents: students.length
+          totalStudents: students.length,
+          barChartData,
+          schoolAverages
         };
       }
       
@@ -653,6 +720,41 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                         </div>
                       </div>
 
+                      {/* Benchmark Comparison */}
+                      <div className="bg-white p-10 rounded-[3rem] border-2 border-slate-100 shadow-sm">
+                        <div className="flex items-center justify-between mb-8">
+                          <div>
+                            <h4 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+                              <BarChart3 size={20} className="text-indigo-600" />
+                              <span>Benchmark Comparison</span>
+                            </h4>
+                            <p className="text-xs font-medium text-slate-500">How you compare against the school average.</p>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-indigo-600 rounded-sm"></div>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Student</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-slate-200 rounded-sm"></div>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">School Avg</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="h-80 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={reportData.comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                              <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                              <Bar dataKey="student" fill="#4f46e5" radius={[4, 4, 0, 0]} barSize={32} />
+                              <Bar dataKey="average" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={32} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
                       {/* Performance Table */}
                       <div className="space-y-6">
                         <h4 className="font-black text-xl uppercase tracking-tight flex items-center gap-2">
@@ -714,26 +816,86 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                     </>
                   ) : (
                     <>
-                      {/* School stats */}
+                      {/* Class/School stats */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="p-8 bg-indigo-50 rounded-[2rem] border-2 border-indigo-100">
-                          <div className="text-indigo-600 mb-4"><Users size={32} /></div>
-                          <div className="text-4xl font-black text-indigo-900 mb-1">{reportData.totalStudents}</div>
-                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Enrolled Students</p>
+                          <div className="text-indigo-600 mb-4">{selectedType === 'class' ? <Users size={32} /> : <Users size={32} />}</div>
+                          <div className="text-4xl font-black text-indigo-900 mb-1">
+                            {selectedType === 'class' ? reportData.studentCount : reportData.totalStudents}
+                          </div>
+                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                            {selectedType === 'class' ? 'Students in Class' : 'Enrolled Students'}
+                          </p>
                         </div>
                         <div className="p-8 bg-emerald-50 rounded-[2rem] border-2 border-emerald-100">
                           <div className="text-emerald-600 mb-4"><Activity size={32} /></div>
-                          <div className="text-4xl font-black text-emerald-900 mb-1">{reportData.totalResults}</div>
+                          <div className="text-4xl font-black text-emerald-900 mb-1">
+                            {selectedType === 'class' ? reportData.totalAssessments : reportData.totalResults}
+                          </div>
                           <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Tests Recorded</p>
                         </div>
                         <div className="p-8 bg-orange-50 rounded-[2rem] border-2 border-orange-100">
                           <div className="text-orange-600 mb-4"><Zap size={32} /></div>
                           <div className="text-4xl font-black text-orange-900 mb-1">
-                            {reportData.focusGrades.length > 0 ? `Grade ${reportData.focusGrades[0]}` : 'None'}
+                            {selectedType === 'class' ? reportData.avgBmi : (reportData.focusGrades.length > 0 ? `Grade ${reportData.focusGrades[0]}` : 'None')}
                           </div>
-                          <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Requires Improvement</p>
+                          <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">
+                            {selectedType === 'class' ? 'Average BMI' : 'Requires Improvement'}
+                          </p>
                         </div>
                       </div>
+
+                      {selectedType === 'class' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          <div className="bg-white p-10 rounded-[3rem] border-2 border-slate-100">
+                            <h4 className="text-lg font-black uppercase tracking-tight mb-8">Test Distribution</h4>
+                            <div className="h-64 w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={reportData.distributionData}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                  <YAxis hide />
+                                  <Tooltip />
+                                  <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                          <div className="bg-white p-10 rounded-[3rem] border-2 border-slate-100">
+                            <h4 className="text-lg font-black uppercase tracking-tight mb-8">Class Averages</h4>
+                            <div className="h-64 w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RadarChart outerRadius="80%" data={reportData.classAverageData}>
+                                  <PolarGrid />
+                                  <PolarAngleAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                  <Radar name="Class Average" dataKey="average" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
+                                </RadarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedType === 'school' && (
+                        <div className="bg-white p-10 rounded-[3rem] border-2 border-slate-100 shadow-sm">
+                           <h4 className="text-xl font-black uppercase tracking-tight flex items-center gap-2 mb-8">
+                              <TrendingUp size={20} className="text-indigo-600" />
+                              <span>Grade-wise Fitness Levels</span>
+                            </h4>
+                            <div className="h-80 w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={reportData.barChartData}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                  <XAxis dataKey="grade" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                  <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                                  <Bar dataKey="average" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                                  <Bar dataKey="bmi" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                        </div>
+                      )}
 
                       {/* Grade Analysis Section */}
                       <div className="space-y-6">

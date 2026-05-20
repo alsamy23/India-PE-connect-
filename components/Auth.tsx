@@ -195,7 +195,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         <div className="flex flex-col items-center mb-10">
           <Logo showText={false} className="mb-4" />
           <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter text-center">
-            {isLogin ? 'Welcome Back' : 'Join SmartPE India'}
+            {isLogin ? 'Welcome Back' : 'Join smartpeindia'}
           </h1>
           <p className="text-slate-500 font-medium text-center mt-2">
             {isLogin ? 'Log in to manage your school' : 'Register to start your PE journey'}
