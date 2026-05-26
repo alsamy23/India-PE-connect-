@@ -78,31 +78,37 @@ const Dashboard: React.FC<{
   return (
     <div className="space-y-16 pb-32 overflow-x-hidden">
       {/* Onboarding / Start Here Strip */}
-      <section className="bg-slate-900 text-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl relative overflow-hidden border-4 border-slate-900">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/20 rounded-full blur-[100px] -mr-32 -mt-32"></div>
-        <div className="relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-            <div className="space-y-2">
-              <div className="inline-flex items-center px-4 py-1 bg-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest mb-2">New Teacher Guide</div>
-              <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight">Welcome to smartpeindia</h3>
-              <p className="text-slate-400 text-sm max-w-md font-medium">Follow these 3 steps to streamline your PE department today.</p>
+      <section className="bg-slate-900 text-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 shadow-2xl relative overflow-hidden border-4 border-slate-900">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] -mr-48 -mt-48"></div>
+        <div className="relative z-10 space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+            <div className="space-y-3">
+              <div className="inline-flex items-center px-4 py-1.5 bg-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest">Interactive Onboarding</div>
+              <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight leading-[1.1]">
+                New here? Your first <br/>
+                <span className="text-[#FF6B00]">lesson plan</span> in 60 seconds.
+              </h3>
+              <p className="text-slate-400 text-sm max-w-lg font-medium leading-relaxed">
+                Pick your topic, let AI draft the plan, customize contents to your standard, and start teaching with absolute confidence.
+              </p>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 flex-1 max-w-3xl">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 max-w-4xl">
               {[
-                { step: '01', title: 'Setup Planner', desc: 'Map your yearly curriculum.', tab: 'yearly' },
-                { step: '02', title: 'Question Paper', desc: 'CBSE Question papers.', tab: 'testpaper' },
-                { step: '03', title: 'Record Tests', desc: 'Track Fitness/Khelo results.', tab: 'fitness' }
+                { step: '01', title: 'Pick topic', desc: 'Select any sport or curriculum target.', tab: 'planner' },
+                { step: '02', title: 'AI drafts plan', desc: 'AI creates fully custom syllabus.', tab: 'planner' },
+                { step: '03', title: 'Edit & save', desc: 'Refine and customize with ease.', tab: 'planner' },
+                { step: '04', title: 'Teach', desc: 'Deliver best-in-class sports theory.', tab: 'planner' }
               ].map((item, i) => (
                 <button 
                   key={i}
                   onClick={() => onNavigate?.(item.tab)}
-                  className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-left animate-pulse-subtle"
+                  className="flex flex-col justify-between p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#FF6B00] hover:bg-white/10 transition-all text-left group"
                 >
-                  <div className="text-2xl font-black text-indigo-500 opacity-50">{item.step}</div>
+                  <div className="text-3xl font-black text-indigo-505 mb-4 text-[#005BFF] group-hover:text-[#FF6B00] transition-colors">{item.step}</div>
                   <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white mb-1">{item.title}</h4>
-                    <p className="text-[9px] text-slate-400 leading-tight font-medium">{item.desc}</p>
+                    <h4 className="text-[11px] font-black uppercase tracking-wider text-white mb-1">{item.title}</h4>
+                    <p className="text-[10px] text-slate-400 leading-snug font-medium">{item.desc}</p>
                   </div>
                 </button>
               ))}
@@ -143,137 +149,113 @@ const Dashboard: React.FC<{
       </section>
 
       {/* Split Hero Section */}
-      <section className="relative min-h-[60vh] lg:min-h-[85vh] grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center overflow-hidden rounded-[2rem] md:rounded-[4rem] bg-white border-2 border-slate-900 p-6 md:p-20 shadow-[8px_8px_0px_0px_rgba(15,23,42,0.05)] md:shadow-[16px_16px_0px_0px_rgba(15,23,42,0.05)]">
+      <section className="relative min-h-[60vh] lg:min-h-[85vh] grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center overflow-hidden rounded-[2.5rem] md:rounded-[4rem] bg-[#FFFDF9] border-4 border-slate-900 p-6 md:p-16 shadow-[12px_12px_0px_0px_rgba(10,28,42,1)]">
         {/* Background Grid */}
-        <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
         
-        <div className="relative z-10 space-y-12">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="inline-flex items-center space-x-3 bg-slate-900 text-white rounded-full px-6 py-2 shadow-lg"
-          >
-            <Sparkles size={16} className="text-[#FF6B00]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em]">smartpeindia v4.0</span>
-          </motion.div>
-          
-          <div className="space-y-6">
-            <motion.h1 
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-4xl sm:text-6xl md:text-8xl lg:text-[7rem] font-black tracking-tighter leading-[0.85] text-slate-900 uppercase"
-            >
-              MOVE. TRACK. <br/>
-              <span className="text-[#005BFF]">GROW.</span> <br/>
-              <span className="text-[#FF6B00]">TOGETHER.</span>
-            </motion.h1>
-            
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-lg sm:text-xl md:text-2xl text-slate-500 max-w-xl leading-relaxed font-medium"
-            >
-              The ultimate AI architect for Physical Education in India. Fully aligned with <span className="text-slate-900 font-black underline decoration-[#005BFF]">CBSE</span>, <span className="text-slate-900 font-black underline decoration-[#FF6B00]">NEP 2020</span>, and <span className="text-slate-900 font-black underline decoration-indigo-500">Khelo India</span>.
-            </motion.p>
+        {/* Left Side: Copy and details conforming to Image 1 */}
+        <div className="lg:col-span-7 relative z-10 space-y-8 text-left">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00] animate-ping"></span>
+            <span className="text-[10px] font-black uppercase text-[#FF6B00] tracking-widest">Lesson Planning • Free for PE Teachers</span>
           </div>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 sm:gap-6"
-          >
+
+          <div className="space-y-4">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-[5.5rem] font-black tracking-tighter leading-[0.9] text-slate-900 uppercase">
+              The PE <br className="hidden md:block"/>
+              department.<br/>
+              <span className="text-slate-400">In one app.</span>
+            </h1>
+            
+            <p className="text-sm sm:text-base md:text-lg text-slate-600 max-w-xl leading-relaxed font-semibold">
+              <strong className="text-slate-900 font-bold">Lesson plans</strong>, classroom tools, Khelo India fitness scoring, question papers and parent reports — every part of an Indian PE teacher's day, in one place. <strong className="text-slate-900 font-bold">Plan. Teach. Track. New track grow together.</strong> Free for PE teachers.
+            </p>
+          </div>
+
+          {/* Action Buttons to match Image 1 */}
+          <div className="flex flex-col sm:flex-row gap-4">
             <button 
               onClick={() => onNavigate?.('planner')}
-              className="group w-full sm:w-auto px-8 md:px-12 py-5 md:py-6 bg-[#001D3D] text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:bg-[#005BFF] hover:-translate-y-1 active:translate-y-0 shadow-[8px_8px_0px_0px_rgba(0,91,255,0.2)]"
+              className="group w-full sm:w-auto px-8 py-5 bg-[#FF6B00] text-white rounded-full font-black text-xs uppercase tracking-widest transition-all hover:bg-orange-600 hover:-translate-y-0.5 active:translate-y-0 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] border-2 border-slate-900 text-center flex items-center justify-center space-x-2"
             >
-              <span className="flex items-center justify-center space-x-3">
-                <span>Start Planning</span>
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              </span>
+              <span>Start planning &mdash; free</span>
+              <span className="font-sans font-black text-sm">&rarr;</span>
             </button>
             
             <button 
-              onClick={() => onNavigate?.('theory')}
-              className="w-full sm:w-auto px-8 md:px-12 py-5 md:py-6 bg-white border-2 border-slate-900 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
+              onClick={() => onNavigate?.('tools')}
+              className="w-full sm:w-auto px-8 py-5 bg-white border-2 border-slate-205 text-slate-800 rounded-full font-black text-xs uppercase tracking-widest hover:border-slate-900 hover:text-slate-950 hover:bg-slate-50 transition-all text-center flex items-center justify-center"
             >
-              View Resources
+              See the platform
             </button>
-          </motion.div>
-          
-          <div className="pt-8 border-t border-slate-100 italic font-medium text-slate-400 text-xs">
-            "Reimagining PE for the modern Indian classroom. Built with passion for teachers."
+          </div>
+
+          {/* Underneath columns representing three keys */}
+          <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-200">
+            {[
+              { num: '01', title: 'Plan', desc: 'Lessons in 60s' },
+              { num: '02', title: 'Teach', desc: 'Field-ready tools' },
+              { num: '03', title: 'Track', desc: 'Fitness & reports' }
+            ].map((col, idx) => (
+              <div key={idx} className="space-y-1">
+                <span className="text-[10px] font-black text-slate-400 block">{col.num}</span>
+                <h4 className="font-black text-slate-900 uppercase tracking-tight text-xs md:text-sm">{col.title}</h4>
+                <p className="text-[10px] text-slate-500 font-medium">{col.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Right Side - Interactive Sports Animation Area */}
-        <div className="relative h-[600px] hidden lg:flex items-center justify-center">
-          <div className="absolute inset-0 bg-slate-50 rounded-[3rem] border-2 border-slate-900/5 rotate-3"></div>
-          <div className="absolute inset-0 bg-white rounded-[3rem] border-2 border-slate-900 -rotate-3 overflow-hidden">
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center">
-               
-               {/* Floating Elements (Background) */}
-               <div className="absolute inset-0 pointer-events-none">
-                 {/* Soccer Ball */}
-                 <motion.div 
-                   animate={{ y: [0, -20, 0], x: [0, 10, 0], rotate: 360 }}
-                   transition={{ duration: 6, repeat: Infinity }}
-                   className="absolute top-20 left-20 text-slate-400"
-                 >
-                   <Activity size={40} className="opacity-20" />
-                 </motion.div>
+        {/* Right Side: High fidelity mock scene matching Image 1 */}
+        <div className="lg:col-span-5 relative h-[500px] w-full flex items-center justify-center">
+          <div className="absolute inset-0 bg-[#E2F1FF] rounded-[2.5rem] border-4 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] overflow-hidden">
+            {/* Simulation of a school field atmosphere */}
+            <div className="absolute inset-0 bg-cover bg-center opacity-85" style={{ backgroundImage: 'linear-gradient(rgba(10,28,42,0.1), rgba(10,28,42,0.4)), url("https://images.unsplash.com/photo-1544698310-74ea9d1c8258?auto=format&fit=crop&q=80&w=1000")' }}></div>
+            
+            {/* Top-Left transparent pill: PLAN-TEACH-TRACK */}
+            <div className="absolute top-6 left-6 py-1 px-3 bg-white/25 backdrop-blur-md rounded-full border border-white/20">
+              <span className="text-[9px] font-black uppercase text-white tracking-widest flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00]"></span>
+                Plan • Teach • Track
+              </span>
+            </div>
 
-                 {/* Drone/Tracking Point */}
-                 <motion.div 
-                   animate={{ y: [0, 30, 0], x: [0, -20, 0] }}
-                   transition={{ duration: 4, repeat: Infinity }}
-                   className="absolute bottom-40 right-20 text-[#005BFF]"
-                 >
-                   <div className="w-4 h-4 rounded-full bg-[#005BFF] animate-ping" />
-                 </motion.div>
+            {/* Float generated card at top-right */}
+            <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white max-w-[200px] md:max-w-[240px] z-20 animate-bounce-subtle">
+              <div className="flex items-start gap-2.5">
+                <span className="w-8 h-8 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-[#FF6B00] font-black">
+                  <Sparkles size={16} />
+                </span>
+                <div className="space-y-0.5">
+                  <h4 className="text-[11px] font-black uppercase text-slate-900 leading-none">Lesson generated</h4>
+                  <p className="text-[9px] text-slate-500 font-semibold leading-tight">Grade 8 &bull; Athletics &bull; 47s</p>
+                </div>
+              </div>
+              {/* Progress bar simulation */}
+              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+                <motion.div 
+                  initial={{ width: "2%" }}
+                  animate={{ width: ["10%", "95%", "95%"] }}
+                  transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                  className="bg-[#FF6B00] h-full rounded-full"
+                ></motion.div>
+              </div>
+            </div>
 
-                 {/* Whistle */}
-                 <motion.div 
-                   animate={{ rotate: [-10, 10, -10] }}
-                   transition={{ duration: 3, repeat: Infinity }}
-                   className="absolute top-1/4 right-1/4 text-[#FF6B00] opacity-30"
-                 >
-                   <Trophy size={48} />
-                 </motion.div>
-
-                 {/* Stopwatch */}
-                 <motion.div 
-                   animate={{ scale: [1, 1.1, 1] }}
-                   transition={{ duration: 5, repeat: Infinity }}
-                   className="absolute bottom-20 left-1/4 text-indigo-400 opacity-20"
-                 >
-                   <Timer size={56} />
-                 </motion.div>
-               </div>
-
-               <motion.div 
-                animate={{ scale: [0.95, 1, 0.95], y: [-10, 10, -10] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                className="relative z-10"
-               >
-                 <Logo showText={false} className="scale-[4] mb-20" />
-               </motion.div>
-
-               <div className="space-y-4 pt-12 relative z-10">
-                 <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#005BFF]">Next-Gen PE OS</p>
-                 <div className="flex flex-wrap justify-center gap-3">
-                   {['Curriculum', 'Data', 'AI', 'Reports'].map(tag => (
-                     <span key={tag} className="px-4 py-2 bg-slate-100 rounded-2xl text-[9px] font-black uppercase tracking-widest text-[#001D3D] border border-slate-200">
-                       {tag}
-                     </span>
-                   ))}
-                 </div>
-               </div>
-
-               {/* Grid Overlay */}
-               <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+            {/* Beautiful illustration layers */}
+            <div className="absolute inset-x-6 bottom-6 flex justify-between items-end">
+              <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#001D3D] border border-white shadow-md">
+                🇮🇳 Indian classroom
+              </div>
+              <div className="bg-[#001D3D]/95 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 border border-slate-800 shadow-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Live v4.0</span>
+              </div>
+            </div>
+            
+            {/* Big center action logo watermark */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+              <Logo showText={false} className="scale-[3.5] rotate-12" />
             </div>
           </div>
         </div>
@@ -286,7 +268,8 @@ const Dashboard: React.FC<{
           <div className="flex items-end justify-between border-b-4 border-slate-900 pb-8">
             <div className="space-y-4">
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600">01. TEACH</p>
-              <h2 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-[0.85]">Classroom <br/> <span className="text-slate-300">Excellence.</span></h2>
+              <h2 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-[0.85]">Classroom <br/> <span className="text-[#005BFF]">Excellence.</span></h2>
+              <p className="text-sm text-slate-500 font-extrabold uppercase tracking-widest mt-2 block">Classroom excellence, in 60 seconds.</p>
             </div>
             <p className="hidden md:block text-slate-500 max-w-xs text-right font-black text-[10px] uppercase tracking-widest leading-relaxed">
               "Generate lessons, manage widgets, and master skill progressions in seconds."
@@ -298,7 +281,7 @@ const Dashboard: React.FC<{
             <motion.div 
               whileHover={{ scale: 1.02, y: -5 }}
               onClick={() => onNavigate?.('planner')}
-              className="lg:col-span-2 group bg-slate-900 text-white rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.3)] transition-all cursor-pointer relative overflow-hidden"
+              className="lg:col-span-2 group bg-slate-900 text-white rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.3)] transition-all cursor-pointer relative overflow-hidden animate-pulse-subtle"
             >
               <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
                 <Sparkles size={120} />
@@ -357,7 +340,8 @@ const Dashboard: React.FC<{
           <div className="flex items-end justify-between border-b-4 border-slate-900 pb-8">
             <div className="space-y-4">
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-600">02. ASSESS</p>
-              <h2 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-[0.85]">Fitness <br/> <span className="text-slate-300">Metrology.</span></h2>
+              <h2 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-[0.85]">Fitness <br/> <span className="text-[#FF6B00]">Metrology.</span></h2>
+              <p className="text-sm text-slate-500 font-extrabold uppercase tracking-widest mt-2 block">School Fitness Database</p>
             </div>
           </div>
 
@@ -422,8 +406,8 @@ const Dashboard: React.FC<{
         <section className="space-y-12">
           <div className="flex items-end justify-between border-b-4 border-slate-900 pb-8">
             <div className="space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600">03. ADMIN & COMMUNICATE</p>
-              <h2 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-[0.85]">Bureaucracy <br/> <span className="text-slate-300">Automated.</span></h2>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600">03. COMMUNICATE & ADMIN</p>
+              <h2 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-[0.85]">Bureaucracy, <br/> <span className="text-[#005BFF]">Automated.</span></h2>
             </div>
           </div>
 
@@ -481,6 +465,29 @@ const Dashboard: React.FC<{
           </div>
         </section>
       </div>
+
+      {/* Dynamic CTA Banner matching Repaint Mockup */}
+      <section className="bg-[#FF6B00] text-white rounded-[3rem] p-12 md:p-16 border-4 border-slate-900 shadow-[12px_12px_0px_0px_rgba(15,23,42,1)] relative overflow-hidden">
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-white/10 rounded-full blur-[80px]"></div>
+        <div className="absolute -top-20 -right-20 w-80 h-80 bg-black/20 rounded-full blur-[80px]"></div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 max-w-5xl mx-auto">
+          <div className="space-y-4 text-center md:text-left">
+            <span className="px-4 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-widest inline-block">Active Generator Ready</span>
+            <h3 className="text-3xl md:text-5xl font-black uppercase tracking-tight leading-[1.1]">Your next lesson is <br className="hidden md:block"/> 47 seconds away.</h3>
+            <p className="text-white/80 text-sm font-semibold uppercase tracking-wider">Run our AI Lesson Architect in real-time instantly.</p>
+          </div>
+          <div>
+            <button 
+              onClick={() => onNavigate?.('planner')}
+              className="px-10 py-6 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest border-2 border-slate-900 hover:bg-slate-800 hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] active:scale-95 transition-all flex items-center gap-3 whitespace-nowrap"
+            >
+              <Sparkles size={20} className="text-[#FF6B00]" />
+              <span>Launch Builder now</span>
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* Why smartpeindia section - Trust Building */}
       <section className="bg-slate-50 rounded-[3rem] p-12 md:p-20 border-4 border-slate-900 border-dashed">

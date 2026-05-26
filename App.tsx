@@ -39,6 +39,8 @@ import SkillMastery from './components/SkillMastery.tsx';
 import ComplianceAdvisor from './components/ComplianceAdvisor.tsx';
 import AIToolCenter from './components/AIToolCenter.tsx';
 import TheoryHub from './components/TheoryHub.tsx';
+import About from './components/About.tsx';
+import Contact from './components/Contact.tsx';
 import KheloIndia from './components/KheloIndia.tsx';
 import RulesBot from './components/RulesBot.tsx';
 import FitnessTests from './components/FitnessTests.tsx';
@@ -62,7 +64,7 @@ import { logError } from './services/logService.ts';
 import { auth } from './services/firebase.ts';
 import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
 
-type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact';
 
 import { BoardType, Language } from './types.ts';
 
@@ -325,6 +327,14 @@ const App: React.FC = () => {
         { id: 'school-admin', name: 'School Settings', icon: Shield, protected: true },
         { id: 'logs', name: 'System Logs', icon: Terminal, protected: true, subtitle: 'Monitor real-time error reports.' },
       ]
+    },
+
+    { 
+      section: 'Corporate Info',
+      items: [
+        { id: 'about', name: 'About smartpeindia', icon: GraduationCap, subtitle: 'Meet the founder L. Samy and the mission.' },
+        { id: 'contact', name: 'Contact & Support', icon: Mail, subtitle: 'Get help, report a bug, or collaborate directly.' },
+      ]
     }
   ];
 
@@ -387,6 +397,8 @@ const App: React.FC = () => {
           setIsAuthView(true);
         }
       }} onTryDemo={() => setActiveTab('fitness')} />;
+      case 'about': return <About onNavigate={setActiveTab} />;
+      case 'contact': return <Contact onNavigate={setActiveTab} />;
       default: return <Dashboard apiStatus={apiStatus} debugInfo={debugInfo} onTestConnection={handleTestConnection} isTesting={isTesting} onNavigate={setActiveTab} />;
     }
   };
@@ -635,15 +647,43 @@ const App: React.FC = () => {
 
       {/* Content Area */}
       <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-20">
-        <div className="sticky top-0 z-40 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 px-4 py-3 md:px-6 md:py-4 print:hidden shadow-sm">
-          <GlobalSearch onNavigate={(tabId, data) => {
-            setActiveTab(tabId as Tab);
-            if (data?.studentId) {
-              setHighlightStudentId(data.studentId);
-            } else {
-              setHighlightStudentId(null);
-            }
-          }} />
+        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 md:px-8 md:py-4 print:hidden shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-6 text-[11px] font-black uppercase tracking-widest text-slate-500">
+            <button 
+              onClick={() => setActiveTab('dashboard')} 
+              className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'dashboard' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+            >
+              Platform
+            </button>
+            <button 
+              onClick={() => setActiveTab('tools')} 
+              className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'tools' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+            >
+              Modules
+            </button>
+            <button 
+              onClick={() => setActiveTab('about')} 
+              className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'about' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+            >
+              About
+            </button>
+            <button 
+              onClick={() => setActiveTab('contact')} 
+              className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'contact' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+            >
+              Contact
+            </button>
+          </div>
+          <div className="w-full md:max-w-xs lg:max-w-sm">
+            <GlobalSearch onNavigate={(tabId, data) => {
+              setActiveTab(tabId as Tab);
+              if (data?.studentId) {
+                setHighlightStudentId(data.studentId);
+              } else {
+                setHighlightStudentId(null);
+              }
+            }} />
+          </div>
         </div>
         {globalError && (
           <div className="max-w-7xl mx-auto px-6 pt-6 md:px-12">

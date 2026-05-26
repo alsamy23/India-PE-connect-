@@ -180,15 +180,39 @@ const YearlyPlanner: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-slide-up pb-20">
-      <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 print:shadow-none print:p-0">
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border-2 border-slate-100 print:shadow-none print:p-0">
         <div className="flex justify-between items-center mb-8 print:hidden">
-          <h2 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Yearly Planner</h2>
+          <div>
+            <h2 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Yearly Planner</h2>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Syllabus pacing made efficient</p>
+          </div>
           {step === 4 && (
-             <button onClick={() => {setStep(1); setPlan(null);}} className="flex items-center space-x-2 text-slate-400 font-bold hover:text-indigo-600 transition-colors">
+             <button onClick={() => {setStep(1); setPlan(null);}} className="flex items-center space-x-2 text-slate-400 font-bold hover:text-[#005BFF] transition-colors">
                 <RotateCcw size={18} />
                 <span>Start New Plan</span>
              </button>
           )}
+        </div>
+
+        {/* AI Generator Integration Banner */}
+        <div className="bg-gradient-to-r from-orange-500/10 to-indigo-500/10 border-2 border-orange-500/20 p-6 rounded-3xl mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
+          <div className="flex items-center gap-4">
+            <span className="w-12 h-12 rounded-2xl bg-[#FF6B00] text-white flex items-center justify-center shadow-lg shadow-orange-500/20">
+              <Sparkles size={24} className="animate-pulse" />
+            </span>
+            <div>
+              <h4 className="font-black text-slate-900 uppercase tracking-wide text-sm flex items-center gap-2">
+                <span>Generative AI Curriculum Planner</span>
+                <span className="px-2 py-0.5 bg-orange-500 text-white rounded text-[8px] tracking-[0.2em] font-black uppercase">Active</span>
+              </h4>
+              <p className="text-xs font-semibold text-slate-600 leading-relaxed mt-0.5">
+                Automatically mapping physical education cycles, syllabus weights, sporting seasons, CBSE standards, and school calendar holidays using Gemini.
+              </p>
+            </div>
+          </div>
+          <div className="px-4 py-2 bg-[#001D3D] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-sm">
+            AI pacing active
+          </div>
         </div>
 
         <div className="mt-8">

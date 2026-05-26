@@ -303,8 +303,45 @@ const SkillAnalysis: React.FC = () => {
   };
 
   const [isRecordingSession, setIsRecordingSession] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [copied, setCopied] = useState(false);
+  const [reviewVideoUrl, setReviewVideoUrl] = useState<string | null>(null);
   const sessionRecorderRef = useRef<MediaRecorder | null>(null);
   const sessionChunksRef = useRef<Blob[]>([]);
+
+  useEffect(() => {
+    videoRefs.current.forEach(v => {
+      if (v) v.playbackRate = playbackSpeed;
+    });
+  }, [playbackSpeed, numScreens, isLive]);
+
+  const togglePlaybackSpeed = () => {
+    const newSpeed = playbackSpeed === 1 ? 0.5 : 1;
+    setPlaybackSpeed(newSpeed);
+    videoRefs.current.forEach(v => {
+      if (v) v.playbackRate = newSpeed;
+    });
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: 'smartpeindia Skill Analysis Lab',
+      text: 'Analyze your performance in the smartpeindia Skill Lab (Code: SKILL-A1)',
+      url: window.location.href
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(`${shareData.text} - ${shareData.url}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch (err) {
+      console.error("Error sharing:", err);
+    }
+  };
 
   const startSessionRecording = () => {
     if (!streamRef.current) return;
@@ -328,12 +365,8 @@ const SkillAnalysis: React.FC = () => {
         try {
           const blob = new Blob(sessionChunksRef.current, { type: 'video/webm' });
           const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `recording-${new Date().getTime()}.webm`;
-          link.click();
-          // Delay revocation slightly to ensure the download link works
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          setReviewVideoUrl(url);
+          // Auto-download is handled by a separate download button in the review modal
         } catch (e) {
           console.error("Recording download error:", e);
         }
@@ -380,8 +413,20 @@ const SkillAnalysis: React.FC = () => {
           <p className="text-slate-500 font-medium">Automatic performance loop with custom delay for instant visual feedback.</p>
         </div>
 
-        <div className="flex items-center gap-3 bg-white p-2 border-2 border-slate-900 rounded-[2rem] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]">
-          <div className="flex items-center gap-2 px-4 border-r-2 border-slate-100">
+          <div className="flex items-center gap-3 bg-white p-2 border-2 border-slate-900 rounded-[2rem] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]">
+            <button 
+              onClick={togglePlaybackSpeed}
+              className={`flex items-center gap-2 px-4 border-r-2 border-slate-100 transition-colors ${playbackSpeed < 1 ? 'text-indigo-600' : 'text-slate-400'}`}
+              title={playbackSpeed < 1 ? "Switch to Normal Speed" : "Switch to Slow Motion"}
+            >
+              <RefreshCw className={playbackSpeed < 1 ? "animate-spin-slow" : ""} size={18} />
+              <div className="flex flex-col items-start">
+                <span className="text-[10px] font-black uppercase tracking-tight">Speed</span>
+                <span className="font-black text-slate-900">{playbackSpeed}x</span>
+              </div>
+            </button>
+
+            <div className="flex items-center gap-2 px-4 border-r-2 border-slate-100">
             <Clock size={18} className="text-slate-400" />
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-tight text-slate-400">Delay</span>
@@ -486,15 +531,23 @@ const SkillAnalysis: React.FC = () => {
           </div>
 
           <div className="bg-indigo-50 p-8 rounded-[2.5rem] border-2 border-indigo-100 flex flex-col items-center text-center space-y-4">
-            <div className="w-16 h-16 bg-white rounded-2xl border-2 border-indigo-200 flex items-center justify-center shadow-lg">
-              <Share2 size={32} className="text-indigo-600" />
-            </div>
+            <button 
+              onClick={handleShare}
+              className="w-16 h-16 bg-white rounded-2xl border-2 border-indigo-200 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all group relative"
+            >
+              <Share2 size={32} className="text-indigo-600 transition-colors group-hover:text-indigo-700" />
+              {copied && (
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-1 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-full animate-bounce">
+                  Copied!
+                </div>
+              )}
+            </button>
             <div>
               <h4 className="font-black text-indigo-900 uppercase tracking-tight">Student Access</h4>
               <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest mt-1">Code: SKILL-A1</p>
             </div>
             <p className="text-sm text-indigo-800/70 font-medium">
-              Students can open this lab on their devices using the shared code.
+              Click the icon to share or copy the lab link for your students.
             </p>
           </div>
         </div>
@@ -660,6 +713,96 @@ const SkillAnalysis: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Recording Review Modal */}
+      <AnimatePresence>
+        {reviewVideoUrl && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                URL.revokeObjectURL(reviewVideoUrl);
+                setReviewVideoUrl(null);
+              }}
+              className="absolute inset-0 bg-slate-900/90 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-5xl bg-white rounded-[3rem] border-4 border-slate-900 overflow-hidden shadow-[20px_20px_0px_0px_rgba(0,0,0,0.3)]"
+            >
+              <div className="flex flex-col h-[80vh]">
+                {/* Modal Header */}
+                <div className="p-6 border-b-4 border-slate-900 flex items-center justify-between bg-white sticky top-0 z-10">
+                  <div>
+                    <h3 className="text-xl font-black uppercase tracking-tight">Review Recording</h3>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Slow-Mo Analysis Mode</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      URL.revokeObjectURL(reviewVideoUrl);
+                      setReviewVideoUrl(null);
+                    }}
+                    className="p-3 hover:bg-slate-100 rounded-2xl transition-all"
+                  >
+                    <Trash2 size={24} className="text-slate-400" />
+                  </button>
+                </div>
+
+                {/* Video Player Area */}
+                <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
+                  <video 
+                    src={reviewVideoUrl}
+                    className="max-h-full max-w-full"
+                    controls
+                    autoPlay
+                    onLoadedMetadata={(e) => {
+                      e.currentTarget.playbackRate = playbackSpeed;
+                    }}
+                  />
+                </div>
+
+                {/* Modal Footer / Controls */}
+                <div className="p-8 bg-white border-t-4 border-slate-900 flex flex-col md:flex-row items-center gap-6">
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => {
+                        const v = document.querySelector('video[src="' + reviewVideoUrl + '"]') as HTMLVideoElement;
+                        if (v) {
+                          const newRate = playbackSpeed === 1 ? 0.5 : 1;
+                          setPlaybackSpeed(newRate);
+                          v.playbackRate = newRate;
+                        }
+                      }}
+                      className={`px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all border-2 border-slate-900 ${playbackSpeed < 1 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-900'}`}
+                    >
+                      <Clock size={18} />
+                      <span>{playbackSpeed < 1 ? 'Slow Motion (0.5x)' : 'Normal Speed'}</span>
+                    </button>
+                  </div>
+
+                  <div className="flex-1 flex justify-center md:justify-end gap-4">
+                    <button 
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = reviewVideoUrl;
+                        link.download = `smartpe-analysis-${new Date().getTime()}.webm`;
+                        link.click();
+                      }}
+                      className="px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-xs border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center gap-3"
+                    >
+                      <Download size={20} />
+                      <span>Download Clip</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
