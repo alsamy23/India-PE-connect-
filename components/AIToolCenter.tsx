@@ -8,6 +8,9 @@ import {
 } from 'lucide-react';
 import { generateAIToolContent } from '../services/geminiService.ts';
 import { BoardType } from '../types.ts';
+import WeeklyPlannerTool from './WeeklyPlannerTool.tsx';
+import UnitPlannerTool from './UnitPlannerTool.tsx';
+import MoveCheckTool from './MoveCheckTool.tsx';
 
 interface Tool {
   id: string;
@@ -15,10 +18,13 @@ interface Tool {
   description: string;
   icon: any;
   color: string;
+  custom?: boolean;
 }
 
 const tools: Tool[] = [
-  { id: 'unit-planner', name: 'Unit Planner', description: 'Generate multi-week curriculum-aligned plans.', icon: Calendar, color: 'bg-blue-500' },
+  { id: 'weekly-planner', name: 'Weekly Planner Grid', description: 'Term dates, periods, classes — draft lessons to your timetable.', icon: Calendar, color: 'bg-indigo-600', custom: true },
+  { id: 'movecheck', name: 'MoveCheck AI', description: 'AI webcam rep counter and movement form checker.', icon: Dumbbell, color: 'bg-emerald-500', custom: true },
+  { id: 'unit-planner', name: 'Unit Planner', description: 'Generate comprehensive unit plans with standards alignment.', icon: FileText, color: 'bg-blue-500', custom: true },
   { id: 'rubric-maker', name: 'Rubric Maker', description: 'Assessment rubrics for any skill and age group.', icon: Layout, color: 'bg-purple-500' },
   { id: 'worksheet-maker', name: 'Worksheet Maker', description: 'Engagement worksheets and theoretical tests.', icon: FileText, color: 'bg-indigo-500' },
   { id: 'report-writer', name: 'Report Writer', description: 'Professional feedback and student report comments.', icon: FileSpreadsheet, color: 'bg-emerald-500' },
@@ -26,7 +32,6 @@ const tools: Tool[] = [
   { id: 'round-robin', name: 'Tournament Maker', description: 'Balanced schedules for teams and playing areas.', icon: Split, color: 'bg-pink-500' },
   { id: 'adapted-pe', name: 'Adapted PE', description: 'Inclusion modifications for students with disabilities.', icon: Accessibility, color: 'bg-sky-500' },
   { id: 'differentiator', name: 'Differentiated Instruction', description: 'Tailored modifications for all skill levels.', icon: Target, color: 'bg-red-500' },
-  { id: 'progression-builder', name: 'Progression Builder', description: 'Technical skill mastery pathways with cues.', icon: Dumbbell, color: 'bg-cyan-500' },
   { id: 'sports-science', name: 'Sports Science', description: 'Experiential learning connecting PE with science.', icon: Microscope, color: 'bg-yellow-500' },
   { id: 'ask-advisor', name: 'smartpeindia Advisor', description: 'Get tailored advice on any PE teaching query.', icon: MessageSquare, color: 'bg-slate-700' },
   { id: 'lesson-observer', name: 'Lesson Observator', description: 'Generate constructive peer-feedback forms.', icon: ClipboardCheck, color: 'bg-teal-500' },
@@ -63,6 +68,51 @@ const AIToolCenter: React.FC = () => {
   };
 
   if (selectedTool) {
+    if (selectedTool.id === 'weekly-planner') {
+      return (
+        <div className="space-y-6">
+          <button 
+            onClick={() => setSelectedTool(null)}
+            className="flex items-center space-x-2 text-slate-400 hover:text-indigo-600 font-bold uppercase tracking-widest text-xs transition-colors"
+          >
+            <ChevronLeft size={16} />
+            <span>Back to Tool Center</span>
+          </button>
+          <WeeklyPlannerTool />
+        </div>
+      );
+    }
+    
+    if (selectedTool.id === 'movecheck') {
+      return (
+        <div className="space-y-6">
+          <button 
+            onClick={() => setSelectedTool(null)}
+            className="flex items-center space-x-2 text-slate-400 hover:text-indigo-600 font-bold uppercase tracking-widest text-xs transition-colors"
+          >
+            <ChevronLeft size={16} />
+            <span>Back to Tool Center</span>
+          </button>
+          <MoveCheckTool />
+        </div>
+      );
+    }
+
+    if (selectedTool.id === 'unit-planner') {
+      return (
+        <div className="space-y-6">
+          <button 
+            onClick={() => setSelectedTool(null)}
+            className="flex items-center space-x-2 text-slate-400 hover:text-indigo-600 font-bold uppercase tracking-widest text-xs transition-colors"
+          >
+            <ChevronLeft size={16} />
+            <span>Back to Tool Center</span>
+          </button>
+          <UnitPlannerTool />
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-8 animate-in slide-in-from-right-10 duration-500 pb-20">
         <button 
