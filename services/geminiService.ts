@@ -477,6 +477,68 @@ export const generateTheoryContent = async (grade: string, topic: string, board:
   return safeParseJson(response.text || response);
 };
 
+export const generateGamesRubric = async (
+  sport: string,
+  totalMarks: number,
+  numSkills: number,
+  components: string[]
+) => {
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      title: { type: "STRING" },
+      overallSummary: { type: "STRING" },
+      skills: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            name: { type: "STRING" },
+            maxMarks: { type: "NUMBER" },
+            criteria: {
+              type: "ARRAY",
+              items: { type: "STRING" }
+            }
+          }
+        }
+      },
+      additionalComponents: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            name: { type: "STRING" },
+            marks: { type: "NUMBER" },
+            description: { type: "STRING" }
+          }
+        }
+      }
+    }
+  };
+
+  const marksPerSkill = numSkills > 0 ? (totalMarks / numSkills) : 0;
+  const prompt = `Create a CBSE-aligned Physical Education Practical Assessment Rubric for proficiency in ${sport}.
+The total marks allocated for the Game/Sport proficiency section is ${totalMarks}.
+We need to assess exactly ${numSkills} specific skills for ${sport}. 
+Therefore, each skill should be graded out of exactly ${marksPerSkill} marks.
+
+Include the following additional assessment components with standard nominal marks: ${components.join(', ')}.
+
+Provide a structured output matching the schema:`;
+
+  const response = await callAIBase({
+    model: 'gemini-1.5-flash',
+    contents: prompt,
+    config: {
+      thinkingConfig: { thinkingLevel: "LOW" },
+      responseMimeType: "application/json",
+      responseSchema: schema
+    }
+  });
+
+  return safeParseJson(response.text || response);
+};
+
 export const generateAIToolContent = async (toolId: string, params: any) => {
   const schema = {
     type: "OBJECT",

@@ -91,8 +91,8 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
     objective: 'Basic motor skills & coordination',
     tests: [
       { id: 'bmi', name: 'BMI (Height & Weight)', unit: 'kg/m²', description: 'Body Mass Index calculation.' },
-      { id: 'flamingo', name: 'Flamingo Balance Test', unit: 'seconds', description: 'Stand on one leg for as long as possible.' },
-      { id: 'plate_tapping', name: 'Plate Tapping Test', unit: 'seconds', description: 'Hand speed and coordination test.' },
+      { id: 'flamingo', name: 'Flamingo Balance Test', unit: 'count', description: 'Number of falls in 60 seconds.' },
+      { id: 'plate_tapping', name: 'Plate Tapping Test', unit: 'count', description: 'Number of taps in 30 seconds.' },
       { id: 'sit_reach', name: 'Sit and Reach Test', unit: 'cm', description: 'Lower back and hamstring flexibility.' },
       { id: 'shuttle_run', name: 'Shuttle Run (4x10m)', unit: 'seconds', description: 'Agility and coordination test.' }
     ]
@@ -103,8 +103,8 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
     objective: 'Introduce fitness components',
     tests: [
       { id: 'bmi', name: 'BMI', unit: 'kg/m²', description: 'Body Mass Index.' },
-      { id: 'flamingo', name: 'Flamingo Balance', unit: 'seconds', description: 'Balance test.' },
-      { id: 'plate_tapping', name: 'Plate Tapping', unit: 'seconds', description: 'Hand speed.' },
+      { id: 'flamingo', name: 'Flamingo Balance', unit: 'count', description: 'Number of falls in 60 seconds.' },
+      { id: 'plate_tapping', name: 'Plate Tapping', unit: 'count', description: 'Number of taps in 30 seconds.' },
       { id: 'sit_reach', name: 'Sit & Reach', unit: 'cm', description: 'Flexibility.' },
       { id: 'broad_jump', name: 'Standing Broad Jump', unit: 'cm', description: 'Leg power.' },
       { id: 'sprint_50m', name: '50m Sprint', unit: 'seconds', description: 'Speed test.' }
@@ -134,8 +134,8 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
       { id: 'broad_jump', name: 'Standing Broad Jump', unit: 'cm', description: 'Power.' },
       { id: 'sit_reach', name: 'Sit & Reach', unit: 'cm', description: 'Flexibility.' },
       { id: 'shuttle_4x10', name: '4×10m Shuttle Run', unit: 'seconds', description: 'Agility.' },
-      { id: 'pushups', name: 'Push-Ups / Modified Push-Ups', unit: 'reps', description: 'Strength (Boys: Standard, Girls: Modified).' },
-      { id: 'curl_ups', name: 'Partial Curl-Ups', unit: 'reps', description: 'Core strength.' }
+      { id: 'pushups', name: 'Push-Ups / Modified Push-Ups', unit: 'count', description: 'Strength (Boys: Standard, Girls: Modified).' },
+      { id: 'curl_ups', name: 'Partial Curl-Ups', unit: 'count', description: 'Core strength.' }
     ]
   },
   {
@@ -149,8 +149,8 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
       { id: 'broad_jump', name: 'Standing Broad Jump', unit: 'cm', description: 'Power.' },
       { id: 'sit_reach', name: 'Sit & Reach', unit: 'cm', description: 'Flexibility.' },
       { id: 'shuttle_run', name: 'Shuttle Run', unit: 'seconds', description: 'Agility.' },
-      { id: 'pushups', name: 'Push-Ups', unit: 'reps', description: 'Strength.' },
-      { id: 'curl_ups', name: 'Curl-Ups', unit: 'reps', description: 'Core strength.' }
+      { id: 'pushups', name: 'Push-Ups', unit: 'count', description: 'Strength.' },
+      { id: 'curl_ups', name: 'Curl-Ups', unit: 'count', description: 'Core strength.' }
     ]
   }
 ];

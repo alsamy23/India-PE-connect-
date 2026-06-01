@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Heart, 
   Zap, 
@@ -18,17 +18,20 @@ import {
   Trophy,
   History,
   Activity,
-  Save
+  Save,
+  Gamepad2
 } from 'lucide-react';
 import { evaluateFitnessTests } from '../services/geminiService.ts';
 import { FitnessAssessment, KIFTBattery, KIFTTest } from '../types.ts';
 import { storageService } from '../services/storageService.ts';
 import { fitnessService, Student, KIFT_BATTERIES } from '../services/fitnessService.ts';
 import { auth } from '../services/firebase.ts';
-import { useEffect } from 'react';
+import GamesProficiencyGenerator from './GamesProficiencyGenerator.tsx';
 
 const FitnessTests: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'fitness' | 'games'>('fitness');
   const [selectedBattery, setSelectedBattery] = useState<KIFTBattery | null>(null);
+
   const [selectedTest, setSelectedTest] = useState<KIFTTest | null>(null);
   const [age, setAge] = useState('10');
   const [gender, setGender] = useState('Male');
@@ -244,32 +247,58 @@ const FitnessTests: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in pb-20">
-      {/* School Setup Warning */}
-      {!userProfile?.schoolId && (
-        <div className="bg-orange-50 border-2 border-orange-100 p-6 rounded-[2rem] flex items-start gap-4">
-          <AlertCircle className="text-orange-600 flex-shrink-0" size={24} />
-          <div>
-            <h4 className="font-black text-orange-900 uppercase tracking-tight mb-1 text-sm">School Profile Required</h4>
-            <p className="text-orange-700/70 text-xs font-medium leading-relaxed">
-              To save fitness results, you must first register your school in the <strong className="text-orange-900">School Admin</strong> tab. 
-              Currently, results can only be analyzed but not saved to the permanent database.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="bg-indigo-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-        <div className="relative z-10 max-w-2xl">
-          <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter">KIFT Testing Suite</h2>
-          <p className="text-indigo-200 text-lg font-medium leading-relaxed">
-            Khelo India Fitness Test (CBSE Format). Standardized batteries for Primary to Senior Secondary grades.
-          </p>
-        </div>
-        <Trophy className="absolute right-[-20px] bottom-[-40px] w-64 h-64 text-white/10 rotate-12" />
+      {/* Top Level Nav toggle */}
+      <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit mb-8 shadow-inner border border-slate-200/60">
+        <button 
+          onClick={() => setActiveTab('fitness')}
+          className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all ${
+            activeTab === 'fitness' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Activity size={16} />
+          <span>KIFT Fitness Logs</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('games')}
+          className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all ${
+            activeTab === 'games' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Gamepad2 size={16} />
+          <span>Games Proficiency</span>
+        </button>
       </div>
 
-      {!selectedBattery ? (
+      {activeTab === 'games' ? (
+        <GamesProficiencyGenerator students={students} userProfile={userProfile} />
+      ) : (
+        <div className="space-y-8">
+          {/* School Setup Warning */}
+          {!userProfile?.schoolId && (
+            <div className="bg-orange-50 border-2 border-orange-100 p-6 rounded-[2rem] flex items-start gap-4">
+              <AlertCircle className="text-orange-600 flex-shrink-0" size={24} />
+              <div>
+                <h4 className="font-black text-orange-900 uppercase tracking-tight mb-1 text-sm">School Profile Required</h4>
+                <p className="text-orange-700/70 text-xs font-medium leading-relaxed">
+                  To save fitness results, you must first register your school in the <strong className="text-orange-900">School Admin</strong> tab. 
+                  Currently, results can only be analyzed but not saved to the permanent database.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Header */}
+          <div className="bg-indigo-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+            <div className="relative z-10 max-w-2xl">
+              <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter">KIFT Testing Suite</h2>
+              <p className="text-indigo-200 text-lg font-medium leading-relaxed">
+                Khelo India Fitness Test (CBSE Format). Standardized batteries for Primary to Senior Secondary grades.
+              </p>
+            </div>
+            <Trophy className="absolute right-[-20px] bottom-[-40px] w-64 h-64 text-white/10 rotate-12" />
+          </div>
+
+          {!selectedBattery ? (
         /* Batteries Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {KIFT_BATTERIES.map((battery) => (
@@ -535,7 +564,9 @@ const FitnessTests: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+     </div>
+    )}
+  </div>
   );
 };
 

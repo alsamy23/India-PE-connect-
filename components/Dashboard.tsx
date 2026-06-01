@@ -81,8 +81,8 @@ const Dashboard: React.FC<{
       <section className="bg-slate-900 text-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 shadow-2xl relative overflow-hidden border-4 border-slate-900">
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] -mr-48 -mt-48"></div>
         <div className="relative z-10 space-y-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-            <div className="space-y-3">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 xl:gap-12">
+            <div className="space-y-3 lg:max-w-sm xl:max-w-lg">
               <div className="inline-flex items-center px-4 py-1.5 bg-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest">Interactive Onboarding</div>
               <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight leading-[1.1]">
                 New here? Your first <br/>
@@ -93,7 +93,7 @@ const Dashboard: React.FC<{
               </p>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 max-w-4xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 flex-1 w-full">
               {[
                 { step: '01', title: 'Pick topic', desc: 'Select any sport or curriculum target.', tab: 'planner' },
                 { step: '02', title: 'AI drafts plan', desc: 'AI creates fully custom syllabus.', tab: 'planner' },
@@ -103,12 +103,12 @@ const Dashboard: React.FC<{
                 <button 
                   key={i}
                   onClick={() => onNavigate?.(item.tab)}
-                  className="flex flex-col justify-between p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#FF6B00] hover:bg-white/10 transition-all text-left group"
+                  className="flex flex-col justify-between p-5 lg:p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-[#FF6B00] hover:bg-white/10 transition-all text-left group"
                 >
-                  <div className="text-3xl font-black text-indigo-505 mb-4 text-[#005BFF] group-hover:text-[#FF6B00] transition-colors">{item.step}</div>
+                  <div className="text-3xl lg:text-4xl font-black text-[#005BFF] mb-4 group-hover:text-[#FF6B00] transition-colors">{item.step}</div>
                   <div>
-                    <h4 className="text-[11px] font-black uppercase tracking-wider text-white mb-1">{item.title}</h4>
-                    <p className="text-[10px] text-slate-400 leading-snug font-medium">{item.desc}</p>
+                    <h4 className="text-xs lg:text-sm font-black uppercase tracking-wider text-white mb-2">{item.title}</h4>
+                    <p className="text-[11px] lg:text-xs text-slate-400 leading-relaxed font-medium">{item.desc}</p>
                   </div>
                 </button>
               ))}
