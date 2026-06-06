@@ -33,6 +33,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { storageService, SavedItem } from '../services/storageService.ts';
 import Logo from './Logo.tsx';
+import { WeeklyCalendarView } from './WeeklyCalendarView.tsx';
 
 const data = [
   { name: 'Mon', connections: 4 },
@@ -146,6 +147,11 @@ const Dashboard: React.FC<{
             <p className="text-xs font-black uppercase">Record scores for 7B</p>
           </div>
         </div>
+      </section>
+
+      {/* Weekly PE Timetable & Calendar */}
+      <section className="relative">
+        <WeeklyCalendarView />
       </section>
 
       {/* Split Hero Section */}

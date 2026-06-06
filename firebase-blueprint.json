@@ -109,6 +109,25 @@
         "type": { "type": "string" }
       },
       "required": ["message", "timestamp", "type"]
+    },
+    "DepartmentWorkload": {
+      "title": "DepartmentWorkload",
+      "description": "PE Teacher Workload & Curriculum suggestions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "curriculum": { "type": "string" },
+        "termsCount": { "type": "number" },
+        "periodsCount": { "type": "number" },
+        "assignedGrades": { "type": "string" },
+        "primaryGames": { "type": "array" },
+        "timetableData": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "schoolId", "teacherId", "teacherName", "curriculum", "termsCount", "periodsCount"]
     }
   },
   "firestore": {
@@ -118,6 +137,7 @@
     "/students/{studentId}": { "schema": "Student", "description": "Student records" },
     "/teams/{teamId}": { "schema": "Team", "description": "Class/Team records" },
     "/results/{resultId}": { "schema": "FitnessResult", "description": "Test results" },
-    "/system_logs/{logId}": { "schema": "AppErrorLog", "description": "Remote application logs" }
+    "/system_logs/{logId}": { "schema": "AppErrorLog", "description": "Remote application logs" },
+    "/workloads/{workloadId}": { "schema": "DepartmentWorkload", "description": "Teacher workload schedules and curriculum setups" }
   }
 }

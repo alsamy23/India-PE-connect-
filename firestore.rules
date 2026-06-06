@@ -238,6 +238,12 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
+    match /workloads/{workloadId} {
+      allow read: if isAuthenticated() && (resource == null || isSchoolMember(resource.data.schoolId));
+      allow create, update: if isAuthenticated() && isSchoolMember(request.resource.data.schoolId);
+      allow delete: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && isSchoolAdmin(resource.data.schoolId);
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

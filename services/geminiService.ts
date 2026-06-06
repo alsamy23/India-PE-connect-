@@ -333,27 +333,33 @@ export const generateYearlyPlan = async (
     Grade: ${grade}, Board: ${board}, Language: ${language}. 
     Cycle: Indian Academic Session (April to March).
     Start Month: April. End Month: March.
-    Primary Games: ${term1Focus} and ${term2Focus}.
+    Term 1 Focus Game/Activities: "${term1Focus}".
+    Term 2 Focus Game/Activities: "${term2Focus}".
     Additional Holidays/Calendar: ${safeCalendarText}`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
-      systemInstruction: `You are a Senior PE Director in an Indian school. 
+      systemInstruction: `You are a Senior Physical Education Director in a premium school following CBSE/national guidelines. 
       Generate a strictly valid JSON following the Indian academic cycle (APRIL to MARCH).
       
       STRUCTURE:
       - Term 1: April to September.
       - Term 2: October to March.
       
+      STRICT TERM-WIDE FOCAL PURITY (MANDATORY NO-MIX RULE):
+      - Term 1 (April to September) MUST focus EXCLUSIVELY on "${term1Focus}" and standard physical fitness tests (like CBSE Khelo India Battery). Under NO circumstance should you mix in or refer to "${term2Focus}".
+      - Term 2 (October to March) MUST focus EXCLUSIVELY on "${term2Focus}" and relevant assessments/rules. Under NO circumstance should you mix in or refer to "${term1Focus}".
+      - Keep each Term's lessons purely dedicated to its designated focus game. For example, if Basketball is selected for Term 1, weeks in Term 1 should be purely structured around basketball skills (dribbling, passing, layup, rules, assessments) and fitness, not mixing in football or other unselected sports.
+      
       CALENDAR CONSTRAINTS:
       - May: Mark as 'Holiday' for at least 3-4 weeks (Summer Break).
       - December: Mark as 'Holiday' for at least 1-2 weeks (Winter Break).
-      - March: Usually focused on 'Exam' or 'Revision'.
+      - March: Focus on revision and 'Exam'.
       
       WEEKLY CONTENT:
-      - Each month MUST have 4 weeks.
-      - 'topic': Name of the skill or game (e.g., Football - Passing).
-      - 'details': Include a "How-to" or technical description of the skill (e.g., "Passing: Use inside of foot, keep non-kicking foot beside ball").
-      - Ensure a logical progression of skills.
+      - Each month MUST have exactly 4 weeks.
+      - 'topic': Name of the specific skill, sport, or assessment (e.g., "${term1Focus} - Chest Pass" or "${term1Focus} - Physical Fitness Assessment").
+      - 'details': Include specific skills, assessment parameters, how-to coaching points, and physical technical details (e.g., "Coaching points: Knees slightly bent, release the ball from chest, hands push outwards"). Make it highly professional and syllabus-aligned.
+      - Ensure logical skill progressions (Intro, Basic Skills, Advanced Skills, Game Tactics, and Assessments).
       
       TRANSFERS: Translate all Topic and Details to ${language}.`,
       responseMimeType: "application/json",
