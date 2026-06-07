@@ -233,7 +233,7 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
         };
       } else if (selectedType === 'class') {
         const team = teams.find(t => t.id === selectedId);
-        const teamStudents = students.filter(s => team?.studentIds.includes(s.id));
+        const teamStudents = team?.studentIds ? students.filter(s => team.studentIds.includes(s.id)) : [];
         const teamResults = results.filter(r => teamStudents.some(s => s.id === r.studentId));
         
         // Distribution of tests
@@ -898,47 +898,49 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                       )}
 
                       {/* Grade Analysis Section */}
-                      <div className="space-y-6">
-                        <h4 className="font-black text-xl uppercase tracking-tight flex items-center gap-2">
-                          <BarChart3 size={20} className="text-indigo-600" />
-                          <span>Performance by Grade</span>
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {Object.entries(reportData.gradeStats).map(([grade, stats]: [string, any]) => {
-                            const needsFix = reportData.focusGrades.includes(grade);
-                            return (
-                              <div key={grade} className={`p-6 rounded-3xl border-2 transition-all ${
-                                needsFix ? 'bg-orange-50 border-orange-200' : 'bg-white border-slate-100'
-                              }`}>
-                                <div className="flex justify-between items-start mb-4">
-                                  <h5 className="font-black text-lg uppercase tracking-tight">Grade {grade}</h5>
-                                  {needsFix && (
-                                    <span className="px-2 py-1 bg-orange-200 text-orange-700 text-[8px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1">
-                                      <Info size={10} />
-                                      Focus Needed
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="space-y-2">
-                                  <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    <span>Avg Score</span>
-                                    <span className={needsFix ? 'text-orange-600' : 'text-slate-900'}>{stats.avg.toFixed(1)}</span>
+                      {selectedType === 'school' && reportData.gradeStats && (
+                        <div className="space-y-6">
+                          <h4 className="font-black text-xl uppercase tracking-tight flex items-center gap-2">
+                            <BarChart3 size={20} className="text-indigo-600" />
+                            <span>Performance by Grade</span>
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {Object.entries(reportData.gradeStats).map(([grade, stats]: [string, any]) => {
+                              const needsFix = reportData.focusGrades?.includes(grade);
+                              return (
+                                <div key={grade} className={`p-6 rounded-3xl border-2 transition-all ${
+                                  needsFix ? 'bg-orange-50 border-orange-200' : 'bg-white border-slate-100'
+                                }`}>
+                                  <div className="flex justify-between items-start mb-4">
+                                    <h5 className="font-black text-lg uppercase tracking-tight">Grade {grade}</h5>
+                                    {needsFix && (
+                                      <span className="px-2 py-1 bg-orange-200 text-orange-700 text-[8px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1">
+                                        <Info size={10} />
+                                        Focus Needed
+                                      </span>
+                                    )}
                                   </div>
-                                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div 
-                                      className={`h-full rounded-full ${needsFix ? 'bg-orange-500' : 'bg-indigo-600'}`}
-                                      style={{ width: `${Math.min(stats.avg, 100)}%` }}
-                                    />
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                      <span>Avg Score</span>
+                                      <span className={needsFix ? 'text-orange-600' : 'text-slate-900'}>{stats.avg?.toFixed(1) || '0.0'}</span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                      <div 
+                                        className={`h-full rounded-full ${needsFix ? 'bg-orange-500' : 'bg-indigo-600'}`}
+                                        style={{ width: `${Math.min(stats.avg || 0, 100)}%` }}
+                                      />
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-2">
+                                      {stats.results || 0} assessments completed
+                                    </p>
                                   </div>
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-2">
-                                    {stats.results} assessments completed
-                                  </p>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Test counts */}
                       <div className="space-y-6 pt-6">

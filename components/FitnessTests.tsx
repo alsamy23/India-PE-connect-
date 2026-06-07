@@ -42,6 +42,8 @@ const FitnessTests: React.FC = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState('ALL');
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [selectedTerm, setSelectedTerm] = useState('Baseline');
   const [userProfile, setUserProfile] = useState<any>(null);
 
@@ -245,6 +247,28 @@ const FitnessTests: React.FC = () => {
     }
   };
 
+  // Get unique grades for the filter dropdown
+  const uniqueGrades = Array.from(new Set(students.map(s => s.grade)))
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+  // Filter students based on grade filter and search query
+  const filteredStudentsForSelect = students.filter(s => {
+    const matchesGrade = !selectedGradeFilter || selectedGradeFilter === 'ALL' || s.grade === selectedGradeFilter;
+    const matchesSearch = !studentSearchQuery || s.name.toLowerCase().includes(studentSearchQuery.toLowerCase());
+    return matchesGrade && matchesSearch;
+  });
+
+  // Ensure currently selected student is always presented in the dropdown so a user doesn't see a broken dropdown when changing filters
+  const isSelectedInFiltered = filteredStudentsForSelect.some(s => s.id === selectedStudentId);
+  const finalStudentsList = [...filteredStudentsForSelect];
+  if (selectedStudentId && !isSelectedInFiltered) {
+    const currentStudent = students.find(s => s.id === selectedStudentId);
+    if (currentStudent) {
+      finalStudentsList.unshift(currentStudent);
+    }
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in pb-20">
       {/* Top Level Nav toggle */}
@@ -384,6 +408,36 @@ const FitnessTests: React.FC = () => {
                   {/* Input Card */}
                   <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <div className="mb-8">
+                      {/* Search Bar & Class Filter Controls */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Filter by Class / Grade</label>
+                          <select 
+                            className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-700"
+                            value={selectedGradeFilter}
+                            onChange={e => setSelectedGradeFilter(e.target.value)}
+                          >
+                            <option value="ALL">All Classes / Grades</option>
+                            {uniqueGrades.map(g => (
+                              <option key={g} value={g}>{g}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Search Student Name</label>
+                          <div className="relative">
+                            <input 
+                              type="text"
+                              placeholder="Search by name..."
+                              className="w-full p-4 pl-12 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-700"
+                              value={studentSearchQuery}
+                              onChange={e => setStudentSearchQuery(e.target.value)}
+                            />
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-sans text-sm select-none">🔍</span>
+                          </div>
+                        </div>
+                      </div>
+
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Link to Registered Student</label>
                       <select 
                         className={`w-full p-4 border-2 rounded-2xl font-bold outline-none transition-all ${
@@ -395,7 +449,7 @@ const FitnessTests: React.FC = () => {
                         onChange={e => handleStudentChange(e.target.value)}
                       >
                         <option value="">Manual Entry (Not Linked)</option>
-                        {students.map(s => (
+                        {finalStudentsList.map(s => (
                           <option key={s.id} value={s.id}>{s.name} (Grade {s.grade} {s.section})</option>
                         ))}
                       </select>
