@@ -11,6 +11,7 @@ import { BoardType } from '../types.ts';
 import WeeklyPlannerTool from './WeeklyPlannerTool.tsx';
 import UnitPlannerTool from './UnitPlannerTool.tsx';
 import MoveCheckTool from './MoveCheckTool.tsx';
+import TournamentMaker from './TournamentMaker.tsx';
 
 interface Tool {
   id: string;
@@ -29,7 +30,7 @@ const tools: Tool[] = [
   { id: 'worksheet-maker', name: 'Worksheet Maker', description: 'Engagement worksheets and theoretical tests.', icon: FileText, color: 'bg-indigo-500' },
   { id: 'report-writer', name: 'Report Writer', description: 'Professional feedback and student report comments.', icon: FileSpreadsheet, color: 'bg-emerald-500' },
   { id: 'game-generator', name: 'PE Games Generator', description: '5 skill-specific games for your class.', icon: Gamepad2, color: 'bg-orange-500' },
-  { id: 'round-robin', name: 'Tournament Maker', description: 'Balanced schedules for teams and playing areas.', icon: Split, color: 'bg-pink-500' },
+  { id: 'round-robin', name: 'Tournament Maker', description: 'Balanced schedules for teams and playing areas.', icon: Split, color: 'bg-pink-500', custom: true },
   { id: 'adapted-pe', name: 'Adapted PE', description: 'Inclusion modifications for students with disabilities.', icon: Accessibility, color: 'bg-sky-500' },
   { id: 'differentiator', name: 'Differentiated Instruction', description: 'Tailored modifications for all skill levels.', icon: Target, color: 'bg-red-500' },
   { id: 'sports-science', name: 'Sports Science', description: 'Experiential learning connecting PE with science.', icon: Microscope, color: 'bg-yellow-500' },
@@ -109,6 +110,21 @@ const AIToolCenter: React.FC = () => {
             <span>Back to Tool Center</span>
           </button>
           <UnitPlannerTool />
+        </div>
+      );
+    }
+
+    if (selectedTool.id === 'round-robin') {
+      return (
+        <div className="space-y-6">
+          <button 
+            onClick={() => setSelectedTool(null)}
+            className="flex items-center space-x-2 text-slate-400 hover:text-indigo-600 font-bold uppercase tracking-widest text-xs transition-colors"
+          >
+            <ChevronLeft size={16} />
+            <span>Back to Tool Center</span>
+          </button>
+          <TournamentMaker />
         </div>
       );
     }

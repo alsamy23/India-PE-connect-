@@ -60,33 +60,67 @@
 }
 
 @media print {
-  @page {
-    margin: 2cm;
-    size: auto;
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   body {
     background: white !important;
     padding: 0 !important;
     margin: 0 !important;
+    color: #0f172a !important;
   }
 
-  /* Hide navigation, sidebars and headers */
+  /* CRITICAL: Overwrite scroll containment of App layout blocks to allow printing over multiple pages */
+  html, body, #root, .min-h-screen, main, [class*="overflow-hidden"], [class*="h-screen"] {
+    height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+    display: block !important;
+    min-height: 0 !important;
+  }
+
+  /* Hide navigation, sidebars, headers and interactive buttons */
   .no-print,
   nav,
   header,
   aside,
   button,
-  .disclaimer-banner {
+  .disclaimer-banner,
+  .no-print-area {
     display: none !important;
   }
 
-  /* Ensure the main content stretches */
+  /* Ensure the main content stretches and remains visible */
   main {
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
     overflow: visible !important;
+  }
+
+  /* Target bracket print specifically with full visibility */
+  .print-bracket-canvas {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Prevent page-break cutting within individual match nodes or info cards */
+  .print-bracket-canvas > div,
+  .print-bracket-canvas table,
+  .print-bracket-canvas tr,
+  .print-bracket-canvas .bg-slate-50,
+  .print-bracket-canvas .bg-pink-50,
+  .print-bracket-canvas .rounded-xl {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   /* Target the letter container specifically if needed */
@@ -96,5 +130,48 @@
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
+  }
+}
+
+/* Specific Page & Zoom Adjustments based on Printer Orientation */
+@media print and (orientation: portrait) {
+  @page {
+    size: A4 portrait;
+    margin: 0.8cm !important;
+  }
+  
+  /* Scale down the entire bracket wrapper to fit perfectly onto A4 Portrait layout */
+  .print-bracket-canvas {
+    transform: scale(0.68) !important;
+    transform-origin: top center !important;
+    margin: 0 auto !important;
+    /* Negative margin to pull upcoming documents upward because of scale container collapse */
+    margin-bottom: -15% !important;
+  }
+}
+
+@media print and (orientation: landscape) {
+  @page {
+    size: A4 landscape;
+    margin: 0.8cm !important;
+  }
+
+  /* Landscape mode is wider, so we scale it down less, using full width gracefully */
+  .print-bracket-canvas {
+    transform: scale(0.88) !important;
+    transform-origin: top center !important;
+    margin: 0 auto !important;
+    /* Negative margin to handle scale collapse */
+    margin-bottom: -8% !important;
+    width: 100% !important;
+  }
+
+  /* Force tournament rounds to align in a pristine row for side-by-side progression */
+  .print-bracket-canvas [class*="md:flex-row"] {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: stretch !important;
+    gap: 1.5rem !important;
   }
 }
