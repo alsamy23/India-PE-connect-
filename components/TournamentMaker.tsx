@@ -426,24 +426,33 @@ const TournamentMaker: React.FC = () => {
       const oldStyle = document.getElementById('dynamic-print-style');
       if (oldStyle) oldStyle.remove();
 
+      const estimatedUnscaledHeight = bracketHeight + (hideFormulaBoardInPrint ? 0 : 220) + (thirdPlaceMatch ? 180 : 0) + 120;
+      const verticalCompensationValue = Math.round(estimatedUnscaledHeight * (1 - printScale / 100));
+
       // Create custom page-size and CSS transform styles matching A4 or A3 selection
       const style = document.createElement('style');
       style.id = 'dynamic-print-style';
       style.innerHTML = `
         @media print {
+          html, body {
+            overflow: hidden !important;
+            height: 100% !important;
+          }
           @page {
             size: ${printPageSize.toLowerCase()} ${printOrientation.toLowerCase()};
             margin: 0.5cm !important;
           }
           .print-bracket-canvas {
             transform: scale(${printScale / 100}) !important;
-            transform-origin: top center !important;
-            margin: 0 auto !important;
-            margin-bottom: -${Math.max(0, 100 - printScale) * 0.45}% !important;
+            transform-origin: top left !important;
+            margin: 0 !important;
+            margin-bottom: -${verticalCompensationValue}px !important;
             width: ${100 / (printScale / 100)}% !important;
             max-width: none !important;
             overflow: visible !important;
             --conn-width: 16px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           ${hideFormulaBoardInPrint ? '.print-hide-formula { display: none !important; }' : ''}
           ${hideRosterInPrint ? '.print-hide-roster { display: none !important; }' : ''}
@@ -478,6 +487,9 @@ const TournamentMaker: React.FC = () => {
     // CRITICAL: Use outerHTML to capture the parent wrapper div along with its classes (.print-bracket-canvas)
     const printContent = printAreaRef.current ? printAreaRef.current.outerHTML : '';
     
+    const estimatedUnscaledHeight = bracketHeight + (hideFormulaBoardInPrint ? 0 : 220) + (thirdPlaceMatch ? 180 : 0) + 120;
+    const verticalCompensationValue = Math.round(estimatedUnscaledHeight * (1 - printScale / 100));
+
     // Construct self-contained page with modern tailwind support and manual printer trigger
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -508,6 +520,10 @@ const TournamentMaker: React.FC = () => {
             
             /* Print rules */
             @media print {
+              html, body {
+                overflow: hidden !important;
+                height: 100% !important;
+              }
               body { 
                 padding: 0 !important; 
                 background: white !important;
@@ -524,14 +540,16 @@ const TournamentMaker: React.FC = () => {
                 border: none !important;
                 box-shadow: none !important;
                 padding: 0 !important;
-                margin: 0 auto !important;
+                margin: 0 !important;
                 width: ${100 / (printScale / 100)}% !important;
                 max-width: none !important;
                 transform: scale(${printScale / 100}) !important;
-                transform-origin: top center !important;
-                margin-bottom: -${Math.max(0, 100 - printScale) * 0.45}% !important;
+                transform-origin: top left !important;
+                margin-bottom: -${verticalCompensationValue}px !important;
                 overflow: visible !important;
                 --conn-width: 16px !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
               }
 
               .print-bracket-canvas > div,
