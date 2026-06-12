@@ -251,10 +251,10 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
                 </div>
               ) : (
                 results.slice(0, 10).map((result) => (
-                  <button 
+                  <div 
                     key={result.id} 
                     onClick={() => onSelectStudent?.(result.studentId)}
-                    className="w-full p-6 hover:bg-slate-50 transition-colors flex items-center justify-between group text-left border-none"
+                    className="w-full p-6 hover:bg-slate-50 transition-colors flex items-center justify-between group text-left border-none cursor-pointer"
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-black">
@@ -286,7 +286,7 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
                          <ChevronRight size={20} className="text-slate-200 group-hover:text-indigo-600 transition-colors" />
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))
               )}
             </div>

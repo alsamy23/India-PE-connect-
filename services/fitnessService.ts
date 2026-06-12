@@ -382,43 +382,49 @@ export const fitnessService = {
 
   subscribeToResults: (teacherId: string, schoolId: string | undefined, isAdmin: boolean, callback: (results: FitnessResult[]) => void) => {
     let q;
+    const effectiveSchoolId = schoolId || `personal_${teacherId}`;
     if (auth.currentUser?.email === 'alsamy36@gmail.com') {
       q = query(
         collection(db, 'results'),
-        orderBy('date', 'desc'),
         limit(100)
       );
-    } else if (isAdmin && schoolId) {
+    } else if (isAdmin) {
       q = query(
         collection(db, 'results'),
-        where('schoolId', '==', schoolId),
-        orderBy('date', 'desc'),
+        where('schoolId', '==', effectiveSchoolId),
         limit(100)
       );
     } else {
       q = query(
         collection(db, 'results'),
+        where('schoolId', '==', effectiveSchoolId),
         where('teacherId', '==', teacherId),
-        orderBy('date', 'desc'),
         limit(100)
       );
     }
     return onSnapshot(q, (snapshot: any) => {
-      callback(snapshot.docs.map((doc: any) => doc.data() as FitnessResult));
+      const results = snapshot.docs.map((doc: any) => doc.data() as FitnessResult);
+      // Sort locally by date desc
+      results.sort((a: FitnessResult, b: FitnessResult) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      callback(results);
     }, (error: any) => {
       console.error("Firestore Error:", error);
       logError(error, 'error', { context: 'Results subscription failed' });
     });
   },
 
-  subscribeToStudentResults: (studentId: string, callback: (results: FitnessResult[]) => void) => {
+  subscribeToStudentResults: (studentId: string, schoolId: string | undefined, callback: (results: FitnessResult[]) => void) => {
+    const effectiveSchoolId = schoolId || (auth.currentUser ? `personal_${auth.currentUser.uid}` : '');
     const q = query(
       collection(db, 'results'),
-      where('studentId', '==', studentId),
-      orderBy('date', 'desc')
+      where('schoolId', '==', effectiveSchoolId),
+      where('studentId', '==', studentId)
     );
     return onSnapshot(q, (snapshot: any) => {
-      callback(snapshot.docs.map((doc: any) => doc.data() as FitnessResult));
+      const results = snapshot.docs.map((doc: any) => doc.data() as FitnessResult);
+      // Sort locally by date desc
+      results.sort((a: FitnessResult, b: FitnessResult) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      callback(results);
     }, (error: any) => {
       console.error("Firestore Error in student results subscription:", error);
       logError(error, 'error', { context: 'Student results subscription failed', studentId });
@@ -427,12 +433,13 @@ export const fitnessService = {
 
   subscribeToStudents: (teacherId: string, schoolId: string | undefined, isAdmin: boolean, callback: (students: Student[]) => void) => {
     let q;
+    const effectiveSchoolId = schoolId || `personal_${teacherId}`;
     if (auth.currentUser?.email === 'alsamy36@gmail.com') {
       q = query(collection(db, 'students'));
-    } else if (isAdmin && schoolId) {
-      q = query(collection(db, 'students'), where('schoolId', '==', schoolId));
+    } else if (isAdmin) {
+      q = query(collection(db, 'students'), where('schoolId', '==', effectiveSchoolId));
     } else {
-      q = query(collection(db, 'students'), where('teacherId', '==', teacherId));
+      q = query(collection(db, 'students'), where('schoolId', '==', effectiveSchoolId), where('teacherId', '==', teacherId));
     }
     return onSnapshot(q, (snapshot: any) => {
       callback(snapshot.docs.map((doc: any) => doc.data() as Student));
@@ -444,12 +451,13 @@ export const fitnessService = {
 
   subscribeToTeams: (teacherId: string, schoolId: string | undefined, isAdmin: boolean, callback: (teams: Team[]) => void) => {
     let q;
+    const effectiveSchoolId = schoolId || `personal_${teacherId}`;
     if (auth.currentUser?.email === 'alsamy36@gmail.com') {
       q = query(collection(db, 'teams'));
-    } else if (isAdmin && schoolId) {
-      q = query(collection(db, 'teams'), where('schoolId', '==', schoolId));
+    } else if (isAdmin) {
+      q = query(collection(db, 'teams'), where('schoolId', '==', effectiveSchoolId));
     } else {
-      q = query(collection(db, 'teams'), where('teacherId', '==', teacherId));
+      q = query(collection(db, 'teams'), where('schoolId', '==', effectiveSchoolId), where('teacherId', '==', teacherId));
     }
     return onSnapshot(q, (snapshot: any) => {
       callback(snapshot.docs.map((doc: any) => doc.data() as Team));

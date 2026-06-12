@@ -123,13 +123,15 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
     let unsubStudentResults: (() => void) | undefined;
 
     if (selectedType === 'individual' && selectedId) {
-      unsubStudentResults = fitnessService.subscribeToStudentResults(selectedId, setStudentSpecificResults);
+      const student = students.find(s => s.id === selectedId);
+      const schoolId = student?.schoolId || userProfile?.schoolId;
+      unsubStudentResults = fitnessService.subscribeToStudentResults(selectedId, schoolId, setStudentSpecificResults);
     } else {
       setStudentSpecificResults([]);
     }
 
     return () => unsubStudentResults?.();
-  }, [selectedId, selectedType]);
+  }, [selectedId, selectedType, students, userProfile]);
 
   const calculateAvg = (resultsList: FitnessResult[]) => {
     if (resultsList.length === 0) return 'N/A';

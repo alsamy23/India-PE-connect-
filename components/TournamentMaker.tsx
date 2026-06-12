@@ -370,16 +370,100 @@ const TournamentMaker: React.FC = () => {
     buildKnockoutBrackets();
     setHasConfirmed(true);
     setShowChecklist(false);
+    
+    // Automatically set optimal initial scale based on team count for single-page printing
+    const optimal = getOptimalPrintScale(teamsList.length, 'A4', 'landscape');
+    setPrintScale(optimal);
   };
 
   const [copiedText, setCopiedText] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
+  // Advanced PDF/Print Configuration states for fitting perfectly onto A4/A3 single page
+  const [printPageSize, setPrintPageSize] = useState<'A4' | 'A3'>('A4');
+  const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('landscape');
+  const [printScale, setPrintScale] = useState<number>(85);
+  const [hideFormulaBoardInPrint, setHideFormulaBoardInPrint] = useState<boolean>(false);
+  const [hideRosterInPrint, setHideRosterInPrint] = useState<boolean>(false);
+  const [hideRulesFooterInPrint, setHideRulesFooterInPrint] = useState<boolean>(false);
+
+  const getOptimalPrintScale = (teamCount: number, size: 'A4' | 'A3', orientation: 'portrait' | 'landscape') => {
+    if (size === 'A4') {
+      if (orientation === 'landscape') {
+        if (teamCount <= 4) return 100;
+        if (teamCount <= 8) return 85;
+        if (teamCount <= 16) return 65;
+        return 48; // 32 teams/more
+      } else { // portrait
+        if (teamCount <= 4) return 90;
+        if (teamCount <= 8) return 70;
+        if (teamCount <= 16) return 48;
+        return 38;
+      }
+    } else { // A3
+      if (orientation === 'landscape') {
+        if (teamCount <= 4) return 130;
+        if (teamCount <= 8) return 110;
+        if (teamCount <= 16) return 90;
+        return 72;
+      } else { // portrait
+        if (teamCount <= 4) return 115;
+        if (teamCount <= 8) return 90;
+        if (teamCount <= 16) return 72;
+        return 55;
+      }
+    }
+  };
+
+  const handleApplyAutoFit = () => {
+    const optimal = getOptimalPrintScale(teamsList.length, printPageSize, printOrientation);
+    setPrintScale(optimal);
+  };
+
   const handleTriggerPrint = () => {
     try {
+      // Clean up previous print styles
+      const oldStyle = document.getElementById('dynamic-print-style');
+      if (oldStyle) oldStyle.remove();
+
+      // Create custom page-size and CSS transform styles matching A4 or A3 selection
+      const style = document.createElement('style');
+      style.id = 'dynamic-print-style';
+      style.innerHTML = `
+        @media print {
+          @page {
+            size: ${printPageSize.toLowerCase()} ${printOrientation.toLowerCase()};
+            margin: 0.5cm !important;
+          }
+          .print-bracket-canvas {
+            transform: scale(${printScale / 100}) !important;
+            transform-origin: top center !important;
+            margin: 0 auto !important;
+            margin-bottom: -${Math.max(0, 100 - printScale) * 0.45}% !important;
+            width: ${100 / (printScale / 100)}% !important;
+            max-width: none !important;
+            overflow: visible !important;
+            --conn-width: 16px !important;
+          }
+          ${hideFormulaBoardInPrint ? '.print-hide-formula { display: none !important; }' : ''}
+          ${hideRosterInPrint ? '.print-hide-roster { display: none !important; }' : ''}
+          ${hideRulesFooterInPrint ? '.print-hide-rules { display: none !important; }' : ''}
+        }
+        @media print and (orientation: landscape) {
+          .print-bracket-canvas [class*="md:flex-row"] {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: stretch !important;
+            gap: 0.75rem !important;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+
       window.print();
     } catch (e) {
-      console.error("Print triggered directly from iframe may have sandbox limitations. Suggest opening print layout.", e);
+      console.error("Print triggered directly from iframe may have sandbox limitations.", e);
     }
   };
 
@@ -391,7 +475,8 @@ const TournamentMaker: React.FC = () => {
       return;
     }
 
-    const printContent = printAreaRef.current ? printAreaRef.current.innerHTML : '';
+    // CRITICAL: Use outerHTML to capture the parent wrapper div along with its classes (.print-bracket-canvas)
+    const printContent = printAreaRef.current ? printAreaRef.current.outerHTML : '';
     
     // Construct self-contained page with modern tailwind support and manual printer trigger
     printWindow.document.write(`
@@ -417,6 +502,11 @@ const TournamentMaker: React.FC = () => {
             h1, h2, h3, h4, .font-display {
               font-family: "Manrope", sans-serif;
             }
+            :root {
+              --conn-width: 24px;
+            }
+            
+            /* Print rules */
             @media print {
               body { 
                 padding: 0 !important; 
@@ -425,15 +515,23 @@ const TournamentMaker: React.FC = () => {
               }
               .no-print { display: none !important; }
               
+              @page {
+                size: ${printPageSize.toLowerCase()} ${printOrientation.toLowerCase()};
+                margin: 0.5cm !important;
+              }
+
               .print-bracket-canvas {
                 border: none !important;
                 box-shadow: none !important;
                 padding: 0 !important;
-                margin: 0 !important;
-                width: 100% !important;
+                margin: 0 auto !important;
+                width: ${100 / (printScale / 100)}% !important;
+                max-width: none !important;
+                transform: scale(${printScale / 100}) !important;
+                transform-origin: top center !important;
+                margin-bottom: -${Math.max(0, 100 - printScale) * 0.45}% !important;
                 overflow: visible !important;
-                page-break-inside: avoid;
-                break-inside: avoid;
+                --conn-width: 16px !important;
               }
 
               .print-bracket-canvas > div,
@@ -445,58 +543,41 @@ const TournamentMaker: React.FC = () => {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
               }
-            }
-
-            @media print and (orientation: portrait) {
-              @page {
-                size: A4 portrait;
-                margin: 0.8cm !important;
-              }
-              .print-bracket-canvas {
-                transform: scale(0.68) !important;
-                transform-origin: top center !important;
-                margin: 0 auto !important;
-                margin-bottom: -15% !important;
-              }
+              
+              ${hideFormulaBoardInPrint ? '.print-hide-formula { display: none !important; }' : ''}
+              ${hideRosterInPrint ? '.print-hide-roster { display: none !important; }' : ''}
+              ${hideRulesFooterInPrint ? '.print-hide-rules { display: none !important; }' : ''}
             }
 
             @media print and (orientation: landscape) {
-              @page {
-                size: A4 landscape;
-                margin: 0.8cm !important;
-              }
-              .print-bracket-canvas {
-                transform: scale(0.88) !important;
-                transform-origin: top center !important;
-                margin: 0 auto !important;
-                margin-bottom: -8% !important;
-                width: 100% !important;
-              }
               .print-bracket-canvas [class*="md:flex-row"] {
                 display: flex !important;
                 flex-direction: row !important;
                 justify-content: space-between !important;
                 align-items: stretch !important;
-                gap: 1.5rem !important;
+                gap: 0.75rem !important;
               }
             }
           </style>
         </head>
-        <body class="bg-slate-50">
-          <div class="max-w-5xl mx-auto space-y-4">
+        <body class="bg-slate-50 animate-fade-in">
+          <div class="max-w-5xl mx-auto space-y-4 print:max-w-none print:w-full print:p-0 print:m-0">
             <!-- Printing Help Banner -->
-            <div class="no-print bg-indigo-50 border-2 border-indigo-200 text-indigo-950 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div class="no-print bg-indigo-50 border-2 border-indigo-200 text-indigo-950 p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div>
-                <h3 class="font-extrabold text-sm uppercase tracking-wider text-indigo-900">🖨️ Sandbox-Safe PDF Export Mode</h3>
-                <p class="text-xs text-indigo-850 font-semibold mt-1">This isolated tab contains a fresh, responsive version of your tournament brackets styled beautifully.</p>
-                <p class="text-[11px] text-indigo-700/80 mt-0.5">Tip: Set layout to <strong>"Portrait"</strong> and check <strong>"Background graphics"</strong> option in your browser dialog for best results.</p>
+                <h3 class="font-extrabold text-xs uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                  <span>🖨️ Sandbox-Safe ${printPageSize} ${printOrientation.toUpperCase()} Layout Setup</span>
+                </h3>
+                <p class="text-[11px] text-indigo-850 font-semibold mt-1">This isolated tab contains a fresh, responsive format optimized at <strong>${printScale}% custom scaling</strong>.</p>
+                <p class="text-[10px] text-indigo-700/80 mt-0.5">Note: Verify your printer setup lists <strong>"${printPageSize}"</strong> and orientation paper <strong>"${printOrientation.toUpperCase()}"</strong> with background colors enabled.</p>
               </div>
               <button onclick="window.print()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-md transition-all self-end md:self-auto">
-                Trigger Printer Dialog (Ctrl + P)
+                Trigger Print Panel (Ctrl + P)
               </button>
             </div>
             
-            <div class="bg-white p-8 md:p-12 rounded-[2.5rem] border border-slate-200 shadow-md">
+            <!-- Styled wrapper for screen viewing which dissolves natively in the print engine -->
+            <div class="bg-white p-4 md:p-8 rounded-[2.5rem] border border-slate-200 shadow-md print:bg-transparent print:border-none print:shadow-none print:p-0 print:m-0 print:max-w-none print:w-full">
               ${printContent}
             </div>
           </div>
@@ -1059,21 +1140,175 @@ const TournamentMaker: React.FC = () => {
               </button>
             </div>
 
+            {/* 🖨️ Elite PDF Page Sizing & Scale Control Board */}
+            <div className="bg-gradient-to-br from-indigo-50/40 via-white to-pink-50/20 p-6 rounded-[2.2rem] border border-indigo-100 space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-indigo-50">
+                <div>
+                  <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest block flex items-center gap-1.5">
+                    <Sparkles size={12} className="text-indigo-500 animate-pulse" />
+                    <span>Print Pagination & Fitting Controls</span>
+                  </span>
+                  <p className="text-xs text-slate-500 font-bold mt-1">Adjust size & scale below to fit your tournament brackets onto a single page (A4/A3) perfectly.</p>
+                </div>
+                <div className="flex items-center gap-1 bg-indigo-50/70 p-1 rounded-xl text-[10px] font-black text-indigo-900 border border-indigo-100/50">
+                  <span className="px-2">Active Format:</span>
+                  <span className="px-2 py-0.5 bg-white rounded-md shadow-xs text-rose-600 font-extrabold uppercase">{printPageSize} {printOrientation}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* 1. Paper Size & Orientation */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-800 uppercase tracking-wider block">1. Target Document Dimensions</label>
+                  <div className="space-y-2">
+                    <div className="flex bg-slate-100/80 p-0.5 rounded-lg border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPrintPageSize('A4');
+                          const opt = getOptimalPrintScale(teamsList.length, 'A4', printOrientation);
+                          setPrintScale(opt);
+                        }}
+                        className={`flex-1 py-1.5 text-[11px] font-black rounded-md transition-all ${printPageSize === 'A4' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-950'}`}
+                      >
+                        A4 Standard
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPrintPageSize('A3');
+                          const opt = getOptimalPrintScale(teamsList.length, 'A3', printOrientation);
+                          setPrintScale(opt);
+                        }}
+                        className={`flex-1 py-1.5 text-[11px] font-black rounded-md transition-all ${printPageSize === 'A3' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-950'}`}
+                      >
+                        A3 Premium
+                      </button>
+                    </div>
+
+                    <div className="flex bg-slate-100/80 p-0.5 rounded-lg border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPrintOrientation('portrait');
+                          const opt = getOptimalPrintScale(teamsList.length, printPageSize, 'portrait');
+                          setPrintScale(opt);
+                        }}
+                        className={`flex-1 py-1.5 text-[11px] font-black rounded-md transition-all ${printOrientation === 'portrait' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-950'}`}
+                      >
+                        Portrait
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPrintOrientation('landscape');
+                          const opt = getOptimalPrintScale(teamsList.length, printPageSize, 'landscape');
+                          setPrintScale(opt);
+                        }}
+                        className={`flex-1 py-1.5 text-[11px] font-black rounded-md transition-all ${printOrientation === 'landscape' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-950'}`}
+                      >
+                        Landscape ★
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Scale custom slider */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black text-slate-800 uppercase tracking-wider block">2. Zoom / Sizing Scale</label>
+                    <span className="text-[10px] font-black text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded-md border border-indigo-100">{printScale}%</span>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min="30"
+                        max="125"
+                        value={printScale}
+                        onChange={(e) => setPrintScale(Number(e.target.value))}
+                        className="w-full accent-indigo-600 h-1.5 bg-slate-100 rounded-lg cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-semibold">
+                      <button 
+                        type="button"
+                        onClick={() => setPrintScale(Math.max(30, printScale - 5))}
+                        className="p-1 px-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md text-slate-600 active:scale-95 transition-transform"
+                      >
+                        -5%
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleApplyAutoFit}
+                        className="text-[11px] font-black text-indigo-750 hover:underline flex items-center gap-1"
+                      >
+                        <Sparkles size={10} className="text-indigo-500" />
+                        <span>Reset Auto-Fit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPrintScale(Math.min(125, printScale + 5))}
+                        className="p-1 px-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md text-slate-600 active:scale-95 transition-transform"
+                      >
+                        +5%
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Elements toggles */}
+                <div className="space-y-3 lg:col-span-2">
+                  <label className="text-[10px] font-black text-slate-800 uppercase tracking-wider block">3. Toggle Printable Panels (To Save Vertical Space)</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setHideFormulaBoardInPrint(!hideFormulaBoardInPrint)}
+                      className={`p-2.5 rounded-xl border text-left text-[11px] font-extrabold transition-all flex flex-col justify-between h-20 ${hideFormulaBoardInPrint ? 'bg-rose-50 border-rose-200 text-rose-800 shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600'}`}
+                    >
+                      <span className="leading-tight">CBSE PE Formula Block</span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-rose-600/90">{hideFormulaBoardInPrint ? '❌ Hidden from print' : '✅ Will print'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setHideRosterInPrint(!hideRosterInPrint)}
+                      className={`p-2.5 rounded-xl border text-left text-[11px] font-extrabold transition-all flex flex-col justify-between h-20 ${hideRosterInPrint ? 'bg-rose-50 border-rose-200 text-rose-800 shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600'}`}
+                    >
+                      <span className="leading-tight">Registered Roster List</span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-rose-600/90">{hideRosterInPrint ? '❌ Hidden' : '✅ Will print'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setHideRulesFooterInPrint(!hideRulesFooterInPrint)}
+                      className={`p-2.5 rounded-xl border text-left text-[11px] font-extrabold transition-all flex flex-col justify-between h-20 ${hideRulesFooterInPrint ? 'bg-rose-50 border-rose-200 text-rose-800 shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600'}`}
+                    >
+                      <span className="leading-tight">Directives & Signatures</span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-rose-600/90">{hideRulesFooterInPrint ? '❌ Hidden' : '✅ Will print'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Structured Tools Hub */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* PDF & Printer Direct Options */}
               <div className="bg-slate-50/50 p-5 rounded-3xl border border-slate-100 space-y-4">
-                <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest block">PDF & Print Commands</span>
-                <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">Choose standard browser printing, or open an isolated window if you are running in an iframe environment.</p>
+                <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest block">PDF & Print Actions</span>
+                <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">Print directly using those pagination styles, or open a style-pure pop-up window if sandbox constraints block dialogs.</p>
                 <div className="flex flex-col gap-2 pt-2">
                   <button 
+                    type="button"
                     onClick={handleTriggerPrint}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm"
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-indigo-100/50"
                   >
                     <Printer size={14} />
-                    <span>Direct Print / PDF</span>
+                    <span>Print / Export PDF Now</span>
                   </button>
                   <button 
+                    type="button"
                     onClick={handleOpenPrintWindow}
                     className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm"
                   >
@@ -1143,7 +1378,7 @@ const TournamentMaker: React.FC = () => {
           {/* Interactive Bracket Visual / Print Preview (Matches the user's PDF exact formatting!) */}
           <div 
             ref={printAreaRef}
-            className="print-bracket-canvas bg-white p-8 md:p-12 rounded-[3rem] border-4 border-slate-900 shadow-xl max-w-5xl mx-auto space-y-10 print:border-0 print:p-0 print:shadow-none"
+            className="print-bracket-canvas bg-white p-8 md:p-12 rounded-[3rem] border-4 border-slate-900 shadow-xl max-w-5xl print:max-w-none print:w-full mx-auto space-y-10 print:border-0 print:p-0 print:shadow-none"
           >
             {/* PDF Header Block */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-4 border-slate-900 pb-8 gap-6">
@@ -1166,7 +1401,7 @@ const TournamentMaker: React.FC = () => {
             </div>
 
             {/* CBSE PE Draw Mechanics & Systematic Calculations (Subject Matter Expert Board) */}
-            <div className="bg-slate-50 border-2 border-slate-900 rounded-[2rem] p-6 grid grid-cols-1 md:grid-cols-3 gap-6 text-slate-900 text-xs shadow-md animate-in slide-in-from-bottom duration-300">
+            <div className={`print-hide-formula bg-slate-50 border-2 border-slate-900 rounded-[2rem] p-6 grid grid-cols-1 md:grid-cols-3 gap-6 text-slate-900 text-xs shadow-md animate-in slide-in-from-bottom duration-300 transition-all ${hideFormulaBoardInPrint ? 'opacity-35 line-through border-slate-200 select-none bg-slate-50/50' : ''}`}>
               <div className="space-y-2 border-b md:border-b-0 md:border-r border-slate-200 pb-4 md:pb-0 md:pr-6">
                 <h5 className="font-black text-[10px] uppercase tracking-wider text-pink-600 flex items-center gap-1">
                   <Shield size={12} />
@@ -1245,11 +1480,11 @@ const TournamentMaker: React.FC = () => {
 
             {/* Core Bracket Layout Renders columns per Round */}
             <div 
-              className="grid grid-cols-1 md:flex md:flex-row md:justify-between items-stretch gap-x-12 relative md:space-y-0 space-y-8 overflow-x-auto select-none py-4 h-auto md:h-[var(--bracket-height)] print:flex print:space-y-0 print:h-[var(--bracket-height)]"
+              className="grid grid-cols-1 md:flex md:flex-row md:justify-between items-stretch gap-x-12 relative md:space-y-0 space-y-8 overflow-x-auto select-none py-4 h-auto md:h-[var(--bracket-height)] print:flex print:flex-row print:justify-between print:gap-x-2.5 print:space-y-0 print:p-0 print:m-0 print:w-full print:overflow-visible"
               style={{ '--bracket-height': `${bracketHeight}px` } as React.CSSProperties}
             >
               {/* Column 0: Registered Teams List with strict CBSE structural groupings */}
-              <div className="space-y-6 flex-1 min-w-[220px] flex flex-col h-full border-r-2 border-slate-900 border-dashed pr-6">
+              <div className={`print-hide-roster space-y-6 print:space-y-2.5 flex-1 min-w-[220px] print:min-w-[125px] print:max-w-[155px] flex flex-col h-full border-r-2 border-slate-900 border-dashed pr-6 print:pr-2.5 print:mr-1 transition-all ${hideRosterInPrint ? 'opacity-35 line-through border-slate-100 select-none' : ''}`}>
                 <div className="border-b-2 border-slate-900 pb-2 text-center flex-shrink-0">
                   <h5 className="font-black text-xs uppercase tracking-widest text-slate-400">Roster</h5>
                   <h4 className="font-extrabold text-sm uppercase tracking-wider text-slate-800">Teams List</h4>
@@ -1267,27 +1502,27 @@ const TournamentMaker: React.FC = () => {
                           <div className="relative flex items-center w-full my-1">
                             <div className={`w-1.5 h-12 rounded-full mr-2 flex-shrink-0 ${isUpper ? 'bg-pink-500' : 'bg-indigo-500'}`} />
                             
-                            <div className="flex-1 bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs flex flex-col justify-center gap-1">
-                              <div className="flex justify-between items-center">
+                            <div className="flex-1 bg-white border border-slate-200 rounded-xl p-2.5 print:p-1.5 print:rounded-lg shadow-xs flex flex-col justify-center gap-1 print:gap-0">
+                              <div className="flex justify-between items-center print:hidden">
                                 <span className="text-[9px] font-black text-slate-400">Team {idx + 1}</span>
                                 <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${isUpper ? 'text-pink-600 bg-pink-50' : 'text-indigo-600 bg-indigo-50'}`}>
                                   {isUpper ? 'Upper Half' : 'Lower Half'}
                                 </span>
                               </div>
                               
-                              <div className="text-xs font-black text-slate-900 truncate max-w-[170px]" title={teamName}>
+                              <div className="text-xs font-black text-slate-900 truncate max-w-[170px] print:max-w-[110px] print:text-[10px]" title={teamName}>
                                 {teamName}
                               </div>
                               
                               <div className="flex justify-between items-center mt-0.5">
                                 {isBye ? (
-                                  <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                                  <span className="text-[9px] print:text-[8px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-lg flex items-center gap-1 leading-none">
                                     <Sparkles size={10} className="text-emerald-500" />
-                                    <span>1st Round BYE</span>
+                                    <span>BYE</span>
                                   </span>
                                 ) : (
-                                  <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-lg">
-                                    Plays Round 1
+                                  <span className="text-[9px] print:text-[8px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-lg leading-none">
+                                    Round 1
                                   </span>
                                 )}
                               </div>
@@ -1295,7 +1530,7 @@ const TournamentMaker: React.FC = () => {
 
                             {/* Connection line straight to Round 1 */}
                             <div className="hidden md:flex print:flex absolute left-full top-1/2 -translate-y-1/2 items-center pointer-events-none z-0">
-                              <div className="h-[2px] bg-slate-900 w-[24px]"></div>
+                              <div className="h-[2px] bg-slate-900" style={{ width: 'var(--conn-width, 24px)' }}></div>
                             </div>
                           </div>
 
@@ -1322,7 +1557,7 @@ const TournamentMaker: React.FC = () => {
               {generatedRounds.map((roundStrObj: any, rIdx: number) => {
                 const totalMatchesInRound = roundStrObj.matches.length;
                 return (
-                  <div key={rIdx} className="space-y-6 flex-1 min-w-[210px] flex flex-col h-full">
+                  <div key={rIdx} className="space-y-6 print:space-y-2.5 flex-1 min-w-[210px] print:min-w-[120px] print:max-w-[145px] flex flex-col h-full">
                     {/* Round Header */}
                     <div className="border-b-2 border-slate-900 pb-2 text-center flex-shrink-0">
                       <h5 className="font-black text-xs uppercase tracking-widest text-slate-400">Round {rIdx + 1}</h5>
@@ -1344,36 +1579,36 @@ const TournamentMaker: React.FC = () => {
                           <React.Fragment key={match.id}>
                             <div className="relative flex items-center w-full my-2">
                               {match.isBye ? (
-                                <div className="bg-pink-50/20 border-2 border-dashed border-pink-300 p-4 rounded-xl flex flex-col justify-between hover:scale-[1.01] transition-transform shadow-xs animate-in fade-in w-full relative z-10 print:border-pink-500">
+                                <div className="bg-pink-50/20 border-2 border-dashed border-pink-300 p-4 print:p-2 rounded-xl print:rounded-lg flex flex-col justify-between hover:scale-[1.01] transition-transform shadow-xs animate-in fade-in w-full relative z-10 print:border-pink-500">
                                   <div className="flex justify-between items-center pb-2 border-b border-pink-100/50 mb-2">
-                                    <span className="text-[10px] font-black text-pink-700 uppercase tracking-widest">BYE Assignment</span>
-                                    <span className="text-[9px] font-black text-pink-500 bg-pink-100/50 px-2.5 py-0.5 rounded-full print:bg-slate-100">
+                                    <span className="text-[10px] print:text-[8px] font-black text-pink-700 uppercase tracking-widest">BYE Assignment</span>
+                                    <span className="text-[9px] print:text-[8px] font-black text-pink-500 bg-pink-100/50 px-2.5 py-0.5 rounded-full print:bg-slate-100">
                                       ADVANCED
                                     </span>
                                   </div>
 
                                   <div className="space-y-1.5 text-xs">
                                     <div className="flex items-center justify-between font-black text-slate-900">
-                                      <span className="truncate max-w-[170px]">{match.team1}</span>
+                                      <span className="truncate max-w-[170px] print:max-w-[105px] print:text-[10px]">{match.team1}</span>
                                     </div>
                                     <div className="py-1 flex items-center justify-center">
-                                      <div className="text-[9px] font-black text-pink-600 bg-pink-50 border border-pink-100/70 py-1 px-3 rounded-lg uppercase tracking-widest text-center flex items-center gap-1 whitespace-nowrap">
+                                      <div className="text-[9px] print:text-[8px] font-black text-pink-600 bg-pink-50 border border-pink-100/70 py-1 px-3 print:py-0.5 print:px-2 rounded-lg uppercase tracking-widest text-center flex items-center gap-1 whitespace-nowrap">
                                         <Sparkles size={10} className="text-pink-500" />
                                         <span>First Round BYE</span>
                                       </div>
                                     </div>
                                   </div>
 
-                                  <div className="mt-2.5 pt-2 border-t border-pink-100/40 flex justify-between text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                                  <div className="mt-2.5 pt-2 border-t border-pink-100/40 flex justify-between text-[8px] print:text-[7px] font-bold text-slate-400 uppercase tracking-widest">
                                     <span>Venue: Exempt</span>
                                     <span>{match.date}</span>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="bg-slate-50 border-2 border-slate-900 p-4 rounded-xl flex flex-col justify-between hover:scale-[1.01] transition-transform shadow-sm animate-in fade-in w-full relative z-10 print:bg-white">
+                                <div className="bg-slate-50 border-2 border-slate-900 p-4 print:p-2 rounded-xl print:rounded-lg flex flex-col justify-between hover:scale-[1.01] transition-transform shadow-sm animate-in fade-in w-full relative z-10 print:bg-white">
                                   <div className="flex justify-between items-center pb-2 border-b border-slate-150 mb-2">
-                                    <span className="text-[10px] font-black text-pink-600 uppercase tracking-widest">{match.name}</span>
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                    <span className="text-[10px] print:text-[8px] font-black text-pink-600 uppercase tracking-widest">{match.name}</span>
+                                    <span className="text-[10px] print:text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
                                       <Clock size={10} />
                                       {match.time}
                                     </span>
@@ -1381,15 +1616,15 @@ const TournamentMaker: React.FC = () => {
 
                                   <div className="space-y-1.5 text-xs text-slate-800">
                                     <div className="flex items-center justify-between font-black">
-                                      <span className="truncate max-w-[150px]">{match.team1}</span>
+                                      <span className="truncate max-w-[150px] print:max-w-[105px] print:text-[10px]">{match.team1}</span>
                                     </div>
-                                    <div className="text-[9px] font-bold text-slate-300 uppercase tracking-widest text-center">v/s</div>
+                                    <div className="text-[9px] print:text-[8px] font-bold text-slate-300 uppercase tracking-widest text-center">v/s</div>
                                     <div className="flex items-center justify-between font-black">
-                                      <span className="truncate max-w-[150px]">{match.team2}</span>
+                                      <span className="truncate max-w-[150px] print:max-w-[105px] print:text-[10px]">{match.team2}</span>
                                     </div>
                                   </div>
 
-                                  <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                                  <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between text-[8px] print:text-[7px] font-bold text-slate-400 uppercase tracking-widest">
                                     <span>Match Venue: Arena A</span>
                                     <span>{match.date}</span>
                                   </div>
@@ -1400,7 +1635,7 @@ const TournamentMaker: React.FC = () => {
                               {hasNextRound && (
                                 <div className="hidden md:flex print:flex absolute left-full top-1/2 -translate-y-1/2 items-center pointer-events-none z-0">
                                   {/* Left horizontal spur leaving the card */}
-                                  <div className="h-[2px] bg-slate-900 w-[24px]"></div>
+                                  <div className="h-[2px] bg-slate-900" style={{ width: 'var(--conn-width, 24px)' }}></div>
 
                                   {hasSibling ? (
                                     isEven ? (
@@ -1408,9 +1643,9 @@ const TournamentMaker: React.FC = () => {
                                       <div 
                                         className="border-slate-900 border-l-2 absolute animate-in fade-in duration-300"
                                         style={{
-                                          left: '24px',
+                                          left: 'var(--conn-width, 24px)',
                                           top: '50%',
-                                          width: '24px',
+                                          width: 'var(--conn-width, 24px)',
                                           height: `${verticalDistance + 2}px`,
                                           borderBottomWidth: '2px', // Outgoing connector
                                         }}
@@ -1420,16 +1655,16 @@ const TournamentMaker: React.FC = () => {
                                       <div 
                                         className="border-slate-900 border-l-2 absolute animate-in fade-in duration-300"
                                         style={{
-                                          left: '24px',
+                                          left: 'var(--conn-width, 24px)',
                                           bottom: '50%',
-                                          width: '24px',
+                                          width: 'var(--conn-width, 24px)',
                                           height: `${verticalDistance + 2}px`,
                                         }}
                                       />
                                     )
                                   ) : (
                                     /* No sibling in this round, project straight to next column center */
-                                    <div className="h-[2px] bg-slate-900 w-[24px] absolute left-[24px]" />
+                                    <div className="h-[2px] bg-slate-900 absolute" style={{ width: 'var(--conn-width, 24px)', left: 'var(--conn-width, 24px)' }} />
                                   )}
                                 </div>
                               )}
@@ -1490,7 +1725,7 @@ const TournamentMaker: React.FC = () => {
             )}
 
             {/* Custom school rules and signature note */}
-            <div className="pt-8 border-t-2 border-dashed border-slate-200 flex flex-col md:flex-row justify-between text-slate-400 text-xs font-medium gap-4">
+            <div className={`print-hide-rules pt-8 border-t-2 border-dashed border-slate-200 flex flex-col md:flex-row justify-between text-slate-400 text-xs font-medium gap-4 transition-all ${hideRulesFooterInPrint ? 'opacity-35 line-through select-none' : ''}`}>
               <div className="space-y-1">
                 <p className="font-extrabold uppercase text-[9px] tracking-widest text-slate-500">Official Tournament Directives</p>
                 <p>1. Duration: {firstHalf} Mins + {halfTime} Mins Break + {secondHalf} Mins (Total: {firstHalf + secondHalf + halfTime} mins active cycle).</p>
