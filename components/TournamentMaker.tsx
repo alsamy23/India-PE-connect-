@@ -72,7 +72,11 @@ const TournamentMaker: React.FC = () => {
   const [generatedRounds, setGeneratedRounds] = useState<any[]>([]);
   const [thirdPlaceMatch, setThirdPlaceMatch] = useState<Match | null>(null);
 
+  const [svgPaths, setSvgPaths] = useState<string[]>([]);
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: '100%', height: '100%' });
+
   const printAreaRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Update teams array length when numTeams changes
   const handleNumTeamsChange = (n: number) => {
@@ -426,10 +430,7 @@ const TournamentMaker: React.FC = () => {
       const oldStyle = document.getElementById('dynamic-print-style');
       if (oldStyle) oldStyle.remove();
 
-      const estimatedUnscaledHeight = bracketHeight + (hideFormulaBoardInPrint ? 0 : 220) + (thirdPlaceMatch ? 180 : 0) + 120;
-      const verticalCompensationValue = Math.round(estimatedUnscaledHeight * (1 - printScale / 100));
-
-      // Create custom page-size and CSS transform styles matching A4 or A3 selection
+      // Create custom page-size and CSS zoom styles matching A4 or A3 selection
       const style = document.createElement('style');
       style.id = 'dynamic-print-style';
       style.innerHTML = `
@@ -443,11 +444,9 @@ const TournamentMaker: React.FC = () => {
             margin: 0.5cm !important;
           }
           .print-bracket-canvas {
-            transform: scale(${printScale / 100}) !important;
-            transform-origin: top left !important;
+            zoom: ${printScale / 100} !important;
             margin: 0 !important;
-            margin-bottom: -${verticalCompensationValue}px !important;
-            width: ${100 / (printScale / 100)}% !important;
+            width: 100% !important;
             max-width: none !important;
             overflow: visible !important;
             --conn-width: 16px !important;
@@ -486,9 +485,6 @@ const TournamentMaker: React.FC = () => {
 
     // CRITICAL: Use outerHTML to capture the parent wrapper div along with its classes (.print-bracket-canvas)
     const printContent = printAreaRef.current ? printAreaRef.current.outerHTML : '';
-    
-    const estimatedUnscaledHeight = bracketHeight + (hideFormulaBoardInPrint ? 0 : 220) + (thirdPlaceMatch ? 180 : 0) + 120;
-    const verticalCompensationValue = Math.round(estimatedUnscaledHeight * (1 - printScale / 100));
 
     // Construct self-contained page with modern tailwind support and manual printer trigger
     printWindow.document.write(`
@@ -541,11 +537,9 @@ const TournamentMaker: React.FC = () => {
                 box-shadow: none !important;
                 padding: 0 !important;
                 margin: 0 !important;
-                width: ${100 / (printScale / 100)}% !important;
+                zoom: ${printScale / 100} !important;
+                width: 100% !important;
                 max-width: none !important;
-                transform: scale(${printScale / 100}) !important;
-                transform-origin: top left !important;
-                margin-bottom: -${verticalCompensationValue}px !important;
                 overflow: visible !important;
                 --conn-width: 16px !important;
                 page-break-inside: avoid !important;
@@ -839,6 +833,136 @@ const TournamentMaker: React.FC = () => {
     return 1880;
   };
   const bracketHeight = getBracketHeight();
+
+  const calculateBracketLines = () => {
+    if (!containerRef.current || generatedRounds.length === 0) return;
+    const container = containerRef.current;
+    const containerRect = container.getBoundingClientRect();
+    const newPaths: string[] = [];
+
+    // Helper to get right-center of an element relative to scroll container's content area
+    const getRightCenter = (id: string) => {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      return {
+        x: rect.right - containerRect.left + container.scrollLeft,
+        y: rect.top - containerRect.top + container.scrollTop + rect.height / 2
+      };
+    };
+
+    // Helper to get left-center of an element relative to scroll container's content area
+    const getLeftCenter = (id: string) => {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      return {
+        x: rect.left - containerRect.left + container.scrollLeft,
+        y: rect.top - containerRect.top + container.scrollTop + rect.height / 2
+      };
+    };
+
+    // 1. Roster to Round 1/2 Connections
+    const round1 = generatedRounds[0];
+    const round2 = generatedRounds[1];
+    
+    teamsList.forEach((teamName, idx) => {
+      const rosterId = `roster-team-${idx}`;
+      const rosterPort = getRightCenter(rosterId);
+      if (!rosterPort) return;
+
+      // Find which match this team first plays in
+      // Try Round 1
+      let targetMatch = round1?.matches.find((m: any) => m.team1 === teamName || m.team2 === teamName);
+      // If not in Round 1, try Round 2 (since they had a BYE)
+      if (!targetMatch && round2) {
+        targetMatch = round2.matches.find((m: any) => m.team1 === teamName || m.team2 === teamName);
+      }
+
+      if (targetMatch) {
+        const matchId = `match-card-${targetMatch.id}`;
+        const matchPort = getLeftCenter(matchId);
+        if (matchPort) {
+          const midX = (rosterPort.x + matchPort.x) / 2;
+          newPaths.push(`M ${rosterPort.x} ${rosterPort.y} H ${midX} V ${matchPort.y} H ${matchPort.x}`);
+        }
+      }
+    });
+
+    // 2. Inter-Round Connections
+    for (let r = 0; r < generatedRounds.length - 1; r++) {
+      const currentMatches = generatedRounds[r].matches;
+      const nextMatches = generatedRounds[r+1].matches;
+
+      // Map to track which matches we've already processed for pairings
+      const processedMatches = new Set<number>();
+
+      currentMatches.forEach((match: Match) => {
+        if (processedMatches.has(match.id)) return;
+
+        // Find which match in the next round this winner goes to
+        const label = `Winner of Match ${match.id}`;
+        const nextMatch = nextMatches.find((m: any) => m.team1 === label || m.team2 === label);
+        if (!nextMatch) return;
+
+        // Find if another match in this round also goes to nextMatch (sibling)
+        const sibling = currentMatches.find((m: any) => 
+          m.id !== match.id && 
+          (nextMatches.find((nm: any) => nm.id === nextMatch.id)?.team1 === `Winner of Match ${m.id}` ||
+           nextMatches.find((nm: any) => nm.id === nextMatch.id)?.team2 === `Winner of Match ${m.id}`)
+        );
+
+        const port1 = getRightCenter(`match-card-${match.id}`);
+        const nextPort = getLeftCenter(`match-card-${nextMatch.id}`);
+
+        if (!port1 || !nextPort) return;
+
+        if (sibling) {
+          processedMatches.add(match.id);
+          processedMatches.add(sibling.id);
+
+          const port2 = getRightCenter(`match-card-${sibling.id}`);
+          if (port2) {
+            // Determine upper and lower elements based on vertical y position
+            const upperPort = port1.y < port2.y ? port1 : port2;
+            const lowerPort = port1.y < port2.y ? port2 : port1;
+
+            const midX = (upperPort.x + nextPort.x) / 2;
+
+            // Draw the H-connector
+            newPaths.push(`M ${upperPort.x} ${upperPort.y} H ${midX}`);
+            newPaths.push(`M ${lowerPort.x} ${lowerPort.y} H ${midX}`);
+            newPaths.push(`M ${midX} ${upperPort.y} V ${lowerPort.y}`);
+            newPaths.push(`M ${midX} ${nextPort.y} H ${nextPort.x}`);
+          }
+        } else {
+          // No sibling, draw a straight step connector
+          processedMatches.add(match.id);
+          const midX = (port1.x + nextPort.x) / 2;
+          newPaths.push(`M ${port1.x} ${port1.y} H ${midX} V ${nextPort.y} H ${nextPort.x}`);
+        }
+      });
+    }
+
+    setSvgPaths(newPaths);
+    setCanvasDimensions({
+      width: `${container.scrollWidth}px`,
+      height: `${container.scrollHeight}px`
+    });
+  };
+
+  React.useEffect(() => {
+    // Small timeout to allow browser layout to complete before coordinates calculation
+    const timer = setTimeout(() => {
+      calculateBracketLines();
+    }, 150);
+
+    window.addEventListener('resize', calculateBracketLines);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', calculateBracketLines);
+    };
+  }, [generatedRounds, teamsList, printScale, printPageSize, printOrientation, hideRosterInPrint, hideFormulaBoardInPrint]);
 
   return (
     <div className="space-y-8 pb-24">
@@ -1498,6 +1622,7 @@ const TournamentMaker: React.FC = () => {
 
             {/* Core Bracket Layout Renders columns per Round */}
             <div 
+              ref={containerRef}
               className="grid grid-cols-1 md:flex md:flex-row md:justify-between items-stretch gap-x-12 relative md:space-y-0 space-y-8 overflow-x-auto select-none py-4 h-auto md:h-[var(--bracket-height)] print:flex print:flex-row print:justify-between print:gap-x-2.5 print:space-y-0 print:p-0 print:m-0 print:w-full print:overflow-visible"
               style={{ '--bracket-height': `${bracketHeight}px` } as React.CSSProperties}
             >
@@ -1515,42 +1640,37 @@ const TournamentMaker: React.FC = () => {
                       const isUpper = idx < setup.Nu;
                       const isBye = setup.byeIndices.has(idx);
                       
-                      return (
-                        <React.Fragment key={idx}>
-                          <div className="relative flex items-center w-full my-1">
-                            <div className={`w-1.5 h-12 rounded-full mr-2 flex-shrink-0 ${isUpper ? 'bg-pink-500' : 'bg-indigo-500'}`} />
-                            
-                            <div className="flex-1 bg-white border border-slate-200 rounded-xl p-2.5 print:p-1.5 print:rounded-lg shadow-xs flex flex-col justify-center gap-1 print:gap-0">
-                              <div className="flex justify-between items-center print:hidden">
-                                <span className="text-[9px] font-black text-slate-400">Team {idx + 1}</span>
-                                <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${isUpper ? 'text-pink-600 bg-pink-50' : 'text-indigo-600 bg-indigo-50'}`}>
-                                  {isUpper ? 'Upper Half' : 'Lower Half'}
-                                </span>
-                              </div>
+                        return (
+                          <React.Fragment key={idx}>
+                            <div id={`roster-team-${idx}`} className="relative flex items-center w-full my-1">
+                              <div className={`w-1.5 h-12 rounded-full mr-2 flex-shrink-0 ${isUpper ? 'bg-pink-500' : 'bg-indigo-500'}`} />
                               
-                              <div className="text-xs font-black text-slate-900 truncate max-w-[170px] print:max-w-[110px] print:text-[10px]" title={teamName}>
-                                {teamName}
-                              </div>
-                              
-                              <div className="flex justify-between items-center mt-0.5">
-                                {isBye ? (
-                                  <span className="text-[9px] print:text-[8px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-lg flex items-center gap-1 leading-none">
-                                    <Sparkles size={10} className="text-emerald-500" />
-                                    <span>BYE</span>
+                              <div className="flex-1 bg-white border border-slate-200 rounded-xl p-2.5 print:p-1.5 print:rounded-lg shadow-xs flex flex-col justify-center gap-1 print:gap-0">
+                                <div className="flex justify-between items-center print:hidden">
+                                  <span className="text-[9px] font-black text-slate-400">Team {idx + 1}</span>
+                                  <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${isUpper ? 'text-pink-600 bg-pink-50' : 'text-indigo-600 bg-indigo-50'}`}>
+                                    {isUpper ? 'Upper Half' : 'Lower Half'}
                                   </span>
-                                ) : (
-                                  <span className="text-[9px] print:text-[8px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-lg leading-none">
-                                    Round 1
-                                  </span>
-                                )}
+                                </div>
+                                
+                                <div className="text-xs font-black text-slate-900 truncate max-w-[170px] print:max-w-[110px] print:text-[10px]" title={teamName}>
+                                  {teamName}
+                                </div>
+                                
+                                <div className="flex justify-between items-center mt-0.5">
+                                  {isBye ? (
+                                    <span className="text-[9px] print:text-[8px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-lg flex items-center gap-1 leading-none">
+                                      <Sparkles size={10} className="text-emerald-500" />
+                                      <span>BYE</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] print:text-[8px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-lg leading-none">
+                                      Round 1
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-
-                            {/* Connection line straight to Round 1 */}
-                            <div className="hidden md:flex print:flex absolute left-full top-1/2 -translate-y-1/2 items-center pointer-events-none z-0">
-                              <div className="h-[2px] bg-slate-900" style={{ width: 'var(--conn-width, 24px)' }}></div>
-                            </div>
-                          </div>
 
                           {/* Boundary indicator */}
                           {idx === setup.Nu - 1 && (
@@ -1595,7 +1715,7 @@ const TournamentMaker: React.FC = () => {
 
                         return (
                           <React.Fragment key={match.id}>
-                            <div className="relative flex items-center w-full my-2">
+                            <div id={`match-card-${match.id}`} className="relative flex items-center w-full my-2">
                               {match.isBye ? (
                                 <div className="bg-pink-50/20 border-2 border-dashed border-pink-300 p-4 print:p-2 rounded-xl print:rounded-lg flex flex-col justify-between hover:scale-[1.01] transition-transform shadow-xs animate-in fade-in w-full relative z-10 print:border-pink-500">
                                   <div className="flex justify-between items-center pb-2 border-b border-pink-100/50 mb-2">
@@ -1648,44 +1768,6 @@ const TournamentMaker: React.FC = () => {
                                   </div>
                                 </div>
                               )}
-
-                              {/* Connection Lines (Desktop & Print Only) */}
-                              {hasNextRound && (
-                                <div className="hidden md:flex print:flex absolute left-full top-1/2 -translate-y-1/2 items-center pointer-events-none z-0">
-                                  {/* Left horizontal spur leaving the card */}
-                                  <div className="h-[2px] bg-slate-900" style={{ width: 'var(--conn-width, 24px)' }}></div>
-
-                                  {hasSibling ? (
-                                    isEven ? (
-                                      /* Downward connection line for upper member of pair */
-                                      <div 
-                                        className="border-slate-900 border-l-2 absolute animate-in fade-in duration-300"
-                                        style={{
-                                          left: 'var(--conn-width, 24px)',
-                                          top: '50%',
-                                          width: 'var(--conn-width, 24px)',
-                                          height: `${verticalDistance + 2}px`,
-                                          borderBottomWidth: '2px', // Outgoing connector
-                                        }}
-                                      />
-                                    ) : (
-                                      /* Upward connection line for lower member of pair */
-                                      <div 
-                                        className="border-slate-900 border-l-2 absolute animate-in fade-in duration-300"
-                                        style={{
-                                          left: 'var(--conn-width, 24px)',
-                                          bottom: '50%',
-                                          width: 'var(--conn-width, 24px)',
-                                          height: `${verticalDistance + 2}px`,
-                                        }}
-                                      />
-                                    )
-                                  ) : (
-                                    /* No sibling in this round, project straight to next column center */
-                                    <div className="h-[2px] bg-slate-900 absolute" style={{ width: 'var(--conn-width, 24px)', left: 'var(--conn-width, 24px)' }} />
-                                  )}
-                                </div>
-                              )}
                             </div>
 
                             {/* Boundary Split Marker (Upper Half / Lower Half) */}
@@ -1708,6 +1790,24 @@ const TournamentMaker: React.FC = () => {
                   </div>
                 );
               })}
+
+              {/* Dynamic SVG Bracket Connection Lines Canvas */}
+              <svg 
+                className="absolute inset-x-0 top-0 pointer-events-none z-0 hidden md:block print:block"
+                style={{ width: canvasDimensions.width, height: canvasDimensions.height }}
+              >
+                {svgPaths.map((pathStr, sIdx) => (
+                  <path 
+                    key={sIdx} 
+                    d={pathStr} 
+                    stroke="#0f172a" 
+                    strokeWidth="2" 
+                    fill="none" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                  />
+                ))}
+              </svg>
             </div>
 
             {/* Third-Place & Runner-Up Footer section styled beautifully inside a bordered box like the PDF */}
