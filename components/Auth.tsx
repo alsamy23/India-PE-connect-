@@ -178,16 +178,18 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 overflow-y-auto">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white rounded-[2.5rem] border-4 border-slate-900 p-8 md:p-12 shadow-2xl relative"
+        className="max-w-md w-full bg-white rounded-[2rem] sm:rounded-[2.5rem] border-2 sm:border-4 border-slate-900 p-6 md:p-12 shadow-2xl relative my-auto"
       >
         {onBack && (
           <button 
             onClick={onBack}
-            className="absolute left-6 top-6 p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-all"
+            className="absolute left-4 top-4 sm:left-6 sm:top-6 p-2 bg-slate-50 border border-slate-100 hover:bg-slate-100 rounded-xl text-slate-500 hover:text-slate-950 transition-all flex items-center justify-center"
+            style={{ width: '40px', height: '40px' }}
+            aria-label="Back"
           >
             <ArrowLeft size={20} />
           </button>

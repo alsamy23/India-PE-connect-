@@ -84,6 +84,30 @@ const App: React.FC = () => {
   const [isAuthView, setIsAuthView] = useState(false);
   const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(null);
   const [highlightStudentId, setHighlightStudentId] = useState<string | null>(null);
+
+  // Synchronize browser history with Login view to handle Android hardware back button natively
+  useEffect(() => {
+    if (isAuthView) {
+      window.history.pushState({ authOpen: true }, '');
+      
+      const handlePopState = (e: PopStateEvent) => {
+        setIsAuthView(false);
+      };
+      
+      window.addEventListener('popstate', handlePopState);
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [isAuthView]);
+
+  const handleCloseAuth = () => {
+    if (window.history.state?.authOpen) {
+      window.history.back();
+    } else {
+      setIsAuthView(false);
+    }
+  };
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser: FirebaseUser | null) => {
@@ -352,11 +376,6 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
-    // If the user wants to login/signup, show Auth component everywhere! (Except if they are already logged in and it's dismissed)
-    if (!user && isAuthView) {
-      return <Auth onBack={() => setIsAuthView(false)} />;
-    }
-
     if (isProtectedTab(activeTab)) {
       if (!isAuthReady) {
         return (
@@ -405,6 +424,14 @@ const App: React.FC = () => {
       default: return <Dashboard apiStatus={apiStatus} debugInfo={debugInfo} onTestConnection={handleTestConnection} isTesting={isTesting} onNavigate={setActiveTab} />;
     }
   };
+
+  if (!user && isAuthView) {
+    return (
+      <ErrorBoundary>
+        <Auth onBack={handleCloseAuth} />
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -628,7 +655,10 @@ const App: React.FC = () => {
                 <p className="text-[10px] text-slate-500 font-bold uppercase truncate tracking-widest">{user.email}</p>
               </div>
               <button 
-                onClick={handleLogout}
+                onClick={async () => {
+                  await handleLogout();
+                  setIsSidebarOpen(false);
+                }}
                 className="p-2 hover:bg-white/10 rounded-xl text-slate-500 hover:text-white transition-colors"
                 title="Logout"
               >
@@ -637,7 +667,10 @@ const App: React.FC = () => {
             </div>
           ) : (
             <button 
-              onClick={() => setActiveTab('school-results')}
+              onClick={() => {
+                setIsAuthView(true);
+                setIsSidebarOpen(false);
+              }}
               className="w-full py-4 bg-primary text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary-container transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] flex items-center justify-center gap-2"
             >
               <Users size={16} />

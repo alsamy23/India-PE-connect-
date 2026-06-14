@@ -155,27 +155,39 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
   }
 ];
 
+// In-memory cache to prevent redundant Firestore reads and laggy UI tab switching
+const schoolMemberCache: { [uid: string]: SchoolMember | null } = {};
+const schoolCache: { [schoolId: string]: School | null } = {};
+
 export const fitnessService = {
   // School Management
   saveSchool: async (school: School) => {
     const path = `schools/${school.id}`;
     try {
       await setDoc(doc(db, 'schools', school.id), school);
+      schoolCache[school.id] = school; // cache
       // Also set the admin as a member
-      await setDoc(doc(db, 'schoolMembers', school.adminId), {
+      const member = {
         uid: school.adminId,
         schoolId: school.id,
         role: 'admin'
-      });
+      };
+      await setDoc(doc(db, 'schoolMembers', school.adminId), member);
+      schoolMemberCache[school.adminId] = member as any; // cache
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, path);
     }
   },
 
   getSchool: async (schoolId: string): Promise<School | null> => {
+    if (schoolCache[schoolId] !== undefined) {
+      return schoolCache[schoolId];
+    }
     try {
       const docSnap = await getDoc(doc(db, 'schools', schoolId));
-      return docSnap.exists() ? docSnap.data() as School : null;
+      const school = docSnap.exists() ? docSnap.data() as School : null;
+      schoolCache[schoolId] = school;
+      return school;
     } catch (err) {
       logError(err, 'error', { context: 'getSchool failed', schoolId });
       return null;
@@ -186,15 +198,21 @@ export const fitnessService = {
     const path = `schoolMembers/${uid}`;
     try {
       await deleteDoc(doc(db, 'schoolMembers', uid));
+      delete schoolMemberCache[uid];
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, path);
     }
   },
 
   getSchoolMember: async (uid: string): Promise<SchoolMember | null> => {
+    if (schoolMemberCache[uid] !== undefined) {
+      return schoolMemberCache[uid];
+    }
     try {
       const docSnap = await getDoc(doc(db, 'schoolMembers', uid));
-      return docSnap.exists() ? docSnap.data() as SchoolMember : null;
+      const res = docSnap.exists() ? docSnap.data() as SchoolMember : null;
+      schoolMemberCache[uid] = res;
+      return res;
     } catch (err) {
       logError(err, 'error', { context: 'getSchoolMember failed', uid });
       return null;
@@ -204,6 +222,7 @@ export const fitnessService = {
   addTeamMember: async (member: SchoolMember) => {
     try {
       await setDoc(doc(db, 'schoolMembers', member.uid), member);
+      schoolMemberCache[member.uid] = member;
     } catch (err) {
       logError(err, 'error', { context: 'addTeamMember failed', memberUid: member.uid });
       throw err;
