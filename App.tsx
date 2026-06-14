@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Users, 
   BookOpen, 
@@ -69,6 +69,353 @@ type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'workload-plann
 
 import { BoardType, Language } from './types.ts';
 
+// Static Navigation Catalog (Moved outside to ensure stable memory reference)
+const navigation = [
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
+  
+  { 
+    section: 'Plan',
+    items: [
+      { id: 'planner', name: 'PE Lesson Plan', icon: Sparkles, subtitle: 'Generate today\'s PE lesson in under 60 seconds.' },
+      { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange, subtitle: 'Auto-map 40 weeks of PE for your classes.' },
+      { id: 'workload-planner', name: 'Workload & Timetable', icon: CalendarRange, isNew: true, subtitle: 'Schedules, curriculum slots, and lessons suggester.' },
+      { id: 'skillmastery', name: 'Skill Progressions', icon: Target, subtitle: 'Long-term curriculum maps and checklists.' },
+      { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap, subtitle: 'Resources matched to CBSE guidelines.' },
+    ]
+  },
+
+  { 
+    section: 'Assess',
+    items: [
+      { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true, subtitle: 'All Khelo India Fitness tests pre-loaded.' },
+      { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, subtitle: 'Official battery tests and student profiles.' },
+      { id: 'testpaper', name: 'Question Paper Generator', icon: ClipboardList, isNew: true, subtitle: 'Create MCQ and theory papers for PE.' },
+      { id: 'skill-analysis', name: 'Skill Analysis Lab', icon: Video, isNew: true, subtitle: 'Compare and analyze sports techniques.' },
+      { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true, subtitle: 'Ask AI about sports rules and doubts.' },
+    ]
+  },
+
+  { 
+    section: 'Record',
+    items: [
+      { id: 'school-students', name: 'Student Directory', icon: Users, protected: true },
+      { id: 'school-overview', name: 'School Fitness Database', icon: Zap, isNew: true, subtitle: 'Store and track every student\'s scores.' },
+      { id: 'school-results', name: 'Live Results', icon: Activity, isNew: true, protected: true },
+      { id: 'fitness-reports', name: 'Fitness Reports', icon: FileText, isNew: true, protected: true, subtitle: 'Generate progress and performance reports.' },
+    ]
+  },
+
+  { 
+    section: 'Communicate & Admin',
+    items: [
+      { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true, subtitle: 'Draft ready-to-print letters for parents.' },
+      { id: 'school-teams', name: 'Teams/Classes', icon: UserCheck, protected: true },
+      { id: 'widgets', name: 'PE Classroom Widgets', icon: Zap, isNew: true, subtitle: 'Interactive timers and tools.' },
+      { id: 'compliance', name: 'State Compliance', icon: ShieldCheck, subtitle: 'CBSE and NEP 2020 alignment.' },
+      { id: 'tools', name: 'AI Tool Center', icon: Wrench, subtitle: 'AI tools that save you time daily.' },
+      { id: 'school-admin', name: 'School Settings', icon: Shield, protected: true },
+      { id: 'logs', name: 'System Logs', icon: Terminal, protected: true, subtitle: 'Monitor real-time error reports.' },
+    ]
+  },
+
+  { 
+    section: 'Corporate Info',
+    items: [
+      { id: 'about', name: 'About smartpeindia', icon: GraduationCap, subtitle: 'Meet the founder L. Samy and the mission.' },
+      { id: 'contact', name: 'Contact & Support', icon: Mail, subtitle: 'Get help, report a bug, or collaborate directly.' },
+    ]
+  }
+];
+
+// Static permission selector
+const isProtectedTab = (tabId: string) => {
+  for (const item of navigation) {
+    if ('section' in item && item.items) {
+      if (item.items.some(i => i.id === tabId && i.protected)) return true;
+    } else if ('id' in item && (item as any).id === tabId && (item as any).protected) {
+      return true;
+    }
+  }
+  return false;
+};
+
+// Memoized Mobile Header Component
+interface MobileHeaderProps {
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: (open: boolean) => void;
+}
+const MobileHeader: React.FC<MobileHeaderProps> = React.memo(({ isSidebarOpen, setIsSidebarOpen }) => {
+  return (
+    <header className="md:hidden sticky top-0 bg-slate-950/90 backdrop-blur-xl text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
+      <Logo variant="light" className="scale-90 origin-left" />
+      <button 
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+        className="p-2 bg-white/10 rounded-xl active:scale-90 transition-transform"
+        aria-label="Toggle Navigation Menu"
+      >
+        {isSidebarOpen ? <X /> : <Menu />}
+      </button>
+    </header>
+  );
+});
+
+// Memoized Sidebar Component to isolate re-render triggers during tab transition
+interface SidebarProps {
+  activeTab: Tab;
+  handleTabChange: (tabId: Tab) => void;
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: (open: boolean) => void;
+  apiStatus: 'checking' | 'ok' | 'missing' | 'quota';
+  handleSelectKey: () => void;
+  user: FirebaseUser | null;
+  handleLogout: () => void;
+  setIsAuthView: (view: boolean) => void;
+}
+const Sidebar: React.FC<SidebarProps> = React.memo(({
+  activeTab,
+  handleTabChange,
+  isSidebarOpen,
+  setIsSidebarOpen,
+  apiStatus,
+  handleSelectKey,
+  user,
+  handleLogout,
+  setIsAuthView
+}) => {
+  return (
+    <aside className={`
+      fixed inset-y-0 left-0 z-40 w-80 bg-slate-950 text-white transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:relative md:translate-x-0
+      ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      border-r border-white/5
+      print:hidden
+    `}>
+      <div className="p-10 hidden md:flex items-center">
+        <Logo variant="light" />
+      </div>
+
+      {/* API Status Badge - Interactive */}
+      <div className="mx-6 mb-8">
+        {apiStatus === 'ok' ? (
+          <button 
+            onClick={handleSelectKey}
+            className="w-full bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-emerald-500/10 transition-all group"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+              <div className="flex flex-col items-start">
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">AI Connected</span>
+              </div>
+            </div>
+            <Wifi size={12} className="text-emerald-500 group-hover:scale-110 transition-transform" />
+          </button>
+        ) : apiStatus === 'quota' ? (
+          <button 
+            onClick={handleSelectKey}
+            className="w-full bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-amber-500/10 transition-all group"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.6)]"></div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Quota Exceeded</span>
+            </div>
+            <AlertTriangle size={12} className="text-amber-500 group-hover:scale-110 transition-transform" />
+          </button>
+        ) : (
+          <button 
+            onClick={handleSelectKey}
+            className="w-full bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-rose-500/10 transition-all group"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">AI Disconnected</span>
+            </div>
+            <AlertTriangle size={12} className="text-rose-500 group-hover:scale-110 transition-transform" />
+          </button>
+        )}
+      </div>
+
+      <nav className="mt-4 px-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-380px)] custom-scrollbar">
+        {navigation.map((item, idx) => {
+          if ('section' in item && item.items) {
+            return (
+              <div key={`section-${idx}`} className="py-4">
+                <p className="px-6 mb-3 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">{item.section}</p>
+                <div className="space-y-1.5">
+                  {item.items.map((subItem) => (
+                    <button
+                      key={subItem.id}
+                      onClick={() => handleTabChange(subItem.id as Tab)}
+                      className={`
+                        w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
+                        ${activeTab === subItem.id 
+                          ? 'bg-white text-on-surface shadow-2xl shadow-white/5 scale-[1.02] font-black font-sans' 
+                          : 'text-slate-500 hover:bg-white/5 hover:text-white font-bold font-sans'}
+                      `}
+                    >
+                      <subItem.icon size={20} className={activeTab === subItem.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'} />
+                      <span className="text-sm tracking-wide uppercase font-display">{subItem.name}</span>
+                      {(subItem as any).isNew && activeTab !== subItem.id && (
+                        <span className="absolute right-4 top-4 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+                      )}
+                      {activeTab === subItem.id && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"></div>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+          if ('id' in item) {
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleTabChange(item.id as Tab)}
+                className={`
+                  w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
+                  ${activeTab === item.id 
+                    ? 'bg-white text-on-surface shadow-2xl shadow-white/5 scale-[1.02] font-black' 
+                    : 'text-slate-500 hover:bg-white/5 hover:text-white font-bold'}
+                `}
+              >
+                <item.icon size={20} className={activeTab === item.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'} />
+                <span className="text-sm tracking-wide uppercase font-display">{item.name}</span>
+                {(item as any).isNew && activeTab !== item.id && (
+                  <span className="absolute right-4 top-4 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+                )}
+                {activeTab === item.id && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"></div>}
+              </button>
+            );
+          }
+          return null;
+        })}
+      </nav>
+
+      {/* Profile Footer */}
+      <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-950 border-t border-white/5">
+        {user ? (
+          <div className="w-full bg-white/5 rounded-[2rem] p-4 flex items-center space-x-4">
+            <div className="relative">
+              <div className="w-12 h-12 bg-primary rounded-2xl border-2 border-primary/30 flex items-center justify-center text-white font-black text-lg font-display">
+                {user.displayName?.charAt(0) || user.email?.charAt(0)}
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-secondary border-2 border-slate-950 rounded-full"></div>
+            </div>
+            <div className="overflow-hidden text-left flex-1">
+              <p className="text-sm font-black truncate leading-none mb-1 text-white font-display uppercase">{user.displayName || 'Teacher'}</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase truncate tracking-widest">{user.email}</p>
+            </div>
+            <button 
+              onClick={() => {
+                handleLogout();
+                setIsSidebarOpen(false);
+              }}
+              className="p-2 hover:bg-white/10 rounded-xl text-slate-500 hover:text-white transition-colors flex items-center justify-center border border-white/10 hover:border-white/30"
+              title="Logout"
+              style={{ width: '36px', height: '36px' }}
+            >
+              <RotateCcw size={16} />
+            </button>
+          </div>
+        ) : (
+          <button 
+            onClick={() => {
+              setIsAuthView(true);
+              setIsSidebarOpen(false);
+            }}
+            className="w-full py-4 bg-primary text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary-container transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] flex items-center justify-center gap-2"
+          >
+            <Users size={16} />
+            <span>Teacher Login</span>
+          </button>
+        )}
+      </div>
+    </aside>
+  );
+});
+
+// Memoized Sticky Header Component to encapsulate GlobalSearch and secondary navigation links
+interface StickyHeaderProps {
+  activeTab: Tab;
+  handleTabChange: (tabId: Tab) => void;
+  setHighlightStudentId: (id: string | null) => void;
+}
+const StickyHeader: React.FC<StickyHeaderProps> = React.memo(({
+  activeTab,
+  handleTabChange,
+  setHighlightStudentId,
+}) => {
+  return (
+    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 md:px-8 md:py-4 print:hidden shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center gap-6 text-[11px] font-black uppercase tracking-widest text-slate-500">
+        <button 
+          onClick={() => handleTabChange('dashboard')} 
+          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'dashboard' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+        >
+          Platform
+        </button>
+        <button 
+          onClick={() => handleTabChange('tools')} 
+          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'tools' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+        >
+          Modules
+        </button>
+        <button 
+          onClick={() => handleTabChange('about')} 
+          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'about' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+        >
+          About
+        </button>
+        <button 
+          onClick={() => handleTabChange('contact')} 
+          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'contact' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+        >
+          Contact
+        </button>
+      </div>
+      <div className="w-full md:max-w-xs lg:max-w-sm">
+        <GlobalSearch onNavigate={(tabId, data) => {
+          handleTabChange(tabId as Tab);
+          if (data?.studentId) {
+            setHighlightStudentId(data.studentId);
+          } else {
+            setHighlightStudentId(null);
+          }
+        }} />
+      </div>
+    </div>
+  );
+});
+
+// Memoized Mobile Bottom Navigation component
+interface MobileBottomNavProps {
+  activeTab: Tab;
+  handleTabChange: (tabId: Tab) => void;
+}
+const MobileBottomNav: React.FC<MobileBottomNavProps> = React.memo(({ activeTab, handleTabChange }) => {
+  const bottomItems = useMemo(() => [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Home' },
+    { id: 'planner', icon: Sparkles, label: 'Lesson Plan' },
+    { id: 'testpaper', icon: ClipboardList, label: 'Tests' },
+    { id: 'tools', icon: Wrench, label: 'Tools' },
+    { id: 'theory', icon: GraduationCap, label: 'Theory' }
+  ] as const, []);
+
+  return (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-3 pb-safe flex justify-between items-center z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] print:hidden">
+      {bottomItems.map((item) => (
+        <button
+          key={item.id}
+          onClick={() => handleTabChange(item.id as Tab)}
+          className={`flex flex-col items-center space-y-1 transition-all active:scale-90 ${activeTab === item.id ? 'text-primary' : 'text-slate-400'}`}
+        >
+          <item.icon size={20} className={activeTab === item.id ? 'scale-110' : ''} />
+          <span className={`text-[9px] font-black uppercase tracking-widest ${activeTab === item.id ? 'opacity-100' : 'opacity-60'}`}>
+            {item.label}
+          </span>
+        </button>
+      ))}
+    </nav>
+  );
+});
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -101,13 +448,13 @@ const App: React.FC = () => {
     }
   }, [isAuthView]);
 
-  const handleCloseAuth = () => {
+  const handleCloseAuth = useCallback(() => {
     if (window.history.state?.authOpen) {
       window.history.back();
     } else {
       setIsAuthView(false);
     }
-  };
+  }, []);
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser: FirebaseUser | null) => {
@@ -127,7 +474,7 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       if (window.confirm('Are you sure you want to log out?')) {
         await signOut(auth);
@@ -135,9 +482,9 @@ const App: React.FC = () => {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, []);
 
-  const checkApiStatus = async (retryCount = 0) => {
+  const checkApiStatus = useCallback(async (retryCount = 0) => {
     try {
       console.log("Checking API health...");
       const response = await fetch(`/api/health?t=${Date.now()}`); // Cache busting
@@ -191,7 +538,7 @@ const App: React.FC = () => {
         setApiStatus('missing');
       }
     }
-  };
+  }, [isKeyDialogOpen]);
 
   useEffect(() => {
     const handleRejection = (e: PromiseRejectionEvent) => {
@@ -239,9 +586,9 @@ const App: React.FC = () => {
     }, 45000); // 45 seconds is sufficient for background checks
     
     return () => clearInterval(interval);
-  }, [apiStatus]); // Re-run when apiStatus changes to missing
+  }, [apiStatus, checkApiStatus]); // Re-run when apiStatus changes to missing
 
-  const handleSelectKey = async () => {
+  const handleSelectKey = useCallback(async () => {
     try {
       if (window.aistudio) {
         await window.aistudio.openSelectKey();
@@ -254,17 +601,17 @@ const App: React.FC = () => {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [checkApiStatus]);
 
-  const triggerKeySelector = async () => {
+  const triggerKeySelector = useCallback(async () => {
     try {
       await handleSelectKey();
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [handleSelectKey]);
 
-  const handleTestConnection = async () => {
+  const handleTestConnection = useCallback(async () => {
     setIsTesting(true);
     setGlobalError(null);
     try {
@@ -293,9 +640,9 @@ const App: React.FC = () => {
     } finally {
       setIsTesting(false);
     }
-  };
+  }, [checkApiStatus]);
 
-  const handleResetKey = async () => {
+  const handleResetKey = useCallback(async () => {
     try {
       if (window.aistudio) {
         // There isn't a direct 'clear' but we can re-open or just refresh
@@ -305,75 +652,14 @@ const App: React.FC = () => {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [checkApiStatus]);
 
-  const navigation = [
-    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    
-    { 
-      section: 'Plan',
-      items: [
-        { id: 'planner', name: 'PE Lesson Plan', icon: Sparkles, subtitle: 'Generate today\'s PE lesson in under 60 seconds.' },
-        { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange, subtitle: 'Auto-map 40 weeks of PE for your classes.' },
-        { id: 'workload-planner', name: 'Workload & Timetable', icon: CalendarRange, isNew: true, subtitle: 'Schedules, curriculum slots, and lessons suggester.' },
-        { id: 'skillmastery', name: 'Skill Progressions', icon: Target, subtitle: 'Long-term curriculum maps and checklists.' },
-        { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap, subtitle: 'Resources matched to CBSE guidelines.' },
-      ]
-    },
-
-    { 
-      section: 'Assess',
-      items: [
-        { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true, subtitle: 'All Khelo India Fitness tests pre-loaded.' },
-        { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, subtitle: 'Official battery tests and student profiles.' },
-        { id: 'testpaper', name: 'Question Paper Generator', icon: ClipboardList, isNew: true, subtitle: 'Create MCQ and theory papers for PE.' },
-        { id: 'skill-analysis', name: 'Skill Analysis Lab', icon: Video, isNew: true, subtitle: 'Compare and analyze sports techniques.' },
-        { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true, subtitle: 'Ask AI about sports rules and doubts.' },
-      ]
-    },
-
-    { 
-      section: 'Record',
-      items: [
-        { id: 'school-students', name: 'Student Directory', icon: Users, protected: true },
-        { id: 'school-overview', name: 'School Fitness Database', icon: Zap, isNew: true, subtitle: 'Store and track every student\'s scores.' },
-        { id: 'school-results', name: 'Live Results', icon: Activity, isNew: true, protected: true },
-        { id: 'fitness-reports', name: 'Fitness Reports', icon: FileText, isNew: true, protected: true, subtitle: 'Generate progress and performance reports.' },
-      ]
-    },
-
-    { 
-      section: 'Communicate & Admin',
-      items: [
-        { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true, subtitle: 'Draft ready-to-print letters for parents.' },
-        { id: 'school-teams', name: 'Teams/Classes', icon: UserCheck, protected: true },
-        { id: 'widgets', name: 'PE Classroom Widgets', icon: Zap, isNew: true, subtitle: 'Interactive timers and tools.' },
-        { id: 'compliance', name: 'State Compliance', icon: ShieldCheck, subtitle: 'CBSE and NEP 2020 alignment.' },
-        { id: 'tools', name: 'AI Tool Center', icon: Wrench, subtitle: 'AI tools that save you time daily.' },
-        { id: 'school-admin', name: 'School Settings', icon: Shield, protected: true },
-        { id: 'logs', name: 'System Logs', icon: Terminal, protected: true, subtitle: 'Monitor real-time error reports.' },
-      ]
-    },
-
-    { 
-      section: 'Corporate Info',
-      items: [
-        { id: 'about', name: 'About smartpeindia', icon: GraduationCap, subtitle: 'Meet the founder L. Samy and the mission.' },
-        { id: 'contact', name: 'Contact & Support', icon: Mail, subtitle: 'Get help, report a bug, or collaborate directly.' },
-      ]
-    }
-  ];
-
-  const isProtectedTab = (tabId: string) => {
-    for (const item of navigation) {
-      if ('section' in item && item.items) {
-        if (item.items.some(i => i.id === tabId && i.protected)) return true;
-      } else if ('id' in item && (item as any).id === tabId && (item as any).protected) {
-        return true;
-      }
-    }
-    return false;
-  };
+  // Unified memoized transition handler to switch routes easily and prevent layout delay
+  const handleTabChange = useCallback((tabId: Tab) => {
+    setActiveTab(tabId);
+    setHighlightStudentId(null);
+    setIsSidebarOpen(false);
+  }, []);
 
   const renderContent = () => {
     if (isProtectedTab(activeTab)) {
@@ -386,12 +672,12 @@ const App: React.FC = () => {
         );
       }
       if (!user) {
-        return <FitnessManagementIntro onLogin={() => setIsAuthView(true)} onTryDemo={() => setActiveTab('fitness')} />;
+        return <FitnessManagementIntro onLogin={() => setIsAuthView(true)} onTryDemo={() => handleTabChange('fitness')} />;
       }
     }
 
     switch (activeTab) {
-      case 'dashboard': return <Dashboard apiStatus={apiStatus} debugInfo={debugInfo} onTestConnection={handleTestConnection} isTesting={isTesting} onNavigate={setActiveTab} />;
+      case 'dashboard': return <Dashboard apiStatus={apiStatus} debugInfo={debugInfo} onTestConnection={handleTestConnection} isTesting={isTesting} onNavigate={handleTabChange} />;
       case 'yearly': return <YearlyPlanner />;
       case 'workload-planner': return <DepartmentWorkloadPlanner />;
       case 'tools': return <AIToolCenter />;
@@ -402,8 +688,8 @@ const App: React.FC = () => {
       case 'khelo': return <KheloIndia />;
       case 'rules': return <RulesBot />;
       case 'fitness': return <FitnessTests />;
-      case 'school-results': return <FitnessDashboard onNavigate={setActiveTab} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} />;
-      case 'school-students': return <StudentManagement onNavigate={setActiveTab} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} highlightStudentId={highlightStudentId} />;
+      case 'school-results': return <FitnessDashboard onNavigate={handleTabChange} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} />;
+      case 'school-students': return <StudentManagement onNavigate={handleTabChange} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} highlightStudentId={highlightStudentId} />;
       case 'school-teams': return <TeamManagement />;
       case 'school-admin': return <SchoolAdmin />;
       case 'logs': return <AdminLogs />;
@@ -414,14 +700,14 @@ const App: React.FC = () => {
       case 'skill-analysis': return <SkillAnalysis />;
       case 'school-overview': return <FitnessManagementIntro onLogin={() => {
         if (auth.currentUser) {
-          setActiveTab('school-results');
+          handleTabChange('school-results');
         } else {
           setIsAuthView(true);
         }
-      }} onTryDemo={() => setActiveTab('fitness')} />;
-      case 'about': return <About onNavigate={setActiveTab} />;
-      case 'contact': return <Contact onNavigate={setActiveTab} />;
-      default: return <Dashboard apiStatus={apiStatus} debugInfo={debugInfo} onTestConnection={handleTestConnection} isTesting={isTesting} onNavigate={setActiveTab} />;
+      }} onTryDemo={() => handleTabChange('fitness')} />;
+      case 'about': return <About onNavigate={handleTabChange} />;
+      case 'contact': return <Contact onNavigate={handleTabChange} />;
+      default: return <Dashboard apiStatus={apiStatus} debugInfo={debugInfo} onTestConnection={handleTestConnection} isTesting={isTesting} onNavigate={handleTabChange} />;
     }
   };
 
@@ -508,15 +794,11 @@ const App: React.FC = () => {
             </p>
           </div>
         </div>
-      )}
-
-        {/* Mobile Header */}
-        <header className="md:hidden sticky top-0 bg-slate-950/90 backdrop-blur-xl text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
-          <Logo variant="light" className="scale-90 origin-left" />
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/10 rounded-xl active:scale-90 transition-transform">
-            {isSidebarOpen ? <X /> : <Menu />}
-          </button>
-        </header>
+      )}        {/* Mobile Header */}
+        <MobileHeader 
+          isSidebarOpen={isSidebarOpen} 
+          setIsSidebarOpen={setIsSidebarOpen} 
+        />
 
         {/* Mobile Sidebar Backdrop */}
         {isSidebarOpen && (
@@ -527,253 +809,59 @@ const App: React.FC = () => {
         )}
 
         {/* Navigation Sidebar */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-40 w-80 bg-slate-950 text-white transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:relative md:translate-x-0
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        border-r border-white/5
-        print:hidden
-      `}>
-        <div className="p-10 hidden md:flex items-center">
-          <Logo variant="light" />
-        </div>
+        <Sidebar 
+          isSidebarOpen={isSidebarOpen} 
+          activeTab={activeTab} 
+          apiStatus={apiStatus} 
+          user={user} 
+          handleTabChange={handleTabChange} 
+          handleSelectKey={handleSelectKey} 
+          handleLogout={handleLogout} 
+          setIsAuthView={setIsAuthView} 
+          setIsSidebarOpen={setIsSidebarOpen} 
+        />
 
-        {/* API Status Badge - Interactive */}
-        <div className="mx-6 mb-8">
-          {apiStatus === 'ok' ? (
-            <button 
-              onClick={handleSelectKey}
-              className="w-full bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-emerald-500/10 transition-all group"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-                <div className="flex flex-col items-start">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">AI Connected</span>
+        {/* Content Area */}
+        <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-20">
+          <StickyHeader 
+            activeTab={activeTab} 
+            handleTabChange={handleTabChange} 
+            setHighlightStudentId={setHighlightStudentId} 
+          />
+          {globalError && (
+            <div className="max-w-7xl mx-auto px-6 pt-6 md:px-12">
+              <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 flex items-center space-x-4 text-red-700">
+                <AlertTriangle className="flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-black uppercase tracking-tight">System Error Detected</p>
+                  <p className="text-xs font-medium opacity-80 mb-2">{globalError}</p>
+                  <button 
+                    onClick={handleSelectKey}
+                    className="px-4 py-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+                  >
+                    Setup AI / Fix Connection
+                  </button>
                 </div>
-              </div>
-              <Wifi size={12} className="text-emerald-500 group-hover:scale-110 transition-transform" />
-            </button>
-          ) : apiStatus === 'quota' ? (
-            <button 
-              onClick={handleSelectKey}
-              className="w-full bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-amber-500/10 transition-all group"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.6)]"></div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Quota Exceeded</span>
-              </div>
-              <AlertTriangle size={12} className="text-amber-500 group-hover:scale-110 transition-transform" />
-            </button>
-          ) : (
-            <button 
-              onClick={handleSelectKey}
-              className="w-full bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-rose-500/10 transition-all group"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">AI Disconnected</span>
-              </div>
-              <AlertTriangle size={12} className="text-rose-500 group-hover:scale-110 transition-transform" />
-            </button>
-          )}
-        </div>
-
-        <nav className="mt-4 px-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-380px)] custom-scrollbar">
-          {navigation.map((item, idx) => {
-            if ('section' in item && item.items) {
-              return (
-                <div key={`section-${idx}`} className="py-4">
-                  <p className="px-6 mb-3 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">{item.section}</p>
-                  <div className="space-y-1.5">
-                    {item.items.map((subItem) => (
-                      <button
-                        key={subItem.id}
-                        onClick={() => {
-                          setActiveTab(subItem.id as Tab);
-                          setHighlightStudentId(null);
-                          setIsSidebarOpen(false);
-                        }}
-                        className={`
-                          w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
-                          ${activeTab === subItem.id 
-                            ? 'bg-white text-on-surface shadow-2xl shadow-white/5 scale-[1.02] font-black' 
-                            : 'text-slate-500 hover:bg-white/5 hover:text-white font-bold'}
-                        `}
-                      >
-                        <subItem.icon size={20} className={activeTab === subItem.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'} />
-                        <span className="text-sm tracking-wide uppercase font-display">{subItem.name}</span>
-                        {(subItem as any).isNew && activeTab !== subItem.id && (
-                          <span className="absolute right-4 top-4 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
-                        )}
-                        {activeTab === subItem.id && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"></div>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            }
-            if ('id' in item) {
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id as Tab);
-                    setHighlightStudentId(null);
-                    setIsSidebarOpen(false);
-                  }}
-                  className={`
-                    w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
-                    ${activeTab === item.id 
-                      ? 'bg-white text-on-surface shadow-2xl shadow-white/5 scale-[1.02] font-black' 
-                      : 'text-slate-500 hover:bg-white/5 hover:text-white font-bold'}
-                  `}
-                >
-                  <item.icon size={20} className={activeTab === item.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'} />
-                  <span className="text-sm tracking-wide uppercase font-display">{item.name}</span>
-                  {(item as any).isNew && activeTab !== item.id && (
-                    <span className="absolute right-4 top-4 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
-                  )}
-                  {activeTab === item.id && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"></div>}
-                </button>
-              );
-            }
-            return null;
-          })}
-        </nav>
-
-        {/* Profile Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-950 border-t border-white/5">
-          {user ? (
-            <div className="w-full bg-white/5 rounded-[2rem] p-4 flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-12 h-12 bg-primary rounded-2xl border-2 border-primary/30 flex items-center justify-center text-white font-black text-lg font-display">
-                  {user.displayName?.charAt(0) || user.email?.charAt(0)}
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-secondary border-2 border-slate-950 rounded-full"></div>
-              </div>
-              <div className="overflow-hidden text-left flex-1">
-                <p className="text-sm font-black truncate leading-none mb-1 text-white font-display uppercase">{user.displayName || 'Teacher'}</p>
-                <p className="text-[10px] text-slate-500 font-bold uppercase truncate tracking-widest">{user.email}</p>
-              </div>
-              <button 
-                onClick={async () => {
-                  await handleLogout();
-                  setIsSidebarOpen(false);
-                }}
-                className="p-2 hover:bg-white/10 rounded-xl text-slate-500 hover:text-white transition-colors"
-                title="Logout"
-              >
-                <RotateCcw size={16} />
-              </button>
-            </div>
-          ) : (
-            <button 
-              onClick={() => {
-                setIsAuthView(true);
-                setIsSidebarOpen(false);
-              }}
-              className="w-full py-4 bg-primary text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary-container transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] flex items-center justify-center gap-2"
-            >
-              <Users size={16} />
-              <span>Teacher Login</span>
-            </button>
-          )}
-        </div>
-      </aside>
-
-
-      {/* Content Area */}
-      <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-20">
-        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 md:px-8 md:py-4 print:hidden shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-6 text-[11px] font-black uppercase tracking-widest text-slate-500">
-            <button 
-              onClick={() => setActiveTab('dashboard')} 
-              className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'dashboard' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
-            >
-              Platform
-            </button>
-            <button 
-              onClick={() => setActiveTab('tools')} 
-              className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'tools' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
-            >
-              Modules
-            </button>
-            <button 
-              onClick={() => setActiveTab('about')} 
-              className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'about' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
-            >
-              About
-            </button>
-            <button 
-              onClick={() => setActiveTab('contact')} 
-              className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'contact' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
-            >
-              Contact
-            </button>
-          </div>
-          <div className="w-full md:max-w-xs lg:max-w-sm">
-            <GlobalSearch onNavigate={(tabId, data) => {
-              setActiveTab(tabId as Tab);
-              if (data?.studentId) {
-                setHighlightStudentId(data.studentId);
-              } else {
-                setHighlightStudentId(null);
-              }
-            }} />
-          </div>
-        </div>
-        {globalError && (
-          <div className="max-w-7xl mx-auto px-6 pt-6 md:px-12">
-            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 flex items-center space-x-4 text-red-700">
-              <AlertTriangle className="flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-black uppercase tracking-tight">System Error Detected</p>
-                <p className="text-xs font-medium opacity-80 mb-2">{globalError}</p>
                 <button 
-                  onClick={handleSelectKey}
-                  className="px-4 py-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+                  onClick={() => setGlobalError(null)}
+                  className="p-2 hover:bg-red-100 rounded-lg transition-colors"
                 >
-                  Setup AI / Fix Connection
+                  <X size={16} />
                 </button>
               </div>
-              <button 
-                onClick={() => setGlobalError(null)}
-                className="p-2 hover:bg-red-100 rounded-lg transition-colors"
-              >
-                <X size={16} />
-              </button>
             </div>
+          )}
+          <div className="max-w-7xl mx-auto p-6 md:p-12 min-h-full print:p-0">
+            {renderContent()}
           </div>
-        )}
-        <div className="max-w-7xl mx-auto p-6 md:p-12 min-h-full print:p-0">
-          {renderContent()}
-        </div>
-        <Disclaimer />
+          <Disclaimer />
 
-        {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-3 pb-safe flex justify-between items-center z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] print:hidden">
-          {[
-            { id: 'dashboard', icon: LayoutDashboard, label: 'Home' },
-            { id: 'planner', icon: Sparkles, label: 'Lesson Plan' },
-            { id: 'testpaper', icon: ClipboardList, label: 'Tests' },
-            { id: 'tools', icon: Wrench, label: 'Tools' },
-            { id: 'theory', icon: GraduationCap, label: 'Theory' }
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                setActiveTab(item.id as Tab);
-                setHighlightStudentId(null);
-              }}
-              className={`flex flex-col items-center space-y-1 transition-all active:scale-90 ${activeTab === item.id ? 'text-primary' : 'text-slate-400'}`}
-            >
-              <item.icon size={20} className={activeTab === item.id ? 'scale-110' : ''} />
-              <span className={`text-[9px] font-black uppercase tracking-widest ${activeTab === item.id ? 'opacity-100' : 'opacity-60'}`}>
-                {item.label}
-              </span>
-            </button>
-          ))}
-        </nav>
-      </main>
+          {/* Mobile Bottom Navigation */}
+          <MobileBottomNav 
+            activeTab={activeTab} 
+            handleTabChange={handleTabChange} 
+          />
+        </main>
     </div>
   </ErrorBoundary>
 );
