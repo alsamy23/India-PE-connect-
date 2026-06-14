@@ -184,7 +184,7 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
 }) => {
   return (
     <aside className={`
-      fixed inset-y-0 left-0 z-40 w-80 bg-slate-950 text-white transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:relative md:translate-x-0
+      fixed inset-y-0 left-0 z-50 w-80 bg-slate-950 text-white transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:relative md:translate-x-0
       ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       border-r border-white/5
       print:hidden
@@ -343,7 +343,7 @@ const StickyHeader: React.FC<StickyHeaderProps> = React.memo(({
   setHighlightStudentId,
 }) => {
   return (
-    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 md:px-8 md:py-4 print:hidden shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 md:px-8 md:py-4 print:hidden shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="flex flex-wrap items-center gap-6 text-[11px] font-black uppercase tracking-widest text-slate-500">
         <button 
           onClick={() => handleTabChange('dashboard')} 
@@ -399,7 +399,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = React.memo(({ activeTab,
   ] as const, []);
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-3 pb-safe flex justify-between items-center z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] print:hidden">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-3 pb-safe flex justify-between items-center z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] print:hidden">
       {bottomItems.map((item) => (
         <button
           key={item.id}
@@ -803,7 +803,7 @@ const App: React.FC = () => {
         {/* Mobile Sidebar Backdrop */}
         {isSidebarOpen && (
           <div 
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-30 md:hidden"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden"
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
