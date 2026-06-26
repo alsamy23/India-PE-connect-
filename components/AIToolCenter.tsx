@@ -12,6 +12,7 @@ import WeeklyPlannerTool from './WeeklyPlannerTool.tsx';
 import UnitPlannerTool from './UnitPlannerTool.tsx';
 import MoveCheckTool from './MoveCheckTool.tsx';
 import TournamentMaker from './TournamentMaker.tsx';
+import SportsDayTracker from './SportsDayTracker.tsx';
 
 interface Tool {
   id: string;
@@ -26,6 +27,7 @@ const tools: Tool[] = [
   { id: 'weekly-planner', name: 'Weekly Planner Grid', description: 'Term dates, periods, classes — draft lessons to your timetable.', icon: Calendar, color: 'bg-indigo-600', custom: true },
   { id: 'movecheck', name: 'MoveCheck AI', description: 'AI webcam rep counter and movement form checker.', icon: Dumbbell, color: 'bg-emerald-500', custom: true },
   { id: 'unit-planner', name: 'Unit Planner', description: 'Generate comprehensive unit plans with standards alignment.', icon: FileText, color: 'bg-blue-500', custom: true },
+  { id: 'sports-day-tracker', name: 'Sports Day Points Tracker', description: 'Track house points and individual champions for events.', icon: Trophy, color: 'bg-amber-500', custom: true },
   { id: 'rubric-maker', name: 'Rubric Maker', description: 'Assessment rubrics for any skill and age group.', icon: Layout, color: 'bg-purple-500' },
   { id: 'worksheet-maker', name: 'Worksheet Maker', description: 'Engagement worksheets and theoretical tests.', icon: FileText, color: 'bg-indigo-500' },
   { id: 'report-writer', name: 'Report Writer', description: 'Professional feedback and student report comments.', icon: FileSpreadsheet, color: 'bg-emerald-500' },
@@ -125,6 +127,21 @@ const AIToolCenter: React.FC = () => {
             <span>Back to Tool Center</span>
           </button>
           <TournamentMaker />
+        </div>
+      );
+    }
+
+    if (selectedTool.id === 'sports-day-tracker') {
+      return (
+        <div className="space-y-6">
+          <button 
+            onClick={() => setSelectedTool(null)}
+            className="flex items-center space-x-2 text-slate-400 hover:text-indigo-600 font-bold uppercase tracking-widest text-xs transition-colors"
+          >
+            <ChevronLeft size={16} />
+            <span>Back to Tool Center</span>
+          </button>
+          <SportsDayTracker />
         </div>
       );
     }

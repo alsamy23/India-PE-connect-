@@ -128,6 +128,21 @@
         "createdAt": { "type": "string" }
       },
       "required": ["id", "schoolId", "teacherId", "teacherName", "curriculum", "termsCount", "periodsCount"]
+    },
+    "SportsDay": {
+      "title": "SportsDay",
+      "description": "Sports Day tracking data for a school",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string" },
+        "houses": { "type": "string" },
+        "events": { "type": "string" },
+        "baseScores": { "type": "string" },
+        "champions": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["schoolId", "updatedAt"]
     }
   },
   "firestore": {
@@ -138,6 +153,7 @@
     "/teams/{teamId}": { "schema": "Team", "description": "Class/Team records" },
     "/results/{resultId}": { "schema": "FitnessResult", "description": "Test results" },
     "/system_logs/{logId}": { "schema": "AppErrorLog", "description": "Remote application logs" },
-    "/workloads/{workloadId}": { "schema": "DepartmentWorkload", "description": "Teacher workload schedules and curriculum setups" }
+    "/workloads/{workloadId}": { "schema": "DepartmentWorkload", "description": "Teacher workload schedules and curriculum setups" },
+    "/sportsDays/{schoolId}": { "schema": "SportsDay", "description": "Sports Day tracker data for schools" }
   }
 }

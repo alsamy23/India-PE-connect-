@@ -189,6 +189,10 @@ service cloud.firestore {
              (!('percentile' in data) || data.percentile is number);
     }
 
+    function isValidSportsDay(data, schoolId) {
+      return data.schoolId is string && data.schoolId == schoolId;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -242,6 +246,12 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (resource == null || isSchoolMember(resource.data.schoolId));
       allow create, update: if isAuthenticated() && isSchoolMember(request.resource.data.schoolId);
       allow delete: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && isSchoolAdmin(resource.data.schoolId);
+    }
+
+    match /sportsDays/{schoolId} {
+      allow read: if isSchoolMember(schoolId);
+      allow create, update: if isSchoolMember(schoolId) && isValidSportsDay(request.resource.data, schoolId);
+      allow delete: if isSchoolAdmin(schoolId);
     }
 
     // Default deny

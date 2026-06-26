@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useTransition } from 'react';
 import { 
   Users, 
   BookOpen, 
@@ -418,6 +418,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = React.memo(({ activeTab,
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [isPending, startTransition] = useTransition();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'missing' | 'quota'>('checking');
   const [aiProviders, setAiProviders] = useState<{ gemini: boolean, groq: boolean }>({ gemini: false, groq: false });
@@ -431,6 +432,22 @@ const App: React.FC = () => {
   const [isAuthView, setIsAuthView] = useState(false);
   const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(null);
   const [highlightStudentId, setHighlightStudentId] = useState<string | null>(null);
+
+  // Synchronize browser history with Sidebar view to handle Android hardware back button natively
+  useEffect(() => {
+    if (isSidebarOpen) {
+      window.history.pushState({ sidebarOpen: true }, '');
+      
+      const handlePopState = (e: PopStateEvent) => {
+        setIsSidebarOpen(false);
+      };
+      
+      window.addEventListener('popstate', handlePopState);
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [isSidebarOpen]);
 
   // Synchronize browser history with Login view to handle Android hardware back button natively
   useEffect(() => {
@@ -656,9 +673,15 @@ const App: React.FC = () => {
 
   // Unified memoized transition handler to switch routes easily and prevent layout delay
   const handleTabChange = useCallback((tabId: Tab) => {
-    setActiveTab(tabId);
+    startTransition(() => {
+      setActiveTab(tabId);
+    });
     setHighlightStudentId(null);
-    setIsSidebarOpen(false);
+    if (window.history.state?.sidebarOpen) {
+      window.history.back();
+    } else {
+      setIsSidebarOpen(false);
+    }
   }, []);
 
   const renderContent = () => {
