@@ -653,51 +653,69 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
 
                         {/* Analysis Section */}
                         <div className="space-y-8">
-                          {/* Progress Chart or Empty State */}
+                          {/* Test-Specific Progression */}
                           <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm flex flex-col">
                             <div className="flex items-center justify-between mb-6">
                               <div className="flex items-center gap-2">
-                                <TrendingUp size={20} className="text-indigo-600" />
-                                <h4 className="font-black uppercase tracking-tight text-slate-800">Growth Analysis</h4>
+                                <Activity size={20} className="text-indigo-600" />
+                                <h4 className="font-black uppercase tracking-tight text-slate-800">Test Progression Analysis</h4>
                               </div>
-                              {reportData.terms.length > 1 && (
-                                <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-black uppercase tracking-widest">
-                                  <span>Improving</span>
-                                  <ChevronRight size={10} className="rotate-[-90deg]" />
-                                </div>
-                              )}
                             </div>
-                            <div className="flex-1 w-full flex items-center justify-center min-h-[300px]">
-                              {reportData.progressData.length > 1 ? (
-                                <ResponsiveContainer width="100%" height={300}>
-                                  <LineChart data={reportData.progressData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="term" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
-                                    <YAxis hide />
-                                    <Tooltip 
-                                      contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '16px' }}
-                                      itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', padding: '4px 0' }}
-                                    />
-                                    <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', paddingTop: '20px' }} />
-                                    {Object.keys(reportData.progressData[0] || {}).filter(k => k !== 'term').map((key, idx) => (
-                                      <Line 
-                                        key={key} 
-                                        type="monotone" 
-                                        dataKey={key} 
-                                        stroke={['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][idx % 5]} 
-                                        strokeWidth={4} 
-                                        dot={{ r: 6, strokeWidth: 3, fill: 'white' }}
-                                        activeDot={{ r: 8, strokeWidth: 0 }}
-                                      />
-                                    ))}
-                                  </LineChart>
-                                </ResponsiveContainer>
-                              ) : (
+                            <div className="flex-1 w-full space-y-8">
+                              {Object.entries((reportData.studentResults || []).reduce((acc: any, r: FitnessResult) => {
+                                const tName = r.testName.split('(')[0].trim();
+                                if (!acc[tName]) acc[tName] = [];
+                                acc[tName].push({
+                                  term: r.term,
+                                  value: parseValue(r.value),
+                                  unit: r.unit,
+                                  date: r.date
+                                });
+                                return acc;
+                              }, {})).map(([testName, testData]: [string, any], idx) => {
+                                // Sort by term order
+                                const sortedData = [...testData].sort((a, b) => {
+                                  const order = ['Baseline', 'Term 1', 'Term 2', 'Final'];
+                                  return order.indexOf(a.term) - order.indexOf(b.term);
+                                });
+                                
+                                return sortedData.length > 1 ? (
+                                  <div key={testName} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                    <div className="flex justify-between items-center mb-4">
+                                      <h5 className="font-bold text-sm uppercase tracking-widest text-slate-700">{testName}</h5>
+                                      <span className="text-[10px] font-black uppercase text-indigo-500 bg-indigo-100 px-2 py-1 rounded-full">{sortedData[0].unit}</span>
+                                    </div>
+                                    <div className="w-full h-48">
+                                      <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={sortedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                          <XAxis dataKey="term" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                          <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                          <Tooltip 
+                                            contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                            formatter={(value: any) => [`${value} ${sortedData[0].unit}`, testName]}
+                                          />
+                                          <Line 
+                                            type="monotone" 
+                                            dataKey="value" 
+                                            stroke={['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][idx % 5]} 
+                                            strokeWidth={3} 
+                                            dot={{ r: 4, strokeWidth: 2, fill: 'white' }}
+                                            activeDot={{ r: 6, strokeWidth: 0 }}
+                                          />
+                                        </LineChart>
+                                      </ResponsiveContainer>
+                                    </div>
+                                  </div>
+                                ) : null;
+                              })}
+                              
+                              {reportData.progressData.length <= 1 && (
                                 <div className="text-center p-12 bg-indigo-50/50 rounded-3xl w-full border-2 border-dashed border-indigo-100">
-                                  <BarChart3 size={40} className="mx-auto mb-4 text-indigo-200" />
-                                  <h5 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-2">Baseline Established</h5>
+                                  <TrendingUp size={40} className="mx-auto mb-4 text-indigo-200" />
+                                  <h5 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-2">Not Enough Data</h5>
                                   <p className="text-[10px] font-bold text-indigo-400 max-w-[200px] mx-auto leading-relaxed">
-                                    Next assessment phase (Term 1) will unlock comparative progress charts.
+                                    Need at least two assessments (e.g. Baseline and Term 1) to track progression.
                                   </p>
                                 </div>
                               )}

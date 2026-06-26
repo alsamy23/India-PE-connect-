@@ -12,7 +12,8 @@ import {
   Trophy,
   ArrowUpRight,
   Loader2,
-  Trash2
+  Trash2,
+  Download
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { fitnessService, FitnessResult, Team, Student, SchoolMember, School } from '../services/fitnessService.ts';
@@ -121,6 +122,32 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
     return student.name;
   };
 
+  const handleExportCSV = () => {
+    if (results.length === 0) {
+      alert("No results to export.");
+      return;
+    }
+
+    const headers = ['Student Name', 'Test Name', 'Value', 'Unit', 'Rating', 'Term', 'Date'];
+    const csvContent = [
+      headers.join(','),
+      ...results.map(r => {
+        const studentName = getStudentName(r.studentId).replace(/,/g, ''); // Remove commas to prevent CSV issues
+        const dateStr = new Date(r.date).toLocaleDateString();
+        return `"${studentName}","${r.testName}","${r.value}","${r.unit || ''}","${r.rating || ''}","${r.term || ''}","${dateStr}"`;
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `fitness_results_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
@@ -141,7 +168,14 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
           <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">{isSuperAdmin ? 'Super Admin Dashboard' : 'School Overview'}</h2>
           <p className="text-slate-500 font-medium">{isSuperAdmin ? 'Full platform oversight for alsamy36@gmail.com' : 'Real-time fitness data from every student in your school.'}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button 
+            onClick={handleExportCSV}
+            className="px-6 py-3 bg-white border border-slate-200 rounded-2xl font-black text-xs text-slate-600 uppercase tracking-widest hover:bg-slate-50 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-2"
+          >
+            <Download size={16} />
+            <span>Export CSV</span>
+          </button>
           <button 
             onClick={() => onNavigate('school-students')}
             className="px-6 py-3 bg-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]"
