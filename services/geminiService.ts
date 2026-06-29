@@ -7,9 +7,17 @@ const callAIBase = async (payload: any, retries = 2) => {
     throw new Error("No Internet Connection: Please check your network settings and try again.");
   }
 
-  // Map legacy names to current best models
-  if (payload.model === 'gemini-flash-latest') {
-    payload.model = 'gemini-1.5-flash'; 
+  // Map deprecated/legacy names to current best supported model
+  const m = (payload.model || "").toLowerCase();
+  if (
+    m.includes("gemini-3") ||
+    m.includes("gemini-2.0") ||
+    m.includes("gemini-flash-latest") ||
+    m === "gemini-pro"
+  ) {
+    payload.model = "gemini-2.0-flash";
+  } else if (m.includes("gemini-1.5")) {
+    payload.model = "gemini-1.5-flash";
   }
   
   // Add ThinkingLevel.LOW to config to minimize latency for speed (ONLY for Gemini models that support it)
@@ -956,3 +964,83 @@ export const generateParentLetter = async (
   });
   return response.text;
 };
+
+export interface WeeklyAcademicPlanRow {
+  subject: string;
+  concept: string;
+  learningObjective: string;
+  studentPrep: string;
+  homework: string;
+  deadline: string;
+  test: string;
+  additionalRemarks: string;
+}
+
+export interface WeeklyAcademicPlan {
+  classLabel: string;
+  section: string;
+  weekNo: string;
+  weekOf: string;
+  rows: WeeklyAcademicPlanRow[];
+}
+
+export const generateWeeklyAcademicPlan = async (
+  classLabel: string,
+  section: string,
+  weekNo: string,
+  weekOf: string,
+  topic: string,
+  language: Language = 'English'
+): Promise<WeeklyAcademicPlan> => {
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      classLabel: { type: "STRING" },
+      section: { type: "STRING" },
+      weekNo: { type: "STRING" },
+      weekOf: { type: "STRING" },
+      rows: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            subject: { type: "STRING", description: "Subject name (e.g. Physical Education)" },
+            concept: { type: "STRING", description: "Split of concept, skill or topic being covered (e.g., Basketball Dribbling: Fingertip posturing, Lower-body stance)" },
+            learningObjective: { type: "STRING", description: "Learning target / objective" },
+            studentPrep: { type: "STRING", description: "Student preparation / participation before the class (if any)" },
+            homework: { type: "STRING", description: "Homework assignment for practice" },
+            deadline: { type: "STRING", description: "Deadline for homework/submission" },
+            test: { type: "STRING", description: "Weekly test or assessment criteria for this skill" },
+            additionalRemarks: { type: "STRING", description: "Safety checklist, equipment rules or remarks" }
+          },
+          required: ["subject", "concept", "learningObjective", "studentPrep", "homework", "deadline", "test", "additionalRemarks"]
+        }
+      }
+    },
+    required: ["classLabel", "section", "weekNo", "weekOf", "rows"]
+  };
+
+  const response = await callAIBase({
+    model: 'gemini-1.5-flash',
+    contents: `Generate a Weekly Academic Planner for class ${classLabel}, section ${section}, week number ${weekNo}, week range ${weekOf} on the topic of "${topic}". Split the physical education or sport skill of "${topic}" into 3 to 4 sequential weekly sessions or sub-concepts. Language: ${language}.`,
+    config: {
+      thinkingConfig: { thinkingLevel: "LOW" },
+      systemInstruction: `You are a curriculum director and Physical Education expert in an elite school. Your task is to generate a comprehensive, highly specific, and beautifully structured Weekly Academic Planner that splits the requested sport skill/topic into 3 to 4 sequential, actionable sessions (lessons/classes) during that week.
+Columns required for each session:
+- subject: e.g. "Physical Education"
+- concept: E.g., for basketball, split it into specific aspects like "Dribbling Stance & Fingertip Control", "Low and High Dribbles", or "In-motion Dribble Sprints"
+- learningObjective: Concise learning target
+- studentPrep: Preparation before the class (e.g., watch a video, perform light dynamic stretches, read basic rules)
+- homework: Practice exercises at home
+- deadline: homework submission date or next class
+- test: micro assessment (e.g., complete 30 dribbles without look, timed 20-meter ball-control sprint)
+- additionalRemarks: e.g., proper attire mandatory, stay hydrated, use standard court safety spaces
+Make sure descriptions are realistic, detailed, and professional. Language: ${language}.`,
+      responseMimeType: "application/json",
+      responseSchema: schema
+    }
+  });
+
+  return safeParseJson(response.text || response);
+};
+

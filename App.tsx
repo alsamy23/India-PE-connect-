@@ -60,12 +60,13 @@ import FitnessReports from './components/FitnessReports.tsx';
 import SkillAnalysis from './components/SkillAnalysis.tsx';
 import AdminLogs from './components/AdminLogs.tsx';
 import DepartmentWorkloadPlanner from './components/DepartmentWorkloadPlanner.tsx';
+import AcademicWeeklyPlanner from './components/AcademicWeeklyPlanner.tsx';
 import { GlobalSearch } from './components/GlobalSearch.tsx';
 import { logError } from './services/logService.ts';
 import { auth } from './services/firebase.ts';
 import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
 
-type Tab = 'dashboard' | 'planner' | 'yearly' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact';
 
 import { BoardType, Language } from './types.ts';
 
@@ -78,6 +79,7 @@ const navigation = [
     items: [
       { id: 'planner', name: 'PE Lesson Plan', icon: Sparkles, subtitle: 'Generate today\'s PE lesson in under 60 seconds.' },
       { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange, subtitle: 'Auto-map 40 weeks of PE for your classes.' },
+      { id: 'weekly-planner', name: 'Weekly Academic Planner', icon: CalendarRange, isNew: true, subtitle: '1-click lesson & homework splitter for classes.' },
       { id: 'workload-planner', name: 'Workload & Timetable', icon: CalendarRange, isNew: true, subtitle: 'Schedules, curriculum slots, and lessons suggester.' },
       { id: 'skillmastery', name: 'Skill Progressions', icon: Target, subtitle: 'Long-term curriculum maps and checklists.' },
       { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap, subtitle: 'Resources matched to CBSE guidelines.' },
@@ -701,7 +703,8 @@ const App: React.FC = () => {
 
     switch (activeTab) {
       case 'dashboard': return <Dashboard apiStatus={apiStatus} debugInfo={debugInfo} onTestConnection={handleTestConnection} isTesting={isTesting} onNavigate={handleTabChange} />;
-      case 'yearly': return <YearlyPlanner />;
+      case 'yearly': return <YearlyPlanner onNavigate={handleTabChange} />;
+      case 'weekly-planner': return <AcademicWeeklyPlanner />;
       case 'workload-planner': return <DepartmentWorkloadPlanner />;
       case 'tools': return <AIToolCenter />;
       case 'theory': return <TheoryHub />;

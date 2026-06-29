@@ -104,6 +104,20 @@ apiRouter.get("/ai/test", async (req, res) => {
 apiRouter.post("/ai/generate", async (req, res) => {
   try {
     const { model, contents, config } = req.body;
+    
+    const resolveModel = (modelName: string): string => {
+      const m = (modelName || "").toLowerCase();
+      if (
+        m.includes("gemini-3") ||
+        m.includes("gemini-2") ||
+        m === "gemini-pro"
+      ) {
+        return "gemini-2.0-flash";
+      }
+      return "gemini-1.5-flash";
+    };
+
+    const resolvedModel = resolveModel(model);
     const geminiKeys = getGeminiKeys();
     const groqKey = getGroqKey();
     
@@ -122,11 +136,9 @@ apiRouter.post("/ai/generate", async (req, res) => {
       
       // Determine which models we can try
       const modelsToTry = [
-        model || "gemini-1.5-flash",
-        "gemini-1.5-flash", 
-        "gemini-1.5-pro",
-        "gemini-2.0-flash-exp",
-        "gemini-2.0-flash"
+        resolvedModel,
+        "gemini-2.0-flash",
+        "gemini-1.5-flash"
       ];
       
       // Filter out duplicates but keep order
@@ -146,14 +158,14 @@ apiRouter.post("/ai/generate", async (req, res) => {
 
             // Ensure thinkingLevel is only used if supported
             const finalConfig = { ...config };
-            const is20Flash = currentModel.includes("gemini-2.0-flash");
+            const isSupportedModel = currentModel.includes("gemini-2.0");
             
-            if (is20Flash && ThinkingLevel) {
+            if (isSupportedModel && ThinkingLevel) {
               if (!finalConfig.thinkingConfig) {
                 finalConfig.thinkingConfig = { thinkingLevel: (ThinkingLevel as any).LOW || "LOW" };
               }
             } else {
-              // Always remove thinkingConfig for safety on 1.5 models or if ThinkingLevel enum is missing
+              // Always remove thinkingConfig for safety on unsupported models or if ThinkingLevel enum is missing
               delete finalConfig.thinkingConfig;
             }
 

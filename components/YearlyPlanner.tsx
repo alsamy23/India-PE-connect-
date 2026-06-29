@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Calendar as CalendarIcon, 
   Sparkles, 
@@ -35,7 +35,11 @@ const SAMPLE_CALENDAR_TEXT = `01.04.2026 Commencement
 14.10.2026 Pooja Holidays
 24.12.2026 Christmas Holidays`;
 
-const YearlyPlanner: React.FC = () => {
+interface YearlyPlannerProps {
+  onNavigate?: (tab: any) => void;
+}
+
+const YearlyPlanner: React.FC<YearlyPlannerProps> = ({ onNavigate }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +56,19 @@ const YearlyPlanner: React.FC = () => {
   const [term2Focus, setTerm2Focus] = useState('Football & Team Games');
   
   const [plan, setPlan] = useState<YearlyPlan | null>(null);
+
+  useEffect(() => {
+    const savedPlan = localStorage.getItem('peYearlyPlan');
+    if (savedPlan) {
+      try {
+        const parsed = JSON.parse(savedPlan);
+        setPlan(parsed);
+        setStep(4);
+      } catch (e) {
+        console.error("Failed to load saved yearly plan", e);
+      }
+    }
+  }, []);
 
   // Curriculum integration & sync states
   const [selectedWeekForLesson, setSelectedWeekForLesson] = useState<{
@@ -348,6 +365,7 @@ const YearlyPlanner: React.FC = () => {
     try {
       const result = await generateYearlyPlan(grade, board, frequency, calendarText, term1Focus, term2Focus, startDate, duration, language);
       setPlan(result);
+      localStorage.setItem('peYearlyPlan', JSON.stringify(result));
       setStep(4);
     } catch (err: any) {
       setError(err.message || "Failed to generate plan.");
@@ -362,6 +380,7 @@ const YearlyPlanner: React.FC = () => {
     if (newPlan.terms[t]?.months?.[m]?.weeks?.[w]) {
         newPlan.terms[t].months[m].weeks[w] = { ...newPlan.terms[t].months[m].weeks[w], [field]: value };
         setPlan(newPlan);
+        localStorage.setItem('peYearlyPlan', JSON.stringify(newPlan));
     }
   };
 
@@ -481,7 +500,7 @@ const YearlyPlanner: React.FC = () => {
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Syllabus pacing made efficient</p>
           </div>
           {step === 4 && (
-             <button onClick={() => {setStep(1); setPlan(null);}} className="flex items-center space-x-2 text-slate-400 font-bold hover:text-[#005BFF] transition-colors">
+             <button onClick={() => {setStep(1); setPlan(null); localStorage.removeItem('peYearlyPlan');}} className="flex items-center space-x-2 text-slate-400 font-bold hover:text-[#005BFF] transition-colors">
                 <RotateCcw size={18} />
                 <span>Start New Plan</span>
              </button>
@@ -692,10 +711,24 @@ const YearlyPlanner: React.FC = () => {
                                           </span>
                                           
                                           {week.status === 'Instructional' && (
-                                            <span className={`text-[9.5px] font-black uppercase tracking-wider flex items-center gap-1 transition-colors ${hasSyncedLesson ? 'text-emerald-600' : 'text-[#FF6B00] hover:text-[#FF6B05]'}`}>
-                                              <Sparkles size={11} className={hasSyncedLesson ? "" : "animate-pulse"} />
-                                              {hasSyncedLesson ? 'Synced & Ready' : 'Integrate Lesson Plan'}
-                                            </span>
+                                            <div className="flex items-center gap-2 print:hidden" onClick={e => e.stopPropagation()}>
+                                              {onNavigate && (
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onNavigate('weekly-planner');
+                                                  }}
+                                                  className="text-[9px] font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-all uppercase border-2 border-indigo-150 px-2.5 py-1 rounded-xl bg-white hover:bg-indigo-50/50"
+                                                  title="Go to Weekly Academic Planner"
+                                                >
+                                                  Weekly Planner &rarr;
+                                                </button>
+                                              )}
+                                              <span className={`text-[9.5px] font-black uppercase tracking-wider flex items-center gap-1 transition-colors ${hasSyncedLesson ? 'text-emerald-600' : 'text-[#FF6B00]'}`}>
+                                                <Sparkles size={11} className={hasSyncedLesson ? "" : "animate-pulse"} />
+                                                {hasSyncedLesson ? 'Synced & Ready' : 'Integrate'}
+                                              </span>
+                                            </div>
                                           )}
                                         </div>
                                      </div>
@@ -846,6 +879,19 @@ const YearlyPlanner: React.FC = () => {
                               </button>
 
                               <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                                {onNavigate && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedWeekForLesson(null);
+                                      onNavigate('weekly-planner');
+                                    }}
+                                    className="px-5 py-3 bg-indigo-50 border-2 border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-black uppercase tracking-wider w-full sm:w-auto text-center flex items-center justify-center gap-1.5"
+                                  >
+                                    <CalendarDays size={14} />
+                                    <span>Weekly Planner</span>
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => setSelectedWeekForLesson(null)}
