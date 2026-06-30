@@ -148,14 +148,14 @@ interface MobileHeaderProps {
 }
 const MobileHeader: React.FC<MobileHeaderProps> = React.memo(({ isSidebarOpen, setIsSidebarOpen }) => {
   return (
-    <header className="md:hidden sticky top-0 bg-slate-950/90 backdrop-blur-xl text-white p-4 flex justify-between items-center z-50 shadow-xl print:hidden">
+    <header className="md:hidden sticky top-0 bg-gradient-to-r from-[#0A1C2A] via-[#112538] to-[#0A1C2A] backdrop-blur-xl text-white px-5 py-3.5 flex justify-between items-center z-30 border-b border-white/5 shadow-lg print:hidden">
       <Logo variant="light" className="scale-90 origin-left" />
       <button 
         onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-        className="p-2 bg-white/10 rounded-xl active:scale-90 transition-transform"
+        className="p-2.5 bg-white/5 border border-white/10 rounded-2xl active:scale-90 transition-all flex items-center justify-center hover:bg-white/10"
         aria-label="Toggle Navigation Menu"
       >
-        {isSidebarOpen ? <X /> : <Menu />}
+        {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
     </header>
   );
@@ -191,8 +191,16 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
       border-r border-white/5
       print:hidden
     `}>
-      <div className="p-10 hidden md:flex items-center">
-        <Logo variant="light" />
+      {/* Sidebar Header with Logo and Close Button (Mobile Only) */}
+      <div className="p-6 md:p-10 flex items-center justify-between border-b border-white/5 md:border-b-0">
+        <Logo variant="light" className="scale-95 origin-left" />
+        <button 
+          onClick={() => setIsSidebarOpen(false)}
+          className="md:hidden p-2.5 bg-white/5 border border-white/10 rounded-2xl active:scale-90 transition-all flex items-center justify-center hover:bg-white/10 text-slate-400 hover:text-white"
+          aria-label="Close Navigation Menu"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       {/* API Status Badge - Interactive */}
@@ -247,16 +255,16 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
                       key={subItem.id}
                       onClick={() => handleTabChange(subItem.id as Tab)}
                       className={`
-                        w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
+                        w-full flex items-center justify-start text-left space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
                         ${activeTab === subItem.id 
                           ? 'bg-white text-on-surface shadow-2xl shadow-white/5 scale-[1.02] font-black font-sans' 
                           : 'text-slate-500 hover:bg-white/5 hover:text-white font-bold font-sans'}
                       `}
                     >
-                      <subItem.icon size={20} className={activeTab === subItem.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'} />
-                      <span className="text-sm tracking-wide uppercase font-display">{subItem.name}</span>
+                      <subItem.icon size={20} className={`flex-shrink-0 ${activeTab === subItem.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'}`} />
+                      <span className="text-sm tracking-wide uppercase font-display text-left flex-1 leading-snug">{subItem.name}</span>
                       {(subItem as any).isNew && activeTab !== subItem.id && (
-                        <span className="absolute right-4 top-4 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
                       )}
                       {activeTab === subItem.id && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"></div>}
                     </button>
@@ -271,16 +279,16 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
                 key={item.id}
                 onClick={() => handleTabChange(item.id as Tab)}
                 className={`
-                  w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
+                  w-full flex items-center justify-start text-left space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 relative group
                   ${activeTab === item.id 
                     ? 'bg-white text-on-surface shadow-2xl shadow-white/5 scale-[1.02] font-black' 
                     : 'text-slate-500 hover:bg-white/5 hover:text-white font-bold'}
                 `}
               >
-                <item.icon size={20} className={activeTab === item.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'} />
-                <span className="text-sm tracking-wide uppercase font-display">{item.name}</span>
+                <item.icon size={20} className={`flex-shrink-0 ${activeTab === item.id ? 'text-primary' : 'text-slate-600 group-hover:text-white'}`} />
+                <span className="text-sm tracking-wide uppercase font-display text-left flex-1 leading-snug">{item.name}</span>
                 {(item as any).isNew && activeTab !== item.id && (
-                  <span className="absolute right-4 top-4 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
                 )}
                 {activeTab === item.id && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"></div>}
               </button>
@@ -345,29 +353,29 @@ const StickyHeader: React.FC<StickyHeaderProps> = React.memo(({
   setHighlightStudentId,
 }) => {
   return (
-    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 md:px-8 md:py-4 print:hidden shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div className="flex flex-wrap items-center gap-6 text-[11px] font-black uppercase tracking-widest text-slate-500">
+    <div className="relative md:sticky md:top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 md:px-8 md:py-4 print:hidden shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="hidden md:flex flex-wrap items-center gap-6 text-[11px] font-black uppercase tracking-widest text-slate-500">
         <button 
           onClick={() => handleTabChange('dashboard')} 
-          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'dashboard' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'dashboard' ? 'text-primary border-b-2 border-primary pb-1 font-black' : ''}`}
         >
           Platform
         </button>
         <button 
           onClick={() => handleTabChange('tools')} 
-          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'tools' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'tools' ? 'text-primary border-b-2 border-primary pb-1 font-black' : ''}`}
         >
           Modules
         </button>
         <button 
           onClick={() => handleTabChange('about')} 
-          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'about' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'about' ? 'text-primary border-b-2 border-primary pb-1 font-black' : ''}`}
         >
           About
         </button>
         <button 
           onClick={() => handleTabChange('contact')} 
-          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'contact' ? 'text-[#005BFF] border-b-2 border-[#005BFF] pb-1' : ''}`}
+          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'contact' ? 'text-primary border-b-2 border-primary pb-1 font-black' : ''}`}
         >
           Contact
         </button>
@@ -394,26 +402,33 @@ interface MobileBottomNavProps {
 const MobileBottomNav: React.FC<MobileBottomNavProps> = React.memo(({ activeTab, handleTabChange }) => {
   const bottomItems = useMemo(() => [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Home' },
-    { id: 'planner', icon: Sparkles, label: 'Lesson Plan' },
+    { id: 'planner', icon: Sparkles, label: 'Planner' },
     { id: 'testpaper', icon: ClipboardList, label: 'Tests' },
     { id: 'tools', icon: Wrench, label: 'Tools' },
     { id: 'theory', icon: GraduationCap, label: 'Theory' }
   ] as const, []);
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-3 pb-safe flex justify-between items-center z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] print:hidden">
-      {bottomItems.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => handleTabChange(item.id as Tab)}
-          className={`flex flex-col items-center space-y-1 transition-all active:scale-90 ${activeTab === item.id ? 'text-primary' : 'text-slate-400'}`}
-        >
-          <item.icon size={20} className={activeTab === item.id ? 'scale-110' : ''} />
-          <span className={`text-[9px] font-black uppercase tracking-widest ${activeTab === item.id ? 'opacity-100' : 'opacity-60'}`}>
-            {item.label}
-          </span>
-        </button>
-      ))}
+    <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xl border border-slate-150/60 p-2 rounded-[1.75rem] flex justify-around items-center z-40 shadow-[0_8px_30px_rgb(0,0,0,0.08)] print:hidden">
+      {bottomItems.map((item) => {
+        const isActive = activeTab === item.id;
+        return (
+          <button
+            key={item.id}
+            onClick={() => handleTabChange(item.id as Tab)}
+            className={`flex flex-col items-center justify-center py-2 px-3.5 rounded-2xl transition-all duration-300 active:scale-90 relative ${
+              isActive 
+                ? 'text-primary bg-primary/5 font-extrabold' 
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <item.icon size={18} className={`transition-transform duration-300 ${isActive ? 'scale-110 stroke-[2.5px]' : 'stroke-[2px]'}`} />
+            <span className={`text-[8.5px] font-black uppercase tracking-widest mt-1 transition-all duration-300 ${isActive ? 'text-primary opacity-100' : 'text-slate-400 opacity-70'}`}>
+              {item.label}
+            </span>
+          </button>
+        );
+      })}
     </nav>
   );
 });
@@ -848,7 +863,7 @@ const App: React.FC = () => {
         />
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-20">
+        <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-32">
           <StickyHeader 
             activeTab={activeTab} 
             handleTabChange={handleTabChange} 
@@ -877,7 +892,7 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
-          <div className="max-w-7xl mx-auto p-6 md:p-12 min-h-full print:p-0">
+          <div className="max-w-7xl mx-auto p-4 md:p-12 min-h-full print:p-0">
             {renderContent()}
           </div>
           <Disclaimer />

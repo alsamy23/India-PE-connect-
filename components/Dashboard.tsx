@@ -45,6 +45,28 @@ const data = [
   { name: 'Sun', connections: 10 },
 ];
 
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.1,
+    }
+  }
+} as const;
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 30 },
+  show: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { 
+      type: "spring" as const, 
+      stiffness: 100, 
+      damping: 15 
+    } 
+  }
+} as const;
+
 const Dashboard: React.FC<{ 
   apiStatus?: 'checking' | 'ok' | 'missing' | 'quota',
   debugInfo?: any,
@@ -119,32 +141,32 @@ const Dashboard: React.FC<{
       </section>
 
       {/* Today / Summary Block */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="bg-white border-4 border-slate-900 rounded-[2.5rem] p-8 flex items-center gap-6 shadow-[8px_8px_0px_0px_rgba(15,23,42,0.05)]">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-900">
-            <Calendar size={32} />
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        <div className="bg-white border-4 border-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-8 flex items-center gap-4 md:gap-6 shadow-[8px_8px_0px_0px_rgba(15,23,42,0.05)]">
+          <div className="w-12 h-12 md:w-16 md:h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-900 flex-shrink-0">
+            <Calendar className="w-6 h-6 md:w-8 md:h-8" />
           </div>
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Active Plans</p>
-            <p className="text-2xl font-black text-slate-900">{history.filter(h => h.type === 'Lesson Plan').length} Planned Today</p>
+            <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Active Plans</p>
+            <p className="text-xl md:text-2xl font-black text-slate-900 leading-tight">{history.filter(h => h.type === 'Lesson Plan').length} Planned Today</p>
           </div>
         </div>
-        <div className="bg-white border-4 border-slate-900 rounded-[2.5rem] p-8 flex items-center gap-6 shadow-[8px_8px_0px_0px_rgba(15,23,42,0.05)]">
-          <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600">
-            <Activity size={32} />
+        <div className="bg-white border-4 border-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-8 flex items-center gap-4 md:gap-6 shadow-[8px_8px_0px_0px_rgba(15,23,42,0.05)]">
+          <div className="w-12 h-12 md:w-16 md:h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 flex-shrink-0">
+            <Activity className="w-6 h-6 md:w-8 md:h-8" />
           </div>
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Assessments</p>
-            <p className="text-2xl font-black text-slate-900">12 Pending Tasks</p>
+            <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Assessments</p>
+            <p className="text-xl md:text-2xl font-black text-slate-900 leading-tight">12 Pending Tasks</p>
           </div>
         </div>
-        <div className="bg-indigo-600 border-4 border-slate-900 rounded-[2.5rem] p-8 flex items-center gap-6 shadow-[8px_8px_0px_0px_rgba(79,70,229,0.1)]">
-          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-white">
-            <Zap size={32} />
+        <div className="bg-indigo-600 border-4 border-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-8 flex items-center gap-4 md:gap-6 shadow-[8px_8px_0px_0px_rgba(79,70,229,0.1)]">
+          <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-2xl flex items-center justify-center text-white flex-shrink-0">
+            <Zap className="w-6 h-6 md:w-8 md:h-8" />
           </div>
           <div className="text-white">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-1">Quick Action</p>
-            <p className="text-xs font-black uppercase">Record scores for 7B</p>
+            <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-1">Quick Action</p>
+            <p className="text-sm md:text-base font-black uppercase leading-tight">Record scores for 7B</p>
           </div>
         </div>
       </section>
@@ -282,9 +304,16 @@ const Dashboard: React.FC<{
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-50px" }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+          >
             {/* PE Lesson Plan */}
             <motion.div 
+              variants={cardVariants}
               whileHover={{ scale: 1.02, y: -5 }}
               onClick={() => onNavigate?.('planner')}
               className="lg:col-span-2 group bg-slate-900 text-white rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.3)] transition-all cursor-pointer relative overflow-hidden animate-pulse-subtle"
@@ -309,6 +338,7 @@ const Dashboard: React.FC<{
 
             {/* Widgets */}
             <motion.div 
+              variants={cardVariants}
               whileHover={{ scale: 1.02, y: -5 }}
               onClick={() => onNavigate?.('widgets')}
               className="group bg-purple-50 border-4 border-slate-900 rounded-[3rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(168,85,247,0.2)] transition-all cursor-pointer flex flex-col justify-between"
@@ -325,6 +355,7 @@ const Dashboard: React.FC<{
 
             {/* Skill Mastery */}
             <motion.div 
+              variants={cardVariants}
               whileHover={{ scale: 1.02, y: -5 }}
               onClick={() => onNavigate?.('skillmastery')}
               className="group bg-emerald-50 border-4 border-slate-900 rounded-[3rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(16,185,129,0.2)] transition-all cursor-pointer flex flex-col justify-between"
@@ -338,7 +369,7 @@ const Dashboard: React.FC<{
                 <ArrowRight className="text-slate-300 group-hover:text-emerald-600 transition-colors" size={24} />
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         </section>
 
         {/* ASSESS Group */}
@@ -351,9 +382,16 @@ const Dashboard: React.FC<{
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-50px" }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+          >
             {/* School Fitness Database */}
             <motion.div 
+              variants={cardVariants}
               whileHover={{ scale: 1.01, y: -5 }}
               onClick={() => onNavigate?.('school-overview')}
               className="lg:col-span-2 group bg-indigo-900 border-4 border-slate-900 rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.2)] transition-all cursor-pointer relative overflow-hidden"
@@ -376,6 +414,7 @@ const Dashboard: React.FC<{
 
             {/* Fitness Tests */}
             <motion.div 
+              variants={cardVariants}
               whileHover={{ scale: 1.02, y: -5 }}
               onClick={() => onNavigate?.('fitness')}
               className="group bg-rose-50 border-4 border-slate-900 rounded-[3rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(244,63,94,0.2)] transition-all cursor-pointer flex flex-col justify-between"
@@ -392,6 +431,7 @@ const Dashboard: React.FC<{
 
             {/* Test Generator */}
             <motion.div 
+              variants={cardVariants}
               whileHover={{ scale: 1.02, y: -5 }}
               onClick={() => onNavigate?.('testpaper')}
               className="group bg-slate-100 border-4 border-slate-900 rounded-[3rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(15,23,42,0.1)] transition-all cursor-pointer flex flex-col justify-between"
@@ -405,7 +445,7 @@ const Dashboard: React.FC<{
                 <ArrowRight className="text-slate-300 group-hover:text-slate-900 transition-colors" size={24} />
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         </section>
 
         {/* ADMIN Group */}
@@ -417,9 +457,16 @@ const Dashboard: React.FC<{
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-50px" }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
             {/* Parent Letters */}
             <motion.div 
+              variants={cardVariants}
               whileHover={{ scale: 1.02 }}
               onClick={() => onNavigate?.('parentletters')}
               className="group bg-blue-50 border-4 border-slate-900 rounded-[2.5rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(59,130,246,0.1)] transition-all cursor-pointer"
@@ -437,6 +484,7 @@ const Dashboard: React.FC<{
 
             {/* Yearly Planner */}
             <motion.div 
+              variants={cardVariants}
               whileHover={{ scale: 1.02 }}
               onClick={() => onNavigate?.('yearly')}
               className="group bg-indigo-50 border-4 border-slate-900 rounded-[2.5rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.1)] transition-all cursor-pointer"
@@ -454,6 +502,7 @@ const Dashboard: React.FC<{
 
             {/* Compliance */}
             <motion.div 
+              variants={cardVariants}
               whileHover={{ scale: 1.02 }}
               onClick={() => onNavigate?.('compliance')}
               className="group bg-amber-50 border-4 border-slate-900 rounded-[2.5rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(245,158,11,0.1)] transition-all cursor-pointer"
@@ -468,7 +517,7 @@ const Dashboard: React.FC<{
                  <ArrowRight size={14} />
                </div>
             </motion.div>
-          </div>
+          </motion.div>
         </section>
       </div>
 
