@@ -519,6 +519,169 @@ const Dashboard: React.FC<{
             </motion.div>
           </motion.div>
         </section>
+
+        {/* 🏆 LEADERSHIP & OVERSIGHT: The Principal & HoD Suite */}
+        <section className="space-y-12 bg-[#F8FAFC] border-4 border-slate-900 rounded-[3.5rem] p-8 md:p-14 relative overflow-hidden shadow-[12px_12px_0px_0px_rgba(15,23,42,1)]">
+          {/* Subtle grid pattern background */}
+          <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between border-b-4 border-slate-900 pb-8 relative z-10">
+            <div className="space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B00]">04. LEADERSHIP & OVERSIGHT</p>
+              <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">Principal & <br/> <span className="text-[#005BFF]">School Office.</span></h2>
+              <p className="text-sm text-slate-600 font-semibold leading-relaxed max-w-xl">
+                Real-time dashboard reporting and physical education governance for school boards, inspectors, and leadership.
+              </p>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <span className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 rounded-full text-xs font-black uppercase tracking-widest inline-flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Board Audit Compliant
+              </span>
+            </div>
+          </div>
+
+          {/* Interactive Navigation Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+            {/* Card 1: Principal Dashboard */}
+            <motion.div 
+              whileHover={{ scale: 1.01, y: -4 }}
+              onClick={() => onNavigate?.('principal-dashboard')}
+              className="group bg-slate-900 text-white rounded-[2.5rem] p-8 md:p-10 hover:shadow-[12px_12px_0px_0px_rgba(0,91,255,0.25)] transition-all cursor-pointer relative overflow-hidden border-4 border-slate-900"
+            >
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+                <ShieldCheck size={120} />
+              </div>
+              <div className="relative z-10 h-full flex flex-col justify-between space-y-8">
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg text-white">
+                    <ShieldCheck size={28} />
+                  </div>
+                  <span className="text-[10px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-full uppercase tracking-wider">Board Inspection Ready</span>
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight">Principal Dashboard</h3>
+                  <p className="text-slate-400 text-xs md:text-sm font-medium leading-relaxed">
+                    A secure overview for school leaders to track physical education compliance, CBSE event progress, medical logs, and real-time student fitness metrics across the entire school academy.
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2 text-[#FF6B00] group-hover:text-white transition-colors font-black text-xs uppercase tracking-[0.2em] pt-4">
+                  <span>Enter Principal Suite</span>
+                  <ArrowRight size={16} />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Card 2: PE Department Office */}
+            <motion.div 
+              whileHover={{ scale: 1.01, y: -4 }}
+              onClick={() => onNavigate?.('department-office')}
+              className="group bg-white text-slate-900 rounded-[2.5rem] p-8 md:p-10 hover:shadow-[12px_12px_0px_0px_rgba(255,107,0,0.2)] transition-all cursor-pointer relative overflow-hidden border-4 border-slate-900"
+            >
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform text-slate-400">
+                <Wrench size={120} />
+              </div>
+              <div className="relative z-10 h-full flex flex-col justify-between space-y-8">
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-14 bg-[#FF6B00] rounded-2xl flex items-center justify-center shadow-lg text-white">
+                    <Wrench size={28} />
+                  </div>
+                  <span className="text-[10px] font-black bg-orange-100 text-[#FF6B00] border border-orange-200 px-3 py-1 rounded-full uppercase tracking-wider">Administrative Hub</span>
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight">Department Office</h3>
+                  <p className="text-slate-500 text-xs md:text-sm font-medium leading-relaxed">
+                    The operational nerve center for the PE department. Manage substitute teaching plans, monitor athletic equipment logs, and award Inter-House Championship Points (Agni, Jal, Prithvi, Vayu).
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2 text-indigo-600 group-hover:text-indigo-800 transition-colors font-black text-xs uppercase tracking-[0.2em] pt-4">
+                  <span>Enter Department Office</span>
+                  <ArrowRight size={16} />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* 🔄 INTERACTIVE TEACHER-TO-PRINCIPAL DATA FLOW PIPELINE */}
+          <div className="bg-white border-4 border-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 space-y-8 relative z-10">
+            <div className="space-y-2 text-left">
+              <h3 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                <TrendingUp className="text-[#FF6B00]" size={22} />
+                How School Data Synchronizes in Real-Time
+              </h3>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">
+                No manual data entry for school leadership is required! Learn exactly how daily physical education inputs on the field propagate automatically into certified inspector reports.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+              {/* Step 1 */}
+              <div className="p-5 bg-indigo-50/50 border-2 border-dashed border-indigo-200 rounded-2xl space-y-3 relative">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-md">1</div>
+                <h4 className="text-sm font-black uppercase text-indigo-950">1. Teacher Inputs (Daily)</h4>
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                  Teachers click on <strong className="text-indigo-900 font-bold">Fitness Tests</strong> to log student times/scores, or open the <strong className="text-indigo-900 font-bold">Department Office</strong> to update inventory and award inter-house points.
+                </p>
+              </div>
+
+              {/* Step 2 */}
+              <div className="p-5 bg-amber-50/50 border-2 border-dashed border-amber-200 rounded-2xl space-y-3 relative">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-xs shadow-md">2</div>
+                <h4 className="text-sm font-black uppercase text-amber-950">2. smartpeindia Aggregates</h4>
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                  Our secure cloud engine analyzes individual records, calculates class BMI averages, counts completed lesson compliance logs, and compiles verified sports day brackets.
+                </p>
+              </div>
+
+              {/* Step 3 */}
+              <div className="p-5 bg-rose-50/50 border-2 border-dashed border-rose-200 rounded-2xl space-y-3 relative">
+                <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center font-black text-xs shadow-md">3</div>
+                <h4 className="text-sm font-black uppercase text-rose-950">3. Live Principal Review</h4>
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                  School Principals and CBSE inspectors view the <strong className="text-rose-900 font-bold">Principal Dashboard</strong> to instantly find compliant, print-ready summaries, audit logs, and performance metrics.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 📋 CURRICULUM & BOARD COMPLIANCE MATRIX */}
+          <div className="bg-[#FFFDF9] border-4 border-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 space-y-6 relative z-10">
+            <div className="space-y-2">
+              <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-slate-900">
+                Pre-Loaded Curriculum Standards Aligned inside smartpeindia
+              </h3>
+              <p className="text-xs text-slate-500 font-medium max-w-xl leading-relaxed">
+                We satisfy physical literacy mandates out of the box. No manual curriculum mapping is required.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+              <div className="p-4 border border-slate-200 rounded-xl bg-white space-y-2">
+                <span className="text-[9px] font-black uppercase text-indigo-600 tracking-wider">CBSE HPE Strand 1-4</span>
+                <h4 className="text-xs font-black uppercase text-slate-900">Mandatory HPE Policy</h4>
+                <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                  Fully integrates Games/Sports, Health & Fitness, SEWA projects, and the mandatory Health & Activity Card generation.
+                </p>
+              </div>
+
+              <div className="p-4 border border-slate-200 rounded-xl bg-white space-y-2">
+                <span className="text-[9px] font-black uppercase text-[#FF6B00] tracking-wider">NEP 2020 Guidelines</span>
+                <h4 className="text-xs font-black uppercase text-slate-900">Sports-Integrated Learning</h4>
+                <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                  Leverages physical movement as pedagogical tool. Supports holistic 360-degree assessment cards for report cards.
+                </p>
+              </div>
+
+              <div className="p-4 border border-slate-200 rounded-xl bg-white space-y-2">
+                <span className="text-[9px] font-black uppercase text-emerald-600 tracking-wider">Khelo India SPARKS</span>
+                <h4 className="text-xs font-black uppercase text-slate-900">National Fitness Battery</h4>
+                <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                  Pre-loads fitness tests for age bands 5-8 (BMI, Balance, Co-ordination) and 9-18 (Speed, Strength, Endurance, Flexibility).
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       {/* Dynamic CTA Banner matching Repaint Mockup */}

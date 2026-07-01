@@ -61,12 +61,14 @@ import SkillAnalysis from './components/SkillAnalysis.tsx';
 import AdminLogs from './components/AdminLogs.tsx';
 import DepartmentWorkloadPlanner from './components/DepartmentWorkloadPlanner.tsx';
 import AcademicWeeklyPlanner from './components/AcademicWeeklyPlanner.tsx';
+import PrincipalDashboard from './components/PrincipalDashboard.tsx';
+import DepartmentOffice from './components/DepartmentOffice.tsx';
 import { GlobalSearch } from './components/GlobalSearch.tsx';
 import { logError } from './services/logService.ts';
 import { auth } from './services/firebase.ts';
 import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
 
-type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact' | 'principal-dashboard' | 'department-office';
 
 import { BoardType, Language } from './types.ts';
 
@@ -100,6 +102,7 @@ const navigation = [
   { 
     section: 'Record',
     items: [
+      { id: 'principal-dashboard', name: 'Principal Dashboard', icon: ShieldCheck, isNew: true, subtitle: 'Deliver inspection-ready reports to decision makers.' },
       { id: 'school-students', name: 'Student Directory', icon: Users, protected: true },
       { id: 'school-overview', name: 'School Fitness Database', icon: Zap, isNew: true, subtitle: 'Store and track every student\'s scores.' },
       { id: 'school-results', name: 'Live Results', icon: Activity, isNew: true, protected: true },
@@ -110,6 +113,7 @@ const navigation = [
   { 
     section: 'Communicate & Admin',
     items: [
+      { id: 'department-office', name: 'PE Department Office', icon: ClipboardList, isNew: true, subtitle: 'Substitute plans, equipment logs, and house points.' },
       { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true, subtitle: 'Draft ready-to-print letters for parents.' },
       { id: 'school-teams', name: 'Teams/Classes', icon: UserCheck, protected: true },
       { id: 'widgets', name: 'PE Classroom Widgets', icon: Zap, isNew: true, subtitle: 'Interactive timers and tools.' },
@@ -148,11 +152,13 @@ interface MobileHeaderProps {
 }
 const MobileHeader: React.FC<MobileHeaderProps> = React.memo(({ isSidebarOpen, setIsSidebarOpen }) => {
   return (
-    <header className="md:hidden sticky top-0 bg-gradient-to-r from-[#0A1C2A] via-[#112538] to-[#0A1C2A] backdrop-blur-xl text-white px-5 py-3.5 flex justify-between items-center z-30 border-b border-white/5 shadow-lg print:hidden">
-      <Logo variant="light" className="scale-90 origin-left" />
+    <header className="md:hidden sticky top-0 bg-gradient-to-r from-[#0A1C2A] via-[#112538] to-[#0A1C2A] backdrop-blur-xl text-white px-5 py-3.5 flex items-center z-30 border-b border-white/5 shadow-lg print:hidden">
+      <div className="flex-grow-0 flex-shrink-0">
+        <Logo variant="light" className="scale-90 origin-left" />
+      </div>
       <button 
         onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-        className="p-2.5 bg-white/5 border border-white/10 rounded-2xl active:scale-90 transition-all flex items-center justify-center hover:bg-white/10"
+        className="ml-auto flex-shrink-0 p-2.5 bg-white/5 border border-white/10 rounded-2xl active:scale-90 transition-all flex items-center justify-center hover:bg-white/10"
         aria-label="Toggle Navigation Menu"
       >
         {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
@@ -192,11 +198,13 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
       print:hidden
     `}>
       {/* Sidebar Header with Logo and Close Button (Mobile Only) */}
-      <div className="p-6 md:p-10 flex items-center justify-between border-b border-white/5 md:border-b-0">
-        <Logo variant="light" className="scale-95 origin-left" />
+      <div className="p-6 md:p-10 flex items-center border-b border-white/5 md:border-b-0">
+        <div className="flex-grow-0 flex-shrink-0">
+          <Logo variant="light" className="scale-95 origin-left" />
+        </div>
         <button 
           onClick={() => setIsSidebarOpen(false)}
-          className="md:hidden p-2.5 bg-white/5 border border-white/10 rounded-2xl active:scale-90 transition-all flex items-center justify-center hover:bg-white/10 text-slate-400 hover:text-white"
+          className="md:hidden ml-auto flex-shrink-0 p-2.5 bg-white/5 border border-white/10 rounded-2xl active:scale-90 transition-all flex items-center justify-center hover:bg-white/10 text-slate-400 hover:text-white"
           aria-label="Close Navigation Menu"
         >
           <X size={18} />
@@ -721,6 +729,8 @@ const App: React.FC = () => {
       case 'yearly': return <YearlyPlanner onNavigate={handleTabChange} />;
       case 'weekly-planner': return <AcademicWeeklyPlanner />;
       case 'workload-planner': return <DepartmentWorkloadPlanner />;
+      case 'principal-dashboard': return <PrincipalDashboard />;
+      case 'department-office': return <DepartmentOffice />;
       case 'tools': return <AIToolCenter />;
       case 'theory': return <TheoryHub />;
       case 'planner': return <AIPlanner />;
