@@ -67,6 +67,8 @@ import { GlobalSearch } from './components/GlobalSearch.tsx';
 import { logError } from './services/logService.ts';
 import { auth } from './services/firebase.ts';
 import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
+import { trackEvent } from './services/analytics.ts';
+import { toast, SHOW_TOAST_EVENT, SHOW_CONFIRM_EVENT, ToastConfig, ConfirmConfig } from './services/toast.ts';
 
 type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact' | 'principal-dashboard' | 'department-office';
 
@@ -457,6 +459,38 @@ const App: React.FC = () => {
   const [isAuthView, setIsAuthView] = useState(false);
   const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(null);
   const [highlightStudentId, setHighlightStudentId] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<ToastConfig[]>([]);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmConfig | null>(null);
+
+  useEffect(() => {
+    const handleToastEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<ToastConfig>;
+      if (customEvent.detail) {
+        const newToast = customEvent.detail;
+        setToasts(prev => [...prev, newToast]);
+        if (newToast.duration !== 0) {
+          setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== newToast.id));
+          }, newToast.duration || 3000);
+        }
+      }
+    };
+
+    const handleConfirmEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<ConfirmConfig>;
+      if (customEvent.detail) {
+        setConfirmDialog(customEvent.detail);
+      }
+    };
+
+    window.addEventListener(SHOW_TOAST_EVENT, handleToastEvent);
+    window.addEventListener(SHOW_CONFIRM_EVENT, handleConfirmEvent);
+
+    return () => {
+      window.removeEventListener(SHOW_TOAST_EVENT, handleToastEvent);
+      window.removeEventListener(SHOW_CONFIRM_EVENT, handleConfirmEvent);
+    };
+  }, []);
 
   // Synchronize browser history with Sidebar view to handle Android hardware back button natively
   useEffect(() => {
@@ -516,14 +550,14 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleLogout = useCallback(async () => {
-    try {
-      if (window.confirm('Are you sure you want to log out?')) {
+  const handleLogout = useCallback(() => {
+    toast.confirm('Are you sure you want to log out?', async () => {
+      try {
         await signOut(auth);
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err);
-    }
+    });
   }, []);
 
   const checkApiStatus = useCallback(async (retryCount = 0) => {
@@ -698,6 +732,25 @@ const App: React.FC = () => {
 
   // Unified memoized transition handler to switch routes easily and prevent layout delay
   const handleTabChange = useCallback((tabId: Tab) => {
+    // Analytics: track screen transitions
+    trackEvent('screen_view_custom', { screen_name: tabId, previous_screen: activeTab });
+
+    // Analytics: track if a tool is used
+    const toolTabs: Record<string, string> = {
+      'planner': 'AI Lesson Planner',
+      'yearly': 'Yearly Planner',
+      'weekly-planner': 'Weekly Academic Planner',
+      'workload-planner': 'Workload & Timetable',
+      'khelo': 'Khelo India Calculator',
+      'testpaper': 'Question Paper Generator',
+      'skill-analysis': 'Skill Analysis Lab',
+      'rules': 'Game Rules Bot',
+      'widgets': 'Classroom Widgets'
+    };
+    if (toolTabs[tabId]) {
+      trackEvent('tool_used', { tool_name: toolTabs[tabId] });
+    }
+
     startTransition(() => {
       setActiveTab(tabId);
     });
@@ -707,7 +760,7 @@ const App: React.FC = () => {
     } else {
       setIsSidebarOpen(false);
     }
-  }, []);
+  }, [activeTab]);
 
   const renderContent = () => {
     if (isProtectedTab(activeTab)) {
@@ -773,6 +826,64 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-sans">
+        {/* Toast Notification Container */}
+        <div className="fixed bottom-6 right-6 z-[200] space-y-3 max-w-sm w-full pointer-events-none">
+          {toasts.map(t => (
+            <div
+              key={t.id}
+              className="p-4 rounded-2xl shadow-xl border-4 border-slate-900 pointer-events-auto flex items-center space-x-3 text-xs font-black uppercase tracking-wider animate-slide-up bg-white text-slate-900"
+            >
+              <div className={`w-3.5 h-3.5 rounded-full flex-shrink-0 ${
+                t.type === 'success' ? 'bg-emerald-500' : t.type === 'error' ? 'bg-rose-500' : 'bg-[#FF6B00]'
+              }`} />
+              <p className="flex-1 text-slate-900 leading-tight">{t.message}</p>
+              <button
+                onClick={() => setToasts(prev => prev.filter(item => item.id !== t.id))}
+                className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-900 transition-colors pointer-events-auto"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Custom Confirm Dialog Overlay */}
+        {confirmDialog && (
+          <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[250] flex items-center justify-center p-4 pointer-events-auto">
+            <div className="bg-[#FFFDF9] border-4 border-slate-900 rounded-[2rem] p-6 max-w-md w-full shadow-[12px_12px_0px_0px_rgba(15,23,42,1)] space-y-6 animate-slide-up">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black shadow-md flex-shrink-0 border-2 border-slate-900">
+                  <AlertTriangle size={24} />
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Confirmation Required</h3>
+                  <p className="text-xs text-slate-600 font-bold leading-relaxed">{confirmDialog.message}</p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    if (confirmDialog.onCancel) confirmDialog.onCancel();
+                    setConfirmDialog(null);
+                  }}
+                  className="px-5 py-3 border-2 border-slate-900 hover:bg-slate-50 text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    confirmDialog.onConfirm();
+                    setConfirmDialog(null);
+                  }}
+                  className="px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white border-2 border-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* API Key Selection Modal - Enhanced with instructions */}
       {isKeyDialogOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">

@@ -5,6 +5,8 @@ import {
   ChevronRight, ArrowRight, Shield, Download, Sparkles, AlertCircle, CheckCircle2, HelpCircle,
   ExternalLink, Share2, FileText, Check, Copy
 } from 'lucide-react';
+import { toast } from '../services/toast.ts';
+import { trackEvent } from '../services/analytics.ts';
 
 interface Match {
   id: number;
@@ -479,7 +481,7 @@ const TournamentMaker: React.FC = () => {
     // Open a style-pure pop-up window
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      alert("Popup blocked! Please allow popups for smartpeindia to open and save the PDF/Print layout.");
+      toast.error("Popup blocked! Please allow popups for smartpeindia to open and save the PDF/Print layout.");
       return;
     }
 
@@ -821,7 +823,7 @@ const TournamentMaker: React.FC = () => {
       setCopiedText(true);
       setTimeout(() => setCopiedText(false), 2000);
     } catch (err) {
-      alert("Please copy text manually from the dialog box.");
+      toast.info("Please copy text manually from the dialog box.");
     }
   };
 

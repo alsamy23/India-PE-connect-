@@ -6,6 +6,7 @@ import { LessonPlan, Language, BoardType } from '../types.ts';
 import { generateLessonPlan, generateLessonDiagram } from '../services/geminiService.ts';
 import { storageService } from '../services/storageService.ts';
 import { exportToPdf, exportToWord } from '../lib/exportUtils.ts';
+import { trackEvent } from '../services/analytics.ts';
 
 declare var html2pdf: any;
 
@@ -88,6 +89,11 @@ const AIPlanner: React.FC = () => {
         gameDiagramUrl: gameUrl 
       }) : null);
 
+      trackEvent('resource_viewed', {
+        resource_name: `${sport} - ${topic} (Grade ${grade})`,
+        category: 'Lesson Plan'
+      });
+
     } catch (err: any) {
       console.error(err);
       const message = err.message || "An unexpected error occurred.";
@@ -106,6 +112,11 @@ const AIPlanner: React.FC = () => {
   };
 
   const handleExportPdf = () => {
+    trackEvent('resource_downloaded', {
+      resource_name: plan ? plan.topic : `${sport} - ${topic} (Grade ${grade})`,
+      resource_type: 'Lesson Plan',
+      format: 'PDF'
+    });
     exportToPdf(contentRef.current, `LessonPlan_${sport}_${grade}_${language}`).catch(err => {
       console.error("PDF Export error:", err);
     });
@@ -113,6 +124,12 @@ const AIPlanner: React.FC = () => {
 
   const handleExportWord = () => {
     if (!plan) return;
+    
+    trackEvent('resource_downloaded', {
+      resource_name: plan.topic,
+      resource_type: 'Lesson Plan',
+      format: 'Word'
+    });
     
     const html = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>

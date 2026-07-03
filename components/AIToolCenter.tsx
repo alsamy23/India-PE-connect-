@@ -13,6 +13,7 @@ import UnitPlannerTool from './UnitPlannerTool.tsx';
 import MoveCheckTool from './MoveCheckTool.tsx';
 import TournamentMaker from './TournamentMaker.tsx';
 import SportsDayTracker from './SportsDayTracker.tsx';
+import { trackEvent } from '../services/analytics.ts';
 
 interface Tool {
   id: string;
@@ -53,6 +54,8 @@ const AIToolCenter: React.FC = () => {
     setResult(null);
     setError(null);
     setFormData({});
+    trackEvent('tool_used', { tool_name: tool.name });
+    trackEvent('resource_viewed', { resource_name: tool.name, category: 'AI Tools' });
   };
 
   const runTool = async () => {

@@ -12,6 +12,8 @@ import { auth, db } from '../services/firebase';
 import { motion } from 'motion/react';
 import { Mail, Lock, User, School, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
 import Logo from './Logo';
+import { trackEvent } from '../services/analytics.ts';
+import { toast } from '../services/toast.ts';
 
 interface AuthProps {
   onBack?: () => void;
@@ -80,6 +82,9 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           displayName: user.displayName || 'Teacher',
           email: user.email
         });
+
+        trackEvent('signup', { method: 'google', user_role: role });
+        trackEvent('profile_created', { user_role: role });
       }
     } catch (err: any) {
       console.error('Google Auth Error:', err);
@@ -151,6 +156,9 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           displayName,
           email: user.email
         });
+
+        trackEvent('signup', { method: 'email', user_role: role });
+        trackEvent('profile_created', { user_role: role });
       }
     } catch (err: any) {
       console.error('Auth Error:', err);

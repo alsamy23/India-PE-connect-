@@ -18,6 +18,8 @@ import {
   Compass,
   Loader2
 } from 'lucide-react';
+import { trackEvent } from '../services/analytics.ts';
+import { toast } from '../services/toast.ts';
 import { motion, AnimatePresence } from 'motion/react';
 
 // Re-use same type interface for workloads
@@ -802,7 +804,12 @@ Return exactly a valid JSON object matching this structure (no markdown envelope
               <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-150 print:hidden">
                 <button
                   onClick={() => {
-                    alert('Laminated Physical printable PDF download initiated.');
+                    toast.success('Laminated Physical printable PDF download initiated.');
+                    trackEvent('resource_downloaded', {
+                      resource_name: selectedSlot?.skill || 'Weekly Calendar Lesson Plan',
+                      resource_type: 'Lesson Plan',
+                      format: 'PDF'
+                    });
                   }}
                   className="px-5 py-3 border-2 border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"
                 >

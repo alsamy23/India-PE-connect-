@@ -18,6 +18,7 @@ import {
   Clock,
   BookOpen
 } from 'lucide-react';
+import { toast } from '../services/toast.ts';
 import { motion } from 'motion/react';
 import { collection, query, where, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import { fitnessService, SchoolMember } from '../services/fitnessService.ts';
@@ -370,21 +371,21 @@ Friday Period 3: Grade 7B - Fitness`;
 
   const handleDeleteMember = async (uid: string) => {
     if (!userProfile) return;
-    if (!window.confirm("Remove this team member? They will lose access to school data.")) return;
-
-    setLoading(true);
-    try {
-      await fitnessService.deleteSchoolMember(uid);
-      setSuccess("Member removed successfully.");
-      
-      // Refresh list
-      const schoolMembers = await fitnessService.getSchoolMembers(userProfile.schoolId);
-      setMembers(schoolMembers);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    toast.confirm("Remove this team member? They will lose access to school data.", async () => {
+      setLoading(true);
+      try {
+        await fitnessService.deleteSchoolMember(uid);
+        setSuccess("Member removed successfully.");
+        
+        // Refresh list
+        const schoolMembers = await fitnessService.getSchoolMembers(userProfile.schoolId);
+        setMembers(schoolMembers);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   const handleAddMember = async (e: React.FormEvent) => {

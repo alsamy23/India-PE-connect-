@@ -28,6 +28,7 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react';
+import { toast } from '../services/toast.ts';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const speakText = (text: string) => {

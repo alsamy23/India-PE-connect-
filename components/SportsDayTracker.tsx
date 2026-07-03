@@ -3,6 +3,7 @@ import { Trophy, Save, Upload, Shield, Award, Medal, Users, UserPlus } from 'luc
 import { auth, db } from '../services/firebase.ts';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { fitnessService, SchoolMember } from '../services/fitnessService.ts';
+import { toast } from '../services/toast.ts';
 
 const DEFAULT_HOUSES = ['MARS', 'NEPTUNE', 'URANUS', 'VENUS'];
 
@@ -199,7 +200,7 @@ const SportsDayTracker: React.FC = () => {
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       console.error("Failed to save sports day data:", err);
-      alert("Failed to save data. Please check permissions.");
+      toast.error("Failed to save data. Please check permissions.");
     }
   };
 
@@ -225,10 +226,10 @@ const SportsDayTracker: React.FC = () => {
   };
 
   const handleRemoveHouse = (houseToRemove: string) => {
-    if (confirm(`Are you sure you want to remove ${houseToRemove}? This will not delete points from existing events, but will hide the house from the tracker.`)) {
+    toast.confirm(`Are you sure you want to remove ${houseToRemove}? This will not delete points from existing events, but will hide the house from the tracker.`, () => {
       setHouses(houses.filter(h => h !== houseToRemove));
       setSaved(false);
-    }
+    });
   };
 
   const handleAddEvent = () => {
@@ -244,10 +245,10 @@ const SportsDayTracker: React.FC = () => {
   };
 
   const handleRemoveEvent = (idToRemove: string) => {
-    if (confirm("Are you sure you want to remove this event?")) {
+    toast.confirm("Are you sure you want to remove this event?", () => {
       setEvents(events.filter(e => e.id !== idToRemove));
       setSaved(false);
-    }
+    });
   };
 
   const getEventScore = (ev: any, house: string) => {

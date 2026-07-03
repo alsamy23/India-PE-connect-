@@ -13,6 +13,7 @@ import {
   Calculator,
   Target
 } from 'lucide-react';
+import { toast } from '../services/toast.ts';
 import { generateGamesRubric } from '../services/geminiService.ts';
 
 interface GamesProficiencyGeneratorProps {
@@ -340,7 +341,7 @@ const GamesProficiencyGenerator: React.FC<GamesProficiencyGeneratorProps> = ({ s
                        <button 
                          className="px-8 py-4 bg-[#FF6B00] text-white rounded-xl font-black uppercase tracking-widest text-sm shadow-xl hover:bg-orange-600 hover:shadow-2xl hover:-translate-y-1 transition-all"
                          onClick={() => {
-                           alert('Evaluation Data saved successfully.');
+                           toast.success('Evaluation Data saved successfully.');
                            setEvalMode(false);
                            setScores({});
                            setFitnessMark('');
