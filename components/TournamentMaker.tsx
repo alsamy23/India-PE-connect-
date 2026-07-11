@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Trophy, Users, Calendar, Clock, Printer, Trash2, Plus, RefreshCw, 
@@ -65,6 +65,71 @@ const TournamentMaker: React.FC = () => {
   const [thirdPlaceMode, setThirdPlaceMode] = useState<'none' | 'same' | 'different'>('same');
   const [thirdPlaceDate, setThirdPlaceDate] = useState(new Date().toISOString().split('T')[0]);
   const [thirdPlaceTime, setThirdPlaceTime] = useState('15:15');
+
+  // Multi-Day Tournament States
+  interface DailyConfig {
+    date: string;
+    startTime: string;
+    endTime: string;
+  }
+  const [numDays, setNumDays] = useState<number>(1);
+  const [dailyConfigs, setDailyConfigs] = useState<DailyConfig[]>(() => [
+    { date: new Date().toISOString().split('T')[0], startTime: '08:15', endTime: '16:30' }
+  ]);
+  const [roundDayAssignments, setRoundDayAssignments] = useState<Record<string, number>>({});
+
+  // Keep dailyConfigs in sync with numDays, startDate, and startTime
+  useEffect(() => {
+    setDailyConfigs(prev => {
+      const arr = [...prev];
+      if (numDays > arr.length) {
+        for (let i = arr.length; i < numDays; i++) {
+          const baseDate = new Date(startDate || new Date());
+          baseDate.setDate(baseDate.getDate() + i);
+          const dayStr = baseDate.toISOString().split('T')[0];
+          arr.push({
+            date: dayStr,
+            startTime: startTime || '08:15',
+            endTime: '16:30'
+          });
+        }
+      } else if (numDays < arr.length) {
+        arr.length = numDays;
+      }
+      
+      // Keep first day synced with main inputs
+      if (arr[0]) {
+        arr[0].date = startDate;
+        arr[0].startTime = startTime;
+      }
+      return arr;
+    });
+  }, [numDays, startDate, startTime]);
+
+  const getDefaultRoundDay = (roundName: string, totalRoundsCount: number, roundIndex: number, days: number): number => {
+    if (days <= 1) return 1;
+    if (days === 2) {
+      if (roundName.includes("Final") || roundName.includes("Semi") || roundName.includes("Third")) {
+        return 2;
+      }
+      return 1;
+    }
+    if (days === 3) {
+      if (roundName.includes("Final") || roundName.includes("Third")) {
+        return 3;
+      }
+      if (roundName.includes("Semi")) {
+        return 2;
+      }
+      if (roundIndex < Math.floor(totalRoundsCount / 2)) {
+        return 1;
+      }
+      return 2;
+    }
+    // For days > 3, distribute evenly
+    const day = Math.min(days, Math.floor((roundIndex / totalRoundsCount) * days) + 1);
+    return day;
+  };
 
   // Generation status
   const [hasConfirmed, setHasConfirmed] = useState(false);
@@ -205,7 +270,6 @@ const TournamentMaker: React.FC = () => {
     const matchBlockDuration = firstHalf + secondHalf + halfTime + restGap;
 
     let matchCounter = 1;
-    let physicalMatchCount = 0;
 
     // Date formatting to "DD-MM-YYYY (Weekday)"
     const formatDateObj = (dateStr: string) => {
@@ -220,8 +284,6 @@ const TournamentMaker: React.FC = () => {
         dayName: dayName
       };
     };
-
-    const hostDate = formatDateObj(startDate);
 
     // Round 1 Matches: only are played by teams without byes
     const round1Matches: Match[] = [];
@@ -238,8 +300,6 @@ const TournamentMaker: React.FC = () => {
         const idx1 = nonByeIndicesInOrder[i];
         const idx2 = nonByeIndicesInOrder[i + 1];
         const currentMatchId = matchCounter++;
-        const correctTime = addMinutesToTime(startTime, physicalMatchCount * matchBlockDuration);
-        physicalMatchCount++;
 
         round1Matches.push({
           id: currentMatchId,
@@ -247,8 +307,8 @@ const TournamentMaker: React.FC = () => {
           roundName: "I - Round",
           team1: teamsList[idx1],
           team2: teamsList[idx2],
-          time: correctTime,
-          date: hostDate.formatted,
+          time: "",
+          date: "",
           isBye: false
         });
       }
@@ -298,10 +358,7 @@ const TournamentMaker: React.FC = () => {
       for (let i = 0; i < numSlots; i += 2) {
         const s1 = currentRoundEntries[i];
         const s2 = currentRoundEntries[i + 1];
-
         const currentMatchId = matchCounter++;
-        const correctTime = addMinutesToTime(startTime, physicalMatchCount * matchBlockDuration);
-        physicalMatchCount++;
 
         currentRoundMatches.push({
           id: currentMatchId,
@@ -309,8 +366,8 @@ const TournamentMaker: React.FC = () => {
           roundName: roundNameStr,
           team1: s1,
           team2: s2,
-          time: correctTime,
-          date: hostDate.formatted,
+          time: "",
+          date: "",
           isBye: false
         });
 
@@ -327,24 +384,26 @@ const TournamentMaker: React.FC = () => {
     }
 
     // Determine the finals, and the semi-finals index
+    const updatedAssignments = { ...roundDayAssignments };
+    let hasAnyChange = false;
+    roundsSchedules.forEach((round, rIdx) => {
+      if (updatedAssignments[round.name] === undefined || updatedAssignments[round.name] > numDays) {
+        updatedAssignments[round.name] = getDefaultRoundDay(round.name, roundsSchedules.length, rIdx, numDays);
+        hasAnyChange = true;
+      }
+    });
+
     const semiFinalRound = roundsSchedules.find(r => r.name === "Semi Finals");
     let calculatedThirdPlace: Match | null = null;
 
     if (semiFinalRound && semiFinalRound.matches.length === 2 && thirdPlaceMode !== 'none') {
       const sf1 = semiFinalRound.matches[0];
       const sf2 = semiFinalRound.matches[1];
-      
       const currentMatchId = matchCounter++;
-      let tPlaceDate = hostDate.formatted;
-      let tPlaceTime = "";
-      
-      if (thirdPlaceMode === 'same') {
-        tPlaceTime = addMinutesToTime(startTime, physicalMatchCount * matchBlockDuration);
-        physicalMatchCount++;
-      } else {
-        const customTDateObj = formatDateObj(thirdPlaceDate);
-        tPlaceDate = customTDateObj.formatted;
-        tPlaceTime = addMinutesToTime(thirdPlaceTime, 0);
+
+      if (updatedAssignments["Third Place Play-off"] === undefined || updatedAssignments["Third Place Play-off"] > numDays) {
+        updatedAssignments["Third Place Play-off"] = updatedAssignments["Finals"] || numDays;
+        hasAnyChange = true;
       }
 
       calculatedThirdPlace = {
@@ -353,19 +412,89 @@ const TournamentMaker: React.FC = () => {
         roundName: "Third Place Play-off",
         team1: `Loser of ${sf1.name}`,
         team2: `Loser of ${sf2.name}`,
-        time: tPlaceTime,
-        date: tPlaceDate
+        time: "",
+        date: ""
       };
     }
 
-    // Ensure the main Final is scheduled at the very end
-    const lastRound = roundsSchedules[roundsSchedules.length - 1];
-    if (lastRound && lastRound.name === "Finals" && lastRound.matches.length === 1) {
-      const finalMatch = lastRound.matches[0];
-      if (calculatedThirdPlace && thirdPlaceMode === 'same') {
-        const finalMatchTime = addMinutesToTime(startTime, physicalMatchCount * matchBlockDuration);
-        finalMatch.time = finalMatchTime;
+    if (hasAnyChange) {
+      setRoundDayAssignments(updatedAssignments);
+    }
+
+    const currentAssignments = { ...updatedAssignments, ...roundDayAssignments };
+
+    // Group matches by day
+    const matchesByDay: Record<number, Match[]> = {};
+    for (let d = 1; d <= numDays; d++) {
+      matchesByDay[d] = [];
+    }
+
+    roundsSchedules.forEach(round => {
+      const roundDay = currentAssignments[round.name] || 1;
+      round.matches.forEach((m: Match) => {
+        if (matchesByDay[roundDay]) {
+          matchesByDay[roundDay].push(m);
+        } else {
+          matchesByDay[1].push(m);
+        }
+      });
+    });
+
+    if (calculatedThirdPlace && thirdPlaceMode !== 'different') {
+      const tPlaceDay = currentAssignments["Third Place Play-off"] || numDays;
+      if (matchesByDay[tPlaceDay]) {
+        matchesByDay[tPlaceDay].push(calculatedThirdPlace);
+      } else {
+        matchesByDay[1].push(calculatedThirdPlace);
       }
+    }
+
+    // Priorities for sequence sorting on each day
+    const roundPriority: Record<string, number> = {};
+    roundsSchedules.forEach((round, idx) => {
+      roundPriority[round.name] = idx;
+    });
+    const finalsPriority = roundPriority["Finals"] ?? 999;
+    roundPriority["Third Place Play-off"] = finalsPriority - 0.5;
+
+    // Sort matches on each day chronologically
+    for (let d = 1; d <= numDays; d++) {
+      if (matchesByDay[d]) {
+        matchesByDay[d].sort((a, b) => {
+          const pA = roundPriority[a.roundName] ?? 0;
+          const pB = roundPriority[b.roundName] ?? 0;
+          if (pA !== pB) return pA - pB;
+          return a.id - b.id;
+        });
+      }
+    }
+
+    // Schedule day-by-day
+    for (let d = 1; d <= numDays; d++) {
+      const dayConfig = dailyConfigs[d - 1];
+      const dayDateStr = dayConfig?.date || startDate;
+      const dayStartTime = dayConfig?.startTime || startTime;
+      const dayHostDate = formatDateObj(dayDateStr);
+
+      let physicalMatchCountOnThisDay = 0;
+      if (matchesByDay[d]) {
+        matchesByDay[d].forEach((m: Match) => {
+          m.date = dayHostDate.formatted;
+          if (firstHalf === 0 && secondHalf === 0) {
+            m.time = ""; // Untimed match
+          } else {
+            m.time = addMinutesToTime(dayStartTime, physicalMatchCountOnThisDay * matchBlockDuration);
+            physicalMatchCountOnThisDay++;
+          }
+        });
+      }
+    }
+
+    // If third place has custom separate date/time, handle it manually
+    if (calculatedThirdPlace && thirdPlaceMode === 'different') {
+      const customTDateObj = formatDateObj(thirdPlaceDate);
+      calculatedThirdPlace.date = customTDateObj.formatted;
+      calculatedThirdPlace.time = addMinutesToTime(thirdPlaceTime, 0);
     }
 
     setGeneratedRounds(roundsSchedules);
@@ -381,6 +510,13 @@ const TournamentMaker: React.FC = () => {
     const optimal = getOptimalPrintScale(teamsList.length, 'A4', 'landscape');
     setPrintScale(optimal);
   };
+
+  // Re-run scheduling when assignments or daily configurations change
+  useEffect(() => {
+    if (hasConfirmed) {
+      buildKnockoutBrackets();
+    }
+  }, [roundDayAssignments, dailyConfigs, numDays]);
 
   const [copiedText, setCopiedText] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -1113,6 +1249,93 @@ const TournamentMaker: React.FC = () => {
                   <span className="text-base font-black text-slate-700">{firstHalf + secondHalf + halfTime + restGap} minutes</span>
                 </div>
               </div>
+
+              <div className="pt-6 border-t border-slate-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Tournament Duration</span>
+                    <span className="text-xs font-bold text-slate-500">How many days is this event?</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                    <button 
+                      type="button"
+                      onClick={() => setNumDays(Math.max(1, numDays - 1))}
+                      className="w-8 h-8 rounded-lg bg-white hover:bg-slate-100 flex items-center justify-center font-black text-slate-700 shadow-xs border transition-colors"
+                    >
+                      -
+                    </button>
+                    <span className="text-xs font-black text-slate-800 px-3 min-w-[50px] text-center">{numDays} {numDays === 1 ? 'Day' : 'Days'}</span>
+                    <button 
+                      type="button"
+                      onClick={() => setNumDays(Math.min(7, numDays + 1))}
+                      className="w-8 h-8 rounded-lg bg-white hover:bg-slate-100 flex items-center justify-center font-black text-slate-700 shadow-xs border transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {numDays > 1 && (
+                  <div className="space-y-3 bg-slate-50/50 p-4 rounded-3xl border border-slate-150/60 animate-in fade-in zoom-in-95">
+                    <span className="text-[10px] font-black text-pink-600 uppercase tracking-widest block mb-1">Set Start & Session End Times per Day</span>
+                    {Array.from({ length: numDays }).map((_, idx) => {
+                      const config = dailyConfigs[idx] || { date: '', startTime: '08:15', endTime: '16:30' };
+                      return (
+                        <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-center bg-white p-3.5 rounded-2xl border border-slate-100">
+                          <div>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Day {idx + 1} Date</span>
+                            <input 
+                              type="date"
+                              className="w-full p-2.5 bg-slate-50/70 border border-slate-200 rounded-xl font-bold text-xs text-slate-700 outline-none focus:border-pink-500"
+                              value={config.date || ''}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setDailyConfigs(prev => {
+                                  const next = [...prev];
+                                  if (next[idx]) next[idx].date = val;
+                                  return next;
+                                });
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Session Starts</span>
+                            <input 
+                              type="time"
+                              className="w-full p-2.5 bg-slate-50/70 border border-slate-200 rounded-xl font-bold text-xs text-slate-700 outline-none focus:border-pink-500"
+                              value={config.startTime || '08:15'}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setDailyConfigs(prev => {
+                                  const next = [...prev];
+                                  if (next[idx]) next[idx].startTime = val;
+                                  return next;
+                                });
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Session Ends</span>
+                            <input 
+                              type="time"
+                              className="w-full p-2.5 bg-slate-50/70 border border-slate-200 rounded-xl font-bold text-xs text-slate-700 outline-none focus:border-pink-500"
+                              value={config.endTime || '16:30'}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setDailyConfigs(prev => {
+                                  const next = [...prev];
+                                  if (next[idx]) next[idx].endTime = val;
+                                  return next;
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Third-Place Options */}
@@ -1299,6 +1522,100 @@ const TournamentMaker: React.FC = () => {
                 <span>Change Settings</span>
               </button>
             </div>
+
+            {/* Multi-Day Allocation & Round Customization Card */}
+            {numDays > 1 && (
+              <div className="bg-gradient-to-br from-indigo-50/20 via-white to-pink-50/20 p-6 rounded-[2.2rem] border border-pink-100 space-y-4 animate-in fade-in zoom-in-95">
+                <div className="flex items-center gap-2">
+                  <Calendar size={18} className="text-pink-600 animate-bounce" />
+                  <h4 className="font-extrabold text-sm uppercase tracking-wider text-slate-900">📅 Multi-Day Round Allocation</h4>
+                </div>
+                <p className="text-xs text-slate-500 font-bold leading-relaxed">
+                  Your tournament is configured for <strong className="text-pink-600">{numDays} days</strong>. You can manually assign each round of matches to any specific day. The matches for each day will automatically sequence from the start of that day's morning session.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                  {generatedRounds.map((round) => {
+                    const currentDay = roundDayAssignments[round.name] || 1;
+                    return (
+                      <div key={round.name} className="p-3.5 bg-white border border-slate-150 rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
+                        <div>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Round Name</span>
+                          <span className="text-xs font-black text-slate-800 uppercase block mt-0.5 truncate">{round.name}</span>
+                          <span className="text-[9px] font-bold text-slate-400">{round.matches.length} matches</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] font-black text-pink-600 uppercase tracking-widest block mb-1.5">Scheduled Day</span>
+                          <div className="flex gap-1.5">
+                            {Array.from({ length: numDays }).map((_, dIdx) => {
+                              const dayNum = dIdx + 1;
+                              const isSelected = currentDay === dayNum;
+                              return (
+                                <button
+                                  key={dayNum}
+                                  type="button"
+                                  onClick={() => {
+                                    setRoundDayAssignments(prev => ({
+                                      ...prev,
+                                      [round.name]: dayNum
+                                    }));
+                                  }}
+                                  className={`flex-1 py-1.5 rounded-lg font-black text-[10px] transition-all border ${
+                                    isSelected 
+                                      ? 'bg-pink-600 border-pink-600 text-white shadow-xs' 
+                                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                  }`}
+                                >
+                                  Day {dayNum}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {thirdPlaceMatch && (
+                    <div className="p-3.5 bg-white border border-slate-150 rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
+                      <div>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Round Name</span>
+                        <span className="text-xs font-black text-slate-800 uppercase block mt-0.5 truncate">Third Place Play-off</span>
+                        <span className="text-[9px] font-bold text-slate-400">1 match</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black text-pink-600 uppercase tracking-widest block mb-1.5">Scheduled Day</span>
+                        <div className="flex gap-1.5">
+                          {Array.from({ length: numDays }).map((_, dIdx) => {
+                            const dayNum = dIdx + 1;
+                            const isSelected = (roundDayAssignments["Third Place Play-off"] || numDays) === dayNum;
+                            return (
+                              <button
+                                key={dayNum}
+                                type="button"
+                                onClick={() => {
+                                  setRoundDayAssignments(prev => ({
+                                    ...prev,
+                                    "Third Place Play-off": dayNum
+                                  }));
+                                }}
+                                className={`flex-1 py-1.5 rounded-lg font-black text-[10px] transition-all border ${
+                                  isSelected 
+                                    ? 'bg-pink-600 border-pink-600 text-white shadow-xs' 
+                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                }`}
+                              >
+                                Day {dayNum}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* 🖨️ Elite PDF Page Sizing & Scale Control Board */}
             <div className="bg-gradient-to-br from-indigo-50/40 via-white to-pink-50/20 p-6 rounded-[2.2rem] border border-indigo-100 space-y-6">
