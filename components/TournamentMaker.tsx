@@ -707,7 +707,7 @@ const TournamentMaker: React.FC = () => {
               <td><strong>Total Teams (N):</strong> ${teamsList.length}</td>
             </tr>
             <tr>
-              <td><strong>Match Duration:</strong> ${firstHalf} mins | ${secondHalf} mins (Break: ${halfTime} mins)</td>
+              <td><strong>Match Duration:</strong> ${firstHalf === 0 && secondHalf === 0 ? 'No Timing (Untimed Match)' : `${firstHalf} mins | ${secondHalf} mins (Break: ${halfTime} mins)`}</td>
               <td><strong>Next Power of 2 (P):</strong> ${setup.P}</td>
             </tr>
             <tr>
@@ -763,7 +763,11 @@ const TournamentMaker: React.FC = () => {
     text += `📊 *CBSE BRACKET METRICS:*\n`;
     text += `- Total Teams (N): ${teamsList.length}\n`;
     text += `- Allocated Byes (P - N): ${setup.byesCount}\n`;
-    text += `- Match Cycle: ${firstHalf}m + ${secondHalf}m (Break: ${halfTime}m, Rest: ${restGap}m)\n\n`;
+    if (firstHalf === 0 && secondHalf === 0) {
+      text += `- Match Cycle: Untimed Matches\n\n`;
+    } else {
+      text += `- Match Cycle: ${firstHalf}m + ${secondHalf}m (Break: ${halfTime}m, Rest: ${restGap}m)\n\n`;
+    }
 
     text += `📋 *SCHEDULED ROUNDS:*\n`;
     generatedRounds.forEach((round, rIdx) => {
@@ -772,14 +776,22 @@ const TournamentMaker: React.FC = () => {
         if (m.isBye) {
           text += `🔹 [${m.team1}] has a First Round BYE\n`;
         } else {
-          text += `🕒 ${m.time} | Match ${m.id}: ${m.team1} v/s ${m.team2}\n`;
+          if (firstHalf === 0 && secondHalf === 0) {
+            text += `🔹 Match ${m.id}: ${m.team1} v/s ${m.team2}\n`;
+          } else {
+            text += `🕒 ${m.time} | Match ${m.id}: ${m.team1} v/s ${m.team2}\n`;
+          }
         }
       });
     });
 
     if (thirdPlaceMatch) {
       text += `\n*🥉 3rd Place Play-Off Match*\n`;
-      text += `🕒 ${thirdPlaceMatch.time} | ${thirdPlaceMatch.team1} v/s ${thirdPlaceMatch.team2}\n`;
+      if (firstHalf === 0 && secondHalf === 0) {
+        text += `🔹 ${thirdPlaceMatch.team1} v/s ${thirdPlaceMatch.team2}\n`;
+      } else {
+        text += `🕒 ${thirdPlaceMatch.time} | ${thirdPlaceMatch.team1} v/s ${thirdPlaceMatch.team2}\n`;
+      }
     }
 
     text += `\nGenerated via *smartpeindia* Tournament Designer\n`;
@@ -1054,7 +1066,7 @@ const TournamentMaker: React.FC = () => {
                     type="number" 
                     className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-pink-500 transition-all text-slate-800"
                     value={firstHalf}
-                    onChange={e => setFirstHalf(Math.max(1, parseInt(e.target.value) || 0))}
+                    onChange={e => setFirstHalf(Math.max(0, parseInt(e.target.value) || 0))}
                   />
                 </div>
                 <div>
@@ -1063,7 +1075,7 @@ const TournamentMaker: React.FC = () => {
                     type="number" 
                     className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-pink-500 transition-all text-slate-800"
                     value={secondHalf}
-                    onChange={e => setSecondHalf(Math.max(1, parseInt(e.target.value) || 0))}
+                    onChange={e => setSecondHalf(Math.max(0, parseInt(e.target.value) || 0))}
                   />
                 </div>
                 <div>
@@ -1228,7 +1240,11 @@ const TournamentMaker: React.FC = () => {
                   </div>
                   <ul className="text-xs font-medium text-orange-850 space-y-2 pl-6 list-disc">
                     <li>Is the Tournament Name <strong>"{tournamentName}"</strong> correct?</li>
-                    <li>Are the match timers broken down correctly: 1st half ({firstHalf}m), 2nd half ({secondHalf}m), Break ({halfTime}m), Rest ({restGap}m)?</li>
+                    {firstHalf === 0 && secondHalf === 0 ? (
+                      <li>Match timers are disabled (Untimed matches).</li>
+                    ) : (
+                      <li>Are the match timers broken down correctly: 1st half ({firstHalf}m), 2nd half ({secondHalf}m), Break ({halfTime}m), Rest ({restGap}m)?</li>
+                    )}
                     <li>Are all {numTeams} teams' school labels precisely typed?</li>
                     <li>Is 3rd place match placement set to <strong>"{thirdPlaceMode === 'none' ? 'No Match' : thirdPlaceMode === 'same' ? 'Same Day' : 'Separate Day'}"</strong>?</li>
                   </ul>
@@ -1748,10 +1764,12 @@ const TournamentMaker: React.FC = () => {
                                 <div className="bg-slate-50 border-2 border-slate-900 p-4 print:p-2 rounded-xl print:rounded-lg flex flex-col justify-between hover:scale-[1.01] transition-transform shadow-sm animate-in fade-in w-full relative z-10 print:bg-white">
                                   <div className="flex justify-between items-center pb-2 border-b border-slate-150 mb-2">
                                     <span className="text-[10px] print:text-[8px] font-black text-pink-600 uppercase tracking-widest">{match.name}</span>
-                                    <span className="text-[10px] print:text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                      <Clock size={10} />
-                                      {match.time}
-                                    </span>
+                                    {(firstHalf > 0 || secondHalf > 0) && (
+                                      <span className="text-[10px] print:text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                        <Clock size={10} />
+                                        {match.time}
+                                      </span>
+                                    )}
                                   </div>
 
                                   <div className="space-y-1.5 text-xs text-slate-800">
@@ -1818,10 +1836,12 @@ const TournamentMaker: React.FC = () => {
                 <div className="border-b border-slate-200 pb-2 flex justify-between items-center">
                   <span className="text-[10px] font-black text-pink-700 uppercase tracking-widest">{thirdPlaceMatch.name}</span>
                   <span className="text-xs font-black uppercase tracking-widest text-slate-900">3rd Place Match (Second Runner-Up)</span>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                    <Clock size={10} />
-                    {thirdPlaceMatch.time}
-                  </div>
+                  {(firstHalf > 0 || secondHalf > 0) && (
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                      <Clock size={10} />
+                      {thirdPlaceMatch.time}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-center gap-8 py-2">
@@ -1848,8 +1868,14 @@ const TournamentMaker: React.FC = () => {
             <div className={`print-hide-rules pt-8 border-t-2 border-dashed border-slate-200 flex flex-col md:flex-row justify-between text-slate-400 text-xs font-medium gap-4 transition-all ${hideRulesFooterInPrint ? 'opacity-35 line-through select-none' : ''}`}>
               <div className="space-y-1">
                 <p className="font-extrabold uppercase text-[9px] tracking-widest text-slate-500">Official Tournament Directives</p>
-                <p>1. Duration: {firstHalf} Mins + {halfTime} Mins Break + {secondHalf} Mins (Total: {firstHalf + secondHalf + halfTime} mins active cycle).</p>
-                <p>2. Transition time between matches: {restGap} Mins interval allocation.</p>
+                {firstHalf === 0 && secondHalf === 0 ? (
+                  <p>1. Duration: Untimed Matches (No limit).</p>
+                ) : (
+                  <p>1. Duration: {firstHalf} Mins + {halfTime} Mins Break + {secondHalf} Mins (Total: {firstHalf + secondHalf + halfTime} mins active cycle).</p>
+                )}
+                {firstHalf === 0 && secondHalf === 0 ? null : (
+                  <p>2. Transition time between matches: {restGap} Mins interval allocation.</p>
+                )}
               </div>
               <div className="text-left md:text-right space-y-2 md:self-end">
                 <div className="w-32 border-b border-slate-900 md:ml-auto print:border-black"></div>
