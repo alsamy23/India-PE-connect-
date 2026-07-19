@@ -177,7 +177,8 @@ const Dashboard: React.FC<{
   const [downloadStatus, setDownloadStatus] = React.useState<string | null>(null);
   const [activeDeptTab, setActiveDeptTab] = React.useState<'metrics' | 'inventory' | 'substitutions' | 'house-points'>('metrics');
   const [housePoints, setHousePoints] = React.useState({ Agni: 420, Jal: 380, Prithvi: 450, Vayu: 410 });
-  const [sampleOutputTab, setSampleOutputTab] = React.useState<'lesson' | 'rubric' | 'report'>('lesson');
+  const [sampleOutputTab, setSampleOutputTab] = React.useState<'lesson' | 'rubric' | 'report' | 'inspection'>('lesson');
+  const [pitchRoleTab, setPitchRoleTab] = React.useState<'teacher' | 'hod' | 'principal'>('teacher');
 
   // Curriculum & Strand Overview States
   const [isCurriculumModalOpen, setIsCurriculumModalOpen] = React.useState(false);
@@ -377,6 +378,514 @@ const Dashboard: React.FC<{
             {/* Big center action logo watermark */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
               <Logo showText={false} className="scale-[3.5] rotate-12" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 🌟 SCHOOL-READY PITCH, WORKFLOW & PROOF CENTER */}
+      <section className="bg-gradient-to-br from-[#FFFDF9] via-white to-slate-50 border-4 border-slate-900 rounded-[3.5rem] p-8 md:p-14 space-y-16 relative overflow-hidden shadow-[12px_12px_0px_0px_rgba(15,23,42,1)]">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+        {/* Section Header */}
+        <div className="text-center space-y-4 max-w-2xl mx-auto pb-6 border-b-4 border-slate-900">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-indigo-600/10 border border-indigo-600/20 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+            <span className="text-[10px] font-black uppercase text-indigo-700 tracking-widest">School Integration Suite</span>
+          </div>
+          <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">
+            The School-Ready <br />
+            <span className="text-indigo-600 font-black">PE Operating Pitch.</span>
+          </h2>
+          <p className="text-xs md:text-sm text-slate-500 font-bold leading-relaxed">
+            Discover why leading Indian schools are replacing chaotic registers with SmartPE. Here is exactly who it is built for, how the workflow operates, and what you get.
+          </p>
+        </div>
+
+        {/* 1. Who Should Adopt It First (Stakeholder Engagement) */}
+        <div className="space-y-8">
+          <div className="text-center">
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#FF6B00]">STAGE 1: ADOPTION</span>
+            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mt-1">1. Who Is SmartPE Built For?</h3>
+            <p className="text-xs text-slate-500 font-semibold max-w-lg mx-auto">Click on your role below to see how SmartPE specifically transforms your daily school physical education responsibilities.</p>
+          </div>
+
+          <div className="grid grid-cols-3 max-w-xl mx-auto bg-slate-100 p-2 rounded-2xl border-2 border-slate-900 gap-1">
+            {[
+              { id: 'teacher', label: 'PE Teachers', icon: Dumbbell },
+              { id: 'hod', label: 'Sports Directors', icon: Trophy },
+              { id: 'principal', label: 'Principals', icon: ShieldCheck }
+            ].map((role) => {
+              const Icon = role.icon;
+              const isSelected = pitchRoleTab === role.id;
+              return (
+                <button
+                  key={role.id}
+                  type="button"
+                  onClick={() => setPitchRoleTab(role.id as any)}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 ${
+                    isSelected
+                      ? 'bg-[#FF6B00] text-white border-slate-900 shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] font-black'
+                      : 'bg-white text-slate-750 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <Icon size={14} />
+                  <span className="hidden sm:inline">{role.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            {pitchRoleTab === 'teacher' && (
+              <motion.div 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 md:grid-cols-12 bg-white border-4 border-slate-900 rounded-[2.5rem] p-6 md:p-10 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] items-center gap-8"
+              >
+                <div className="md:col-span-7 space-y-4">
+                  <span className="px-3 py-1 bg-orange-100 text-[#FF6B00] rounded-lg text-[9px] font-black uppercase tracking-wider">For On-Ground Teachers</span>
+                  <h4 className="text-2xl font-black text-slate-900 uppercase">Save Your Evenings: Draft CBSE Plans Instantly</h4>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                    PE Teachers shouldn't spend hours writing repetitive physical education lesson diaries. SmartPE is your daily sidekick on the field.
+                  </p>
+                  <ul className="space-y-2.5 text-xs text-slate-700 font-semibold">
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      Generate CBSE-compliant lesson logs covering Strands 1-4 in under 60 seconds.
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      Direct access to pre-loaded skill progression checklists and safety rules on your mobile.
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      Instant offline logging of student fitness records directly on the playground.
+                    </li>
+                  </ul>
+                  <button type="button" onClick={() => onNavigate?.('planner')} className="mt-2 text-xs font-black uppercase tracking-wider text-[#FF6B00] hover:underline flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+                    Try the AI Planner Now &rarr;
+                  </button>
+                </div>
+                <div className="md:col-span-5 bg-orange-50/50 p-6 rounded-[2rem] border-2 border-orange-100 space-y-4">
+                  <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest block">Daily Value Metrics</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <p className="text-2xl font-black text-[#FF6B00]">5+ Hrs</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase">Weekly time saved</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <p className="text-2xl font-black text-slate-900">0</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase">Paper registers needed</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic font-semibold">"I used to spend my Sundays writing CBSE lesson diaries. Now I generate them in seconds on my phone." — PE Teacher, Chennai</p>
+                </div>
+              </motion.div>
+            )}
+
+            {pitchRoleTab === 'hod' && (
+              <motion.div 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 md:grid-cols-12 bg-white border-4 border-slate-900 rounded-[2.5rem] p-6 md:p-10 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] items-center gap-8"
+              >
+                <div className="md:col-span-7 space-y-4">
+                  <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-black uppercase tracking-wider">For Sports Directors & HoDs</span>
+                  <h4 className="text-2xl font-black text-slate-900 uppercase">Complete Department Command & Coordination</h4>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                    Manage your whole staff, physical resources, house tournament points, and class schedules from a single centralized master panel.
+                  </p>
+                  <ul className="space-y-2.5 text-xs text-slate-700 font-semibold">
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      Track real-time curriculum completion across all classes and teachers.
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      Assign instant PE class substitution diaries to avoid empty fields.
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      Keep accurate track of sports equipment stock level and wear-and-tear history.
+                    </li>
+                  </ul>
+                  <button type="button" onClick={() => onNavigate?.('department-office')} className="mt-2 text-xs font-black uppercase tracking-wider text-indigo-600 hover:underline flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+                    Open Department Office &rarr;
+                  </button>
+                </div>
+                <div className="md:col-span-5 bg-indigo-50/50 p-6 rounded-[2rem] border-2 border-indigo-100 space-y-4">
+                  <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block">Operational Metrics</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <p className="text-2xl font-black text-indigo-600">100%</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase">Staff alignment</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <p className="text-2xl font-black text-slate-900">Live</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase">Equipment audit</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic font-semibold">"SmartPE gives me perfect visibility. I know exactly which grade is doing which CBSE strand today." — HoD PE, Mumbai</p>
+                </div>
+              </motion.div>
+            )}
+
+            {pitchRoleTab === 'principal' && (
+              <motion.div 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 md:grid-cols-12 bg-white border-4 border-slate-900 rounded-[2.5rem] p-6 md:p-10 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] items-center gap-8"
+              >
+                <div className="md:col-span-7 space-y-4">
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[9px] font-black uppercase tracking-wider">For Principals & Trust Boards</span>
+                  <h4 className="text-2xl font-black text-slate-900 uppercase">Audit-Ready Compliance & Parent Brand Trust</h4>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                    Satisfy school inspectors and board audits (CBSE, ICSE, state boards) instantly. Present continuous physical assessment portfolios and build parents' brand trust.
+                  </p>
+                  <ul className="space-y-2.5 text-xs text-slate-700 font-semibold">
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      1-click generation of CBSE-compliant Health Cards and BMI sheets.
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      Print-ready, professional inspection folders with evidence-backed curriculum compliance.
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      Automated professional parent letters for sports day and health alerts.
+                    </li>
+                  </ul>
+                  <button type="button" onClick={() => onNavigate?.('principal-dashboard')} className="mt-2 text-xs font-black uppercase tracking-wider text-emerald-600 hover:underline flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+                    View Principal Oversight Dashboard &rarr;
+                  </button>
+                </div>
+                <div className="md:col-span-5 bg-emerald-50/50 p-6 rounded-[2rem] border-2 border-emerald-100 space-y-4">
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest block">Governance Ratings</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <p className="text-2xl font-black text-emerald-600">Zero</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase">Audit failures</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <p className="text-2xl font-black text-slate-900">Custom</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase">Parent reports</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic font-semibold">"For inspections, having physical education records digitized and cataloged in SmartPE is a complete relief." — Principal, Dehradun</p>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </div>
+
+        {/* 2. The Main Ground-to-Office PE Workflow */}
+        <div className="space-y-10 pt-8 border-t border-slate-200">
+          <div className="text-center">
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#005BFF]">STAGE 2: WORKFLOW</span>
+            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mt-1">2. How the Ground-to-Office Workflow Works</h3>
+            <p className="text-xs text-slate-500 font-semibold max-w-lg mx-auto">See how physical education transitions seamlessly from planning to active ground tracking to final administrative reporting.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            <div className="absolute top-1/2 left-0 right-0 h-1 bg-slate-250 hidden md:block -translate-y-1/2 z-0"></div>
+            {[
+              {
+                step: "Phase 01",
+                title: "Prep in the Staffroom",
+                desc: "Set up class lists, drag-and-drop your yearly curriculum weeks, select CBSE standard strands, and draft deep-drill daily lessons in seconds using the AI Planner.",
+                icon: BookOpen,
+                color: "border-orange-500 text-orange-500 bg-orange-50"
+              },
+              {
+                step: "Phase 02",
+                title: "Measure on the Field",
+                desc: "Step out with your phone. Execute the drills, record fitness tests on-the-ground without paper sheets, and use interactive timers or video analysis labs.",
+                icon: Dumbbell,
+                color: "border-indigo-500 text-indigo-500 bg-indigo-50"
+              },
+              {
+                step: "Phase 03",
+                title: "Consolidate & Report",
+                desc: "One click aggregates all scores. View automated student health progress cards, print board compliance files for inspectors, and email notifications to parents.",
+                icon: FileText,
+                color: "border-emerald-500 text-emerald-500 bg-emerald-50"
+              }
+            ].map((workflow, idx) => {
+              const Icon = workflow.icon;
+              return (
+                <div key={idx} className="relative z-10 bg-white border-4 border-slate-900 rounded-[2.2rem] p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]">
+                  <div className="flex justify-between items-center">
+                    <span className="px-3 py-1 bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-wider">{workflow.step}</span>
+                    <span className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-black ${workflow.color}`}>
+                      <Icon size={18} />
+                    </span>
+                  </div>
+                  <h4 className="text-base font-black uppercase text-slate-900">{workflow.title}</h4>
+                  <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">{workflow.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 3. The Actual Results (High Fidelity Sample Outputs Showcase) */}
+        <div className="space-y-8 pt-8 border-t border-slate-200">
+          <div className="text-center">
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#10B981]">STAGE 3: RESULTS & DELIVERABLES</span>
+            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mt-1">3. See the Real Results: Sample Outputs</h3>
+            <p className="text-xs text-slate-500 font-semibold max-w-lg mx-auto">Don't take our word for it. Review the actual, board-compliant physical documents and cards generated by the platform instantly.</p>
+          </div>
+
+          <div className="bg-slate-950 border-4 border-slate-900 rounded-[2.5rem] p-4 sm:p-8 md:p-10 text-white space-y-8 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)]">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-800 pb-6 gap-4">
+              <div>
+                <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">OUTPUT TEMPLATE EXPLORER</span>
+                <h4 className="text-xl font-black uppercase tracking-tight">Interactive High-Fidelity Previews</h4>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 'lesson', label: '📄 CBSE Lesson Plan' },
+                  { id: 'rubric', label: '📋 CBSE Skill Rubric' },
+                  { id: 'report', label: '📊 Student Health Card' },
+                  { id: 'inspection', label: '📂 Board Inspection Folder' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setSampleOutputTab(tab.id as any)}
+                    className={`px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border-2 ${
+                      sampleOutputTab === tab.id
+                        ? 'bg-[#FF6B00] text-white border-slate-900 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] font-black'
+                        : 'bg-slate-900 text-slate-400 border-transparent hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Simulated High Fidelity Document Container */}
+            <div className="bg-white text-slate-900 rounded-[2rem] p-4 sm:p-6 md:p-8 min-h-[350px] border-4 border-slate-900 relative overflow-hidden flex flex-col justify-between">
+              {/* Decorative Stamp */}
+              <div className="absolute top-10 right-10 border-4 border-emerald-500/30 text-emerald-500/30 font-black text-[10px] md:text-xs uppercase tracking-widest px-3 py-1.5 rounded-xl rotate-12 pointer-events-none select-none">
+                BOARD CERTIFIED
+              </div>
+
+              {sampleOutputTab === 'lesson' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-slate-200 pb-4 gap-2">
+                    <div>
+                      <span className="text-[9px] font-black uppercase text-[#FF6B00] tracking-wider">SMARTPE DIGITAL DAILY DIARY</span>
+                      <h5 className="text-lg md:text-xl font-black uppercase tracking-tight text-slate-900">DAILY PE LESSON PLAN & LOG</h5>
+                    </div>
+                    <div className="text-left sm:text-right text-[10px] font-mono text-slate-500 font-semibold space-y-0.5">
+                      <p>DOC ID: SMP-LP-8427</p>
+                      <p>BOARD: CBSE HPE STRAND 1</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs font-bold text-slate-850">
+                    <div>
+                      <p className="text-[9px] text-slate-400 uppercase">Grade</p>
+                      <p className="text-slate-900 font-black">Grade 7-B</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-slate-400 uppercase">Focus Sport</p>
+                      <p className="text-slate-900 font-black">Football (Soccer)</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-slate-400 uppercase">Duration</p>
+                      <p className="text-slate-900 font-black">40 Minutes</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-slate-400 uppercase">Equipment</p>
+                      <p className="text-slate-900 font-black">15 Footballs, 20 Cones</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-xs text-slate-750 font-semibold">
+                      <strong className="text-slate-900">Core Objectives:</strong> Instantly master ball control using inside/outside foot margins. Execute slalom dribble paths and maintain balanced postural recovery under light pressure.
+                    </p>
+                    <div className="overflow-x-auto pt-2">
+                      <table className="w-full text-left text-[11px] border-collapse font-bold">
+                        <thead>
+                          <tr className="text-slate-400 uppercase border-b border-slate-200 text-[10px]">
+                            <th className="pb-2 w-1/4">Phase & Timing</th>
+                            <th className="pb-2 w-1/2">Specific Activities & Drills</th>
+                            <th className="pb-2 w-1/4">Coaching & Safety Points</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700">
+                          <tr>
+                            <td className="py-3 text-orange-600 font-black">01. WARM-UP (10 Mins)</td>
+                            <td className="py-3 font-medium">Continuous slow jog across boundaries. Core-joint rotations. Dynamic ball-taps (30 reps/student).</td>
+                            <td className="py-3 text-slate-500 font-medium">Maintain safe space between runners; soft ankles during taps.</td>
+                          </tr>
+                          <tr>
+                            <td className="py-3 text-indigo-600 font-black">02. MAIN DRILLS (20 Mins)</td>
+                            <td className="py-3 font-medium">Slalom slalom: Dribble through 8 aligned cones spaced 1.5m apart. Return passing. 3 sets each.</td>
+                            <td className="py-3 text-slate-500 font-medium">Keep eyes up. Touch ball on every step. Keep ball close to body.</td>
+                          </tr>
+                          <tr>
+                            <td className="py-3 text-emerald-600 font-black">03. COOL-DOWN (10 Mins)</td>
+                            <td className="py-3 font-medium">Mild stretching of calves and lower back. Class reflection, score checking, and equipment tally.</td>
+                            <td className="py-3 text-slate-500 font-medium">Breathing cycles (Pranayama alignment); inventory counts.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {sampleOutputTab === 'rubric' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-slate-200 pb-4 gap-2">
+                    <div>
+                      <span className="text-[9px] font-black uppercase text-indigo-600 tracking-wider">OFFICIAL ASSESSMENT RUBRIC MATRIX</span>
+                      <h5 className="text-lg md:text-xl font-black uppercase tracking-tight text-slate-900">CBSE BOARD PRACTICAL GRADING MATRIX</h5>
+                    </div>
+                    <div className="text-left sm:text-right text-[10px] font-mono text-slate-500 font-semibold space-y-0.5">
+                      <p>RUB ID: SMP-RB-9941</p>
+                      <p>ALIGNED: NEW NEP 2020 CRITERIA</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-650 font-semibold leading-relaxed">
+                    Designed to be printed or pasted on physical registers. Grading standard for <strong className="text-slate-900">High School Practical Sports Examinations</strong>.
+                  </p>
+
+                  <div className="overflow-x-auto font-bold">
+                    <table className="w-full text-left text-[11px] border-collapse">
+                      <thead>
+                        <tr className="text-slate-400 uppercase border-b border-slate-200 text-[10px]">
+                          <th className="pb-2 w-1/4">Skill Assessed</th>
+                          <th className="pb-2 text-emerald-600 w-1/4">Excellent (4-5 Marks)</th>
+                          <th className="pb-2 text-indigo-600 w-1/4">Proficient (2-3 Marks)</th>
+                          <th className="pb-2 text-rose-600 w-1/4">Beginner (0-1 Marks)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        <tr>
+                          <td className="py-3 font-black text-slate-900">Ball Handling</td>
+                          <td className="py-3 font-medium">Fluid dribbling under speed, head held high, precise foot margin controls.</td>
+                          <td className="py-3 font-medium">Inconsistent pace control, watches ball constantly on the run.</td>
+                          <td className="py-3 font-medium">Loses ball frequently; cannot coordinate basic zig-zag dribbles.</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 font-black text-slate-900">Form & Stance</td>
+                          <td className="py-3 font-medium">Perfect knee flexion, athletic low center of gravity, rapid body direction shifts.</td>
+                          <td className="py-3 font-medium">Maintains upright posture, slowing lateral deceleration.</td>
+                          <td className="py-3 font-medium">Rigid, slouching posture; high risk of trip or minor joint strain.</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 font-black text-slate-900">Match Ethics</td>
+                          <td className="py-3 font-medium">Active vocal support, exemplary fair play, instant alignment with referee rules.</td>
+                          <td className="py-3 font-medium">Cooperates with teammates but displays minor focus loss or complaints.</td>
+                          <td className="py-3 font-medium">Ignores referee gestures; lacks team collaboration or active defense.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {sampleOutputTab === 'report' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-slate-200 pb-4 gap-2">
+                    <div>
+                      <span className="text-[9px] font-black uppercase text-emerald-600 tracking-wider">BOARD COMPLIANT STUDENT PROFILE</span>
+                      <h5 className="text-lg md:text-xl font-black uppercase tracking-tight text-slate-900">STUDENT FITNESS CARD & HEALTH CARD</h5>
+                    </div>
+                    <div className="text-left sm:text-right text-[10px] font-mono text-slate-500 font-semibold space-y-0.5">
+                      <p>CARD ID: SMP-REP-003</p>
+                      <p>PROTOCOL: KHELO INDIA KIFT STANDARDS</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-250/60">
+                    <div className="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-sm uppercase shadow-md">
+                      KD
+                    </div>
+                    <div className="text-xs text-slate-700 font-bold space-y-0.5">
+                      <h6 className="text-sm font-black text-slate-900 uppercase">KABIR DUTT (Roll No. 12)</h6>
+                      <p>Grade 8-A &bull; Age: 13 Yrs &bull; Weight: 46 kg &bull; Height: 154 cm</p>
+                      <p className="text-[10px] text-[#FF6B00]">Last Synced: March 2026 via SmartPE Cloud</p>
+                    </div>
+                  </div>
+
+                  {/* Fitness parameters with progress bars */}
+                  <div className="space-y-3.5">
+                    {[
+                      { name: "Sit & Reach (Flexibility)", current: "19.2 cm", max: "25 cm", percent: "76%", rating: "Excellent", color: "bg-emerald-500" },
+                      { name: "50m Dash (Speed & Acceleration)", current: "8.5s", max: "12s", percent: "70%", rating: "Proficient", color: "bg-indigo-500" },
+                      { name: "600m Run/Walk (Cardiovascular)", current: "148s", max: "210s", percent: "82%", rating: "Excellent", color: "bg-emerald-500" },
+                    ].map((param, i) => (
+                      <div key={i} className="space-y-1.5 text-xs font-bold">
+                        <div className="flex justify-between text-slate-800">
+                          <span>{param.name}: <strong className="text-slate-900">{param.current}</strong></span>
+                          <span className="text-[10px] uppercase tracking-wider text-slate-500">{param.rating}</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
+                          <div className={`${param.color} h-full rounded-full`} style={{ width: param.percent }}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-[10px] font-black text-[#FF6B00] uppercase tracking-wider font-bold">
+                    <span>Overall Health Standing: Healthy BMI ✓</span>
+                    <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg">Inspected & Verified</span>
+                  </div>
+                </div>
+              )}
+
+              {sampleOutputTab === 'inspection' && (
+                <div className="space-y-6 animate-in fade-in duration-300 font-bold">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-slate-200 pb-4 gap-2">
+                    <div>
+                      <span className="text-[9px] font-black uppercase text-rose-600 tracking-wider">GOVERNANCE & AUDIT REPORT</span>
+                      <h5 className="text-lg md:text-xl font-black uppercase tracking-tight text-slate-900">BOARD COMPLIANCE & INSPECTION CHECKSHEET</h5>
+                    </div>
+                    <div className="text-left sm:text-right text-[10px] font-mono text-slate-500 font-semibold space-y-0.5">
+                      <p>AUD ID: SMP-AUD-2026</p>
+                      <p>AUDITOR: OFFICIAL SCHOOL BOARD STANDARDS</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-650 font-semibold leading-relaxed">
+                    Instantly export this folder for inspectors to prove continuous assessment compliance under <strong className="text-slate-900">NEP 2020 Guidelines</strong>.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                      <span className="text-[9px] font-black uppercase text-indigo-600">Syllabus Strands</span>
+                      <p className="text-2xl font-black text-slate-900">4 / 4</p>
+                      <p className="text-[10px] font-semibold text-slate-500 leading-tight">Fully aligned across Games, Health, SEWA & Health Cards.</p>
+                    </div>
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                      <span className="text-[9px] font-black uppercase text-emerald-600">Continuous Assessment</span>
+                      <p className="text-2xl font-black text-slate-900">100%</p>
+                      <p className="text-[10px] font-semibold text-slate-500 leading-tight">Every student profile contains recorded baseline, midline and final marks.</p>
+                    </div>
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                      <span className="text-[9px] font-black uppercase text-rose-600">Audit Evidence</span>
+                      <p className="text-2xl font-black text-slate-900">Present</p>
+                      <p className="text-[10px] font-semibold text-slate-500 leading-tight">All digital diaries signed, timestamps locked, and secure.</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-emerald-50/50 p-3.5 rounded-xl border border-emerald-100 flex items-center gap-3">
+                    <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-xs">✓</span>
+                    <p className="text-[10px] font-bold text-slate-700">Your school PE department is currently ranked as <strong className="text-emerald-700">"Excellent" (Grade A)</strong> in terms of compliance records.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -239,7 +239,8 @@ service cloud.firestore {
     match /system_logs/{logId} {
       allow create: if request.resource.data.message is string 
                     && request.resource.data.message.size() < 5000;
-      allow read, update, delete: if false;
+      allow read: if isSuperAdmin();
+      allow update, delete: if false;
     }
 
     match /workloads/{workloadId} {
