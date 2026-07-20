@@ -273,6 +273,14 @@ const parseTimetableText = (text: string): Record<string, string> => {
   return result;
 };
 
+// Helper to get fully parsed timetable object robustly (falling back to timetableText parser if empty)
+const getTimetable = (w: Workload): Record<string, string> => {
+  if (w.timetable && Object.keys(w.timetable).length > 0) {
+    return w.timetable;
+  }
+  return parseTimetableText(w.timetableText || '');
+};
+
 // Convert structured grid to comma-separated text
 const serializeTimetable = (timetable: Record<string, string>): string => {
   const parts: string[] = [];
@@ -323,7 +331,7 @@ const DepartmentWorkloadPlanner: React.FC = () => {
         const parsed = JSON.parse(saved);
         // Ensure timetable is filled
         return parsed.map((w: any) => {
-          if (!w.timetable && w.timetableText) {
+          if ((!w.timetable || Object.keys(w.timetable).length === 0) && w.timetableText) {
             return {
               ...w,
               timetable: parseTimetableText(w.timetableText)
@@ -515,15 +523,19 @@ const DepartmentWorkloadPlanner: React.FC = () => {
             if (!snapshot.empty) {
               const loaded: Workload[] = snapshot.docs.map(doc => {
                 const data = doc.data();
-                let parsedTimetable = {};
+                let parsedTimetable: Record<string, string> = {};
                 try {
                   if (data.timetableData) {
                     parsedTimetable = JSON.parse(data.timetableData);
-                  } else if (data.timetableText) {
+                  }
+                  if (Object.keys(parsedTimetable).length === 0 && data.timetableText) {
                     parsedTimetable = parseTimetableText(data.timetableText);
                   }
                 } catch(err) {
                   console.error(err);
+                  if (data.timetableText) {
+                    parsedTimetable = parseTimetableText(data.timetableText);
+                  }
                 }
                 return {
                   id: doc.id,
@@ -673,7 +685,7 @@ const DepartmentWorkloadPlanner: React.FC = () => {
   // Timetable Edit Trigger for a Single Teacher
   const handleOpenTimetableEditor = (teacher: Workload) => {
     setEditingTimetableTeacherId(teacher.id);
-    const tt = teacher.timetable || parseTimetableText(teacher.timetableText || '');
+    const tt = getTimetable(teacher);
     setEditorTimetable({ ...tt });
     setEditorPasteText(teacher.timetableText || serializeTimetable(tt));
     setEditorTab('grid');
@@ -719,7 +731,7 @@ const DepartmentWorkloadPlanner: React.FC = () => {
     setSuggestProgress("AI is reading curriculum parameters & teaching blocks...");
     
     const currentSelectedWorkload = workloads.find(w => w.id === selectedWorkloadId) || workloads[0];
-    const totalPeriodsActive = Object.keys(currentSelectedWorkload.timetable || {}).length || currentSelectedWorkload.periodsCount;
+    const totalPeriodsActive = Object.keys(getTimetable(currentSelectedWorkload)).length || currentSelectedWorkload.periodsCount;
 
     const prompt = `You are an expert high-school Physical Education Instructor. 
 We need to generate period-wise lesson suggestions for:
@@ -835,7 +847,7 @@ Generate exactly ${totalPeriodsActive > 0 ? totalPeriodsActive : 3} period struc
     const free: Workload[] = [];
     
     workloads.forEach(w => {
-      const tt = w.timetable || parseTimetableText(w.timetableText || '');
+      const tt = getTimetable(w);
       if (tt[key]) {
         busy.push({ workload: w, classActivity: tt[key] });
       } else {
@@ -855,7 +867,7 @@ Generate exactly ${totalPeriodsActive > 0 ? totalPeriodsActive : 3} period struc
     const free: Workload[] = [];
     
     workloads.forEach(w => {
-      const tt = w.timetable || parseTimetableText(w.timetableText || '');
+      const tt = getTimetable(w);
       if (tt[key]) {
         busy.push(w);
       } else {
@@ -1151,7 +1163,7 @@ Generate exactly ${totalPeriodsActive > 0 ? totalPeriodsActive : 3} period struc
             {/* Coaches List Roster */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {workloads.map((w) => {
-                const tt = w.timetable || parseTimetableText(w.timetableText || '');
+                const tt = getTimetable(w);
                 const activeHoursCount = Object.keys(tt).length;
                 return (
                   <div key={w.id} className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 hover:shadow-lg transition-all relative flex flex-col justify-between">
@@ -1369,7 +1381,7 @@ Generate exactly ${totalPeriodsActive > 0 ? totalPeriodsActive : 3} period struc
 
               <div className="grid grid-cols-1 gap-4">
                 {workloads.map(w => {
-                  const tt = w.timetable || parseTimetableText(w.timetableText || '');
+                  const tt = getTimetable(w);
                   const currentClass = tt[`${selectedWorkflowDay}_${selectedWorkflowPeriod}`];
                   const isTeaching = !!currentClass;
                   
@@ -1758,7 +1770,7 @@ Generate exactly ${totalPeriodsActive > 0 ? totalPeriodsActive : 3} period struc
               <div className="bg-white border-2 border-slate-105 rounded-[2.5rem] p-8 shadow-sm">
                 {(() => {
                   const currentSelectedWorkload = workloads.find(w => w.id === selectedWorkloadId) || workloads[0];
-                  const totalPeriodsActive = Object.keys(currentSelectedWorkload.timetable || {}).length;
+                  const totalPeriodsActive = Object.keys(getTimetable(currentSelectedWorkload)).length;
                   return (
                     <>
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-6 mb-6">
