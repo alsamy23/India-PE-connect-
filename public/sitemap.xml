@@ -2,121 +2,87 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
-  <!-- ================= india-pe-connect.vercel.app ================= -->
+  <!-- ================= smartpeindia.app ================= -->
   <!-- Homepage -->
   <url>
-    <loc>https://india-pe-connect.vercel.app/</loc>
-    <lastmod>2026-06-04</lastmod>
+    <loc>https://smartpeindia.app/</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="en-IN" href="https://india-pe-connect.vercel.app/"/>
+    <xhtml:link rel="alternate" hreflang="en-IN" href="https://smartpeindia.app/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://smartpeindia.app/"/>
   </url>
 
   <!-- AI Lesson Plan Tool -->
   <url>
-    <loc>https://india-pe-connect.vercel.app/#lesson-planner</loc>
-    <lastmod>2026-06-04</lastmod>
+    <loc>https://smartpeindia.app/#lesson-planner</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <!-- Khelo India Calculator -->
   <url>
-    <loc>https://india-pe-connect.vercel.app/#khelo-india</loc>
-    <lastmod>2026-06-04</lastmod>
+    <loc>https://smartpeindia.app/#khelo-india</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <!-- Curriculum Designer -->
   <url>
-    <loc>https://india-pe-connect.vercel.app/#curriculum</loc>
-    <lastmod>2026-06-04</lastmod>
+    <loc>https://smartpeindia.app/#curriculum</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <!-- Sports Theory Resources -->
   <url>
-    <loc>https://india-pe-connect.vercel.app/#sports-theory</loc>
-    <lastmod>2026-06-04</lastmod>
+    <loc>https://smartpeindia.app/#sports-theory</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <!-- Games & Skills Rubrics -->
   <url>
-    <loc>https://india-pe-connect.vercel.app/#games-rubrics</loc>
-    <lastmod>2026-06-04</lastmod>
+    <loc>https://smartpeindia.app/#games-rubrics</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <!-- About Us -->
   <url>
-    <loc>https://india-pe-connect.vercel.app/#about</loc>
-    <lastmod>2026-06-04</lastmod>
+    <loc>https://smartpeindia.app/#about</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
 
 
-  <!-- ================= smartpeindia.vercel.app ================= -->
-  <!-- Homepage -->
+  <!-- ================= smartpeindia.vercel.app (Fallback Domain) ================= -->
   <url>
     <loc>https://smartpeindia.vercel.app/</loc>
-    <lastmod>2026-06-04</lastmod>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
+    <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en-IN" href="https://smartpeindia.vercel.app/"/>
   </url>
 
-  <!-- AI Lesson Plan Tool -->
   <url>
     <loc>https://smartpeindia.vercel.app/#lesson-planner</loc>
-    <lastmod>2026-06-04</lastmod>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.7</priority>
   </url>
 
-  <!-- Khelo India Calculator -->
   <url>
     <loc>https://smartpeindia.vercel.app/#khelo-india</loc>
-    <lastmod>2026-06-04</lastmod>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <!-- Curriculum Designer -->
-  <url>
-    <loc>https://smartpeindia.vercel.app/#curriculum</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- Sports Theory Resources -->
-  <url>
-    <loc>https://smartpeindia.vercel.app/#sports-theory</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- Games & Skills Rubrics -->
-  <url>
-    <loc>https://smartpeindia.vercel.app/#games-rubrics</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- About Us -->
-  <url>
-    <loc>https://smartpeindia.vercel.app/#about</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.7</priority>
   </url>
 
 </urlset>
