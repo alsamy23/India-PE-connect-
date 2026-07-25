@@ -1,16 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Manrope", sans-serif;
+  --font-sans: "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", sans-serif;
   
-  --color-primary: #003ec7;
-  --color-primary-container: #0052ff;
-  --color-secondary: #006c49;
-  --color-secondary-container: #6cf8bb;
-  --color-surface: #f7f9fb;
-  --color-on-surface: #191c1e;
-  --color-on-surface-variant: #434656;
+  --color-brand-navy: #0F3D91;
+  --color-brand-green: #2BB673;
+  --color-brand-orange: #FF8C1A;
+  --color-brand-bg: #F5F7FA;
+
+  --color-primary: #0F3D91;
+  --color-primary-container: #1A52B8;
+  --color-secondary: #2BB673;
+  --color-secondary-container: #6CF8BB;
+  --color-surface: #F5F7FA;
+  --color-on-surface: #0F172A;
+  --color-on-surface-variant: #475569;
   
   @keyframes slide-up {
     from { transform: translateY(20px); opacity: 0; }

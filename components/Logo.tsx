@@ -1,83 +1,74 @@
-
 import React from 'react';
-import { Sparkles, Trophy } from 'lucide-react';
+import logoImg from '../src/assets/images/smart_pe_logo_1784962262385.jpg';
 
 interface LogoProps {
   className?: string;
   showText?: boolean;
   variant?: 'light' | 'dark' | 'color';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
-const Logo: React.FC<LogoProps> = ({ className = '', showText = true, variant = 'color' }) => {
+const Logo: React.FC<LogoProps> = ({ 
+  className = '', 
+  showText = true, 
+  variant = 'color',
+  size = 'md' 
+}) => {
   const isLight = variant === 'light';
-  
-  // Color configuration based on variants
-  const colors = {
-    shieldBg: '#0A1C2A', // Deep dark navy shield as shown in reference
-    orangeChevron: '#FF6B00', // Mockup orange chevron
-    line1: '#FFFFFF', // White stroke
-    line2: '#94A3B8', // Grey stroke
-    text: isLight ? 'text-white' : 'text-[#0A1C2A]',
-    pe: isLight ? 'text-slate-200' : 'text-[#0A1C2A]/90',
-    tagline: isLight ? 'text-white/40' : 'text-slate-400'
+
+  const emblemSizes = {
+    sm: 'w-8 h-8',
+    md: 'w-11 h-11',
+    lg: 'w-14 h-14',
+    xl: 'w-20 h-20'
   };
-  
+
+  const textSizes = {
+    sm: 'text-lg',
+    md: 'text-2xl',
+    lg: 'text-3xl',
+    xl: 'text-4xl'
+  };
+
+  const subtitleSizes = {
+    sm: 'text-[7px]',
+    md: 'text-[9px]',
+    lg: 'text-[11px]',
+    xl: 'text-[13px]'
+  };
+
   return (
-    <div className={`flex items-center gap-3 md:gap-4 ${className}`}>
-      <div className="relative w-12 h-12 flex-shrink-0">
-        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-sm">
-          {/* Main Shield Body matching the mockup */}
-          <path 
-            d="M18 18 C40 13 60 13 82 18 L82 54 C82 74 50 90 50 90 C50 90 18 74 18 54 Z" 
-            fill={colors.shieldBg} 
-            stroke="#1E293B"
-            strokeWidth="1.5"
-          />
-          
-          {/* Orange Chevron (Pointing Upward) */}
-          <path 
-            d="M32 50 L50 32 L68 50" 
-            stroke={colors.orangeChevron} 
-            strokeWidth="11" 
-            strokeLinecap="round" 
-            strokeLinejoin="round"
-          />
-
-          {/* First Horizontal Line (White) */}
-          <line 
-            x1="32" 
-            y1="64" 
-            x2="68" 
-            y2="64" 
-            stroke={colors.line1} 
-            strokeWidth="7" 
-            strokeLinecap="round" 
-          />
-
-          {/* Second Horizontal Line (Grey) */}
-          <line 
-            x1="40" 
-            y1="76" 
-            x2="60" 
-            y2="76" 
-            stroke={colors.line2} 
-            strokeWidth="7" 
-            strokeLinecap="round" 
-          />
-        </svg>
+    <div className={`inline-flex items-center gap-3 select-none ${className}`}>
+      {/* Smart PE India Official Shield Emblem Image */}
+      <div className={`relative flex items-center justify-center flex-shrink-0 ${emblemSizes[size]}`}>
+        <img 
+          src={logoImg} 
+          alt="Smart PE India Logo" 
+          className="w-full h-full object-contain mix-blend-multiply transition-transform duration-200 hover:scale-105"
+        />
       </div>
 
+      {/* Brand Wordmark & Tagline Block */}
       {showText && (
-        <div className="flex flex-col leading-tight">
-          <div className={`text-2xl md:text-3xl font-black tracking-normal flex items-baseline ${colors.text}`}>
-            Smart<span className={isLight ? 'text-indigo-400' : 'text-[#FF6B00]'}>PE</span>
+        <div className="flex flex-col justify-center leading-none">
+          {/* Main Title: Smart PE India */}
+          <div className={`font-extrabold font-sans tracking-tight flex items-center ${textSizes[size]}`}>
+            <span className={isLight ? 'text-white' : 'text-[#0F2C59]'}>Smart</span>
+            <span className="text-[#2BB673] mx-1">PE</span>
+            <span className={isLight ? 'text-slate-100' : 'text-[#0F2C59]'}>India</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className={`h-[2px] ${isLight ? 'bg-white/10' : 'bg-[#FF6B00]/40'} flex-1`}></div>
-            <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] ${isLight ? 'text-slate-300' : 'text-[#0A1C2A]/80'}`}>
-              India
-            </span>
-            <div className={`h-[2px] ${isLight ? 'bg-white/10' : 'bg-[#FF6B00]/40'} flex-1`}></div>
+
+          {/* Tagline: — MANAGE • TRACK • EMPOWER — */}
+          <div className="flex items-center gap-1.5 mt-1 leading-none">
+            <div className={`h-[1.5px] w-3.5 ${isLight ? 'bg-white/30' : 'bg-[#0F2C59]/30'}`}></div>
+            <div className={`flex items-center space-x-1 font-bold uppercase tracking-[0.18em] ${subtitleSizes[size]} ${isLight ? 'text-slate-300' : 'text-[#0F2C59]'}`}>
+              <span>MANAGE</span>
+              <span className="text-[#FF8C1A] font-black">•</span>
+              <span>TRACK</span>
+              <span className="text-[#2BB673] font-black">•</span>
+              <span>EMPOWER</span>
+            </div>
+            <div className={`h-[1.5px] w-3.5 ${isLight ? 'bg-white/30' : 'bg-[#0F2C59]/30'}`}></div>
           </div>
         </div>
       )}

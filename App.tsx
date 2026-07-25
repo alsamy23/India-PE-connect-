@@ -154,13 +154,13 @@ interface MobileHeaderProps {
 }
 const MobileHeader: React.FC<MobileHeaderProps> = React.memo(({ isSidebarOpen, setIsSidebarOpen }) => {
   return (
-    <header className="md:hidden sticky top-0 bg-gradient-to-r from-[#0A1C2A] via-[#112538] to-[#0A1C2A] backdrop-blur-xl text-white px-5 py-3.5 flex items-center z-30 border-b border-white/5 shadow-lg print:hidden">
+    <header className="md:hidden sticky top-0 bg-white backdrop-blur-xl text-slate-900 px-4 py-3 flex items-center justify-between z-30 border-b border-slate-200 shadow-sm print:hidden">
       <div className="flex-grow-0 flex-shrink-0">
-        <Logo variant="light" className="scale-90 origin-left" />
+        <Logo variant="color" size="md" />
       </div>
       <button 
         onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-        className="ml-auto flex-shrink-0 p-2.5 bg-white/5 border border-white/10 rounded-2xl active:scale-90 transition-all flex items-center justify-center hover:bg-white/10"
+        className="ml-auto flex-shrink-0 p-2.5 bg-slate-100 border border-slate-200 rounded-2xl active:scale-90 transition-all flex items-center justify-center hover:bg-slate-200 text-slate-700"
         aria-label="Toggle Navigation Menu"
       >
         {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
@@ -351,7 +351,7 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
   );
 });
 
-// Memoized Sticky Header Component to encapsulate GlobalSearch and secondary navigation links
+// Memoized Sticky Header Component to encapsulate Logo and GlobalSearch
 interface StickyHeaderProps {
   activeTab: Tab;
   handleTabChange: (tabId: Tab) => void;
@@ -363,32 +363,10 @@ const StickyHeader: React.FC<StickyHeaderProps> = React.memo(({
   setHighlightStudentId,
 }) => {
   return (
-    <div className="relative md:sticky md:top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 md:px-8 md:py-4 print:hidden shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div className="hidden md:flex flex-wrap items-center gap-6 text-[11px] font-black uppercase tracking-widest text-slate-500">
-        <button 
-          onClick={() => handleTabChange('dashboard')} 
-          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'dashboard' ? 'text-primary border-b-2 border-primary pb-1 font-black' : ''}`}
-        >
-          Platform
-        </button>
-        <button 
-          onClick={() => handleTabChange('tools')} 
-          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'tools' ? 'text-primary border-b-2 border-primary pb-1 font-black' : ''}`}
-        >
-          Modules
-        </button>
-        <button 
-          onClick={() => handleTabChange('about')} 
-          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'about' ? 'text-primary border-b-2 border-primary pb-1 font-black' : ''}`}
-        >
-          About
-        </button>
-        <button 
-          onClick={() => handleTabChange('contact')} 
-          className={`hover:text-[#FF6B00] hover:scale-105 active:scale-95 transition-all ${activeTab === 'contact' ? 'text-primary border-b-2 border-primary pb-1 font-black' : ''}`}
-        >
-          Contact
-        </button>
+    <div className="relative md:sticky md:top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 md:px-8 md:py-3.5 print:hidden shadow-sm flex items-center justify-between gap-4">
+      {/* Primary Header dedicated to Smart PE India Logo */}
+      <div className="flex items-center cursor-pointer" onClick={() => handleTabChange('dashboard')}>
+        <Logo variant="color" size="lg" />
       </div>
       <div className="w-full md:max-w-xs lg:max-w-sm">
         <GlobalSearch onNavigate={(tabId, data) => {

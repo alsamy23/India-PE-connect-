@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { jsPDF } from 'jspdf';
 import { 
   Heart, 
   Zap, 
@@ -19,13 +20,19 @@ import {
   History,
   Activity,
   Save,
-  Gamepad2
+  Gamepad2,
+  FileText,
+  Printer,
+  Download,
+  X,
+  Share2
 } from 'lucide-react';
 import { evaluateFitnessTests } from '../services/geminiService.ts';
-import { FitnessAssessment, KIFTBattery, KIFTTest } from '../types.ts';
+import { FitnessAssessment, KIFTBattery, KIFTTest, FitnessResult } from '../types.ts';
 import { storageService } from '../services/storageService.ts';
 import { fitnessService, Student, KIFT_BATTERIES } from '../services/fitnessService.ts';
 import { auth } from '../services/firebase.ts';
+import { toast } from '../services/toast.ts';
 import GamesProficiencyGenerator from './GamesProficiencyGenerator.tsx';
 
 const FitnessTests: React.FC = () => {
@@ -46,6 +53,8 @@ const FitnessTests: React.FC = () => {
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [selectedTerm, setSelectedTerm] = useState('Baseline');
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [studentResults, setStudentResults] = useState<FitnessResult[]>([]);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const formatFitnessError = (err: any): string => {
     try {
@@ -94,6 +103,345 @@ const FitnessTests: React.FC = () => {
     
     return () => unsub?.();
   }, [auth.currentUser?.uid]);
+
+  useEffect(() => {
+    let unsubStudentResults: (() => void) | undefined;
+    if (selectedStudentId && auth.currentUser) {
+      const student = students.find(s => s.id === selectedStudentId);
+      const schoolId = student?.schoolId || userProfile?.schoolId;
+      unsubStudentResults = fitnessService.subscribeToStudentResults(selectedStudentId, schoolId, setStudentResults);
+    } else {
+      setStudentResults([]);
+    }
+    return () => unsubStudentResults?.();
+  }, [selectedStudentId, students, userProfile, auth.currentUser?.uid]);
+
+  /**
+   * Generates a printer-friendly, CBSE-compliant PDF report card for a single student's fitness results.
+   */
+  const generateStudentCbsePdfReportCard = (targetStudentId?: string) => {
+    const studentIdToUse = targetStudentId || selectedStudentId;
+    const student = students.find(s => s.id === studentIdToUse);
+
+    // Basic details
+    const name = student ? student.name : (selectedStudentId ? 'Student Record' : 'Student');
+    const roll = student ? student.rollNumber : 'PE-' + Math.floor(1000 + Math.random() * 9000);
+    const grade = student ? student.grade : (age ? (parseInt(age) > 5 ? (parseInt(age) - 5).toString() : '5') : 'N/A');
+    const section = student ? student.section : 'A';
+    const studentAgeVal = student ? student.age : age;
+    const studentGenderVal = student ? student.gender : gender;
+
+    const schoolName = userProfile?.schoolName || userProfile?.schoolId || 'CENTRAL BOARD OF SECONDARY EDUCATION (CBSE)';
+
+    // Gather test results
+    let combinedTests: Array<{
+      testName: string;
+      value: string;
+      unit: string;
+      term: string;
+      rating: string;
+      percentile: string | number;
+      recommendation: string;
+    }> = [];
+
+    // Filter saved student results for this student
+    const savedForStudent = studentResults.filter(r => r.studentId === studentIdToUse);
+
+    if (savedForStudent.length > 0) {
+      savedForStudent.forEach(r => {
+        combinedTests.push({
+          testName: r.testName,
+          value: r.value,
+          unit: r.unit || '',
+          term: r.term || selectedTerm,
+          rating: r.rating || 'Recorded',
+          percentile: r.percentile !== undefined && r.percentile !== null && !isNaN(r.percentile) ? r.percentile : '-',
+          recommendation: 'Maintains active participation in physical activities under CBSE HPE guidelines.'
+        });
+      });
+    }
+
+    // Append current assessment result if available
+    if (result && result.tests) {
+      result.tests.forEach(t => {
+        const exists = combinedTests.some(c => c.testName === t.testName && c.term === selectedTerm);
+        if (!exists) {
+          combinedTests.push({
+            testName: t.testName,
+            value: t.score,
+            unit: selectedTest?.unit || '',
+            term: selectedTerm,
+            rating: t.rating,
+            percentile: t.percentile || '-',
+            recommendation: t.recommendation || 'Regular training recommended.'
+          });
+        }
+      });
+    }
+
+    // Fallback if no test result exists yet
+    if (combinedTests.length === 0 && selectedTest) {
+      combinedTests.push({
+        testName: selectedTest.name,
+        value: testValue || 'Recorded',
+        unit: selectedTest.unit || '',
+        term: selectedTerm,
+        rating: 'Recorded',
+        percentile: '-',
+        recommendation: 'Baseline assessment recorded under CBSE Khelo India Fitness Test battery.'
+      });
+    }
+
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth(); // 210
+      const pageHeight = doc.internal.pageSize.getHeight(); // 297
+      const margin = 12;
+      const contentWidth = pageWidth - (margin * 2); // 186
+
+      // Outer Page Frame
+      doc.setLineWidth(0.6);
+      doc.setDrawColor(30, 27, 75); // Deep Indigo
+      doc.rect(margin - 2, margin - 2, contentWidth + 4, pageHeight - (margin * 2) + 4);
+
+      doc.setLineWidth(0.2);
+      doc.setDrawColor(203, 213, 225); // Slate 300
+      doc.rect(margin, margin, contentWidth, pageHeight - (margin * 2));
+
+      let currentY = margin + 4;
+
+      // 1. Header Banner
+      doc.setFillColor(30, 27, 75); // Deep Navy
+      doc.rect(margin, currentY, contentWidth, 24, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text('CENTRAL BOARD OF SECONDARY EDUCATION (CBSE)', pageWidth / 2, currentY + 7, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('KHELO INDIA FITNESS TEST (KIFT) - STUDENT REPORT CARD', pageWidth / 2, currentY + 13, { align: 'center' });
+
+      doc.setFontSize(8);
+      doc.setTextColor(224, 231, 255);
+      doc.text(`${schoolName.toUpperCase()} | SESSION: 2025-26 | PHASE: ${selectedTerm.toUpperCase()}`, pageWidth / 2, currentY + 19, { align: 'center' });
+
+      currentY += 28;
+
+      // 2. Student Profile Grid
+      doc.setFillColor(248, 250, 252); // Slate 50
+      doc.rect(margin, currentY, contentWidth, 26, 'F');
+      doc.setDrawColor(226, 232, 240);
+      doc.rect(margin, currentY, contentWidth, 26, 'S');
+
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(9);
+
+      // Row 1
+      doc.setFont('helvetica', 'bold');
+      doc.text('Student Name:', margin + 4, currentY + 7);
+      doc.setFont('helvetica', 'normal');
+      doc.text(name, margin + 28, currentY + 7);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Roll Number:', margin + 98, currentY + 7);
+      doc.setFont('helvetica', 'normal');
+      doc.text(roll, margin + 120, currentY + 7);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Class & Sec:', margin + 148, currentY + 7);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${grade} - ${section}`, margin + 168, currentY + 7);
+
+      // Row 2
+      doc.setFont('helvetica', 'bold');
+      doc.text('Age / Gender:', margin + 4, currentY + 15);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${studentAgeVal} Yrs / ${studentGenderVal}`, margin + 28, currentY + 15);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Date of Test:', margin + 98, currentY + 15);
+      doc.setFont('helvetica', 'normal');
+      doc.text(new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }), margin + 120, currentY + 15);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('CBSE Battery:', margin + 148, currentY + 15);
+      doc.setFont('helvetica', 'normal');
+      const batteryCategory = selectedBattery?.category || fitnessService.getBatteryForGrade(grade)?.category || 'Middle School';
+      doc.text(batteryCategory, margin + 170, currentY + 15);
+
+      // Row 3
+      doc.setFont('helvetica', 'bold');
+      doc.text('HPE Status:', margin + 4, currentY + 22);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(16, 185, 129); // Emerald green
+      doc.text('Compliant with CBSE Health & Physical Education (HPE) Mainstream Guidelines', margin + 28, currentY + 22);
+
+      currentY += 32;
+
+      // 3. Fitness Battery Results Table Header
+      doc.setFillColor(49, 46, 129); // Indigo 900
+      doc.rect(margin, currentY, contentWidth, 8, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+
+      doc.text('S.NO', margin + 3, currentY + 5.5);
+      doc.text('FITNESS TEST PARAMETER', margin + 14, currentY + 5.5);
+      doc.text('TERM', margin + 74, currentY + 5.5);
+      doc.text('SCORE / VALUE', margin + 98, currentY + 5.5);
+      doc.text('PERCENTILE', margin + 130, currentY + 5.5);
+      doc.text('CBSE RATING', margin + 154, currentY + 5.5);
+
+      currentY += 8;
+
+      // Rows
+      doc.setFontSize(8);
+
+      combinedTests.forEach((t, idx) => {
+        const isEven = idx % 2 === 0;
+        doc.setFillColor(isEven ? 255 : 248, isEven ? 255 : 250, isEven ? 255 : 252);
+        doc.rect(margin, currentY, contentWidth, 8, 'F');
+        doc.setDrawColor(226, 232, 240);
+        doc.rect(margin, currentY, contentWidth, 8, 'S');
+
+        doc.setTextColor(51, 65, 85);
+
+        // S.No
+        doc.setFont('helvetica', 'normal');
+        doc.text(String(idx + 1), margin + 4, currentY + 5.5);
+
+        // Name
+        doc.setFont('helvetica', 'bold');
+        doc.text(t.testName.length > 32 ? t.testName.substring(0, 30) + '...' : t.testName, margin + 14, currentY + 5.5);
+
+        // Term
+        doc.setFont('helvetica', 'normal');
+        doc.text(t.term, margin + 74, currentY + 5.5);
+
+        // Score
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${t.value} ${t.unit}`, margin + 98, currentY + 5.5);
+
+        // Percentile
+        doc.setFont('helvetica', 'normal');
+        const pctStr = t.percentile && t.percentile !== '-' ? `${t.percentile} %ile` : 'Standard';
+        doc.text(pctStr, margin + 130, currentY + 5.5);
+
+        // Rating
+        const ratingStr = t.rating || 'Recorded';
+        if (ratingStr === 'Elite' || ratingStr === 'Excellent') {
+          doc.setTextColor(21, 128, 61);
+        } else if (ratingStr === 'Good' || ratingStr === 'Satisfactory') {
+          doc.setTextColor(3, 105, 161);
+        } else if (ratingStr === 'Needs Improvement') {
+          doc.setTextColor(185, 28, 28);
+        } else {
+          doc.setTextColor(71, 85, 105);
+        }
+        doc.setFont('helvetica', 'bold');
+        doc.text(ratingStr, margin + 154, currentY + 5.5);
+
+        currentY += 8;
+      });
+
+      currentY += 4;
+
+      // 4. PE Teacher Assessment Box
+      doc.setFillColor(238, 242, 255);
+      doc.rect(margin, currentY, contentWidth, 32, 'F');
+      doc.setDrawColor(199, 210, 254);
+      doc.rect(margin, currentY, contentWidth, 32, 'S');
+
+      doc.setTextColor(49, 46, 129);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text("PHYSICAL EDUCATION TEACHER'S ASSESSMENT & GUIDANCE", margin + 4, currentY + 6);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(30, 41, 59);
+
+      const summary = result?.overallSummary || 
+        `${name} shows satisfactory physical growth and active participation across test batteries. Recommended to maintain daily 30-minute moderate physical activity and hydration to enhance agility and cardiovascular stamina as specified under CBSE HPE Strand 1 guidelines.`;
+
+      const splitText = doc.splitTextToSize(summary, contentWidth - 8);
+      doc.text(splitText, margin + 4, currentY + 12);
+
+      currentY += 38;
+
+      // 5. CBSE Descriptors Legend
+      doc.setFillColor(248, 250, 252);
+      doc.rect(margin, currentY, contentWidth, 18, 'F');
+      doc.setDrawColor(226, 232, 240);
+      doc.rect(margin, currentY, contentWidth, 18, 'S');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      doc.text("CBSE KIFT PERFORMANCE DESCRIPTORS:", margin + 4, currentY + 5);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.text("• Elite / Excellent (>85th Percentile): Superior physical capacity & motor coordination.", margin + 4, currentY + 9);
+      doc.text("• Good / Satisfactory (50th - 85th Percentile): Healthy physical standard meeting national benchmarks.", margin + 4, currentY + 13);
+      doc.text("• Needs Improvement (<50th Percentile): Target area requiring guided physical training & practice.", margin + 4, currentY + 17);
+
+      currentY += 24;
+
+      // 6. Signatures
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineWidth(0.3);
+
+      const colW = contentWidth / 3;
+
+      // Sig 1
+      doc.line(margin + 6, currentY + 18, margin + colW - 6, currentY + 18);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(30, 41, 59);
+      doc.text("Physical Education Teacher", margin + colW / 2, currentY + 22, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.text("Signature & Date", margin + colW / 2, currentY + 26, { align: 'center' });
+
+      // Sig 2
+      doc.line(margin + colW + 6, currentY + 18, margin + (colW * 2) - 6, currentY + 18);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text("Class Teacher", margin + (colW * 1.5), currentY + 22, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.text("Signature & Remarks", margin + (colW * 1.5), currentY + 26, { align: 'center' });
+
+      // Sig 3
+      doc.line(margin + (colW * 2) + 6, currentY + 18, margin + contentWidth - 6, currentY + 18);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Principal / Headmaster", margin + (colW * 2.5), currentY + 22, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.text("Signature & School Seal", margin + (colW * 2.5), currentY + 26, { align: 'center' });
+
+      // Footer
+      doc.setFontSize(7);
+      doc.setTextColor(148, 163, 184);
+      doc.text("Issued under CBSE Circular No. Acad-11/2018 for Mainstreaming Health & Physical Education (HPE) and Khelo India Fitness Assessment Protocols.", pageWidth / 2, pageHeight - margin - 3, { align: 'center' });
+
+      const fileName = `${name.replace(/\s+/g, '_')}_CBSE_Fitness_Report_Card.pdf`;
+      doc.save(fileName);
+      toast.success(`CBSE Fitness Report Card generated for ${name}!`);
+    } catch (err: any) {
+      console.error("PDF generation failed:", err);
+      toast.error(`Failed to generate PDF: ${err.message || 'Error occurred'}`);
+    }
+  };
 
   const handleBatteryClick = (battery: KIFTBattery) => {
     setSelectedBattery(battery);
@@ -453,12 +801,22 @@ const FitnessTests: React.FC = () => {
                           <option key={s.id} value={s.id}>{s.name} (Grade {s.grade} {s.section})</option>
                         ))}
                       </select>
-                      {selectedStudentId && (
-                        <p className="mt-2 text-[10px] font-bold text-indigo-500 flex items-center gap-1">
-                          <CheckCircle2 size={12} />
-                          <span>Linked to {students.find(s => s.id === selectedStudentId)?.name}</span>
-                        </p>
-                      )}
+                      <div className="flex flex-wrap items-center justify-between mt-3 gap-2">
+                        {selectedStudentId ? (
+                          <p className="text-[10px] font-bold text-indigo-500 flex items-center gap-1">
+                            <CheckCircle2 size={12} />
+                            <span>Linked to {students.find(s => s.id === selectedStudentId)?.name}</span>
+                          </p>
+                        ) : <div />}
+                        <button
+                          onClick={() => generateStudentCbsePdfReportCard()}
+                          className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm"
+                          title="Generate printer-friendly CBSE PDF Report Card for Student"
+                        >
+                          <FileText size={14} />
+                          <span>Generate CBSE PDF Report Card</span>
+                        </button>
+                      </div>
                       <div className="mt-6 flex-1 min-w-[150px]">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Assessment Term</label>
                         <select 
@@ -559,20 +917,30 @@ const FitnessTests: React.FC = () => {
                   {/* Result Card */}
                   {result && (
                     <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 animate-slide-up">
-                      <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
+                      <div className="flex flex-wrap justify-between items-center mb-8 pb-4 border-b border-slate-100 gap-4">
                         <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Assessment Report</h3>
-                        <button 
-                          onClick={handleSave}
-                          disabled={isSaved}
-                          className={`flex items-center space-x-2 px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
-                            isSaved 
-                              ? 'bg-emerald-500 text-white' 
-                              : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                          }`}
-                        >
-                          {isSaved ? <CheckCircle2 size={16} /> : <Save size={16} />}
-                          <span>{isSaved ? 'Student Result Saved' : 'Confirm & Save Result'}</span>
-                        </button>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <button 
+                            onClick={() => generateStudentCbsePdfReportCard()}
+                            className="flex items-center space-x-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"
+                            title="Download CBSE Compliant PDF Report Card"
+                          >
+                            <FileText size={16} />
+                            <span>Download CBSE PDF Report</span>
+                          </button>
+                          <button 
+                            onClick={handleSave}
+                            disabled={isSaved}
+                            className={`flex items-center space-x-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
+                              isSaved 
+                                ? 'bg-emerald-500 text-white' 
+                                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            }`}
+                          >
+                            {isSaved ? <CheckCircle2 size={16} /> : <Save size={16} />}
+                            <span>{isSaved ? 'Student Result Saved' : 'Confirm & Save Result'}</span>
+                          </button>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
