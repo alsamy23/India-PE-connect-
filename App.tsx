@@ -365,7 +365,7 @@ const StickyHeader: React.FC<StickyHeaderProps> = React.memo(({
   return (
     <div className="relative md:sticky md:top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 md:px-8 md:py-3.5 print:hidden shadow-sm flex items-center justify-between gap-4">
       {/* Primary Header dedicated to Smart PE India Logo */}
-      <div className="flex items-center cursor-pointer" onClick={() => handleTabChange('dashboard')}>
+      <div className="hidden md:flex items-center cursor-pointer" onClick={() => handleTabChange('dashboard')}>
         <Logo variant="color" size="lg" />
       </div>
       <div className="w-full md:max-w-xs lg:max-w-sm">
