@@ -1203,10 +1203,10 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-indigo-600 font-black text-xs uppercase tracking-wider">
               <span className="w-5 h-5 flex items-center justify-center bg-indigo-100 text-indigo-600 font-black rounded-full text-[10px]">3</span>
-              <span>How to Download Report</span>
+              <span>Download & Print PDF</span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed font-semibold">
-              <strong className="text-indigo-600">Download CSV Spreadsheet:</strong> Click the <strong className="text-slate-800">"Export CSV"</strong> button on the report menu to save all data. <strong className="text-indigo-600">Print or Save PDF:</strong> Click the <strong className="text-slate-800">"Print"</strong> button to save a clean visual report card.
+              <strong className="text-indigo-600">Download Branded PDF:</strong> Click the <strong className="text-[#0D2B52]">"Download PDF"</strong> button on the report menu to export branded, print-ready multi-page documents. <strong className="text-indigo-600">Spreadsheets:</strong> Use <strong className="text-slate-800">"Excel / CSV"</strong> for bulk data.
             </p>
           </div>
         </div>
@@ -1263,14 +1263,32 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                 </div>
               )}
 
-              <button 
-                onClick={generateReport}
-                disabled={isGenerating || (!selectedId && selectedType !== 'school')}
-                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-              >
-                {isGenerating ? <Loader2 className="animate-spin" size={16} /> : <FileText size={16} />}
-                <span>Generate Report</span>
-              </button>
+              <div className="flex flex-col gap-2.5">
+                <button 
+                  onClick={generateReport}
+                  disabled={isGenerating || (!selectedId && selectedType !== 'school')}
+                  className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  {isGenerating ? <Loader2 className="animate-spin" size={16} /> : <FileText size={16} />}
+                  <span>Generate Report</span>
+                </button>
+
+                {reportData && (
+                  <button 
+                    onClick={exportToPDF}
+                    disabled={downloadingPdf}
+                    className="w-full py-3.5 bg-[#0D2B52] hover:bg-[#164077] text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    title="Export Branded PDF Document"
+                  >
+                    {downloadingPdf ? (
+                      <Loader2 size={16} className="animate-spin text-[#D4A017]" />
+                    ) : (
+                      <Download size={16} className="text-[#D4A017]" />
+                    )}
+                    <span>{downloadingPdf ? 'Exporting PDF...' : 'Download PDF'}</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1339,15 +1357,15 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                     <button 
                       onClick={exportToPDF}
                       disabled={downloadingPdf}
-                      className="px-4 py-3 bg-rose-600 hover:bg-rose-700 text-white border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] disabled:bg-slate-400 disabled:shadow-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] transition-all flex items-center gap-2 cursor-pointer"
-                      title="Export to PDF"
+                      className="px-4 py-3 bg-[#0D2B52] hover:bg-[#164077] text-white border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] disabled:bg-slate-400 disabled:shadow-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] transition-all flex items-center gap-2 cursor-pointer"
+                      title="Export Branded PDF Document"
                     >
                       {downloadingPdf ? (
-                        <Loader2 size={16} className="animate-spin" />
+                        <Loader2 size={16} className="animate-spin text-[#D4A017]" />
                       ) : (
-                        <FileText size={16} />
+                        <Download size={16} className="text-[#D4A017]" />
                       )}
-                      <span>{downloadingPdf ? 'Exporting...' : 'PDF'}</span>
+                      <span>{downloadingPdf ? 'Exporting PDF...' : 'Download PDF'}</span>
                     </button>
                     <button 
                       onClick={exportToCSV}

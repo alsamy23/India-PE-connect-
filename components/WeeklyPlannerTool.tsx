@@ -107,11 +107,11 @@ const WeeklyPlannerTool: React.FC = () => {
             </div>
             {days.map((day, idx) => {
               const [dayName, ...dateParts] = day.split(' ');
-              const isToday = idx === 3; // Highlight Thursday in mockup
+              const isToday = idx === 3; // Highlight current active day
               return (
-                <div key={idx} className={`p-4 border-r border-slate-200 last:border-0 ${isToday ? 'bg-red-50/30' : ''}`}>
-                  <div className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-red-500' : 'text-slate-500'}`}>{dayName}</div>
-                  <div className={`text-sm font-bold mt-0.5 ${isToday ? 'text-red-600' : 'text-slate-900'}`}>{dateParts.join(' ')}</div>
+                <div key={idx} className={`p-4 border-r border-slate-200 last:border-0 ${isToday ? 'bg-amber-50/50' : ''}`}>
+                  <div className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-[#D4A017]' : 'text-slate-500'}`}>{dayName}</div>
+                  <div className={`text-sm font-bold mt-0.5 ${isToday ? 'text-[#0D2B52]' : 'text-slate-900'}`}>{dateParts.join(' ')}</div>
                 </div>
               );
             })}

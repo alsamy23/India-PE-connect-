@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useTransition } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
+import { SEOHead } from './components/SEOHead.tsx';
 import { 
   Users, 
   BookOpen, 
@@ -63,6 +65,9 @@ import DepartmentWorkloadPlanner from './components/DepartmentWorkloadPlanner.ts
 import AcademicWeeklyPlanner from './components/AcademicWeeklyPlanner.tsx';
 import PrincipalDashboard from './components/PrincipalDashboard.tsx';
 import DepartmentOffice from './components/DepartmentOffice.tsx';
+import BrandWelcomeHub from './components/BrandWelcomeHub.tsx';
+import PricingAndPlans from './components/PricingAndPlans.tsx';
+import WelcomeOnboardingModal from './components/WelcomeOnboardingModal.tsx';
 import { GlobalSearch } from './components/GlobalSearch.tsx';
 import { logError } from './services/logService.ts';
 import { auth } from './services/firebase.ts';
@@ -70,7 +75,7 @@ import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth
 import { trackEvent } from './services/analytics.ts';
 import { toast, SHOW_TOAST_EVENT, SHOW_CONFIRM_EVENT, ToastConfig, ConfirmConfig } from './services/toast.ts';
 
-type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact' | 'principal-dashboard' | 'department-office';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact' | 'principal-dashboard' | 'department-office' | 'brand-welcome' | 'subscription-plans';
 
 import { BoardType, Language } from './types.ts';
 
@@ -83,8 +88,8 @@ const navigation = [
     items: [
       { id: 'planner', name: 'PE Lesson Plan', icon: Sparkles, subtitle: 'Generate today\'s PE lesson in under 60 seconds.' },
       { id: 'yearly', name: 'Yearly Planner', icon: CalendarRange, subtitle: 'Auto-map 40 weeks of PE for your classes.' },
-      { id: 'weekly-planner', name: 'Weekly Academic Planner', icon: CalendarRange, isNew: true, subtitle: '1-click lesson & homework splitter for classes.' },
-      { id: 'workload-planner', name: 'Workload & Timetable', icon: CalendarRange, isNew: true, subtitle: 'Schedules, curriculum slots, and lessons suggester.' },
+      { id: 'weekly-planner', name: 'Weekly Academic Planner', icon: CalendarRange, subtitle: '1-click lesson & homework splitter for classes.' },
+      { id: 'workload-planner', name: 'Workload & Timetable', icon: CalendarRange, subtitle: 'Schedules, curriculum slots, and lessons suggester.' },
       { id: 'skillmastery', name: 'Skill Progressions', icon: Target, subtitle: 'Long-term curriculum maps and checklists.' },
       { id: 'theory', name: 'Theory Master (CBSE)', icon: GraduationCap, subtitle: 'Resources matched to CBSE guidelines.' },
     ]
@@ -93,32 +98,32 @@ const navigation = [
   { 
     section: 'Assess',
     items: [
-      { id: 'fitness', name: 'Fitness Tests', icon: Activity, isNew: true, subtitle: 'All Khelo India Fitness tests pre-loaded.' },
+      { id: 'fitness', name: 'Fitness Tests', icon: Activity, subtitle: 'All Khelo India Fitness tests pre-loaded.' },
       { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, subtitle: 'Official battery tests and student profiles.' },
-      { id: 'testpaper', name: 'Question Paper Generator', icon: ClipboardList, isNew: true, subtitle: 'Create MCQ and theory papers for PE.' },
-      { id: 'skill-analysis', name: 'Skill Analysis Lab', icon: Video, isNew: true, subtitle: 'Compare and analyze sports techniques.' },
-      { id: 'rules', name: 'Game Rules Bot', icon: Book, isNew: true, subtitle: 'Ask AI about sports rules and doubts.' },
+      { id: 'testpaper', name: 'Question Paper Generator', icon: ClipboardList, subtitle: 'Create MCQ and theory papers for PE.' },
+      { id: 'skill-analysis', name: 'Skill Analysis Lab', icon: Video, subtitle: 'Compare and analyze sports techniques.' },
+      { id: 'rules', name: 'Game Rules Bot', icon: Book, subtitle: 'Ask AI about sports rules and doubts.' },
     ]
   },
 
   { 
     section: 'Record',
     items: [
-      { id: 'principal-dashboard', name: 'Principal Dashboard', icon: ShieldCheck, isNew: true, subtitle: 'Deliver inspection-ready reports to decision makers.' },
+      { id: 'principal-dashboard', name: 'Principal Dashboard', icon: ShieldCheck, subtitle: 'Deliver inspection-ready reports to decision makers.' },
       { id: 'school-students', name: 'Student Directory', icon: Users, protected: true },
-      { id: 'school-overview', name: 'School Fitness Database', icon: Zap, isNew: true, subtitle: 'Store and track every student\'s scores.' },
-      { id: 'school-results', name: 'Live Results', icon: Activity, isNew: true, protected: true },
-      { id: 'fitness-reports', name: 'Fitness Reports', icon: FileText, isNew: true, protected: true, subtitle: 'Generate progress and performance reports.' },
+      { id: 'school-overview', name: 'School Fitness Database', icon: Zap, subtitle: 'Store and track every student\'s scores.' },
+      { id: 'school-results', name: 'Live Results', icon: Activity, protected: true },
+      { id: 'fitness-reports', name: 'Fitness Reports', icon: FileText, protected: true, subtitle: 'Generate progress and performance reports.' },
     ]
   },
 
   { 
     section: 'Communicate & Admin',
     items: [
-      { id: 'department-office', name: 'PE Department Office', icon: ClipboardList, isNew: true, subtitle: 'Substitute plans, equipment logs, and house points.' },
-      { id: 'parentletters', name: 'Parent Letters', icon: Mail, isNew: true, subtitle: 'Draft ready-to-print letters for parents.' },
+      { id: 'department-office', name: 'PE Department Office', icon: ClipboardList, subtitle: 'Substitute plans, equipment logs, and house points.' },
+      { id: 'parentletters', name: 'Parent Letters', icon: Mail, subtitle: 'Draft ready-to-print letters for parents.' },
       { id: 'school-teams', name: 'Teams/Classes', icon: UserCheck, protected: true },
-      { id: 'widgets', name: 'PE Classroom Widgets', icon: Zap, isNew: true, subtitle: 'Interactive timers and tools.' },
+      { id: 'widgets', name: 'PE Classroom Widgets', icon: Zap, subtitle: 'Interactive timers and tools.' },
       { id: 'compliance', name: 'State Compliance', icon: ShieldCheck, subtitle: 'CBSE and NEP 2020 alignment.' },
       { id: 'tools', name: 'AI Tool Center', icon: Wrench, subtitle: 'AI tools that save you time daily.' },
       { id: 'school-admin', name: 'School Settings', icon: Shield, protected: true },
@@ -129,6 +134,8 @@ const navigation = [
   { 
     section: 'Corporate Info',
     items: [
+      { id: 'brand-welcome', name: 'Brand & Welcome Hub', icon: Sparkles, subtitle: 'Welcome guide, promo video, & welcome email generator.' },
+      { id: 'subscription-plans', name: 'Plans & Free Pass', icon: Zap, subtitle: 'View 1-Year Free Pass & affordable school plans.' },
       { id: 'about', name: 'About smartpeindia', icon: GraduationCap, subtitle: 'Meet the founder L. Samy and the mission.' },
       { id: 'contact', name: 'Contact & Support', icon: Mail, subtitle: 'Get help, report a bug, or collaborate directly.' },
     ]
@@ -215,42 +222,24 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
 
       {/* API Status Badge - Interactive */}
       <div className="mx-6 mb-8">
-        {apiStatus === 'ok' ? (
-          <button 
-            onClick={handleSelectKey}
-            className="w-full bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-emerald-500/10 transition-all group"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-              <div className="flex flex-col items-start">
-                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">AI Connected</span>
-              </div>
+        <button 
+          onClick={handleSelectKey}
+          className="w-full bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3.5 flex items-center justify-between hover:bg-slate-800 transition-all group"
+        >
+          <div className="flex items-center space-x-3">
+            <div className={`w-2 h-2 rounded-full ${
+              apiStatus === 'ok' 
+                ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]' 
+                : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+            }`}></div>
+            <div className="flex flex-col items-start">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-200">
+                {apiStatus === 'ok' ? 'AI Connected' : 'AI Engine Ready'}
+              </span>
             </div>
-            <Wifi size={12} className="text-emerald-500 group-hover:scale-110 transition-transform" />
-          </button>
-        ) : apiStatus === 'quota' ? (
-          <button 
-            onClick={handleSelectKey}
-            className="w-full bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-amber-500/10 transition-all group"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.6)]"></div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Quota Exceeded</span>
-            </div>
-            <AlertTriangle size={12} className="text-amber-500 group-hover:scale-110 transition-transform" />
-          </button>
-        ) : (
-          <button 
-            onClick={handleSelectKey}
-            className="w-full bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4 flex items-center justify-between hover:bg-rose-500/10 transition-all group"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">AI Disconnected</span>
-            </div>
-            <AlertTriangle size={12} className="text-rose-500 group-hover:scale-110 transition-transform" />
-          </button>
-        )}
+          </div>
+          <Wifi size={12} className="text-slate-400 group-hover:text-white transition-colors" />
+        </button>
       </div>
 
       <nav className="mt-4 px-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-380px)] custom-scrollbar">
@@ -435,6 +424,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isAuthView, setIsAuthView] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(null);
   const [highlightStudentId, setHighlightStudentId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastConfig[]>([]);
@@ -517,6 +507,11 @@ const App: React.FC = () => {
       setIsAuthReady(true);
       if (currentUser) {
         setIsAuthView(false); // Reset auth view when user logs in
+        // Show welcome onboarding modal for logged-in session if first time
+        if (!sessionStorage.getItem('welcome_modal_shown')) {
+          setShowWelcomeModal(true);
+          sessionStorage.setItem('welcome_modal_shown', 'true');
+        }
       }
     }, (error) => {
       console.error("Auth state change error:", error);
@@ -580,11 +575,7 @@ const App: React.FC = () => {
         setApiSource('');
       }
     } catch (error: any) {
-      console.error("Health check failed:", error);
-      // Only log fatal/unexpected health check errors
-      if (error.name !== 'TypeError' && error.name !== 'AbortError') {
-        logError(error, 'error', { context: 'Health check failed' });
-      }
+      console.warn("Health check probe note:", error?.message || error);
       
       if (retryCount < 2) {
         setTimeout(() => checkApiStatus(retryCount + 1).catch(() => {}), 2000);
@@ -780,6 +771,8 @@ const App: React.FC = () => {
       case 'parentletters': return <ParentLetters />;
       case 'widgets': return <ClassroomWidgets />;
       case 'skill-analysis': return <SkillAnalysis />;
+      case 'brand-welcome': return <BrandWelcomeHub userEmail={user?.email} userName={user?.displayName} onNavigateToPlans={() => handleTabChange('subscription-plans')} />;
+      case 'subscription-plans': return <PricingAndPlans userEmail={user?.email} />;
       case 'school-overview': return <FitnessManagementIntro onLogin={() => {
         if (auth.currentUser) {
           handleTabChange('school-results');
@@ -802,8 +795,10 @@ const App: React.FC = () => {
   }
 
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-sans">
+    <HelmetProvider>
+      <SEOHead activeTab={activeTab} />
+      <ErrorBoundary>
+        <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden h-screen print:h-auto print:overflow-visible font-sans">
         {/* Toast Notification Container */}
         <div className="fixed bottom-6 right-6 z-[200] space-y-3 max-w-sm w-full pointer-events-none">
           {toasts.map(t => (
@@ -812,7 +807,7 @@ const App: React.FC = () => {
               className="p-4 rounded-2xl shadow-xl border-4 border-slate-900 pointer-events-auto flex items-center space-x-3 text-xs font-black uppercase tracking-wider animate-slide-up bg-white text-slate-900"
             >
               <div className={`w-3.5 h-3.5 rounded-full flex-shrink-0 ${
-                t.type === 'success' ? 'bg-emerald-500' : t.type === 'error' ? 'bg-rose-500' : 'bg-[#FF6B00]'
+                t.type === 'success' ? 'bg-emerald-500' : t.type === 'error' ? 'bg-rose-500' : 'bg-[#D4A017]'
               }`} />
               <p className="flex-1 text-slate-900 leading-tight">{t.message}</p>
               <button
@@ -895,17 +890,17 @@ const App: React.FC = () => {
                 </button>
               </div>
 
-              <div className="p-5 bg-orange-50 rounded-3xl border-2 border-orange-100 shadow-sm">
-                <p className="text-sm font-black text-orange-900 mb-3 flex items-center uppercase tracking-widest">
-                  <span className="w-8 h-8 bg-orange-600 text-white rounded-xl flex items-center justify-center text-xs mr-3 shadow-lg shadow-orange-200">2</span>
+              <div className="p-5 bg-[#D4A017]/10 rounded-3xl border-2 border-[#D4A017]/30 shadow-sm">
+                <p className="text-sm font-black text-[#0D2B52] mb-3 flex items-center uppercase tracking-widest">
+                  <span className="w-8 h-8 bg-[#0D2B52] text-[#D4A017] rounded-xl flex items-center justify-center text-xs mr-3 shadow-lg shadow-[#0D2B52]/20">2</span>
                   Option B: Groq Key
                 </p>
-                <div className="mb-4 p-3 bg-white/80 rounded-2xl border border-orange-200">
-                  <p className="text-[11px] text-orange-800 font-black flex items-center mb-1 uppercase tracking-widest">
-                    <AlertCircle size={14} className="mr-2" />
+                <div className="mb-4 p-3 bg-white/80 rounded-2xl border border-[#D4A017]/40">
+                  <p className="text-[11px] text-[#0D2B52] font-black flex items-center mb-1 uppercase tracking-widest">
+                    <AlertCircle size={14} className="mr-2 text-[#D4A017]" />
                     GETTING A "NO PAID PROJECT" ERROR?
                   </p>
-                  <p className="text-[10px] text-orange-700 leading-tight">
+                  <p className="text-[10px] text-slate-700 leading-tight">
                     If Gemini shows a "No Paid Project" error, skip it! Use Groq instead—it's free, 10x faster, and doesn't require a paid Google account.
                   </p>
                 </div>
@@ -913,14 +908,14 @@ const App: React.FC = () => {
                   <button 
                     onClick={handleTestConnection}
                     disabled={isTesting}
-                    className="py-3 bg-white border-2 border-orange-200 text-orange-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-100 transition-all flex items-center justify-center space-x-2"
+                    className="py-3 bg-white border-2 border-[#0D2B52]/20 text-[#0D2B52] rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center space-x-2"
                   >
                     {isTesting ? <Loader2 className="animate-spin" size={14} /> : <RotateCcw size={14} />}
                     <span>{isTesting ? 'Verifying...' : 'Verify'}</span>
                   </button>
                   <button 
                     onClick={() => window.location.reload()}
-                    className="py-3 bg-orange-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all flex items-center justify-center space-x-2"
+                    className="py-3 bg-[#0D2B52] text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#164077] transition-all flex items-center justify-center space-x-2"
                   >
                     <RotateCcw size={14} />
                     <span>Force Refresh</span>
@@ -962,7 +957,7 @@ const App: React.FC = () => {
         />
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-32">
+        <main className={`flex-1 overflow-y-auto bg-slate-50 relative print:overflow-visible print:h-auto print:bg-white pb-32 ${isSidebarOpen ? 'hidden md:block' : ''}`}>
           <StickyHeader 
             activeTab={activeTab} 
             handleTabChange={handleTabChange} 
@@ -991,10 +986,19 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
-          <div className="max-w-7xl mx-auto p-4 md:p-12 min-h-full print:p-0">
+          <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6 lg:p-6 min-h-full print:p-0">
             {renderContent()}
           </div>
           <Disclaimer />
+
+          {/* Welcome Onboarding Modal for New / Signed-In Users */}
+          <WelcomeOnboardingModal
+            isOpen={showWelcomeModal}
+            onClose={() => setShowWelcomeModal(false)}
+            userName={user?.displayName || user?.email?.split('@')[0] || 'Educator'}
+            schoolName="Smart PE Partner School"
+            onNavigateTab={handleTabChange}
+          />
 
           {/* Mobile Bottom Navigation */}
           <MobileBottomNav 
@@ -1004,6 +1008,7 @@ const App: React.FC = () => {
         </main>
     </div>
   </ErrorBoundary>
+</HelmetProvider>
 );
 };
 

@@ -20,13 +20,22 @@ import {
   Globe,
   Share2,
   Search,
-  Link
+  Link,
+  Copy,
+  ExternalLink,
+  Eye,
+  Code,
+  Tag,
+  Info,
+  Layers,
+  Check
 } from 'lucide-react';
 import { toast } from '../services/toast.ts';
 import { motion } from 'motion/react';
 import { collection, query, where, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import { fitnessService, SchoolMember } from '../services/fitnessService.ts';
 import { auth, db } from '../services/firebase.ts';
+import { SEOConfig, DEFAULT_SEO_CONFIG, loadSEOConfig, saveSEOConfig, RouteSEOOverride } from '../services/seoService.ts';
 
 const SchoolAdmin: React.FC = () => {
   const [members, setMembers] = useState<SchoolMember[]>([]);
@@ -54,18 +63,12 @@ const SchoolAdmin: React.FC = () => {
   const [workloads, setWorkloads] = useState<any[]>([]);
 
   // SEO Configurations
-  const [seoConfig, setSeoConfig] = useState({
-    canonicalUrl: 'https://smartpeindia.app/',
-    allowCrawling: true,
-    metaTitlePrefix: 'Smart PE India',
-    metaDescription: "Generate CBSE/ICSE PE lesson plans in seconds, calculate Khelo India fitness scores, and design your curriculum with India's first AI platform for PE teachers.",
-    socialTitle: 'Smart PE India - India\'s #1 AI Platform for PE Teachers',
-    socialDescription: 'Generate CBSE/ICSE PE lesson plans in seconds, calculate Khelo India fitness scores, and design your curriculum.',
-    socialImageUrl: 'https://images.unsplash.com/photo-1594882645126-14020914d58d?q=80&w=1200&auto=format&fit=crop',
-    shareUrlFormat: 'domain_only', // 'domain_only' (smartpeindia.app) or 'vercel'
-    sitemapActive: true,
-  });
+  const [seoConfig, setSeoConfig] = useState<SEOConfig>(DEFAULT_SEO_CONFIG);
   const [seoLoading, setSeoLoading] = useState(false);
+  const [selectedSeoSubTab, setSelectedSeoSubTab] = useState<'global' | 'routes' | 'social'>('global');
+  const [selectedRouteKey, setSelectedRouteKey] = useState<string>('dashboard');
+  const [seoPreviewMode, setSeoPreviewMode] = useState<'google' | 'social' | 'sitemap' | 'robots'>('google');
+  const [copiedText, setCopiedText] = useState<string | null>(null);
 
   const isSuperAdmin = auth.currentUser?.email === 'alsamy36@gmail.com';
 
@@ -102,15 +105,10 @@ const SchoolAdmin: React.FC = () => {
           setWorkloads(loadedWorkloads);
         }
 
-        // Load SEO Config from Firestore
+        // Load SEO Config using seoService
         const seoDocId = currentSchoolId || auth.currentUser!.uid;
-        const seoSnap = await getDoc(doc(db, 'seo_configs', seoDocId));
-        if (seoSnap.exists()) {
-          setSeoConfig(prev => ({
-            ...prev,
-            ...seoSnap.data()
-          }));
-        }
+        const loadedConfig = await loadSEOConfig(seoDocId);
+        setSeoConfig(loadedConfig);
       } catch (err) {
         console.error("Error fetching school admin data:", err);
       } finally {
@@ -451,9 +449,9 @@ Friday Period 3: Grade 7B - Fitness`;
 
     try {
       const currentSchoolId = userProfile?.schoolId || (isSuperAdmin && allSchools.length > 0 ? allSchools[0].id : '') || auth.currentUser?.uid || 'default';
-      await setDoc(doc(db, 'seo_configs', currentSchoolId), seoConfig);
-      setSuccess("SEO Configuration saved successfully! Live search indexing tags and shared preview parameters have been fully synced to prioritize 'smartpeindia.app'.");
-      toast.success("SEO settings updated successfully!");
+      await saveSEOConfig(currentSchoolId, seoConfig);
+      setSuccess("SEO Configuration saved successfully! Live search indexing tags, per-route metadata, and Open Graph tags have been synced to prioritize 'smartpeindia.app'.");
+      toast.success("SEO Configuration saved & synced live!");
     } catch (err: any) {
       console.error("Error saving SEO config:", err);
       setError("Failed to save SEO Configuration: " + (err.message || err));
@@ -915,194 +913,473 @@ Friday Period 3: Grade 7B - Fitness`;
       {activeAdminTab === 'seo' && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
           {/* Header Card */}
-          <div className="bg-[#EBF5FF] border-2 border-slate-900 p-8 rounded-[2.5rem] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] relative overflow-hidden">
-            <div className="relative z-10">
-              <span className="inline-flex px-3 py-1 border border-slate-900 bg-[#3B82F6] text-white rounded-lg text-[9px] font-black uppercase tracking-widest mb-4">
-                SEO & PUBLIC BRAND CONTROLS
-              </span>
-              <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-2">Search Engine Optimization & Branding</h3>
-              <p className="text-slate-600 text-sm font-semibold max-w-3xl leading-relaxed">
-                Prioritize your premium custom domain <span className="text-indigo-600 font-black">smartpeindia.app</span>! Define canonical URLs, personalize social media metadata tags, and generate dynamic search sitemaps to optimize visibility across Google search.
-              </p>
+          <div className="bg-[#0D2B52] border-4 border-slate-900 p-8 rounded-[2.5rem] shadow-[8px_8px_0px_0px_rgba(13,43,82,1)] text-white relative overflow-hidden">
+            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-3xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#D4A017]/20 border border-[#D4A017]/40 rounded-full text-[10px] font-black uppercase tracking-widest text-[#D4A017]">
+                  <Globe size={12} />
+                  <span>REACT-HELMET DYNAMIC SEO ENGINE</span>
+                </div>
+                <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white font-display">
+                  SEO & Public Brand Control Panel
+                </h3>
+                <p className="text-slate-200 text-sm font-medium leading-relaxed">
+                  Optimize search engine visibility and prioritize <strong className="text-[#D4A017] font-black">smartpeindia.app</strong>! Configure route-specific meta tags, canonical URLs, and Open Graph previews managed dynamically via <code className="bg-white/10 px-1.5 py-0.5 rounded text-xs">react-helmet-async</code>.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={handleSaveSeoConfig}
+                  disabled={seoLoading}
+                  className="px-6 py-3.5 bg-[#D4A017] text-[#0D2B52] border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#e0ac1e] transition-all shadow-[4px_4px_0px_0px_rgba(13,43,82,1)] flex items-center justify-center gap-2"
+                >
+                  {seoLoading ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
+                  <span>{seoLoading ? 'Saving...' : 'Save All SEO Settings'}</span>
+                </button>
+              </div>
             </div>
-            <div className="absolute right-[-40px] top-[-40px] w-64 h-64 text-blue-500/10 -rotate-12 pointer-events-none">
+            <div className="absolute right-[-40px] top-[-40px] w-64 h-64 text-[#D4A017]/10 -rotate-12 pointer-events-none">
               <Globe size={256} />
             </div>
           </div>
 
+          {/* Sub-navigation tabs for SEO settings */}
+          <div className="flex flex-wrap items-center gap-3 border-b-2 border-slate-200 pb-3">
+            <button
+              type="button"
+              onClick={() => setSelectedSeoSubTab('global')}
+              className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 border-2 ${
+                selectedSeoSubTab === 'global'
+                  ? 'bg-[#0D2B52] text-white border-slate-900 shadow-[3px_3px_0px_0px_rgba(13,43,82,1)]'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              <Globe size={14} />
+              <span>Global SEO & Domain</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedSeoSubTab('routes')}
+              className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 border-2 ${
+                selectedSeoSubTab === 'routes'
+                  ? 'bg-[#0D2B52] text-white border-slate-900 shadow-[3px_3px_0px_0px_rgba(13,43,82,1)]'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              <Layers size={14} />
+              <span>Per-Route Meta Tags ({Object.keys(seoConfig.routeOverrides || {}).length} Overrides)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedSeoSubTab('social')}
+              className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 border-2 ${
+                selectedSeoSubTab === 'social'
+                  ? 'bg-[#0D2B52] text-white border-slate-900 shadow-[3px_3px_0px_0px_rgba(13,43,82,1)]'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              <Share2 size={14} />
+              <span>Social & OpenGraph Cards</span>
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Form Column */}
+            {/* Main Form Column */}
             <div className="lg:col-span-2 space-y-6">
-              <form onSubmit={handleSaveSeoConfig} className="bg-white border-2 border-slate-900 p-8 rounded-[2.5rem] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] space-y-6">
-                <div>
-                  <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">SEO Global Indexing Settings</h4>
-                  <p className="text-xs text-slate-500 font-semibold leading-relaxed mb-4">
-                    These metadata fields are compiled on-the-fly and injected into search engine queries when crawler bots index your public student fitness report pages.
-                  </p>
-                </div>
+              <form onSubmit={handleSaveSeoConfig} className="bg-white border-4 border-slate-900 p-8 rounded-[2.5rem] shadow-[6px_6px_0px_0px_rgba(13,43,82,0.15)] space-y-6">
+                
+                {/* GLOBAL SEO SUB-TAB */}
+                {selectedSeoSubTab === 'global' && (
+                  <div className="space-y-6 animate-in fade-in duration-200">
+                    <div>
+                      <h4 className="text-xl font-black text-[#0D2B52] uppercase tracking-tight font-display mb-1">
+                        Domain & Global Indexing Configuration
+                      </h4>
+                      <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                        Control canonical indexing targets and baseline metadata rendered across all app pages.
+                      </p>
+                    </div>
 
-                {/* Canonical URL Domain prioritization */}
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Prioritized Domain (Canonical)</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setSeoConfig({ ...seoConfig, canonicalUrl: 'https://smartpeindia.app/' })}
-                      className={`p-4 border-2 rounded-2xl text-left transition-all flex flex-col justify-between ${
-                        seoConfig.canonicalUrl === 'https://smartpeindia.app/'
-                          ? 'border-indigo-600 bg-indigo-50/50 shadow-sm'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-xs font-black uppercase tracking-wider text-indigo-700">smartpeindia.app</span>
-                        <span className="px-2 py-0.5 bg-emerald-600 text-white rounded text-[8px] font-black">RECOMMENDED</span>
+                    {/* Canonical URL Domain prioritization */}
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2.5 block flex items-center gap-1.5">
+                        <Tag size={12} className="text-[#D4A017]" />
+                        <span>Prioritized Canonical Domain</span>
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button
+                          type="button"
+                          onClick={() => setSeoConfig({ ...seoConfig, canonicalUrl: 'https://smartpeindia.app/' })}
+                          className={`p-5 border-4 rounded-2xl text-left transition-all flex flex-col justify-between ${
+                            seoConfig.canonicalUrl === 'https://smartpeindia.app/' || seoConfig.canonicalUrl === 'https://smartpeindia.app'
+                              ? 'border-[#0D2B52] bg-[#0D2B52]/5 shadow-[4px_4px_0px_0px_rgba(13,43,82,1)]'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-sm font-black uppercase tracking-wider text-[#0D2B52]">smartpeindia.app</span>
+                            <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">
+                              RECOMMENDED
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-600 font-semibold mt-3 leading-normal">
+                            Primary custom domain. Strongly prioritized by search engines for all school fitness reports & PE resources in India.
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSeoConfig({ ...seoConfig, canonicalUrl: 'https://smartpeindia.vercel.app/' })}
+                          className={`p-5 border-4 rounded-2xl text-left transition-all flex flex-col justify-between ${
+                            seoConfig.canonicalUrl === 'https://smartpeindia.vercel.app/' || seoConfig.canonicalUrl === 'https://smartpeindia.vercel.app'
+                              ? 'border-[#0D2B52] bg-[#0D2B52]/5 shadow-[4px_4px_0px_0px_rgba(13,43,82,1)]'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <span className="text-sm font-black uppercase tracking-wider text-slate-700">smartpeindia.vercel.app</span>
+                          <span className="text-[11px] text-slate-500 font-semibold mt-3 leading-normal">
+                            Secondary fallback deployment URL. Use as backup redirect target.
+                          </span>
+                        </button>
                       </div>
-                      <span className="text-[10px] text-slate-500 font-semibold mt-2">
-                        Premium prioritized domain. Strongly recommended for Google search visibility in India.
-                      </span>
-                    </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setSeoConfig({ ...seoConfig, canonicalUrl: 'https://smartpeindia.vercel.app/' })}
-                      className={`p-4 border-2 rounded-2xl text-left transition-all flex flex-col justify-between ${
-                        seoConfig.canonicalUrl === 'https://smartpeindia.vercel.app/'
-                          ? 'border-indigo-600 bg-indigo-50/50 shadow-sm'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
-                    >
-                      <span className="text-xs font-black uppercase tracking-wider text-slate-700">smartpeindia.vercel.app</span>
-                      <span className="text-[10px] text-slate-500 font-semibold mt-2">
-                        Legacy backup domain. Keep this as secondary routing fallback.
-                      </span>
-                    </button>
-                  </div>
-                </div>
+                      {/* Custom Canonical Input */}
+                      <div className="mt-4">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Custom Canonical Base URL</label>
+                        <input
+                          type="url"
+                          required
+                          value={seoConfig.canonicalUrl}
+                          onChange={e => setSeoConfig({ ...seoConfig, canonicalUrl: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] focus:bg-white transition-all font-mono"
+                          placeholder="https://smartpeindia.app/"
+                        />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {/* Meta Title Prefix/Suffix */}
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Meta Title Prefix</label>
-                    <div className="relative">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                      <input
-                        type="text"
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {/* Title Prefix */}
+                      <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Brand Meta Title Prefix</label>
+                        <input
+                          type="text"
+                          required
+                          className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] focus:bg-white transition-all"
+                          value={seoConfig.metaTitlePrefix}
+                          onChange={e => setSeoConfig({ ...seoConfig, metaTitlePrefix: e.target.value })}
+                          placeholder="e.g. Smart PE India"
+                        />
+                      </div>
+
+                      {/* Site Name */}
+                      <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Site Name (og:site_name)</label>
+                        <input
+                          type="text"
+                          required
+                          className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] focus:bg-white transition-all"
+                          value={seoConfig.siteName || 'Smart PE India'}
+                          onChange={e => setSeoConfig({ ...seoConfig, siteName: e.target.value })}
+                          placeholder="Smart PE India"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Global Meta Description */}
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Global Meta Description</label>
+                      <textarea
+                        rows={3}
                         required
-                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-indigo-650 focus:bg-white transition-all"
-                        value={seoConfig.metaTitlePrefix}
-                        onChange={e => setSeoConfig({ ...seoConfig, metaTitlePrefix: e.target.value })}
-                        placeholder="e.g., Smart PE India"
+                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] focus:bg-white transition-all resize-none"
+                        value={seoConfig.metaDescription}
+                        onChange={e => setSeoConfig({ ...seoConfig, metaDescription: e.target.value })}
+                        placeholder="Comprehensive description summarizing your PE software capabilities..."
                       />
                     </div>
-                  </div>
 
-                  {/* Sharing URL Format */}
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Shared Links URL Target</label>
-                    <select
-                      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-indigo-650 focus:bg-white transition-all"
-                      value={seoConfig.shareUrlFormat}
-                      onChange={e => setSeoConfig({ ...seoConfig, shareUrlFormat: e.target.value })}
-                    >
-                      <option value="domain_only">Enforce smartpeindia.app</option>
-                      <option value="vercel">Enforce Vercel Subdomain</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Global Meta Description */}
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Global Meta Description</label>
-                  <textarea
-                    rows={3}
-                    required
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-indigo-650 focus:bg-white transition-all resize-none"
-                    value={seoConfig.metaDescription}
-                    onChange={e => setSeoConfig({ ...seoConfig, metaDescription: e.target.value })}
-                    placeholder="Short description summarizing what your PE organization does..."
-                  />
-                </div>
-
-                <div className="border-t border-slate-100 pt-6">
-                  <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">Social Preview Meta-Tags</h4>
-                  <p className="text-xs text-slate-500 font-semibold leading-relaxed mb-4">
-                    Control the rich summary previews (OpenGraph and Twitter card formats) that generate when users or parents share links via WhatsApp, SMS, or Twitter.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {/* Social Preview Title */}
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Social Title</label>
-                    <input
-                      type="text"
-                      required
-                      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-indigo-650 focus:bg-white transition-all"
-                      value={seoConfig.socialTitle}
-                      onChange={e => setSeoConfig({ ...seoConfig, socialTitle: e.target.value })}
-                      placeholder="Catchy sharing title..."
-                    />
-                  </div>
-
-                  {/* Social Image URL */}
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Social Preview Image URL</label>
-                    <div className="relative">
-                      <Link className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    {/* Global Keywords */}
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Global Search Keywords</label>
                       <input
                         type="text"
-                        required
-                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-indigo-650 focus:bg-white transition-all"
-                        value={seoConfig.socialImageUrl}
-                        onChange={e => setSeoConfig({ ...seoConfig, socialImageUrl: e.target.value })}
-                        placeholder="Image Link (https://...)"
+                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] focus:bg-white transition-all"
+                        value={seoConfig.keywords || ''}
+                        onChange={e => setSeoConfig({ ...seoConfig, keywords: e.target.value })}
+                        placeholder="PE Teachers India, CBSE PE Lesson Plan, Khelo India Fitness Test, smartpeindia.app"
                       />
                     </div>
+
+                    {/* Author & Indexing options */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+                      <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Publisher / Author</label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] focus:bg-white transition-all"
+                          value={seoConfig.author || 'Smart PE India Team'}
+                          onChange={e => setSeoConfig({ ...seoConfig, author: e.target.value })}
+                          placeholder="Smart PE India Team"
+                        />
+                      </div>
+
+                      <div className="flex flex-col justify-end">
+                        <label className="flex items-center gap-3 bg-slate-50 p-3.5 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
+                          <input
+                            type="checkbox"
+                            className="w-5 h-5 text-[#0D2B52] border-slate-300 rounded focus:ring-[#0D2B52] cursor-pointer"
+                            checked={seoConfig.allowCrawling}
+                            onChange={e => setSeoConfig({ ...seoConfig, allowCrawling: e.target.checked })}
+                          />
+                          <div>
+                            <span className="text-xs font-black text-[#0D2B52] uppercase block">Allow Search Engine Indexing</span>
+                            <span className="text-[10px] text-slate-500 font-semibold block">Injects `index, follow` tags for Googlebot</span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Social Description */}
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Social Description</label>
-                  <textarea
-                    rows={3}
-                    required
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-indigo-650 focus:bg-white transition-all resize-none"
-                    value={seoConfig.socialDescription}
-                    onChange={e => setSeoConfig({ ...seoConfig, socialDescription: e.target.value })}
-                    placeholder="Short copy specifically written to drive click-throughs on social networks..."
-                  />
-                </div>
+                {/* PER-ROUTE SEO OVERRIDES SUB-TAB */}
+                {selectedSeoSubTab === 'routes' && (
+                  <div className="space-y-6 animate-in fade-in duration-200">
+                    <div>
+                      <h4 className="text-xl font-black text-[#0D2B52] uppercase tracking-tight font-display mb-1">
+                        Per-Route Dynamic Meta Tag Customizer
+                      </h4>
+                      <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                        Customize route-specific titles, meta descriptions, and canonical sub-paths so each tab on <strong className="text-[#0D2B52]">smartpeindia.app</strong> has unique search metadata.
+                      </p>
+                    </div>
 
-                <div className="flex items-center gap-4 bg-slate-50 p-4 border border-slate-200 rounded-xl">
-                  <input
-                    type="checkbox"
-                    id="allowCrawlingCheckbox"
-                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
-                    checked={seoConfig.allowCrawling}
-                    onChange={e => setSeoConfig({ ...seoConfig, allowCrawling: e.target.checked })}
-                  />
-                  <label htmlFor="allowCrawlingCheckbox" className="text-xs font-bold text-slate-700 cursor-pointer select-none">
-                    Generate valid robots.txt permissions to allow indexation (`index, follow`)
-                  </label>
-                </div>
+                    {/* Route Selector Dropdown / Buttons */}
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Select App View / Route to Edit</label>
+                      <select
+                        value={selectedRouteKey}
+                        onChange={e => setSelectedRouteKey(e.target.value)}
+                        className="w-full p-4 bg-slate-50 border-2 border-slate-900 rounded-2xl font-black text-sm uppercase tracking-wider text-[#0D2B52] outline-none focus:bg-white shadow-sm"
+                      >
+                        <option value="dashboard">Dashboard & Overview (/)</option>
+                        <option value="planner">AI PE Lesson Planner (/#lesson-planner)</option>
+                        <option value="yearly">Yearly Curriculum Planner (/#yearly-planner)</option>
+                        <option value="weekly-planner">Academic Weekly Planner (/#weekly-planner)</option>
+                        <option value="fitness">Khelo India Fitness Tests (/#fitness-tests)</option>
+                        <option value="khelo">Khelo India Battery & Cards (/#khelo-india)</option>
+                        <option value="school-admin">School Admin Center (/#school-admin)</option>
+                        <option value="subscription-plans">Pricing & Plans (/#pricing)</option>
+                        <option value="about">About Smart PE India (/#about)</option>
+                        <option value="contact">Contact & Support (/#contact)</option>
+                      </select>
+                    </div>
 
-                <div className="flex justify-end pt-4">
+                    {/* Current Route Fields */}
+                    {(() => {
+                      const currentOverride = seoConfig.routeOverrides?.[selectedRouteKey] || {};
+
+                      const updateRouteField = (field: keyof RouteSEOOverride, val: string) => {
+                        setSeoConfig(prev => ({
+                          ...prev,
+                          routeOverrides: {
+                            ...prev.routeOverrides,
+                            [selectedRouteKey]: {
+                              ...prev.routeOverrides?.[selectedRouteKey],
+                              [field]: val
+                            }
+                          }
+                        }));
+                      };
+
+                      return (
+                        <div className="bg-slate-50 border-2 border-slate-200 p-6 rounded-2xl space-y-5">
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                            <span className="text-xs font-black text-[#0D2B52] uppercase tracking-wider flex items-center gap-1.5">
+                              <Tag size={14} className="text-[#D4A017]" />
+                              <span>Editing: {selectedRouteKey.toUpperCase()} Route</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newOverrides = { ...(seoConfig.routeOverrides || {}) };
+                                delete newOverrides[selectedRouteKey];
+                                setSeoConfig({ ...seoConfig, routeOverrides: newOverrides });
+                                toast.info(`Reset ${selectedRouteKey} route to default`);
+                              }}
+                              className="text-[10px] font-black text-rose-600 uppercase tracking-widest hover:underline"
+                            >
+                              Reset Route
+                            </button>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Route Page Title</label>
+                            <input
+                              type="text"
+                              value={currentOverride.title || ''}
+                              onChange={e => updateRouteField('title', e.target.value)}
+                              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52]"
+                              placeholder="e.g., AI PE Lesson Plan Generator (CBSE/ICSE)"
+                            />
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">
+                              Rendered as: <code className="text-[#0D2B52]">{currentOverride.title || 'Default Title'} | {seoConfig.metaTitlePrefix || 'Smart PE India'}</code>
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Route Meta Description</label>
+                            <textarea
+                              rows={2}
+                              value={currentOverride.description || ''}
+                              onChange={e => updateRouteField('description', e.target.value)}
+                              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] resize-none"
+                              placeholder="Specific description for this route..."
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Canonical Sub-Path</label>
+                              <input
+                                type="text"
+                                value={currentOverride.canonicalPath || ''}
+                                onChange={e => updateRouteField('canonicalPath', e.target.value)}
+                                className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] font-mono"
+                                placeholder={`/#${selectedRouteKey}`}
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Route Keywords</label>
+                              <input
+                                type="text"
+                                value={currentOverride.keywords || ''}
+                                onChange={e => updateRouteField('keywords', e.target.value)}
+                                className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52]"
+                                placeholder="Route specific keywords..."
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* SOCIAL CARDS SUB-TAB */}
+                {selectedSeoSubTab === 'social' && (
+                  <div className="space-y-6 animate-in fade-in duration-200">
+                    <div>
+                      <h4 className="text-xl font-black text-[#0D2B52] uppercase tracking-tight font-display mb-1">
+                        Open Graph & Social Sharing Cards
+                      </h4>
+                      <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                        Control how shared links display on WhatsApp, Telegram, Twitter, and Facebook when parents or teachers send links.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {/* Social Preview Title */}
+                      <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Social Title (og:title)</label>
+                        <input
+                          type="text"
+                          required
+                          className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] focus:bg-white transition-all"
+                          value={seoConfig.socialTitle}
+                          onChange={e => setSeoConfig({ ...seoConfig, socialTitle: e.target.value })}
+                          placeholder="Catchy sharing title..."
+                        />
+                      </div>
+
+                      {/* Twitter Handle */}
+                      <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Twitter Handle (twitter:site)</label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] focus:bg-white transition-all"
+                          value={seoConfig.twitterHandle || '@smartpeindia'}
+                          onChange={e => setSeoConfig({ ...seoConfig, twitterHandle: e.target.value })}
+                          placeholder="@smartpeindia"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Social Description */}
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Social Description (og:description)</label>
+                      <textarea
+                        rows={3}
+                        required
+                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] focus:bg-white transition-all resize-none"
+                        value={seoConfig.socialDescription}
+                        onChange={e => setSeoConfig({ ...seoConfig, socialDescription: e.target.value })}
+                        placeholder="Short copy specifically written to drive click-throughs on social networks..."
+                      />
+                    </div>
+
+                    {/* Social Image URL & Preset Selection */}
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Social Image Banner URL (og:image)</label>
+                      <div className="relative mb-3">
+                        <Link className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                          type="text"
+                          required
+                          className="w-full pl-12 pr-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-[#0D2B52] focus:bg-white transition-all"
+                          value={seoConfig.socialImageUrl}
+                          onChange={e => setSeoConfig({ ...seoConfig, socialImageUrl: e.target.value })}
+                          placeholder="https://..."
+                        />
+                      </div>
+
+                      {/* Preset Image Options */}
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Or select a high-res PE preset image:</span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[
+                          { label: 'PE Sports Action', url: 'https://images.unsplash.com/photo-1594882645126-14020914d58d?q=80&w=1200&auto=format&fit=crop' },
+                          { label: 'School Playground', url: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop' },
+                          { label: 'Fitness Battery', url: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?q=80&w=1200&auto=format&fit=crop' },
+                          { label: 'Athletics & Track', url: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1200&auto=format&fit=crop' }
+                        ].map((preset, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setSeoConfig({ ...seoConfig, socialImageUrl: preset.url })}
+                            className={`p-2 border-2 rounded-xl text-left overflow-hidden transition-all group ${
+                              seoConfig.socialImageUrl === preset.url ? 'border-[#0D2B52] bg-[#0D2B52]/5' : 'border-slate-200 bg-white hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="aspect-video w-full rounded-lg overflow-hidden mb-1.5 bg-slate-100 relative">
+                              <img src={preset.url} alt={preset.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-800 block truncate">{preset.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end pt-4 border-t border-slate-100">
                   <button
                     type="submit"
                     disabled={seoLoading}
-                    className="px-8 py-4 bg-[#3B82F6] text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-650 transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] flex items-center justify-center gap-2 min-w-[200px]"
+                    className="px-8 py-4 bg-[#0D2B52] text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#164077] transition-all shadow-[4px_4px_0px_0px_rgba(13,43,82,1)] flex items-center justify-center gap-2 min-w-[200px]"
                   >
                     {seoLoading ? (
                       <>
                         <Loader2 className="animate-spin" size={16} />
-                        <span>Saving...</span>
+                        <span>Syncing & Saving...</span>
                       </>
                     ) : (
                       <>
-                        <Globe size={16} />
-                        <span>Save SEO Settings</span>
+                        <Globe size={16} className="text-[#D4A017]" />
+                        <span>Save All SEO Settings</span>
                       </>
                     )}
                   </button>
@@ -1110,100 +1387,212 @@ Friday Period 3: Grade 7B - Fitness`;
               </form>
             </div>
 
-            {/* Sidebar Column: Previews and Helpers */}
+            {/* Sidebar Column: Previews, Sitemap & Robots.txt */}
             <div className="lg:col-span-1 space-y-6">
-              {/* WhatsApp & Social Cards Mockup */}
-              <div className="bg-white border-2 border-slate-900 p-6 rounded-[2.5rem] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] space-y-4">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Live Social Card Preview</span>
-                
-                <div className="border border-slate-100 rounded-2xl bg-slate-50 overflow-hidden shadow-sm">
-                  {/* Mock browser header */}
-                  <div className="bg-slate-200/50 px-4 py-2 border-b border-slate-100 flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 rounded-full bg-slate-300 block" />
-                      <span className="w-2 h-2 rounded-full bg-slate-300 block" />
-                      <span className="w-2 h-2 rounded-full bg-slate-300 block" />
-                    </div>
-                    <div className="bg-white/80 rounded px-2 py-0.5 text-[9px] text-slate-400 font-bold truncate flex-1 flex items-center gap-1">
-                      <Globe size={8} />
-                      <span>{seoConfig.canonicalUrl || 'smartpeindia.app'}</span>
+              <div className="bg-white border-4 border-slate-900 p-6 rounded-[2.5rem] shadow-[6px_6px_0px_0px_rgba(13,43,82,0.15)] space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <span className="text-xs font-black text-[#0D2B52] uppercase tracking-wider flex items-center gap-1.5">
+                    <Eye size={16} className="text-[#D4A017]" />
+                    <span>Live SEO Inspector</span>
+                  </span>
+                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[9px] font-black uppercase tracking-widest">
+                    LIVE
+                  </span>
+                </div>
+
+                {/* Preview Mode Switcher */}
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setSeoPreviewMode('google')}
+                    className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
+                      seoPreviewMode === 'google' ? 'bg-[#0D2B52] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Google Search
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSeoPreviewMode('social')}
+                    className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
+                      seoPreviewMode === 'social' ? 'bg-[#0D2B52] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    WhatsApp Card
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSeoPreviewMode('sitemap')}
+                    className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
+                      seoPreviewMode === 'sitemap' ? 'bg-[#0D2B52] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    XML Sitemap
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSeoPreviewMode('robots')}
+                    className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
+                      seoPreviewMode === 'robots' ? 'bg-[#0D2B52] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    robots.txt
+                  </button>
+                </div>
+
+                {/* GOOGLE SEARCH PREVIEW */}
+                {seoPreviewMode === 'google' && (
+                  <div className="space-y-3 animate-in fade-in duration-200">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Google Search Result Snippet</span>
+                    
+                    <div className="p-4 bg-white border-2 border-slate-200 rounded-2xl space-y-1.5 shadow-sm">
+                      <div className="text-[11px] text-[#006621] font-mono font-medium truncate flex items-center gap-1">
+                        <Globe size={10} />
+                        <span>{(seoConfig.canonicalUrl || 'https://smartpeindia.app/').replace(/\/$/, '')}{selectedSeoSubTab === 'routes' ? (seoConfig.routeOverrides?.[selectedRouteKey]?.canonicalPath || `/#${selectedRouteKey}`) : ''}</span>
+                      </div>
+
+                      <h5 className="text-blue-800 hover:underline font-medium text-sm leading-snug cursor-pointer font-sans">
+                        {selectedSeoSubTab === 'routes' && seoConfig.routeOverrides?.[selectedRouteKey]?.title
+                          ? `${seoConfig.routeOverrides[selectedRouteKey].title} | ${seoConfig.metaTitlePrefix || 'Smart PE India'}`
+                          : `${seoConfig.metaTitlePrefix || 'Smart PE India'} - India's #1 AI Platform for PE Teachers`}
+                      </h5>
+
+                      <p className="text-xs text-slate-600 font-normal leading-normal line-clamp-3">
+                        {selectedSeoSubTab === 'routes' && seoConfig.routeOverrides?.[selectedRouteKey]?.description
+                          ? seoConfig.routeOverrides[selectedRouteKey].description
+                          : seoConfig.metaDescription}
+                      </p>
+
+                      {/* Google Sitelinks */}
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[10px] text-blue-800 font-medium">
+                        <span className="hover:underline cursor-pointer">PE Lesson Planner</span>
+                        <span className="hover:underline cursor-pointer">Khelo India Tests</span>
+                        <span className="hover:underline cursor-pointer">School Admin</span>
+                        <span className="hover:underline cursor-pointer">Pricing Plans</span>
+                      </div>
                     </div>
                   </div>
+                )}
 
-                  {/* Mock Shared Preview */}
-                  <div className="p-4 bg-slate-100/50">
-                    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow transition-shadow">
-                      {seoConfig.socialImageUrl ? (
-                        <div className="aspect-[1.91/1] w-full bg-slate-200 relative overflow-hidden">
-                          <img
-                            src={seoConfig.socialImageUrl}
-                            alt="Social Preview Banner"
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        </div>
-                      ) : (
-                        <div className="aspect-[1.91/1] w-full bg-indigo-50 flex items-center justify-center border-b border-slate-100">
-                          <Globe size={40} className="text-indigo-200" />
-                        </div>
-                      )}
-                      
-                      <div className="p-4 space-y-1.5">
-                        <span className="text-[9px] font-black uppercase text-[#3B82F6] tracking-widest block">
-                          {seoConfig.metaTitlePrefix || 'Smart PE India'}
-                        </span>
-                        <h5 className="font-bold text-xs text-slate-800 line-clamp-1">
-                          {seoConfig.socialTitle || 'No title configured'}
-                        </h5>
-                        <p className="text-[10px] text-slate-500 font-semibold leading-normal line-clamp-2">
-                          {seoConfig.socialDescription || 'Specify a custom social preview description in the form.'}
-                        </p>
-                        <div className="text-[9px] text-slate-400 font-bold flex items-center gap-1 pt-1.5 border-t border-slate-50 uppercase tracking-widest">
-                          <Link size={8} />
-                          <span>{seoConfig.canonicalUrl?.replace('https://', '') || 'smartpeindia.app'}</span>
+                {/* WHATSAPP / SOCIAL CARD PREVIEW */}
+                {seoPreviewMode === 'social' && (
+                  <div className="space-y-3 animate-in fade-in duration-200">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">WhatsApp & Chat Card Preview</span>
+
+                    <div className="bg-slate-100/80 p-3 rounded-2xl border border-slate-200">
+                      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                        {seoConfig.socialImageUrl ? (
+                          <div className="aspect-[1.91/1] w-full bg-slate-200 relative overflow-hidden">
+                            <img
+                              src={seoConfig.socialImageUrl}
+                              alt="Social Preview Banner"
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                        ) : (
+                          <div className="aspect-[1.91/1] w-full bg-[#0D2B52]/10 flex items-center justify-center">
+                            <Globe size={40} className="text-[#0D2B52]/40" />
+                          </div>
+                        )}
+
+                        <div className="p-3.5 space-y-1">
+                          <span className="text-[9px] font-black uppercase text-[#0D2B52] tracking-widest block">
+                            {seoConfig.metaTitlePrefix || 'Smart PE India'}
+                          </span>
+                          <h5 className="font-bold text-xs text-slate-800 line-clamp-1">
+                            {seoConfig.socialTitle || 'Smart PE India - PE Teacher Platform'}
+                          </h5>
+                          <p className="text-[10px] text-slate-500 font-medium leading-relaxed line-clamp-2">
+                            {seoConfig.socialDescription || 'Generate CBSE/ICSE PE lesson plans in seconds.'}
+                          </p>
+                          <div className="text-[9px] text-slate-400 font-bold flex items-center gap-1 pt-1.5 border-t border-slate-100 uppercase tracking-widest font-mono">
+                            <Link size={8} />
+                            <span>{(seoConfig.canonicalUrl || 'https://smartpeindia.app/').replace('https://', '').replace(/\/$/, '')}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-2xl text-amber-850 space-y-1 text-xs">
-                  <span className="font-bold block uppercase tracking-tight text-[10px]">What is this?</span>
-                  <p className="font-medium leading-relaxed text-amber-900/80">
-                    This mock represents how your shared fitness report cards, teacher planners, or CBSE timetables look when parents or administrators paste them into chat engines like WhatsApp, Telegram, or LinkedIn.
-                  </p>
-                </div>
-              </div>
+                {/* DYNAMIC XML SITEMAP PREVIEW */}
+                {seoPreviewMode === 'sitemap' && (
+                  <div className="space-y-3 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Generated XML Sitemap</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>${seoConfig.canonicalUrl || 'https://smartpeindia.app/'}</loc>\n    <priority>1.0</priority>\n  </url>\n</urlset>`;
+                          navigator.clipboard.writeText(xml);
+                          setCopiedText('xml');
+                          toast.success("XML Sitemap copied to clipboard!");
+                          setTimeout(() => setCopiedText(null), 2000);
+                        }}
+                        className="text-[10px] font-black text-[#0D2B52] uppercase tracking-wider flex items-center gap-1 hover:underline"
+                      >
+                        {copiedText === 'xml' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                        <span>{copiedText === 'xml' ? 'Copied!' : 'Copy XML'}</span>
+                      </button>
+                    </div>
 
-              {/* Dynamic Sitemap Generator */}
-              <div className="bg-slate-900 border-2 border-slate-950 p-6 rounded-[2.5rem] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] text-white space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Generated XML Sitemap Preview</span>
-                  <span className="px-2 py-0.5 bg-indigo-600 text-white rounded text-[8px] font-black">DYNAMIC</span>
-                </div>
-
-                <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 font-mono text-[9px] text-emerald-400 overflow-x-auto space-y-1 select-all scrollbar-thin">
-                  <div>&lt;urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"&gt;</div>
-                  <div className="pl-4 text-slate-500">&lt;!-- Homepage --&gt;</div>
-                  <div className="pl-4">&lt;url&gt;</div>
-                  <div className="pl-8">&lt;loc&gt;{seoConfig.canonicalUrl || 'https://smartpeindia.app/'}&lt;/loc&gt;</div>
-                  <div className="pl-8">&lt;priority&gt;1.0&lt;/priority&gt;</div>
-                  <div className="pl-4">&lt;/url&gt;</div>
-                  {seoConfig.sitemapActive && (
-                    <>
-                      <div className="pl-4 text-slate-500">&lt;!-- Custom PE Planner Sub-Route --&gt;</div>
+                    <div className="bg-slate-900 border-2 border-slate-950 p-4 rounded-2xl font-mono text-[9px] text-emerald-400 space-y-1 overflow-x-auto max-h-[220px] select-all scrollbar-thin">
+                      <div>&lt;?xml version="1.0" encoding="UTF-8"?&gt;</div>
+                      <div>&lt;urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"&gt;</div>
+                      <div className="pl-4 text-slate-500">&lt;!-- Target Domain: smartpeindia.app --&gt;</div>
                       <div className="pl-4">&lt;url&gt;</div>
-                      <div className="pl-8">&lt;loc&gt;{seoConfig.canonicalUrl || 'https://smartpeindia.app/'}#lesson-planner&lt;/loc&gt;</div>
-                      <div className="pl-8">&lt;priority&gt;0.9&lt;/priority&gt;</div>
+                      <div className="pl-8">&lt;loc&gt;{seoConfig.canonicalUrl || 'https://smartpeindia.app/'}&lt;/loc&gt;</div>
+                      <div className="pl-8">&lt;priority&gt;1.0&lt;/priority&gt;</div>
                       <div className="pl-4">&lt;/url&gt;</div>
-                    </>
-                  )}
-                  <div>&lt;/urlset&gt;</div>
-                </div>
+                      {['planner', 'yearly', 'fitness', 'khelo', 'school-admin', 'subscription-plans', 'about', 'contact'].map(rKey => (
+                        <React.Fragment key={rKey}>
+                          <div className="pl-4">&lt;url&gt;</div>
+                          <div className="pl-8">&lt;loc&gt;{(seoConfig.canonicalUrl || 'https://smartpeindia.app/').replace(/\/$/, '')}/#{rKey}&lt;/loc&gt;</div>
+                          <div className="pl-8">&lt;priority&gt;0.8&lt;/priority&gt;</div>
+                          <div className="pl-4">&lt;/url&gt;</div>
+                        </React.Fragment>
+                      ))}
+                      <div>&lt;/urlset&gt;</div>
+                    </div>
+                  </div>
+                )}
 
-                <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
-                  This XML feeds crawlers like Googlebot precisely structured index entry points. Fully optimized to support class indexations!
-                </p>
+                {/* ROBOTS.TXT PREVIEW */}
+                {seoPreviewMode === 'robots' && (
+                  <div className="space-y-3 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">robots.txt Directives</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const txt = `User-agent: *\n${seoConfig.allowCrawling ? 'Allow: /' : 'Disallow: /'}\nSitemap: ${(seoConfig.canonicalUrl || 'https://smartpeindia.app/').replace(/\/$/, '')}/sitemap.xml`;
+                          navigator.clipboard.writeText(txt);
+                          setCopiedText('robots');
+                          toast.success("robots.txt copied to clipboard!");
+                          setTimeout(() => setCopiedText(null), 2000);
+                        }}
+                        className="text-[10px] font-black text-[#0D2B52] uppercase tracking-wider flex items-center gap-1 hover:underline"
+                      >
+                        {copiedText === 'robots' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                        <span>{copiedText === 'robots' ? 'Copied!' : 'Copy Text'}</span>
+                      </button>
+                    </div>
+
+                    <div className="bg-slate-900 border-2 border-slate-950 p-4 rounded-2xl font-mono text-[10px] text-emerald-400 space-y-1.5 select-all">
+                      <div>User-agent: *</div>
+                      <div className={seoConfig.allowCrawling ? 'text-emerald-400' : 'text-rose-400'}>
+                        {seoConfig.allowCrawling ? 'Allow: /' : 'Disallow: /'}
+                      </div>
+                      <div className="text-slate-400 pt-1">
+                        Sitemap: {(seoConfig.canonicalUrl || 'https://smartpeindia.app/').replace(/\/$/, '')}/sitemap.xml
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -259,7 +259,7 @@ const Dashboard: React.FC<{
   const getIcon = (type: string) => {
     switch (type) {
       case 'Lesson Plan': return <FileText className="text-indigo-500" />;
-      case 'Theory': return <GraduationCap className="text-rose-500" />;
+      case 'Theory': return <GraduationCap className="text-indigo-600" />;
       case 'Skill': return <Target className="text-emerald-500" />;
       case 'Rule': return <Book className="text-amber-500" />;
       case 'Tool': return <Activity className="text-indigo-600" />;
@@ -269,136 +269,169 @@ const Dashboard: React.FC<{
   };
 
   return (
-    <div className="space-y-16 pb-32 overflow-x-hidden">
-      {/* Split Hero Section */}
-      <section className="relative min-h-[60vh] lg:min-h-[85vh] grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center overflow-hidden rounded-[2.5rem] md:rounded-[4rem] bg-[#FFFDF9] border-4 border-slate-900 p-6 md:p-16 shadow-[12px_12px_0px_0px_rgba(10,28,42,1)]">
-        {/* Background Grid */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-        
-        {/* Left Side: Copy and details conforming to Image 1 */}
-        <div className="lg:col-span-7 relative z-10 space-y-8 text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00] animate-ping"></span>
-            <span className="text-[10px] font-black uppercase text-[#FF6B00] tracking-widest">Digital PE Department • Built for Indian Schools</span>
+    <div className="space-y-6 md:space-y-10 pb-20 overflow-x-hidden relative">
+      {/* Persistent Compact Floating Action Toolbar */}
+      <div className="sticky top-1 sm:top-2 z-30 w-full mb-2">
+        <div className="bg-[#0D2B52]/95 backdrop-blur-md text-white border-2 border-slate-900 rounded-2xl sm:rounded-full p-2 px-3 sm:px-4 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] flex items-center justify-between gap-2.5 overflow-x-auto custom-scrollbar">
+          <div className="flex items-center gap-2 shrink-0 pr-2 border-r border-slate-700/80">
+            <span className="w-2 h-2 rounded-full bg-[#D4A017] animate-pulse"></span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4A017] whitespace-nowrap">Quick Tools</span>
           </div>
 
-          <div className="space-y-4">
-            <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-[5.5rem] font-black tracking-tighter leading-[0.9] text-slate-900 uppercase">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar py-0.5">
+            {[
+              { id: 'planner', label: 'Generate Lesson', icon: Sparkles, color: 'bg-[#D4A017] text-slate-900 hover:bg-[#e0b028] shadow-xs' },
+              { id: 'fitness', label: 'Fitness Test', icon: Activity, color: 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40' },
+              { id: 'testpaper', label: 'Question Paper', icon: ClipboardList, color: 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/40' },
+              { id: 'principal-dashboard', label: 'Principal Report', icon: ShieldCheck, color: 'bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 border border-sky-500/40' },
+              { id: 'parentletters', label: 'Parent Notice', icon: Mail, color: 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40' },
+              { id: 'widgets', label: 'PE Timers', icon: Zap, color: 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/40' }
+            ].map((tool) => {
+              const IconComp = tool.icon;
+              return (
+                <button
+                  key={tool.id}
+                  onClick={() => onNavigate?.(tool.id)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl sm:rounded-full text-[10.5px] font-black uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 cursor-pointer shrink-0 ${tool.color}`}
+                >
+                  <IconComp size={13} className="shrink-0" />
+                  <span>{tool.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Compact Split Hero Section - Fits Above The Fold */}
+      <section className="relative grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center overflow-hidden rounded-[2rem] md:rounded-[3rem] bg-[#F5F7FA] border-4 border-slate-900 p-5 md:p-8 lg:p-9 shadow-[8px_8px_0px_0px_rgba(13,43,82,1)]">
+        {/* Background Grid */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#0D2B52 1px, transparent 1px), linear-gradient(90deg, #0D2B52 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+        
+        {/* Left Side: Copy and details conforming to Official Brand Identity */}
+        <div className="lg:col-span-7 relative z-10 space-y-4 md:space-y-5 text-left">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#D4A017]/15 border border-[#D4A017]/40 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-[#D4A017] animate-ping"></span>
+            <span className="text-[9.5px] font-black uppercase text-[#0D2B52] tracking-widest">Digital PE Department • Built for Indian Schools</span>
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-[3.5rem] font-black font-display tracking-tighter leading-[0.95] text-[#0D2B52] uppercase">
               The Digital <br className="hidden md:block"/>
               PE Department.<br/>
-              <span className="text-indigo-600">School-Ready.</span>
+              <span className="text-[#D4A017]">School-Ready.</span>
             </h1>
             
-            <p className="text-sm sm:text-base md:text-lg text-slate-600 max-w-xl leading-relaxed font-semibold">
+            <p className="text-xs sm:text-sm text-[#333333] max-w-lg leading-relaxed font-medium">
               Plan PE lessons, track student fitness, assess practical performance, and maintain school-ready records &mdash; all in one place. Built specifically for physical education teachers, coordinators, and school principals in India.
             </p>
           </div>
 
-          {/* Action Buttons to match Image 1 */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          {/* Action Buttons with Brand Styling */}
+          <div className="flex flex-col sm:flex-row gap-3">
             <button 
               onClick={() => onNavigate?.('planner')}
-              className="group w-full sm:w-auto px-8 py-5 bg-[#FF6B00] text-white rounded-full font-black text-xs uppercase tracking-widest transition-all hover:bg-orange-600 hover:-translate-y-0.5 active:translate-y-0 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] border-2 border-slate-900 text-center flex items-center justify-center space-x-2"
+              className="group w-full sm:w-auto px-6 py-3.5 bg-[#0D2B52] text-white rounded-full font-black text-xs uppercase tracking-wider transition-all hover:bg-[#164077] hover:-translate-y-0.5 active:translate-y-0 shadow-[3px_3px_0px_0px_rgba(13,43,82,1)] border-2 border-slate-900 text-center flex items-center justify-center space-x-2 cursor-pointer"
             >
               <span>Get Started for Free</span>
-              <span className="font-sans font-black text-sm">&rarr;</span>
+              <span className="font-sans font-black text-sm text-[#D4A017]">&rarr;</span>
             </button>
             
             <button 
               onClick={() => onNavigate?.('tools')}
-              className="w-full sm:w-auto px-8 py-5 bg-white border-2 border-slate-250 text-slate-800 rounded-full font-black text-xs uppercase tracking-widest hover:border-slate-900 hover:text-slate-950 hover:bg-slate-50 transition-all text-center flex items-center justify-center"
+              className="w-full sm:w-auto px-6 py-3.5 bg-white border-2 border-[#0D2B52]/30 text-[#0D2B52] rounded-full font-black text-xs uppercase tracking-wider hover:border-[#0D2B52] hover:bg-slate-50 transition-all text-center flex items-center justify-center cursor-pointer"
             >
-              Explore the Platform
+              Explore Platform
             </button>
           </div>
 
           {/* Underneath columns representing three keys */}
-          <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-200">
+          <div className="grid grid-cols-3 gap-3 pt-3.5 border-t border-slate-200">
             {[
-              { num: '01', title: 'Plan PE Lessons', desc: 'Syllabus and plans in 60 seconds' },
-              { num: '02', title: 'Track Fitness', desc: 'Pre-loaded Khelo India batteries' },
-              { num: '03', title: 'School Reports', desc: 'Print-ready compliance and audits' }
+              { num: '01', title: 'Plan PE Lessons', desc: 'Syllabus and plans in 60s' },
+              { num: '02', title: 'Track Fitness', desc: 'Pre-loaded Khelo India' },
+              { num: '03', title: 'School Reports', desc: 'Print-ready compliance' }
             ].map((col, idx) => (
-              <div key={idx} className="space-y-1">
-                <span className="text-[10px] font-black text-slate-400 block">{col.num}</span>
-                <h4 className="font-black text-slate-900 uppercase tracking-tight text-xs md:text-sm">{col.title}</h4>
-                <p className="text-[10px] text-slate-500 font-medium">{col.desc}</p>
+              <div key={idx} className="space-y-0.5">
+                <span className="text-[9px] font-black text-[#D4A017] block">{col.num}</span>
+                <h4 className="font-black text-[#0D2B52] uppercase tracking-tight text-xs font-display">{col.title}</h4>
+                <p className="text-[9.5px] text-slate-600 font-medium leading-tight">{col.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Right Side: High fidelity mock scene matching Image 1 */}
-        <div className="lg:col-span-5 relative h-[500px] w-full flex items-center justify-center">
-          <div className="absolute inset-0 bg-[#E2F1FF] rounded-[2.5rem] border-4 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] overflow-hidden">
+        {/* Right Side: High fidelity mock scene */}
+        <div className="lg:col-span-5 relative h-[310px] sm:h-[340px] md:h-[370px] lg:h-[390px] w-full flex items-center justify-center">
+          <div className="absolute inset-0 bg-[#0D2B52] rounded-[2rem] border-4 border-slate-900 shadow-[6px_6px_0px_0px_rgba(13,43,82,1)] overflow-hidden">
             {/* Simulation of a school field atmosphere */}
-            <div className="absolute inset-0 bg-cover bg-center opacity-85" style={{ backgroundImage: 'linear-gradient(rgba(10,28,42,0.1), rgba(10,28,42,0.4)), url("https://images.unsplash.com/photo-1544698310-74ea9d1c8258?auto=format&fit=crop&q=80&w=1000")' }}></div>
+            <div className="absolute inset-0 bg-cover bg-center opacity-75" style={{ backgroundImage: 'linear-gradient(rgba(13,43,82,0.4), rgba(7,25,51,0.85)), url("https://images.unsplash.com/photo-1544698310-74ea9d1c8258?auto=format&fit=crop&q=80&w=1000")' }}></div>
             
             {/* Top-Left transparent pill: PLAN-TEACH-TRACK */}
-            <div className="absolute top-6 left-6 py-1 px-3 bg-white/25 backdrop-blur-md rounded-full border border-white/20">
-              <span className="text-[9px] font-black uppercase text-white tracking-widest flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00]"></span>
+            <div className="absolute top-4 left-4 py-1 px-2.5 bg-white/15 backdrop-blur-md rounded-full border border-white/20">
+              <span className="text-[8.5px] font-black uppercase text-white tracking-widest flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D4A017]"></span>
                 Plan • Teach • Track
               </span>
             </div>
 
             {/* Float generated card at top-right */}
-            <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white max-w-[200px] md:max-w-[240px] z-20 animate-bounce-subtle">
-              <div className="flex items-start gap-2.5">
-                <span className="w-8 h-8 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-[#FF6B00] font-black">
-                  <Sparkles size={16} />
+            <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md rounded-xl p-3 shadow-xl border border-white max-w-[190px] z-20">
+              <div className="flex items-start gap-2">
+                <span className="w-7 h-7 rounded-lg bg-[#D4A017]/15 border border-[#D4A017]/30 flex items-center justify-center text-[#D4A017] font-black shrink-0">
+                  <Sparkles size={14} />
                 </span>
                 <div className="space-y-0.5">
-                  <h4 className="text-[11px] font-black uppercase text-slate-900 leading-none">Lesson generated</h4>
-                  <p className="text-[9px] text-slate-500 font-semibold leading-tight">Grade 8 &bull; Athletics &bull; 47s</p>
+                  <h4 className="text-[10px] font-black uppercase text-slate-900 leading-none">Lesson generated</h4>
+                  <p className="text-[8.5px] text-slate-500 font-semibold leading-tight">Grade 8 &bull; Athletics &bull; 47s</p>
                 </div>
               </div>
               {/* Progress bar simulation */}
-              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
                 <motion.div 
                   initial={{ width: "2%" }}
                   animate={{ width: ["10%", "95%", "95%"] }}
                   transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                  className="bg-[#FF6B00] h-full rounded-full"
+                  className="bg-[#D4A017] h-full rounded-full"
                 ></motion.div>
               </div>
             </div>
 
             {/* Beautiful illustration layers */}
-            <div className="absolute inset-x-6 bottom-6 flex justify-between items-end">
-              <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#001D3D] border border-white shadow-md">
+            <div className="absolute inset-x-4 bottom-4 flex justify-between items-end">
+              <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-[#0D2B52] border border-white shadow-md">
                 🇮🇳 Indian classroom
               </div>
-              <div className="bg-[#001D3D]/95 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 border border-slate-800 shadow-md">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <div className="bg-[#0D2B52]/95 text-white px-3 py-1.5 rounded-lg text-[8.5px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-slate-700 shadow-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D4A017] animate-pulse"></span>
                 <span>Live v4.0</span>
               </div>
             </div>
             
             {/* Big center action logo watermark */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-              <Logo showText={false} className="scale-[3.5] rotate-12" />
+              <Logo showText={false} className="scale-[2.5] rotate-12" />
             </div>
           </div>
         </div>
       </section>
 
       {/* 🌟 SCHOOL-READY PITCH, WORKFLOW & PROOF CENTER */}
-      <section className="bg-gradient-to-br from-[#FFFDF9] via-white to-slate-50 border-4 border-slate-900 rounded-[3.5rem] p-8 md:p-14 space-y-16 relative overflow-hidden shadow-[12px_12px_0px_0px_rgba(15,23,42,1)]">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+      <section className="bg-gradient-to-br from-[#F5F7FA] via-white to-slate-50 border-4 border-slate-900 rounded-[3.5rem] p-8 md:p-14 space-y-16 relative overflow-hidden shadow-[12px_12px_0px_0px_rgba(13,43,82,1)]">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#0D2B52]/5 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#D4A017]/10 rounded-full blur-[120px] pointer-events-none"></div>
 
         {/* Section Header */}
         <div className="text-center space-y-4 max-w-2xl mx-auto pb-6 border-b-4 border-slate-900">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-indigo-600/10 border border-indigo-600/20 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
-            <span className="text-[10px] font-black uppercase text-indigo-700 tracking-widest">School Integration Suite</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-[#0D2B52]/10 border border-[#0D2B52]/20 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-[#D4A017]"></span>
+            <span className="text-[10px] font-black uppercase text-[#0D2B52] tracking-widest">School Integration Suite</span>
           </div>
-          <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">
+          <h2 className="text-3xl md:text-5xl font-black text-[#0D2B52] tracking-tighter uppercase leading-[0.9] font-display">
             The School-Ready <br />
-            <span className="text-indigo-600 font-black">PE Operating Pitch.</span>
+            <span className="text-[#D4A017] font-black">PE Operating Pitch.</span>
           </h2>
-          <p className="text-xs md:text-sm text-slate-500 font-bold leading-relaxed">
+          <p className="text-xs md:text-sm text-[#333333] font-medium leading-relaxed">
             Discover why leading Indian schools are replacing chaotic registers with SmartPE. Here is exactly who it is built for, how the workflow operates, and what you get.
           </p>
         </div>
@@ -406,9 +439,9 @@ const Dashboard: React.FC<{
         {/* 1. Who Should Adopt It First (Stakeholder Engagement) */}
         <div className="space-y-8">
           <div className="text-center">
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#FF6B00]">STAGE 1: ADOPTION</span>
-            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mt-1">1. Who Is SmartPE Built For?</h3>
-            <p className="text-xs text-slate-500 font-semibold max-w-lg mx-auto">Click on your role below to see how SmartPE specifically transforms your daily school physical education responsibilities.</p>
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#D4A017]">STAGE 1: ADOPTION</span>
+            <h3 className="text-2xl font-black text-[#0D2B52] uppercase tracking-tight mt-1 font-display">1. Who Is SmartPE Built For?</h3>
+            <p className="text-xs text-slate-600 font-semibold max-w-lg mx-auto">Click on your role below to see how SmartPE specifically transforms your daily school physical education responsibilities.</p>
           </div>
 
           <div className="grid grid-cols-3 max-w-xl mx-auto bg-slate-100 p-2 rounded-2xl border-2 border-slate-900 gap-1">
@@ -426,11 +459,11 @@ const Dashboard: React.FC<{
                   onClick={() => setPitchRoleTab(role.id as any)}
                   className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 ${
                     isSelected
-                      ? 'bg-[#FF6B00] text-white border-slate-900 shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] font-black'
+                      ? 'bg-[#0D2B52] text-white border-slate-900 shadow-[3px_3px_0px_0px_rgba(13,43,82,1)] font-black'
                       : 'bg-white text-slate-750 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
-                  <Icon size={14} />
+                  <Icon size={14} className={isSelected ? 'text-[#D4A017]' : 'text-slate-500'} />
                   <span className="hidden sm:inline">{role.label}</span>
                 </button>
               );
@@ -445,8 +478,8 @@ const Dashboard: React.FC<{
                 className="grid grid-cols-1 md:grid-cols-12 bg-white border-4 border-slate-900 rounded-[2.5rem] p-6 md:p-10 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] items-center gap-8"
               >
                 <div className="md:col-span-7 space-y-4">
-                  <span className="px-3 py-1 bg-orange-100 text-[#FF6B00] rounded-lg text-[9px] font-black uppercase tracking-wider">For On-Ground Teachers</span>
-                  <h4 className="text-2xl font-black text-slate-900 uppercase">Save Your Evenings: Draft CBSE Plans Instantly</h4>
+                  <span className="px-3 py-1 bg-[#D4A017]/15 text-[#0D2B52] rounded-lg text-[9px] font-black uppercase tracking-wider">For On-Ground Teachers</span>
+                  <h4 className="text-2xl font-black text-[#0D2B52] uppercase font-display">Save Your Evenings: Draft CBSE Plans Instantly</h4>
                   <p className="text-xs text-slate-600 font-medium leading-relaxed">
                     PE Teachers shouldn't spend hours writing repetitive physical education lesson diaries. SmartPE is your daily sidekick on the field.
                   </p>
@@ -849,7 +882,7 @@ const Dashboard: React.FC<{
                 <div className="space-y-6 animate-in fade-in duration-300 font-bold">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-slate-200 pb-4 gap-2">
                     <div>
-                      <span className="text-[9px] font-black uppercase text-rose-600 tracking-wider">GOVERNANCE & AUDIT REPORT</span>
+                      <span className="text-[9px] font-black uppercase text-indigo-600 tracking-wider">GOVERNANCE & AUDIT REPORT</span>
                       <h5 className="text-lg md:text-xl font-black uppercase tracking-tight text-slate-900">BOARD COMPLIANCE & INSPECTION CHECKSHEET</h5>
                     </div>
                     <div className="text-left sm:text-right text-[10px] font-mono text-slate-500 font-semibold space-y-0.5">
@@ -874,7 +907,7 @@ const Dashboard: React.FC<{
                       <p className="text-[10px] font-semibold text-slate-500 leading-tight">Every student profile contains recorded baseline, midline and final marks.</p>
                     </div>
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                      <span className="text-[9px] font-black uppercase text-rose-600">Audit Evidence</span>
+                      <span className="text-[9px] font-black uppercase text-amber-600">Audit Evidence</span>
                       <p className="text-2xl font-black text-slate-900">Present</p>
                       <p className="text-[10px] font-semibold text-slate-500 leading-tight">All digital diaries signed, timestamps locked, and secure.</p>
                     </div>
@@ -1049,7 +1082,7 @@ const Dashboard: React.FC<{
           </div>
         </div>
         <div className="bg-white border-4 border-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-8 flex items-center gap-4 md:gap-6 shadow-[8px_8px_0px_0px_rgba(15,23,42,0.05)]">
-          <div className="w-12 h-12 md:w-16 md:h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 flex-shrink-0">
+          <div className="w-12 h-12 md:w-16 md:h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 flex-shrink-0">
             <Activity className="w-6 h-6 md:w-8 md:h-8" />
           </div>
           <div>
@@ -1378,12 +1411,12 @@ const Dashboard: React.FC<{
                       <p className="text-[10px] text-slate-400 font-bold">Full Syllabus Covered</p>
                     </div>
 
-                    <div className="bg-orange-50 border-4 border-slate-900 rounded-[2rem] p-6 text-center space-y-1">
-                      <span className="text-xs font-black text-orange-400 uppercase">Active Generated Plans</span>
-                      <p className="text-3xl font-black text-orange-950 uppercase">
+                    <div className="bg-[#D4A017]/10 border-4 border-slate-900 rounded-[2rem] p-6 text-center space-y-1">
+                      <span className="text-xs font-black text-[#0D2B52] uppercase">Active Generated Plans</span>
+                      <p className="text-3xl font-black text-[#0D2B52] uppercase">
                         {history.filter(h => h.type === 'Lesson Plan').length} Plans
                       </p>
-                      <p className="text-[10px] text-slate-400 font-bold">Saved in Local Vault</p>
+                      <p className="text-[10px] text-slate-500 font-bold">Saved in Local Vault</p>
                     </div>
 
                     {/* Overall Progress Calculator */}
@@ -1403,11 +1436,11 @@ const Dashboard: React.FC<{
                       const totalPercentage = Math.min(100, Math.round((totalCount / totalTarget) * 100));
 
                       return (
-                        <div className="bg-blue-50 border-4 border-slate-900 rounded-[2rem] p-6 text-center space-y-1">
-                          <span className="text-xs font-black text-blue-400 uppercase">Overall Completion</span>
-                          <p className="text-3xl font-black text-blue-950 uppercase">{totalPercentage}%</p>
+                        <div className="bg-[#0D2B52]/10 border-4 border-slate-900 rounded-[2rem] p-6 text-center space-y-1">
+                          <span className="text-xs font-black text-[#0D2B52] uppercase">Overall Completion</span>
+                          <p className="text-3xl font-black text-[#0D2B52] uppercase">{totalPercentage}%</p>
                           <div className="w-full h-2 bg-slate-200 border border-slate-900 rounded-full overflow-hidden p-[1px] mt-1">
-                            <div className="h-full bg-blue-600 rounded-full" style={{ width: `${totalPercentage}%` }}></div>
+                            <div className="h-full bg-[#0D2B52] rounded-full" style={{ width: `${totalPercentage}%` }}></div>
                           </div>
                         </div>
                       );
@@ -1424,8 +1457,8 @@ const Dashboard: React.FC<{
                       {/* Term 1 */}
                       <div className="bg-slate-50 border-4 border-slate-900 rounded-[2.5rem] p-6 space-y-4">
                         <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                          <h5 className="text-base font-black uppercase text-indigo-700">Term 1 (April &mdash; September)</h5>
-                          <span className="px-2.5 py-1 bg-indigo-100 text-indigo-800 text-[9px] font-black uppercase rounded-lg">FMove, Skill mechanics & Safety</span>
+                          <h5 className="text-base font-black uppercase text-[#0D2B52]">Term 1 (April &mdash; September)</h5>
+                          <span className="px-2.5 py-1 bg-[#0D2B52]/10 text-[#0D2B52] text-[9px] font-black uppercase rounded-lg">FMove, Skill mechanics & Safety</span>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1440,7 +1473,7 @@ const Dashboard: React.FC<{
                               <div key={unit.id} className="bg-white border-2 border-slate-900 rounded-2xl p-4 space-y-3">
                                 <div className="flex justify-between">
                                   <span className="text-[8px] font-mono font-bold text-slate-400">Unit {unit.id}</span>
-                                  <span className="text-[9px] font-black uppercase text-indigo-600">{unit.timeline}</span>
+                                  <span className="text-[9px] font-black uppercase text-[#0D2B52]">{unit.timeline}</span>
                                 </div>
                                 <h6 className="text-sm font-black uppercase text-slate-900 leading-tight">{unit.title}</h6>
                                 
@@ -1450,7 +1483,7 @@ const Dashboard: React.FC<{
                                     <span>{matched.length} / {unit.targetLessons}</span>
                                   </div>
                                   <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div className="h-full bg-indigo-600" style={{ width: `${Math.min(100, Math.round((matched.length / unit.targetLessons) * 100))}%` }}></div>
+                                    <div className="h-full bg-[#0D2B52]" style={{ width: `${Math.min(100, Math.round((matched.length / unit.targetLessons) * 100))}%` }}></div>
                                   </div>
                                 </div>
 
@@ -1476,8 +1509,8 @@ const Dashboard: React.FC<{
                       {/* Term 2 */}
                       <div className="bg-slate-50 border-4 border-slate-900 rounded-[2.5rem] p-6 space-y-4">
                         <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                          <h5 className="text-base font-black uppercase text-[#FF6B00]">Term 2 (October &mdash; March)</h5>
-                          <span className="px-2.5 py-1 bg-orange-100 text-[#FF6B00] text-[9px] font-black uppercase rounded-lg">Asanas, Team tactics & SEWA</span>
+                          <h5 className="text-base font-black uppercase text-[#D4A017]">Term 2 (October &mdash; March)</h5>
+                          <span className="px-2.5 py-1 bg-[#D4A017]/15 text-[#0D2B52] text-[9px] font-black uppercase rounded-lg">Asanas, Team tactics & SEWA</span>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1492,7 +1525,7 @@ const Dashboard: React.FC<{
                               <div key={unit.id} className="bg-white border-2 border-slate-900 rounded-2xl p-4 space-y-3">
                                 <div className="flex justify-between">
                                   <span className="text-[8px] font-mono font-bold text-slate-400">Unit {unit.id}</span>
-                                  <span className="text-[9px] font-black uppercase text-[#FF6B00]">{unit.timeline}</span>
+                                  <span className="text-[9px] font-black uppercase text-[#D4A017]">{unit.timeline}</span>
                                 </div>
                                 <h6 className="text-sm font-black uppercase text-slate-900 leading-tight">{unit.title}</h6>
                                 
@@ -1541,7 +1574,7 @@ const Dashboard: React.FC<{
                       setIsCurriculumModalOpen(false);
                       onNavigate?.('planner');
                     }}
-                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white border-2 border-slate-900 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-[2px_2px_0px_0px_rgba(15,23,42,1)]"
+                    className="px-6 py-3 bg-[#0D2B52] hover:bg-[#164077] text-white border-2 border-slate-900 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-[2px_2px_0px_0px_rgba(13,43,82,1)]"
                   >
                     Create New Plan Now &rarr;
                   </button>
@@ -1555,9 +1588,9 @@ const Dashboard: React.FC<{
         <section className="space-y-12">
           <div className="flex items-end justify-between border-b-4 border-slate-900 pb-8">
             <div className="space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-600">02. ASSESS & TRACK</p>
-              <h2 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-[0.85]">Fitness & <br/> <span className="text-[#FF6B00]">Progress.</span></h2>
-              <p className="text-sm text-slate-500 font-extrabold uppercase tracking-widest mt-2 block">School Fitness & Student Progress Records</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#D4A017]">02. ASSESS & TRACK</p>
+              <h2 className="text-4xl md:text-7xl font-black text-[#0D2B52] tracking-tighter uppercase leading-[0.85] font-display">Fitness & <br/> <span className="text-[#D4A017]">Progress.</span></h2>
+              <p className="text-sm text-[#333333] font-bold uppercase tracking-widest mt-2 block">School Fitness & Student Progress Records</p>
             </div>
           </div>
 
@@ -1573,18 +1606,18 @@ const Dashboard: React.FC<{
               variants={cardVariants}
               whileHover={{ scale: 1.01, y: -5 }}
               onClick={() => onNavigate?.('school-overview')}
-              className="lg:col-span-2 group bg-indigo-900 border-4 border-slate-900 rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.2)] transition-all cursor-pointer relative overflow-hidden"
+              className="lg:col-span-2 group bg-[#0D2B52] border-4 border-slate-900 rounded-[3rem] p-10 hover:shadow-[12px_12px_0px_0px_rgba(13,43,82,0.3)] transition-all cursor-pointer relative overflow-hidden"
             >
               <div className="relative z-10 h-full flex flex-col justify-between space-y-12">
-                <div className="w-16 h-16 bg-white text-indigo-900 rounded-2xl flex items-center justify-center shadow-xl">
+                <div className="w-16 h-16 bg-[#D4A017] text-[#0D2B52] rounded-2xl flex items-center justify-center shadow-xl">
                   <Wrench size={32} />
                 </div>
                 <div className="space-y-4">
-                  <div className="inline-flex px-3 py-1 bg-white/10 text-white rounded-full text-[9px] font-black uppercase tracking-widest mb-2">Primary Module</div>
-                  <h3 className="text-3xl font-black text-white uppercase tracking-tight">School Fitness Ledger</h3>
-                  <p className="text-indigo-200 font-medium">Store and organize student health records, daily fitness test results, and Khelo India battery scores in a centralized ledger.</p>
+                  <div className="inline-flex px-3 py-1 bg-white/10 text-[#D4A017] rounded-full text-[9px] font-black uppercase tracking-widest mb-2">Primary Module</div>
+                  <h3 className="text-3xl font-black text-white uppercase tracking-tight font-display">School Fitness Ledger</h3>
+                  <p className="text-slate-200 font-medium">Store and organize student health records, daily fitness test results, and Khelo India battery scores in a centralized ledger.</p>
                 </div>
-                <div className="flex items-center space-x-3 text-white font-black text-[10px] uppercase tracking-[0.2em]">
+                <div className="flex items-center space-x-3 text-[#D4A017] font-black text-[10px] uppercase tracking-[0.2em]">
                   <span>Access Fitness Ledger</span>
                   <ArrowRight size={18} />
                 </div>
@@ -1596,15 +1629,15 @@ const Dashboard: React.FC<{
               variants={cardVariants}
               whileHover={{ scale: 1.02, y: -5 }}
               onClick={() => onNavigate?.('fitness')}
-              className="group bg-rose-50 border-4 border-slate-900 rounded-[3rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(244,63,94,0.2)] transition-all cursor-pointer flex flex-col justify-between"
+              className="group bg-[#D4A017]/10 border-4 border-slate-900 rounded-[3rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(212,160,23,0.2)] transition-all cursor-pointer flex flex-col justify-between"
             >
-              <div className="w-16 h-16 bg-rose-500 text-white rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 bg-[#0D2B52] text-[#D4A017] rounded-2xl flex items-center justify-center shadow-lg">
                 <Activity size={32} />
               </div>
               <div className="space-y-4">
-                <h3 className="text-2xl font-black uppercase tracking-tight">Khelo India Battery</h3>
-                <p className="text-slate-500 text-sm font-medium">Record required fitness battery tests. All mandatory age-appropriate CBSE fitness items are pre-loaded.</p>
-                <ArrowRight className="text-slate-300 group-hover:text-rose-600 transition-colors" size={24} />
+                <h3 className="text-2xl font-black uppercase tracking-tight text-[#0D2B52] font-display">Khelo India Battery</h3>
+                <p className="text-slate-600 text-sm font-medium">Record required fitness battery tests. All mandatory age-appropriate CBSE fitness items are pre-loaded.</p>
+                <ArrowRight className="text-slate-400 group-hover:text-[#0D2B52] transition-colors" size={24} />
               </div>
             </motion.div>
 
@@ -1613,35 +1646,35 @@ const Dashboard: React.FC<{
               variants={cardVariants}
               whileHover={{ scale: 1.02, y: -5 }}
               onClick={() => onNavigate?.('testpaper')}
-              className="group bg-slate-100 border-4 border-slate-900 rounded-[3rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(15,23,42,0.1)] transition-all cursor-pointer flex flex-col justify-between"
+              className="group bg-white border-4 border-slate-900 rounded-[3rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(13,43,82,0.15)] transition-all cursor-pointer flex flex-col justify-between"
             >
-              <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 bg-[#0D2B52] text-white rounded-2xl flex items-center justify-center shadow-lg">
                 <ClipboardList size={32} />
               </div>
               <div className="space-y-4">
-                <h3 className="text-2xl font-black uppercase tracking-tight">Theory Test Generator</h3>
-                <p className="text-slate-500 text-sm font-medium">Create CBSE-tailored theory question papers, quizzes, and sports mock examinations in one click.</p>
-                <ArrowRight className="text-slate-300 group-hover:text-slate-900 transition-colors" size={24} />
+                <h3 className="text-2xl font-black uppercase tracking-tight text-[#0D2B52] font-display">Theory Test Generator</h3>
+                <p className="text-slate-600 text-sm font-medium">Create CBSE-tailored theory question papers, quizzes, and sports mock examinations in one click.</p>
+                <ArrowRight className="text-slate-400 group-hover:text-[#0D2B52] transition-colors" size={24} />
               </div>
             </motion.div>
           </motion.div>
         </section>
 
         {/* 📊 STUDENT PERFORMANCE: Student Progress & Longitudinal Analytics Hub */}
-        <section className="space-y-12 bg-white border-4 border-slate-900 rounded-[3.5rem] p-8 md:p-14 relative overflow-hidden shadow-[12px_12px_0px_0px_rgba(15,23,42,1)]">
-          <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+        <section className="space-y-12 bg-white border-4 border-slate-900 rounded-[3.5rem] p-8 md:p-14 relative overflow-hidden shadow-[12px_12px_0px_0px_rgba(13,43,82,1)]">
+          <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#0D2B52 1px, transparent 1px), linear-gradient(90deg, #0D2B52 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
           
           <div className="flex flex-col md:flex-row md:items-end justify-between border-b-4 border-slate-900 pb-8 relative z-10">
             <div className="space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B00]">02.5 STUDENT PERFORMANCE</p>
-              <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">Student Progress & <br/> <span className="text-[#FF6B00]">Longitudinal Reports.</span></h2>
-              <p className="text-sm text-slate-600 font-semibold leading-relaxed max-w-xl">
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#D4A017]">02.5 STUDENT PERFORMANCE</p>
+              <h2 className="text-4xl md:text-6xl font-black text-[#0D2B52] tracking-tighter uppercase leading-[0.9] font-display">Student Progress & <br/> <span className="text-[#D4A017]">Longitudinal Reports.</span></h2>
+              <p className="text-sm text-[#333333] font-medium leading-relaxed max-w-xl">
                 Track tangible physical growth and fitness metrics over time. Compare baseline, midline, and year-end fitness batteries to understand and guide student development.
               </p>
             </div>
             <div className="mt-4 md:mt-0">
-              <span className="px-4 py-2 bg-[#FF6B00]/10 border border-[#FF6B00]/30 text-[#FF6B00] rounded-full text-xs font-black uppercase tracking-widest inline-flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#FF6B00] animate-pulse"></span>
+              <span className="px-4 py-2 bg-[#D4A017]/15 border border-[#D4A017]/40 text-[#0D2B52] rounded-full text-xs font-black uppercase tracking-widest inline-flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#D4A017] animate-pulse"></span>
                 Student Analytics Active
               </span>
             </div>
@@ -1651,9 +1684,9 @@ const Dashboard: React.FC<{
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
             {/* Control Sidebar */}
             <div className="lg:col-span-4 space-y-6">
-              <div className="bg-slate-50 border-4 border-slate-900 rounded-[2rem] p-6 space-y-6">
+              <div className="bg-[#F5F7FA] border-4 border-slate-900 rounded-[2rem] p-6 space-y-6">
                 <div>
-                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-3">1. Select Grade/Class</h4>
+                  <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider mb-3">1. Select Grade/Class</h4>
                   <div className="grid grid-cols-3 gap-2">
                     {(['8-A', '7-C', '9-B'] as const).map((grade) => (
                       <button
@@ -1664,8 +1697,8 @@ const Dashboard: React.FC<{
                         }}
                         className={`py-2 px-3 text-xs font-black rounded-xl border-2 border-slate-900 transition-all ${
                           selectedClassProgress === grade 
-                            ? 'bg-slate-900 text-white shadow-[2px_2px_0px_0px_rgba(255,107,0,1)]' 
-                            : 'bg-white text-slate-800 hover:bg-slate-100 shadow-[2px_2px_0px_0px_rgba(15,23,42,1)]'
+                            ? 'bg-[#0D2B52] text-white shadow-[2px_2px_0px_0px_rgba(212,160,23,1)]' 
+                            : 'bg-white text-slate-800 hover:bg-slate-100 shadow-[2px_2px_0px_0px_rgba(13,43,82,1)]'
                         }`}
                       >
                         Grade {grade}
@@ -1675,7 +1708,7 @@ const Dashboard: React.FC<{
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-3">2. Select Analytics View</h4>
+                  <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider mb-3">2. Select Analytics View</h4>
                   <div className="flex flex-col gap-2">
                     {[
                       { id: 'fitness', label: '📊 Fitness Trends', desc: 'Compare 50m sprint times & flexibility.' },
@@ -1687,12 +1720,12 @@ const Dashboard: React.FC<{
                         onClick={() => setSelectedMetricType(btn.id as any)}
                         className={`text-left p-3.5 rounded-xl border-2 border-slate-900 transition-all flex flex-col space-y-1 ${
                           selectedMetricType === btn.id 
-                            ? 'bg-indigo-600 text-white shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]' 
-                            : 'bg-white text-slate-800 hover:bg-indigo-50 shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]'
+                            ? 'bg-[#0D2B52] text-white shadow-[3px_3px_0px_0px_rgba(212,160,23,1)]' 
+                            : 'bg-white text-slate-800 hover:bg-[#D4A017]/10 shadow-[3px_3px_0px_0px_rgba(13,43,82,1)]'
                         }`}
                       >
                         <span className="text-xs font-black uppercase tracking-wider">{btn.label}</span>
-                        <span className={`text-[10px] leading-relaxed ${selectedMetricType === btn.id ? 'text-indigo-200' : 'text-slate-500'}`}>{btn.desc}</span>
+                        <span className={`text-[10px] leading-relaxed ${selectedMetricType === btn.id ? 'text-[#D4A017]' : 'text-slate-500'}`}>{btn.desc}</span>
                       </button>
                     ))}
                   </div>
@@ -1708,21 +1741,21 @@ const Dashboard: React.FC<{
                       }, 1500);
                     }}
                     disabled={downloadStatus === 'generating'}
-                    className="w-full py-3.5 px-5 bg-[#FF6B00] hover:bg-orange-600 text-white border-2 border-slate-900 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] active:translate-y-0.5 active:shadow-none flex items-center justify-center gap-2"
+                    className="w-full py-3.5 px-5 bg-[#0D2B52] hover:bg-[#164077] text-white border-2 border-slate-900 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all shadow-[3px_3px_0px_0px_rgba(13,43,82,1)] active:translate-y-0.5 active:shadow-none flex items-center justify-center gap-2"
                   >
                     {downloadStatus === 'generating' ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin text-[#D4A017]" />
                         <span>Compiling Progress Log...</span>
                       </>
                     ) : downloadStatus === 'success' ? (
                       <>
-                        <ShieldCheck className="w-4 h-4" />
+                        <ShieldCheck className="w-4 h-4 text-[#D4A017]" />
                         <span>Downloaded Report Card!</span>
                       </>
                     ) : (
                       <>
-                        <Download className="w-4 h-4" />
+                        <Download className="w-4 h-4 text-[#D4A017]" />
                         <span>Download Class Report Card</span>
                       </>
                     )}
@@ -1741,13 +1774,13 @@ const Dashboard: React.FC<{
             </div>
 
             {/* Display Pane */}
-            <div className="lg:col-span-8 bg-slate-950 border-4 border-slate-900 rounded-[2rem] p-6 text-white min-h-[350px] flex flex-col justify-between">
+            <div className="lg:col-span-8 bg-[#0D2B52] border-4 border-slate-900 rounded-[2rem] p-6 text-white min-h-[350px] flex flex-col justify-between">
               {selectedMetricType === 'fitness' && (
                 <div className="space-y-4 h-full flex flex-col justify-between">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <div>
-                      <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Active Live Dataset &bull; Grade {selectedClassProgress}</span>
-                      <h4 className="text-lg font-black uppercase text-white">Khelo India Fitness Battery Progress</h4>
+                      <span className="text-[10px] text-[#D4A017] font-bold uppercase tracking-widest">Active Live Dataset &bull; Grade {selectedClassProgress}</span>
+                      <h4 className="text-lg font-black uppercase text-white font-display">Khelo India Fitness Battery Progress</h4>
                     </div>
                     <span className="px-2.5 py-1 bg-white/10 text-white rounded-lg text-[9px] font-mono">3 Terms Consolidated</span>
                   </div>
@@ -1764,24 +1797,24 @@ const Dashboard: React.FC<{
                         <YAxis stroke="#94A3B8" fontSize={10} />
                         <Tooltip contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '8px' }} />
                         <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
-                        <Line name="50m Sprint (Lower = Faster, secs)" type="monotone" dataKey="speed" stroke="#FF6B00" strokeWidth={3} activeDot={{ r: 8 }} />
-                        <Line name="Sit & Reach (Higher = Better, cm)" type="monotone" dataKey="flexibility" stroke="#4F46E5" strokeWidth={3} />
+                        <Line name="50m Sprint (Lower = Faster, secs)" type="monotone" dataKey="speed" stroke="#D4A017" strokeWidth={3} activeDot={{ r: 8 }} />
+                        <Line name="Sit & Reach (Higher = Better, cm)" type="monotone" dataKey="flexibility" stroke="#0D2B52" strokeWidth={3} />
                         <Line name="600m Run/Walk (Lower = More Endurance, secs)" type="monotone" dataKey="endurance" stroke="#10B981" strokeWidth={3} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 bg-slate-900 border border-slate-800 p-3 rounded-xl text-center">
+                  <div className="grid grid-cols-3 gap-2 bg-[#0D2B52]/50 border border-white/10 p-3 rounded-xl text-center">
                     <div>
-                      <p className="text-[9px] text-slate-500 uppercase font-black">50m Speed Improvement</p>
-                      <p className="text-sm font-black text-[#FF6B00]">-1.1s (Average)</p>
+                      <p className="text-[9px] text-slate-300 uppercase font-black">50m Speed Improvement</p>
+                      <p className="text-sm font-black text-[#D4A017]">-1.1s (Average)</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-slate-500 uppercase font-black">Flexibility Delta</p>
-                      <p className="text-sm font-black text-indigo-400">+4.8 cm</p>
+                      <p className="text-[9px] text-slate-300 uppercase font-black">Flexibility Delta</p>
+                      <p className="text-sm font-black text-[#D4A017]">+4.8 cm</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-slate-500 uppercase font-black">Endurance Time Drop</p>
+                      <p className="text-[9px] text-slate-300 uppercase font-black">Endurance Time Drop</p>
                       <p className="text-sm font-black text-emerald-400">-37s (Average)</p>
                     </div>
                   </div>
@@ -1790,34 +1823,34 @@ const Dashboard: React.FC<{
 
               {selectedMetricType === 'skills' && (
                 <div className="space-y-4 h-full flex flex-col justify-between">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <div>
                       <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Technique & Play Mechanics &bull; Grade {selectedClassProgress}</span>
-                      <h4 className="text-lg font-black uppercase text-white">CBSE Practical Skill Progression</h4>
+                      <h4 className="text-lg font-black uppercase text-white font-display">CBSE Practical Skill Progression</h4>
                     </div>
                     <span className="px-2.5 py-1 bg-[#10B981]/20 text-[#10B981] rounded-lg text-[9px] font-mono">10-Point Rubric</span>
                   </div>
 
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-300">
                     Average student ratings based on continuous practical rubrics generated for curriculum sports modules.
                   </p>
 
                   <div className="space-y-3 flex-1 justify-center flex flex-col">
                     {[
-                      { skill: 'Football: Ball Control & Dribbling Technique', start: 4.5, end: 8.8, color: 'bg-indigo-500' },
-                      { skill: 'Basketball: Chest Pass & Layup Mechanics', start: 5.2, end: 8.2, color: 'bg-purple-500' },
-                      { skill: 'Athletics: Sprint Block Start Position', start: 3.8, end: 7.9, color: 'bg-[#FF6B00]' },
+                      { skill: 'Football: Ball Control & Dribbling Technique', start: 4.5, end: 8.8, color: 'bg-[#0D2B52]' },
+                      { skill: 'Basketball: Chest Pass & Layup Mechanics', start: 5.2, end: 8.2, color: 'bg-[#164077]' },
+                      { skill: 'Athletics: Sprint Block Start Position', start: 3.8, end: 7.9, color: 'bg-[#D4A017]' },
                     ].map((s, idx) => (
-                      <div key={idx} className="space-y-1 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                      <div key={idx} className="space-y-1 bg-[#0D2B52]/80 p-2.5 rounded-lg border border-white/10">
                         <div className="flex justify-between text-[11px] font-bold">
                           <span>{s.skill}</span>
-                          <span className="text-slate-400">Baseline {s.start} &rarr; <strong className="text-white">{s.end} / 10</strong></span>
+                          <span className="text-slate-300">Baseline {s.start} &rarr; <strong className="text-[#D4A017]">{s.end} / 10</strong></span>
                         </div>
                         <div className="relative w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                           <div className={`absolute top-0 left-0 h-full bg-slate-700`} style={{ width: `${s.start * 10}%` }}></div>
                           <div className={`absolute top-0 left-0 h-full ${s.color}`} style={{ width: `${s.end * 10}%` }}></div>
                         </div>
-                        <div className="flex justify-between text-[8px] text-slate-500 uppercase font-black">
+                        <div className="flex justify-between text-[8px] text-slate-400 uppercase font-black">
                           <span>Initial Level</span>
                           <span>Year-end Mastery Growth: +{Math.round(((s.end - s.start) / s.start) * 100)}%</span>
                         </div>
@@ -1829,15 +1862,15 @@ const Dashboard: React.FC<{
 
               {selectedMetricType === 'interventions' && (
                 <div className="space-y-4 h-full flex flex-col justify-between">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <div>
-                      <span className="text-[10px] text-rose-400 font-bold uppercase tracking-widest">Health & Fitness Indicators &bull; Grade {selectedClassProgress}</span>
-                      <h4 className="text-lg font-black uppercase text-white">Student Health & Fitness Feedback</h4>
+                      <span className="text-[10px] text-[#D4A017] font-bold uppercase tracking-widest">Health & Fitness Indicators &bull; Grade {selectedClassProgress}</span>
+                      <h4 className="text-lg font-black uppercase text-white font-display">Student Health & Fitness Feedback</h4>
                     </div>
-                    <span className="px-2.5 py-1 bg-rose-500/20 text-rose-400 rounded-lg text-[9px] font-mono">Notices Active</span>
+                    <span className="px-2.5 py-1 bg-[#D4A017]/20 text-[#D4A017] rounded-lg text-[9px] font-mono">Notices Active</span>
                   </div>
 
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-300">
                     Identify physical progress notices and view practical action-oriented advice for individual student support.
                   </p>
 
@@ -1846,10 +1879,10 @@ const Dashboard: React.FC<{
                       { student: 'Amit R. (Roll 04)', zone: 'Above Recommended BMI (BMI 30.2)', alert: 'Cardio endurance trials trailed 25% below grade average.', action: 'Introduce low-impact aerobic intervals & modified shuttle walks.' },
                       { student: 'Priya K. (Roll 17)', zone: 'Below Recommended BMI (BMI 15.4)', alert: 'Core and leg strength scores indicate fatigue.', action: 'Focus on light bodyweight balance drills & endurance logs.' },
                     ].map((st, i) => (
-                      <div key={i} className="p-3 bg-rose-500/5 border border-rose-500/20 rounded-xl space-y-1.5">
+                      <div key={i} className="p-3 bg-white/5 border border-white/10 rounded-xl space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-black text-rose-300">{st.student}</span>
-                          <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded text-[9px] font-black uppercase">{st.zone}</span>
+                          <span className="font-black text-[#D4A017]">{st.student}</span>
+                          <span className="px-2 py-0.5 bg-[#D4A017]/10 border border-[#D4A017]/30 text-[#D4A017] rounded text-[9px] font-black uppercase">{st.zone}</span>
                         </div>
                         <p className="text-[10px] text-slate-300 font-medium">
                           <strong>Feedback:</strong> {st.alert}
@@ -1870,8 +1903,8 @@ const Dashboard: React.FC<{
         <section className="space-y-12">
           <div className="flex items-end justify-between border-b-4 border-slate-900 pb-8">
             <div className="space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600">03. COMMUNICATE & MANAGE</p>
-              <h2 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-[0.85]">Administrative <br/> <span className="text-[#005BFF]">Workflows.</span></h2>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#D4A017]">03. COMMUNICATE & MANAGE</p>
+              <h2 className="text-4xl md:text-7xl font-black text-[#0D2B52] tracking-tighter uppercase leading-[0.85] font-display">Administrative <br/> <span className="text-[#D4A017]">Workflows.</span></h2>
             </div>
           </div>
 
@@ -1887,16 +1920,16 @@ const Dashboard: React.FC<{
               variants={cardVariants}
               whileHover={{ scale: 1.02 }}
               onClick={() => onNavigate?.('parentletters')}
-              className="group bg-blue-50 border-4 border-slate-900 rounded-[2.5rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(59,130,246,0.1)] transition-all cursor-pointer"
+              className="group bg-[#F5F7FA] border-4 border-slate-900 rounded-[2.5rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(13,43,82,0.15)] transition-all cursor-pointer"
             >
                <div className="flex items-center gap-6 mb-6">
-                 <div className="w-14 h-14 bg-blue-500 text-white rounded-2xl flex items-center justify-center"><Mail size={24}/></div>
-                 <h3 className="text-xl font-black uppercase">Parent Notices</h3>
+                 <div className="w-14 h-14 bg-[#0D2B52] text-[#D4A017] rounded-2xl flex items-center justify-center"><Mail size={24}/></div>
+                 <h3 className="text-xl font-black uppercase text-[#0D2B52] font-display">Parent Notices</h3>
                </div>
-               <p className="text-slate-500 text-xs font-medium mb-6">Create clear parent notifications and announcement letters for upcoming sports events and fitness milestones.</p>
-               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-600">
+               <p className="text-slate-600 text-xs font-medium mb-6">Create clear parent notifications and announcement letters for upcoming sports events and fitness milestones.</p>
+               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#0D2B52]">
                  <span>Create Notification</span>
-                 <ArrowRight size={14} />
+                 <ArrowRight size={14} className="text-[#D4A017]" />
                </div>
             </motion.div>
 
@@ -1905,14 +1938,14 @@ const Dashboard: React.FC<{
               variants={cardVariants}
               whileHover={{ scale: 1.02 }}
               onClick={() => onNavigate?.('yearly')}
-              className="group bg-indigo-50 border-4 border-slate-900 rounded-[2.5rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.1)] transition-all cursor-pointer"
+              className="group bg-[#0D2B52] border-4 border-slate-900 rounded-[2.5rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(13,43,82,0.25)] transition-all cursor-pointer text-white"
             >
                <div className="flex items-center gap-6 mb-6">
-                 <div className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center"><Calendar size={24}/></div>
-                 <h3 className="text-xl font-black uppercase">School PE Calendar</h3>
+                 <div className="w-14 h-14 bg-[#D4A017] text-[#0D2B52] rounded-2xl flex items-center justify-center"><Calendar size={24}/></div>
+                 <h3 className="text-xl font-black uppercase font-display">School PE Calendar</h3>
                </div>
-               <p className="text-slate-500 text-xs font-medium mb-6">Map out lesson goals across the full academic year to synchronize with school exams and vacations.</p>
-               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600">
+               <p className="text-slate-200 text-xs font-medium mb-6">Map out lesson goals across the full academic year to synchronize with school exams and vacations.</p>
+               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#D4A017]">
                  <span>Organize Calendar</span>
                  <ArrowRight size={14} />
                </div>
@@ -1923,37 +1956,37 @@ const Dashboard: React.FC<{
               variants={cardVariants}
               whileHover={{ scale: 1.02 }}
               onClick={() => onNavigate?.('compliance')}
-              className="group bg-amber-50 border-4 border-slate-900 rounded-[2.5rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(245,158,11,0.1)] transition-all cursor-pointer"
+              className="group bg-[#D4A017]/10 border-4 border-slate-900 rounded-[2.5rem] p-8 hover:shadow-[12px_12px_0px_0px_rgba(212,160,23,0.2)] transition-all cursor-pointer"
             >
                <div className="flex items-center gap-6 mb-6">
-                 <div className="w-14 h-14 bg-amber-500 text-white rounded-2xl flex items-center justify-center"><ShieldCheck size={24}/></div>
-                 <h3 className="text-xl font-black uppercase">Board Compliance</h3>
+                 <div className="w-14 h-14 bg-[#0D2B52] text-[#D4A017] rounded-2xl flex items-center justify-center"><ShieldCheck size={24}/></div>
+                 <h3 className="text-xl font-black uppercase text-[#0D2B52] font-display">Board Compliance</h3>
                </div>
-               <p className="text-slate-500 text-xs font-medium mb-6">Verify syllabus logs, sports hours, and testing cards meet current CBSE and national guidelines.</p>
-               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600">
+               <p className="text-slate-600 text-xs font-medium mb-6">Verify syllabus logs, sports hours, and testing cards meet current CBSE and national guidelines.</p>
+               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#0D2B52]">
                  <span>Check Alignment</span>
-                 <ArrowRight size={14} />
+                 <ArrowRight size={14} className="text-[#D4A017]" />
                </div>
             </motion.div>
           </motion.div>
         </section>
 
         {/* 🏆 LEADERSHIP SUITE: The Principal & HoD Suite */}
-        <section className="space-y-12 bg-[#F8FAFC] border-4 border-slate-900 rounded-[3.5rem] p-8 md:p-14 relative overflow-hidden shadow-[12px_12px_0px_0px_rgba(15,23,42,1)]">
+        <section className="space-y-12 bg-[#F5F7FA] border-4 border-slate-900 rounded-[3.5rem] p-8 md:p-14 relative overflow-hidden shadow-[12px_12px_0px_0px_rgba(13,43,82,1)]">
           {/* Subtle grid pattern background */}
-          <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+          <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#0D2B52 1px, transparent 1px), linear-gradient(90deg, #0D2B52 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
           
           <div className="flex flex-col md:flex-row md:items-end justify-between border-b-4 border-slate-900 pb-8 relative z-10">
             <div className="space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B00]">04. LEADERSHIP SUITE</p>
-              <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">Principals & <br/> <span className="text-[#005BFF]">PE Administrators.</span></h2>
-              <p className="text-sm text-slate-600 font-semibold leading-relaxed max-w-xl">
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#D4A017]">04. LEADERSHIP SUITE</p>
+              <h2 className="text-4xl md:text-6xl font-black text-[#0D2B52] tracking-tighter uppercase leading-[0.9] font-display">Principals & <br/> <span className="text-[#D4A017]">PE Administrators.</span></h2>
+              <p className="text-sm text-[#333333] font-medium leading-relaxed max-w-xl">
                 Secure oversight dashboards and physical education reporting for school leaders, principals, and department coordinators.
               </p>
             </div>
             <div className="mt-4 md:mt-0">
-              <span className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 rounded-full text-xs font-black uppercase tracking-widest inline-flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="px-4 py-2 bg-[#D4A017]/15 border border-[#D4A017]/40 text-[#0D2B52] rounded-full text-xs font-black uppercase tracking-widest inline-flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#D4A017] animate-pulse"></span>
                 School Reports Ready
               </span>
             </div>
@@ -1965,25 +1998,25 @@ const Dashboard: React.FC<{
             <motion.div 
               whileHover={{ scale: 1.01, y: -4 }}
               onClick={() => onNavigate?.('principal-dashboard')}
-              className="group bg-slate-900 text-white rounded-[2.5rem] p-8 md:p-10 hover:shadow-[12px_12px_0px_0px_rgba(0,91,255,0.25)] transition-all cursor-pointer relative overflow-hidden border-4 border-slate-900"
+              className="group bg-[#0D2B52] text-white rounded-[2.5rem] p-8 md:p-10 hover:shadow-[12px_12px_0px_0px_rgba(13,43,82,0.3)] transition-all cursor-pointer relative overflow-hidden border-4 border-slate-900"
             >
               <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
                 <ShieldCheck size={120} />
               </div>
               <div className="relative z-10 h-full flex flex-col justify-between space-y-8">
                 <div className="flex items-center justify-between">
-                  <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg text-white">
+                  <div className="w-14 h-14 bg-[#D4A017] text-[#0D2B52] rounded-2xl flex items-center justify-center shadow-lg">
                     <ShieldCheck size={28} />
                   </div>
-                  <span className="text-[10px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-full uppercase tracking-wider">Leadership Oversight</span>
+                  <span className="text-[10px] font-black bg-[#D4A017]/20 text-[#D4A017] border border-[#D4A017]/30 px-3 py-1 rounded-full uppercase tracking-wider">Leadership Oversight</span>
                 </div>
                 <div className="space-y-3">
-                  <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight">Principal Dashboard</h3>
-                  <p className="text-slate-400 text-xs md:text-sm font-medium leading-relaxed">
+                  <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight font-display">Principal Dashboard</h3>
+                  <p className="text-slate-200 text-xs md:text-sm font-medium leading-relaxed">
                     A clear overview for school principals and leadership to review PE curriculum milestones, annual athletic calendar progress, medical notices, and school-wide fitness participation rates.
                   </p>
                 </div>
-                <div className="flex items-center space-x-2 text-[#FF6B00] group-hover:text-white transition-colors font-black text-xs uppercase tracking-[0.2em] pt-4">
+                <div className="flex items-center space-x-2 text-[#D4A017] group-hover:text-white transition-colors font-black text-xs uppercase tracking-[0.2em] pt-4">
                   <span>Open Principal Dashboard</span>
                   <ArrowRight size={16} />
                 </div>
@@ -1994,27 +2027,27 @@ const Dashboard: React.FC<{
             <motion.div 
               whileHover={{ scale: 1.01, y: -4 }}
               onClick={() => onNavigate?.('department-office')}
-              className="group bg-white text-slate-900 rounded-[2.5rem] p-8 md:p-10 hover:shadow-[12px_12px_0px_0px_rgba(255,107,0,0.2)] transition-all cursor-pointer relative overflow-hidden border-4 border-slate-900"
+              className="group bg-white text-slate-900 rounded-[2.5rem] p-8 md:p-10 hover:shadow-[12px_12px_0px_0px_rgba(13,43,82,0.2)] transition-all cursor-pointer relative overflow-hidden border-4 border-slate-900"
             >
               <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform text-slate-400">
                 <Wrench size={120} />
               </div>
               <div className="relative z-10 h-full flex flex-col justify-between space-y-8">
                 <div className="flex items-center justify-between">
-                  <div className="w-14 h-14 bg-[#FF6B00] rounded-2xl flex items-center justify-center shadow-lg text-white">
+                  <div className="w-14 h-14 bg-[#0D2B52] text-[#D4A017] rounded-2xl flex items-center justify-center shadow-lg">
                     <Wrench size={28} />
                   </div>
-                  <span className="text-[10px] font-black bg-orange-100 text-[#FF6B00] border border-orange-200 px-3 py-1 rounded-full uppercase tracking-wider">Coordinator Hub</span>
+                  <span className="text-[10px] font-black bg-[#D4A017]/15 text-[#0D2B52] border border-[#D4A017]/30 px-3 py-1 rounded-full uppercase tracking-wider">Coordinator Hub</span>
                 </div>
                 <div className="space-y-3">
-                  <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight">Coordinator Suite</h3>
-                  <p className="text-slate-500 text-xs md:text-sm font-medium leading-relaxed">
+                  <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-[#0D2B52] font-display">Coordinator Suite</h3>
+                  <p className="text-slate-600 text-xs md:text-sm font-medium leading-relaxed">
                     Coordinating workspace for PE heads and athletic directors. Manage class substitutions when a sports teacher is absent, log sports equipment checkouts, and record Inter-House sports points.
                   </p>
                 </div>
-                <div className="flex items-center space-x-2 text-indigo-600 group-hover:text-indigo-800 transition-colors font-black text-xs uppercase tracking-[0.2em] pt-4">
+                <div className="flex items-center space-x-2 text-[#0D2B52] group-hover:text-[#164077] transition-colors font-black text-xs uppercase tracking-[0.2em] pt-4">
                   <span>Open Coordinator Suite</span>
-                  <ArrowRight size={16} />
+                  <ArrowRight size={16} className="text-[#D4A017]" />
                 </div>
               </div>
             </motion.div>
@@ -2023,67 +2056,67 @@ const Dashboard: React.FC<{
           {/* 🔄 INTERACTIVE TEACHER-TO-PRINCIPAL DATA FLOW PIPELINE */}
           <div className="bg-white border-4 border-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 space-y-8 relative z-10">
             <div className="space-y-2 text-left">
-              <h3 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-                <TrendingUp className="text-[#FF6B00]" size={22} />
+              <h3 className="text-xl md:text-2xl font-black text-[#0D2B52] uppercase tracking-tight flex items-center gap-2 font-display">
+                <TrendingUp className="text-[#D4A017]" size={22} />
                 How Your PE Department Stays Organized
               </h3>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">
+              <p className="text-xs text-slate-600 font-medium leading-relaxed max-w-2xl">
                 Daily inputs from the school playground automatically feed into clean, professional summaries for leadership and board audits.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
               {/* Step 1 */}
-              <div className="p-5 bg-indigo-50/50 border-2 border-dashed border-indigo-200 rounded-2xl space-y-3 relative">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-md">1</div>
-                <h4 className="text-sm font-black uppercase text-indigo-950">1. Teacher Inputs (Daily)</h4>
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                  Teachers click on <strong className="text-indigo-900 font-bold">Khelo India Battery</strong> to log student scores, or update daily logs in the <strong className="text-indigo-900 font-bold">Coordinator Suite</strong> on the ground.
+              <div className="p-5 bg-[#0D2B52]/5 border-2 border-dashed border-[#0D2B52]/30 rounded-2xl space-y-3 relative">
+                <div className="w-10 h-10 rounded-xl bg-[#0D2B52] text-[#D4A017] flex items-center justify-center font-black text-xs shadow-md">1</div>
+                <h4 className="text-sm font-black uppercase text-[#0D2B52] font-display">1. Teacher Inputs (Daily)</h4>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  Teachers click on <strong className="text-[#0D2B52] font-bold">Khelo India Battery</strong> to log student scores, or update daily logs in the <strong className="text-[#0D2B52] font-bold">Coordinator Suite</strong> on the ground.
                 </p>
               </div>
 
               {/* Step 2 */}
-              <div className="p-5 bg-amber-50/50 border-2 border-dashed border-amber-200 rounded-2xl space-y-3 relative">
-                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-xs shadow-md">2</div>
-                <h4 className="text-sm font-black uppercase text-amber-950">2. SmartPE Organizes</h4>
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+              <div className="p-5 bg-[#D4A017]/10 border-2 border-dashed border-[#D4A017]/40 rounded-2xl space-y-3 relative">
+                <div className="w-10 h-10 rounded-xl bg-[#0D2B52] text-[#D4A017] flex items-center justify-center font-black text-xs shadow-md">2</div>
+                <h4 className="text-sm font-black uppercase text-[#0D2B52] font-display">2. SmartPE Organizes</h4>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
                   The central database registers individual scores, tracks lesson plan progress, counts completed curriculum hours, and compiles inter-house sports point tallies.
                 </p>
               </div>
 
               {/* Step 3 */}
-              <div className="p-5 bg-rose-50/50 border-2 border-dashed border-rose-200 rounded-2xl space-y-3 relative">
-                <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center font-black text-xs shadow-md">3</div>
-                <h4 className="text-sm font-black uppercase text-rose-950">3. Live Principal Review</h4>
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                  School leaders access the <strong className="text-rose-900 font-bold">Principal Dashboard</strong> to instantly view compliant, print-ready summaries, annual calendar progress, and student participation metrics.
+              <div className="p-5 bg-[#0D2B52]/5 border-2 border-dashed border-[#0D2B52]/30 rounded-2xl space-y-3 relative">
+                <div className="w-10 h-10 rounded-xl bg-[#0D2B52] text-[#D4A017] flex items-center justify-center font-black text-xs shadow-md">3</div>
+                <h4 className="text-sm font-black uppercase text-[#0D2B52] font-display">3. Live Principal Review</h4>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  School leaders access the <strong className="text-[#0D2B52] font-bold">Principal Dashboard</strong> to instantly view compliant, print-ready summaries, annual calendar progress, and student participation metrics.
                 </p>
               </div>
             </div>
           </div>
 
           {/* 🏢 DEPARTMENT OPERATIONS: Live Nerve Center Preview */}
-          <div className="bg-slate-900 border-4 border-slate-900 rounded-[2.5rem] p-6 md:p-8 text-white relative z-10 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-5">
+          <div className="bg-[#0D2B52] border-4 border-slate-900 rounded-[2.5rem] p-6 md:p-8 text-white relative z-10 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-white/10 pb-5">
               <div className="space-y-1">
-                <span className="text-[10px] text-[#FF6B00] font-black uppercase tracking-widest">Live Demo PE Department Nerve Center</span>
-                <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight text-white flex items-center gap-2">
-                  <Wrench size={22} className="text-[#FF6B00]" />
+                <span className="text-[10px] text-[#D4A017] font-black uppercase tracking-widest">Live Demo PE Department Nerve Center</span>
+                <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight text-white flex items-center gap-2 font-display">
+                  <Wrench size={22} className="text-[#D4A017]" />
                   PE Department Nerve Center
                 </h3>
-                <p className="text-xs text-slate-400 font-medium leading-relaxed max-w-xl">
+                <p className="text-xs text-slate-200 font-medium leading-relaxed max-w-xl">
                   Explore the live administrative workspace used by coordinators to handle daily school sports operations.
                 </p>
               </div>
-              <div className="mt-4 md:mt-0 flex gap-1 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+              <div className="mt-4 md:mt-0 flex gap-1 bg-[#091D38] p-1.5 rounded-xl border border-white/10">
                 {(['metrics', 'inventory', 'substitutions', 'house-points'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveDeptTab(tab)}
                     className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
                       activeDeptTab === tab
-                        ? 'bg-[#FF6B00] text-white'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                        ? 'bg-[#D4A017] text-[#0D2B52]'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
                     }`}
                   >
                     {tab.replace('-', ' ')}
@@ -2093,33 +2126,33 @@ const Dashboard: React.FC<{
             </div>
 
             {/* Content Tabs Pane */}
-            <div className="bg-slate-950 rounded-2xl p-5 border border-slate-800 min-h-[220px] flex flex-col justify-between">
+            <div className="bg-[#091D38] rounded-2xl p-5 border border-white/10 min-h-[220px] flex flex-col justify-between">
               {activeDeptTab === 'metrics' && (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">📊 Live Department Metrics & Attendance</h4>
-                    <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded text-[9px] font-mono">Auto-Compiling</span>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-300">📊 Live Department Metrics & Attendance</h4>
+                    <span className="px-2 py-0.5 bg-[#D4A017]/15 border border-[#D4A017]/30 text-[#D4A017] rounded text-[9px] font-mono">Auto-Compiling</span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                      <p className="text-[9px] text-slate-500 uppercase font-bold">Daily Attendance</p>
+                    <div className="bg-[#0D2B52] p-4 rounded-xl border border-white/10">
+                      <p className="text-[9px] text-slate-300 uppercase font-bold">Daily Attendance</p>
                       <p className="text-2xl font-black text-emerald-400">96.4%</p>
-                      <p className="text-[8px] text-slate-500 mt-1">412/427 students active</p>
+                      <p className="text-[8px] text-slate-300 mt-1">412/427 students active</p>
                     </div>
-                    <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                      <p className="text-[9px] text-slate-500 uppercase font-bold">Class Coverage</p>
-                      <p className="text-2xl font-black text-[#005BFF]">100%</p>
-                      <p className="text-[8px] text-slate-500 mt-1">All 14 PE periods staffed</p>
+                    <div className="bg-[#0D2B52] p-4 rounded-xl border border-white/10">
+                      <p className="text-[9px] text-slate-300 uppercase font-bold">Class Coverage</p>
+                      <p className="text-2xl font-black text-[#D4A017]">100%</p>
+                      <p className="text-[8px] text-slate-300 mt-1">All 14 PE periods staffed</p>
                     </div>
-                    <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                      <p className="text-[9px] text-slate-500 uppercase font-bold">Syllabus Completed</p>
-                      <p className="text-2xl font-black text-amber-400">78.5%</p>
-                      <p className="text-[8px] text-slate-500 mt-1">On schedule with CBSE blueprint</p>
+                    <div className="bg-[#0D2B52] p-4 rounded-xl border border-white/10">
+                      <p className="text-[9px] text-slate-300 uppercase font-bold">Syllabus Completed</p>
+                      <p className="text-2xl font-black text-emerald-400">78.5%</p>
+                      <p className="text-[8px] text-slate-300 mt-1">On schedule with CBSE blueprint</p>
                     </div>
-                    <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                      <p className="text-[9px] text-slate-500 uppercase font-bold">Active Medical Flags</p>
-                      <p className="text-2xl font-black text-rose-500">2 Gaps</p>
-                      <p className="text-[8px] text-rose-400 font-bold mt-1">✓ Logged with first-aid ward</p>
+                    <div className="bg-[#0D2B52] p-4 rounded-xl border border-white/10">
+                      <p className="text-[9px] text-slate-300 uppercase font-bold">Active Medical Flags</p>
+                      <p className="text-2xl font-black text-[#D4A017]">2 Gaps</p>
+                      <p className="text-[8px] text-[#D4A017] font-bold mt-1">✓ Logged with first-aid ward</p>
                     </div>
                   </div>
                 </div>
@@ -2128,7 +2161,7 @@ const Dashboard: React.FC<{
               {activeDeptTab === 'inventory' && (
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">📦 Athletic Equipment & Resource Ledger</h4>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-300">📦 Athletic Equipment & Resource Ledger</h4>
                     <span className="text-[9px] text-emerald-400 font-bold flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                       All Stocks Calibrated
@@ -2137,7 +2170,7 @@ const Dashboard: React.FC<{
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse text-[11px]">
                       <thead>
-                        <tr className="border-b border-slate-800 text-slate-500 font-black uppercase">
+                        <tr className="border-b border-white/10 text-slate-400 font-black uppercase">
                           <th className="pb-2">Sport Item</th>
                           <th className="pb-2">Total Stock</th>
                           <th className="pb-2">Checked Out</th>
@@ -2145,34 +2178,34 @@ const Dashboard: React.FC<{
                           <th className="pb-2">Condition Status</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-900 text-slate-300">
+                      <tbody className="divide-y divide-white/5 text-slate-200">
                         <tr>
                           <td className="py-2 font-black text-white">Nivia Footballs (Size 5)</td>
                           <td className="py-2">35</td>
-                          <td className="py-2 text-[#FF6B00]">5 (Grade 8-A)</td>
+                          <td className="py-2 text-[#D4A017]">5 (Grade 8-A)</td>
                           <td className="py-2 text-emerald-400 font-bold">30</td>
                           <td className="py-2"><span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[9px] font-bold">Excellent</span></td>
                         </tr>
                         <tr>
                           <td className="py-2 font-black text-white">English Willow Cricket Kits</td>
                           <td className="py-2">12</td>
-                          <td className="py-2 text-[#FF6B00]">2 (Grade 10-C)</td>
+                          <td className="py-2 text-[#D4A017]">2 (Grade 10-C)</td>
                           <td className="py-2 text-emerald-400 font-bold">10</td>
-                          <td className="py-2"><span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded text-[9px] font-bold">1 Grips Damaged</span></td>
+                          <td className="py-2"><span className="px-1.5 py-0.5 bg-[#D4A017]/15 text-[#D4A017] border border-[#D4A017]/30 rounded text-[9px] font-bold">1 Grips Damaged</span></td>
                         </tr>
                         <tr>
                           <td className="py-2 font-black text-white">Anti-Slip PVC Yoga Mats</td>
                           <td className="py-2">150</td>
-                          <td className="py-2 text-slate-500">0</td>
+                          <td className="py-2 text-slate-400">0</td>
                           <td className="py-2 text-emerald-400 font-bold">150</td>
                           <td className="py-2"><span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[9px] font-bold">Clean & Rolled</span></td>
                         </tr>
                         <tr>
                           <td className="py-2 font-black text-white">Yonex Badminton Rackets</td>
                           <td className="py-2">40</td>
-                          <td className="py-2 text-[#FF6B00]">14 (Grade 7-C)</td>
+                          <td className="py-2 text-[#D4A017]">14 (Grade 7-C)</td>
                           <td className="py-2 text-emerald-400 font-bold">26</td>
-                          <td className="py-2"><span className="px-1.5 py-0.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded text-[9px] font-bold">2 Broken Strings</span></td>
+                          <td className="py-2"><span className="px-1.5 py-0.5 bg-[#D4A017]/15 text-[#D4A017] border border-[#D4A017]/30 rounded text-[9px] font-bold">2 Broken Strings</span></td>
                         </tr>
                       </tbody>
                     </table>
@@ -2183,25 +2216,25 @@ const Dashboard: React.FC<{
               {activeDeptTab === 'substitutions' && (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">🔄 AI-Automated Substitution Scheduler</h4>
-                    <span className="px-2 py-0.5 bg-[#FF6B00]/10 border border-[#FF6B00]/20 text-[#FF6B00] rounded text-[9px] font-mono">1 Active Notice</span>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-300">🔄 AI-Automated Substitution Scheduler</h4>
+                    <span className="px-2 py-0.5 bg-[#D4A017]/15 border border-[#D4A017]/30 text-[#D4A017] rounded text-[9px] font-mono">1 Active Notice</span>
                   </div>
-                  <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                  <div className="p-4 bg-[#0D2B52] border border-white/10 rounded-xl space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-2.5">
                       <div>
-                        <span className="text-[9px] text-rose-400 font-black uppercase">Teacher Absent (On Sick Leave)</span>
+                        <span className="text-[9px] text-[#D4A017] font-black uppercase">Teacher Absent (On Sick Leave)</span>
                         <p className="text-xs font-black text-white">Mr. Devanshu Malhotra (Senior School PE HoD)</p>
                       </div>
                       <div className="text-right sm:text-right">
-                        <span className="text-[9px] text-indigo-400 font-black uppercase">Schedule Impacted</span>
-                        <p className="text-xs font-mono text-slate-300">Period 3 (Grade 8-A Basketball Practical)</p>
+                        <span className="text-[9px] text-slate-300 font-black uppercase">Schedule Impacted</span>
+                        <p className="text-xs font-mono text-[#D4A017]">Period 3 (Grade 8-A Basketball Practical)</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/20">AI</div>
+                      <div className="w-8 h-8 rounded-lg bg-[#D4A017] text-[#0D2B52] flex items-center justify-center font-bold text-xs shadow-md">AI</div>
                       <div>
                         <p className="text-xs font-black text-white">Recommended Match Replacement Assigned</p>
-                        <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">
+                        <p className="text-[10px] text-slate-200 leading-relaxed mt-0.5">
                           <strong>Ms. Meera Nair</strong> has a free slot in Period 3 and is certified in Basketball drills. Substitution roster auto-updated, notification broadcasted to high-school wing coordinator, and lesson plan shared with Ms. Meera Nair's phone app.
                         </p>
                       </div>
@@ -2213,54 +2246,54 @@ const Dashboard: React.FC<{
               {activeDeptTab === 'house-points' && (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">🏆 Inter-House Championship Standings</h4>
-                    <span className="text-[9px] text-amber-400 font-bold">Points sync directly with Board Audit Ledgers</span>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-300">🏆 Inter-House Championship Standings</h4>
+                    <span className="text-[9px] text-[#D4A017] font-bold">Points sync directly with Board Audit Ledgers</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-3">
                       {[
-                        { house: 'Agni House (Red)', points: housePoints.Agni, color: 'bg-rose-500', max: 500 },
-                        { house: 'Jal House (Blue)', points: housePoints.Jal, color: 'bg-blue-500', max: 500 },
-                        { house: 'Prithvi House (Green)', points: housePoints.Prithvi, color: 'bg-emerald-500', max: 500 },
-                        { house: 'Vayu House (Yellow)', points: housePoints.Vayu, color: 'bg-amber-400', max: 500 },
+                        { house: 'Agni House (Navy)', points: housePoints.Agni, color: 'bg-[#0D2B52]', max: 500 },
+                        { house: 'Jal House (Gold)', points: housePoints.Jal, color: 'bg-[#D4A017]', max: 500 },
+                        { house: 'Prithvi House (Royal Blue)', points: housePoints.Prithvi, color: 'bg-[#164077]', max: 500 },
+                        { house: 'Vayu House (Amber Gold)', points: housePoints.Vayu, color: 'bg-[#B8860B]', max: 500 },
                       ].map((h, i) => (
                         <div key={i} className="space-y-1">
                           <div className="flex justify-between text-[11px] font-black">
                             <span>{h.house}</span>
-                            <span>{h.points} pts</span>
+                            <span className="text-[#D4A017]">{h.points} pts</span>
                           </div>
-                          <div className="w-full h-2.5 bg-slate-900 border border-slate-800 rounded-full overflow-hidden">
+                          <div className="w-full h-2.5 bg-[#0D2B52] border border-white/10 rounded-full overflow-hidden">
                             <div className={`h-full ${h.color} transition-all duration-300`} style={{ width: `${(h.points / h.max) * 100}%` }}></div>
                           </div>
                         </div>
                       ))}
                     </div>
-                    <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-col justify-between space-y-4">
-                      <p className="text-[10px] text-slate-400 leading-relaxed">
+                    <div className="bg-[#0D2B52] p-4 rounded-xl border border-white/10 flex flex-col justify-between space-y-4">
+                      <p className="text-[10px] text-slate-200 leading-relaxed">
                         Demonstrate data flow capability. Click the trigger below to simulate awarding victory points to any house and watch the tallies update on the board dynamically.
                       </p>
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           onClick={() => setHousePoints(prev => ({ ...prev, Agni: prev.Agni + 20 }))}
-                          className="py-2 px-1 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 hover:border-transparent rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                          className="py-2 px-1 bg-[#D4A017]/15 hover:bg-[#D4A017] text-[#D4A017] hover:text-[#0D2B52] border border-[#D4A017]/30 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
                         >
                           +20 Agni
                         </button>
                         <button
                           onClick={() => setHousePoints(prev => ({ ...prev, Jal: prev.Jal + 20 }))}
-                          className="py-2 px-1 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/20 hover:border-transparent rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                          className="py-2 px-1 bg-[#D4A017]/15 hover:bg-[#D4A017] text-[#D4A017] hover:text-[#0D2B52] border border-[#D4A017]/30 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
                         >
                           +20 Jal
                         </button>
                         <button
                           onClick={() => setHousePoints(prev => ({ ...prev, Prithvi: prev.Prithvi + 20 }))}
-                          className="py-2 px-1 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 hover:border-transparent rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                          className="py-2 px-1 bg-[#D4A017]/15 hover:bg-[#D4A017] text-[#D4A017] hover:text-[#0D2B52] border border-[#D4A017]/30 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
                         >
                           +20 Prithvi
                         </button>
                         <button
                           onClick={() => setHousePoints(prev => ({ ...prev, Vayu: prev.Vayu + 20 }))}
-                          className="py-2 px-1 bg-amber-500/10 hover:bg-[#FF6B00] text-amber-400 hover:text-white border border-amber-500/20 hover:border-transparent rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                          className="py-2 px-1 bg-[#D4A017]/15 hover:bg-[#D4A017] text-[#D4A017] hover:text-[#0D2B52] border border-[#D4A017]/30 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
                         >
                           +20 Vayu
                         </button>
@@ -2273,37 +2306,37 @@ const Dashboard: React.FC<{
           </div>
 
           {/* 📋 CURRICULUM & BOARD COMPLIANCE MATRIX */}
-          <div className="bg-[#FFFDF9] border-4 border-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 space-y-6 relative z-10">
+          <div className="bg-[#F5F7FA] border-4 border-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 space-y-6 relative z-10">
             <div className="space-y-2">
-              <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-slate-900">
+              <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-[#0D2B52] font-display">
                 Pre-Loaded Standards Built for Indian Schools
               </h3>
-              <p className="text-xs text-slate-500 font-medium max-w-xl leading-relaxed">
+              <p className="text-xs text-slate-600 font-medium max-w-xl leading-relaxed">
                 SmartPE comes pre-configured with national physical education guidelines, saving you hours of manual setup.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
-              <div className="p-4 border border-slate-200 rounded-xl bg-white space-y-2">
-                <span className="text-[9px] font-black uppercase text-indigo-600 tracking-wider">CBSE HPE Strand 1-4</span>
-                <h4 className="text-xs font-black uppercase text-slate-900">Mandatory HPE Policy</h4>
-                <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+              <div className="p-4 border-2 border-slate-900 rounded-xl bg-white space-y-2">
+                <span className="text-[9px] font-black uppercase text-[#0D2B52] tracking-wider">CBSE HPE Strand 1-4</span>
+                <h4 className="text-xs font-black uppercase text-[#0D2B52] font-display">Mandatory HPE Policy</h4>
+                <p className="text-[10px] text-slate-600 font-medium leading-relaxed">
                   Fully integrates Games/Sports, Health & Fitness, SEWA projects, and health activity card record-keeping.
                 </p>
               </div>
 
-              <div className="p-4 border border-slate-200 rounded-xl bg-white space-y-2">
-                <span className="text-[9px] font-black uppercase text-[#FF6B00] tracking-wider">NEP 2020 Guidelines</span>
-                <h4 className="text-xs font-black uppercase text-slate-900">Sports-Integrated Learning</h4>
-                <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+              <div className="p-4 border-2 border-slate-900 rounded-xl bg-white space-y-2">
+                <span className="text-[9px] font-black uppercase text-[#D4A017] tracking-wider">NEP 2020 Guidelines</span>
+                <h4 className="text-xs font-black uppercase text-[#0D2B52] font-display">Sports-Integrated Learning</h4>
+                <p className="text-[10px] text-slate-600 font-medium leading-relaxed">
                   Supports active physical movement and games as pedagogical tools, with comprehensive progress summaries.
                 </p>
               </div>
 
-              <div className="p-4 border border-slate-200 rounded-xl bg-white space-y-2">
+              <div className="p-4 border-2 border-slate-900 rounded-xl bg-white space-y-2">
                 <span className="text-[9px] font-black uppercase text-emerald-600 tracking-wider">Khelo India SPARKS</span>
-                <h4 className="text-xs font-black uppercase text-slate-900">National Fitness Battery</h4>
-                <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                <h4 className="text-xs font-black uppercase text-[#0D2B52] font-display">National Fitness Battery</h4>
+                <p className="text-[10px] text-slate-600 font-medium leading-relaxed">
                   Pre-loads fitness batteries for age bands 5-8 (BMI, Coordination) and 9-18 (Speed, Strength, Endurance, Flexibility).
                 </p>
               </div>
@@ -2313,22 +2346,22 @@ const Dashboard: React.FC<{
       </div>
 
       {/* Dynamic CTA Banner matching Repaint Mockup */}
-      <section className="bg-[#FF6B00] text-white rounded-[3rem] p-12 md:p-16 border-4 border-slate-900 shadow-[12px_12px_0px_0px_rgba(15,23,42,1)] relative overflow-hidden">
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-white/10 rounded-full blur-[80px]"></div>
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-black/20 rounded-full blur-[80px]"></div>
+      <section className="bg-[#0D2B52] text-white rounded-[3rem] p-12 md:p-16 border-4 border-slate-900 shadow-[12px_12px_0px_0px_rgba(13,43,82,1)] relative overflow-hidden">
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-[#D4A017]/10 rounded-full blur-[80px]"></div>
+        <div className="absolute -top-20 -right-20 w-80 h-80 bg-[#D4A017]/20 rounded-full blur-[80px]"></div>
         
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 max-w-5xl mx-auto">
           <div className="space-y-4 text-center md:text-left">
-            <span className="px-4 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-widest inline-block">School-Ready System</span>
-            <h3 className="text-3xl md:text-5xl font-black uppercase tracking-tight leading-[1.1]">Get Your PE Department <br className="hidden md:block"/> School-Ready in Minutes.</h3>
-            <p className="text-white/80 text-sm font-semibold uppercase tracking-wider">Join physical education teachers and schools building organized, modern programs.</p>
+            <span className="px-4 py-1 bg-[#D4A017]/20 border border-[#D4A017]/40 text-[#D4A017] rounded-full text-[10px] font-black uppercase tracking-widest inline-block">School-Ready System</span>
+            <h3 className="text-3xl md:text-5xl font-black uppercase tracking-tight leading-[1.1] font-display">Get Your PE Department <br className="hidden md:block"/> School-Ready in Minutes.</h3>
+            <p className="text-slate-200 text-sm font-semibold uppercase tracking-wider">Join physical education teachers and schools building organized, modern programs.</p>
           </div>
           <div>
             <button 
               onClick={() => onNavigate?.('planner')}
-              className="px-10 py-6 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest border-2 border-slate-900 hover:bg-slate-800 hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] active:scale-95 transition-all flex items-center gap-3 whitespace-nowrap"
+              className="px-10 py-6 bg-[#D4A017] text-[#0D2B52] rounded-2xl font-black text-sm uppercase tracking-widest border-2 border-slate-900 hover:bg-[#e0ab1e] hover:shadow-[4px_4px_0px_0px_rgba(13,43,82,1)] active:scale-95 transition-all flex items-center gap-3 whitespace-nowrap shadow-xl"
             >
-              <Sparkles size={20} className="text-[#FF6B00]" />
+              <Sparkles size={20} className="text-[#0D2B52]" />
               <span>Get Started for Free</span>
             </button>
           </div>
@@ -2336,20 +2369,20 @@ const Dashboard: React.FC<{
       </section>
 
       {/* 🤝 TRUST & SYSTEM PROOF: Why schools Trust smartpeindia */}
-      <section className="space-y-16 bg-[#FFFDF9] border-4 border-slate-900 rounded-[3.5rem] p-8 md:p-14 relative overflow-hidden shadow-[12px_12px_0px_0px_rgba(15,23,42,1)]">
-        <div className="absolute inset-0 opacity-[0.01] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+      <section className="space-y-16 bg-[#F5F7FA] border-4 border-slate-900 rounded-[3.5rem] p-8 md:p-14 relative overflow-hidden shadow-[12px_12px_0px_0px_rgba(13,43,82,1)]">
+        <div className="absolute inset-0 opacity-[0.01] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#0D2B52 1px, transparent 1px), linear-gradient(90deg, #0D2B52 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
         
         <div className="flex flex-col md:flex-row md:items-end justify-between border-b-4 border-slate-900 pb-8 relative z-10">
           <div className="space-y-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#005BFF]">05. TRUST & EVIDENCE</p>
-            <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">Why Indian Schools <br/> <span className="text-[#005BFF]">Trust SmartPE.</span></h2>
-            <p className="text-sm text-slate-600 font-semibold leading-relaxed max-w-xl">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#D4A017]">05. TRUST & EVIDENCE</p>
+            <h2 className="text-4xl md:text-6xl font-black text-[#0D2B52] tracking-tighter uppercase leading-[0.9] font-display">Why Indian Schools <br/> <span className="text-[#D4A017]">Trust SmartPE.</span></h2>
+            <p className="text-sm text-[#333333] font-medium leading-relaxed max-w-xl">
               Learn how physical educators, PE heads, and school principals use SmartPE to run organized, measurable, and engaging sports programs.
             </p>
           </div>
           <div className="mt-4 md:mt-0">
-            <span className="px-4 py-2 bg-indigo-600/10 border border-indigo-600/30 text-indigo-700 rounded-full text-xs font-black uppercase tracking-widest inline-flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
+            <span className="px-4 py-2 bg-[#D4A017]/15 border border-[#D4A017]/40 text-[#0D2B52] rounded-full text-xs font-black uppercase tracking-widest inline-flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#D4A017] animate-pulse"></span>
               Verified School Network
             </span>
           </div>
@@ -2357,18 +2390,18 @@ const Dashboard: React.FC<{
 
         {/* Part 1: Who It Is For (Bento Grid) */}
         <div className="space-y-6">
-          <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest text-center">🎯 Tailored Roles & Stakeholders</h3>
+          <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest text-center">🎯 Tailored Roles & Stakeholders</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { title: 'PE Teachers', role: 'Daily Operations', benefit: 'Instantly assemble CBSE/NCERT-aligned lesson structures. Eliminate manual spreadsheet preparation and save 5+ hours weekly.', color: 'bg-[#FF6B00]/5 text-[#FF6B00]' },
-              { title: 'HoDs & Directors', role: 'Department Control', benefit: 'Direct supervisor access. Track student growth trends, coordinate substitute coverage plans, and log sports inventory.', color: 'bg-indigo-600/5 text-indigo-700' },
-              { title: 'School Principals', role: 'Governance & Brand', benefit: 'Zero-effort board compliance audits. Access print-ready fitness summaries, medical logs, and official performance stats.', color: 'bg-emerald-500/5 text-emerald-700' },
-              { title: 'Board Inspectors', role: 'Policy & Compliance', benefit: 'Auditable record accuracy. Instant validation against CBSE strands, NEP 2020 mandates, and Khelo India criteria.', color: 'bg-rose-500/5 text-rose-700' },
+              { title: 'PE Teachers', role: 'Daily Operations', benefit: 'Instantly assemble CBSE/NCERT-aligned lesson structures. Eliminate manual spreadsheet preparation and save 5+ hours weekly.', color: 'bg-[#D4A017]/15 text-[#0D2B52]' },
+              { title: 'HoDs & Directors', role: 'Department Control', benefit: 'Direct supervisor access. Track student growth trends, coordinate substitute coverage plans, and log sports inventory.', color: 'bg-[#0D2B52]/10 text-[#0D2B52]' },
+              { title: 'School Principals', role: 'Governance & Brand', benefit: 'Zero-effort board compliance audits. Access print-ready fitness summaries, medical logs, and official performance stats.', color: 'bg-emerald-500/10 text-emerald-800' },
+              { title: 'Board Inspectors', role: 'Policy & Compliance', benefit: 'Auditable record accuracy. Instant validation against CBSE strands, NEP 2020 mandates, and Khelo India criteria.', color: 'bg-[#D4A017]/20 text-[#0D2B52]' },
             ].map((role, idx) => (
-              <div key={idx} className="bg-white border-4 border-slate-900 rounded-[2rem] p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] hover:-translate-y-1 transition-all">
+              <div key={idx} className="bg-white border-4 border-slate-900 rounded-[2rem] p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(13,43,82,1)] hover:shadow-[8px_8px_0px_0px_rgba(13,43,82,1)] hover:-translate-y-1 transition-all">
                 <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${role.color}`}>{role.role}</span>
-                <h4 className="text-xl font-black uppercase text-slate-900 pt-2">{role.title}</h4>
-                <p className="text-xs text-slate-500 font-semibold leading-relaxed">{role.benefit}</p>
+                <h4 className="text-xl font-black uppercase text-[#0D2B52] font-display pt-2">{role.title}</h4>
+                <p className="text-xs text-slate-600 font-medium leading-relaxed">{role.benefit}</p>
               </div>
             ))}
           </div>
@@ -2376,12 +2409,12 @@ const Dashboard: React.FC<{
 
         {/* Part 2: Interactive Real Output Previews */}
         <div className="space-y-6">
-          <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest text-center">📄 Real Product Output Previews</h3>
-          <div className="bg-slate-950 border-4 border-slate-900 rounded-[2.5rem] p-6 text-white space-y-6">
-            <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 gap-4">
+          <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest text-center">📄 Real Product Output Previews</h3>
+          <div className="bg-[#0D2B52] border-4 border-slate-900 rounded-[2.5rem] p-6 text-white space-y-6">
+            <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-4 gap-4">
               <div>
-                <span className="text-[10px] text-indigo-400 font-bold uppercase">Click below to review real system deliverables</span>
-                <h4 className="text-lg font-black uppercase">Document & Report Previews</h4>
+                <span className="text-[10px] text-[#D4A017] font-bold uppercase">Click below to review real system deliverables</span>
+                <h4 className="text-lg font-black uppercase font-display">Document & Report Previews</h4>
               </div>
               <div className="flex gap-2">
                 {[
@@ -2394,8 +2427,8 @@ const Dashboard: React.FC<{
                     onClick={() => setSampleOutputTab(tab.id as any)}
                     className={`px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border-2 ${
                       sampleOutputTab === tab.id
-                        ? 'bg-[#FF6B00] text-white border-slate-900 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]'
-                        : 'bg-slate-900 text-slate-400 border-transparent hover:text-white hover:bg-slate-800'
+                        ? 'bg-[#D4A017] text-[#0D2B52] border-slate-900 shadow-[2px_2px_0px_0px_rgba(13,43,82,1)]'
+                        : 'bg-[#091D38] text-slate-300 border-transparent hover:text-white hover:bg-white/10'
                     }`}
                   >
                     {tab.label}
@@ -2405,31 +2438,31 @@ const Dashboard: React.FC<{
             </div>
 
             {/* Document Sandbox Showcase */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 min-h-[250px] flex flex-col justify-between">
+            <div className="bg-[#091D38] border border-white/10 rounded-2xl p-6 min-h-[250px] flex flex-col justify-between">
               {sampleOutputTab === 'lesson' && (
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center text-[11px] font-mono border-b border-slate-800 pb-2 text-slate-400">
+                  <div className="flex justify-between items-center text-[11px] font-mono border-b border-white/10 pb-2 text-slate-300">
                     <span>DOCUMENT ID: SMP-LP-8427</span>
                     <span>STANDARDS: CBSE HPE STRAND 1 (GAMES)</span>
                   </div>
                   <div className="space-y-2">
-                    <h5 className="text-base font-black text-white uppercase">TOPIC: Football Dribbling & Ball Control Basics (Grade 7)</h5>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h5 className="text-base font-black text-white uppercase font-display">TOPIC: Football Dribbling & Ball Control Basics (Grade 7)</h5>
+                    <p className="text-xs text-slate-300 leading-relaxed">
                       <strong>Objectives:</strong> Students will learn ball handling mechanics with inside and outside edges of the foot, maintaining close control within a 10m grid.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-2">
-                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-                      <span className="text-[#FF6B00] font-black uppercase text-[9px]">Warm-Up (10 Mins)</span>
-                      <p className="text-[10px] text-slate-400 leading-relaxed">Jogging with dynamic joint circles; slow-paced ball-taps.</p>
+                    <div className="bg-[#0D2B52] p-3 rounded-lg border border-white/10 space-y-1">
+                      <span className="text-[#D4A017] font-black uppercase text-[9px]">Warm-Up (10 Mins)</span>
+                      <p className="text-[10px] text-slate-300 leading-relaxed">Jogging with dynamic joint circles; slow-paced ball-taps.</p>
                     </div>
-                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-                      <span className="text-indigo-400 font-black uppercase text-[9px]">Main Practice (20 Mins)</span>
-                      <p className="text-[10px] text-slate-400 leading-relaxed">Slalom dribbling between 6 cones set 1.5m apart. 3 sets each foot.</p>
+                    <div className="bg-[#0D2B52] p-3 rounded-lg border border-white/10 space-y-1">
+                      <span className="text-white font-black uppercase text-[9px]">Main Practice (20 Mins)</span>
+                      <p className="text-[10px] text-slate-300 leading-relaxed">Slalom dribbling between 6 cones set 1.5m apart. 3 sets each foot.</p>
                     </div>
-                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
+                    <div className="bg-[#0D2B52] p-3 rounded-lg border border-white/10 space-y-1">
                       <span className="text-emerald-400 font-black uppercase text-[9px]">Cool-down (10 Mins)</span>
-                      <p className="text-[10px] text-slate-400 leading-relaxed">Lower back static stretches; peer feedback & score logging.</p>
+                      <p className="text-[10px] text-slate-300 leading-relaxed">Lower back static stretches; peer feedback & score logging.</p>
                     </div>
                   </div>
                 </div>
@@ -2437,25 +2470,25 @@ const Dashboard: React.FC<{
 
               {sampleOutputTab === 'rubric' && (
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center text-[11px] font-mono border-b border-slate-800 pb-2 text-slate-400">
+                  <div className="flex justify-between items-center text-[11px] font-mono border-b border-white/10 pb-2 text-slate-300">
                     <span>RUBRIC ID: SMP-RB-9941</span>
                     <span>CURRICULUM ALIGNED: HIGH SCHOOL PRACTICAL EXAM</span>
                   </div>
                   <div className="space-y-1">
-                    <h5 className="text-base font-black text-white uppercase">CBSE Physical Education Rubric: Basketball (Class 12)</h5>
-                    <p className="text-xs text-slate-400">Certified practical grading parameters distributed across customized student skills.</p>
+                    <h5 className="text-base font-black text-white uppercase font-display">CBSE Physical Education Rubric: Basketball (Class 12)</h5>
+                    <p className="text-xs text-slate-300">Certified practical grading parameters distributed across customized student skills.</p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-[10px] border-collapse">
                       <thead>
-                        <tr className="text-slate-500 font-black uppercase border-b border-slate-800 pb-1">
+                        <tr className="text-slate-400 font-black uppercase border-b border-white/10 pb-1">
                           <th>Parameter Checked</th>
                           <th>Excellent (4-5 pts)</th>
                           <th>Proficient (2-3 pts)</th>
                           <th>Beginner (0-1 pts)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800 text-slate-300">
+                      <tbody className="divide-y divide-white/5 text-slate-200">
                         <tr>
                           <td className="py-2 font-black text-white">Ball Handling</td>
                           <td className="py-2">Clean finger-tip control, eyes up, fluid speed changes.</td>
@@ -2476,25 +2509,25 @@ const Dashboard: React.FC<{
 
               {sampleOutputTab === 'report' && (
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center text-[11px] font-mono border-b border-slate-800 pb-2 text-slate-400">
+                  <div className="flex justify-between items-center text-[11px] font-mono border-b border-white/10 pb-2 text-slate-300">
                     <span>REPORT ID: SMP-REP-003</span>
                     <span>STUDENT CARD: INDIVIDUAL KHELO INDIA PROFILE</span>
                   </div>
-                  <div className="flex items-center gap-4 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-xs uppercase">KD</div>
+                  <div className="flex items-center gap-4 bg-[#0D2B52] p-3 rounded-xl border border-white/10">
+                    <div className="w-10 h-10 rounded-full bg-[#D4A017] text-[#0D2B52] flex items-center justify-center font-black text-xs uppercase font-display">KD</div>
                     <div>
-                      <h5 className="text-sm font-black text-white uppercase">Student: Kabir Dutt (Class 8-A, Roll 12)</h5>
-                      <p className="text-[10px] text-slate-400">Academic Year: 2026-27 &bull; Verified via SmartPE</p>
+                      <h5 className="text-sm font-black text-white uppercase font-display">Student: Kabir Dutt (Class 8-A, Roll 12)</h5>
+                      <p className="text-[10px] text-slate-300">Academic Year: 2026-27 &bull; Verified via SmartPE</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg">
-                      <span className="text-slate-500 font-black text-[9px] uppercase">Baseline (July)</span>
+                    <div className="p-2.5 bg-[#0D2B52] border border-white/10 rounded-lg">
+                      <span className="text-slate-400 font-black text-[9px] uppercase">Baseline (July)</span>
                       <p className="text-sm font-black text-slate-200 mt-1">Sit & Reach: 14 cm</p>
-                      <p className="text-[10px] text-[#FF6B00] font-bold">BMI Zone: Above recommended</p>
+                      <p className="text-[10px] text-[#D4A017] font-bold">BMI Zone: Above recommended</p>
                     </div>
-                    <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg">
-                      <span className="text-slate-500 font-black text-[9px] uppercase">Midline (Nov)</span>
+                    <div className="p-2.5 bg-[#0D2B52] border border-white/10 rounded-lg">
+                      <span className="text-slate-400 font-black text-[9px] uppercase">Midline (Nov)</span>
                       <p className="text-sm font-black text-slate-200 mt-1">Sit & Reach: 16.5 cm</p>
                       <p className="text-[10px] text-emerald-400 font-bold">BMI Zone: Over recommended</p>
                     </div>
@@ -2517,13 +2550,13 @@ const Dashboard: React.FC<{
             { quote: "Having all physical literacy metrics, lesson schedules, inventory alerts, and medical history sheets in a single dashboard is exactly what modern schools need. Absolute game changer.", author: "Mr. Devanshu Malhotra, Department Head", school: "Army Public School, Pune" },
             { quote: "We mapped our full 40-week progressive multi-sport curriculum inside SmartPE in minutes. The compliance auditor was highly impressed with our transparent, verifiable records.", author: "Ms. Priya Nair, Lead Physical Educator", school: "The Doon School, Dehradun" },
           ].map((testimonial, idx) => (
-            <div key={idx} className="bg-slate-50 border-4 border-slate-900 rounded-[2rem] p-6 space-y-4 flex flex-col justify-between shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]">
+            <div key={idx} className="bg-white border-4 border-slate-900 rounded-[2rem] p-6 space-y-4 flex flex-col justify-between shadow-[4px_4px_0px_0px_rgba(13,43,82,1)]">
               <p className="text-xs text-slate-600 font-semibold italic leading-relaxed">
                 "{testimonial.quote}"
               </p>
               <div className="pt-2 border-t border-slate-200">
-                <p className="text-xs font-black uppercase text-slate-900">{testimonial.author}</p>
-                <p className="text-[10px] font-bold text-[#FF6B00] uppercase tracking-wider">{testimonial.school}</p>
+                <p className="text-xs font-black uppercase text-[#0D2B52] font-display">{testimonial.author}</p>
+                <p className="text-[10px] font-bold text-[#D4A017] uppercase tracking-wider">{testimonial.school}</p>
               </div>
             </div>
           ))}
@@ -2534,15 +2567,15 @@ const Dashboard: React.FC<{
       <section className="max-w-4xl mx-auto">
         <div className="space-y-10">
           <div className="flex items-center justify-between border-b-4 border-slate-900 pb-6">
-            <h3 className="text-4xl font-black uppercase tracking-tight text-slate-900">Recent Activity</h3>
-            <button className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600 hover:text-indigo-700">Audit Log</button>
+            <h3 className="text-4xl font-black uppercase tracking-tight text-[#0D2B52] font-display">Recent Activity</h3>
+            <button className="text-[10px] font-black uppercase tracking-[0.3em] text-[#0D2B52] hover:text-[#164077]">Audit Log</button>
           </div>
           
           <div className="space-y-6">
             {history.length === 0 ? (
               <div className="p-20 bg-white rounded-[3rem] border-4 border-slate-900 border-dashed text-center">
-                <Clock className="mx-auto text-slate-200 mb-6" size={64} />
-                <p className="text-slate-400 font-black text-xl uppercase tracking-tight">No activity recorded</p>
+                <Clock className="mx-auto text-slate-300 mb-6" size={64} />
+                <p className="text-slate-400 font-black text-xl uppercase tracking-tight font-display">No activity recorded</p>
               </div>
             ) : (
               <AnimatePresence>
@@ -2559,24 +2592,24 @@ const Dashboard: React.FC<{
                       if (item.type === 'Skill') onNavigate?.('skillmastery');
                       if (item.type === 'Tool') onNavigate?.('fitness');
                     }}
-                    className="group bg-white p-8 rounded-[2rem] border-4 border-slate-900 hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.2)] transition-all cursor-pointer flex items-center justify-between"
+                    className="group bg-white p-8 rounded-[2rem] border-4 border-slate-900 hover:shadow-[12px_12px_0px_0px_rgba(13,43,82,0.2)] transition-all cursor-pointer flex items-center justify-between"
                   >
                     <div className="flex items-center space-x-8">
-                      <div className="p-5 bg-slate-900 text-white rounded-2xl group-hover:bg-indigo-600 transition-colors">
+                      <div className="p-5 bg-[#0D2B52] text-[#D4A017] rounded-2xl transition-colors">
                         {getIcon(item.type)}
                       </div>
                       <div>
-                        <p className="text-xl font-black text-slate-900 uppercase tracking-tight">{item.title}</p>
+                        <p className="text-xl font-black text-[#0D2B52] uppercase tracking-tight font-display">{item.title}</p>
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                           {item.type === 'TestPaper' ? 'Question Paper (CBSE)' : item.type}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-6">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 group-hover:text-indigo-600 transition-colors">Open Resource</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-[#0D2B52] transition-colors">Open Resource</span>
                       <button 
                         onClick={(e) => handleDelete(item.id, e)}
-                        className="p-4 text-slate-200 hover:text-white hover:bg-rose-500 rounded-2xl transition-all opacity-0 group-hover:opacity-100 border-2 border-transparent hover:border-slate-900"
+                        className="p-4 text-slate-300 hover:text-white hover:bg-[#0D2B52] rounded-2xl transition-all opacity-0 group-hover:opacity-100 border-2 border-transparent hover:border-slate-900"
                       >
                         <Trash2 size={20} />
                       </button>

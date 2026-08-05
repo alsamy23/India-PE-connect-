@@ -24,52 +24,69 @@ const Logo: React.FC<LogoProps> = ({
   };
 
   const textSizes = {
-    sm: 'text-lg',
-    md: 'text-2xl',
-    lg: 'text-3xl',
-    xl: 'text-4xl'
+    sm: 'text-base',
+    md: 'text-xl',
+    lg: 'text-2xl',
+    xl: 'text-3xl'
   };
 
-  const subtitleSizes = {
-    sm: 'text-[7px]',
-    md: 'text-[9px]',
-    lg: 'text-[11px]',
-    xl: 'text-[13px]'
+  const taglineSizes = {
+    sm: 'text-[8px]',
+    md: 'text-[10px]',
+    lg: 'text-[12px]',
+    xl: 'text-[14px]'
   };
 
   return (
     <div className={`inline-flex items-center gap-3 select-none ${className}`}>
-      {/* Smart PE India Official Shield Emblem Image */}
+      {/* Smart PE India Official Shield Emblem */}
       <div className={`relative flex items-center justify-center flex-shrink-0 ${emblemSizes[size]}`}>
-        <img 
-          src={logoImg} 
-          alt="Smart PE India Logo" 
-          className="w-full h-full object-contain mix-blend-multiply transition-transform duration-200 hover:scale-105"
-        />
+        {logoImg ? (
+          <img 
+            src={logoImg} 
+            alt="Smart PE India Logo" 
+            className="w-full h-full object-contain transition-transform duration-200 hover:scale-105 drop-shadow-md rounded-lg"
+          />
+        ) : (
+          /* SVG Shield Emblem matching Brand Sheet */
+          <svg viewBox="0 0 100 115" className="w-full h-full drop-shadow-md">
+            <defs>
+              <linearGradient id="shieldBg" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#0D2B52" />
+                <stop offset="100%" stopColor="#071933" />
+              </linearGradient>
+              <linearGradient id="goldBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#F3C649" />
+                <stop offset="50%" stopColor="#D4A017" />
+                <stop offset="100%" stopColor="#997008" />
+              </linearGradient>
+            </defs>
+            {/* Outer Shield Border */}
+            <path d="M 50,4 L 92,18 V 58 C 92,84 72,104 50,111 C 28,104 8,84 8,58 V 18 Z" fill="url(#shieldBg)" stroke="url(#goldBorder)" strokeWidth="6" />
+            {/* Circuit Traces */}
+            <path d="M 16,30 L 30,30 L 36,40" stroke="#D4A017" strokeWidth="1.5" strokeOpacity="0.5" fill="none" />
+            <circle cx="36" cy="40" r="2" fill="#D4A017" />
+            <path d="M 84,30 L 70,30 L 64,40" stroke="#D4A017" strokeWidth="1.5" strokeOpacity="0.5" fill="none" />
+            <circle cx="64" cy="40" r="2" fill="#D4A017" />
+            {/* Runner Silhouette */}
+            <path d="M 54,26 C 56.5,26 58.5,24 58.5,21.5 C 58.5,19 56.5,17 54,17 C 51.5,17 49.5,19 49.5,21.5 C 49.5,24 51.5,26 54,26 Z M 68,36 L 57,32 L 51,26 C 49.5,24.5 47,24.5 45.5,26 L 37,34.5 C 36,35.5 36,37 37,38 C 38,39 39.5,39 40.5,38 L 47,31.5 L 45,43 L 34,49 C 32.5,49.8 32,51.5 32.8,53 C 33.6,54.5 35.3,55 36.8,54.2 L 47,48.5 L 53.5,68 C 54,69.5 55.5,70.5 57,70 C 58.5,69.5 59.5,68 59,66.5 L 53.5,49.5 L 61,42 L 67,53 C 67.8,54.5 69.5,55 71,54.2 C 72.5,53.4 73,51.7 72.2,50.2 L 65.5,38 Z" fill="#D4A017" />
+          </svg>
+        )}
       </div>
 
       {/* Brand Wordmark & Tagline Block */}
       {showText && (
         <div className="flex flex-col justify-center leading-none">
-          {/* Main Title: Smart PE India */}
-          <div className={`font-extrabold font-sans tracking-tight flex items-center ${textSizes[size]}`}>
-            <span className={isLight ? 'text-white' : 'text-[#0F2C59]'}>Smart</span>
-            <span className="text-[#2BB673] mx-1">PE</span>
-            <span className={isLight ? 'text-slate-100' : 'text-[#0F2C59]'}>India</span>
+          {/* Main Title: SMART PE INDIA */}
+          <div className={`font-black font-display tracking-tight flex items-center ${textSizes[size]}`}>
+            <span className={isLight ? 'text-white' : 'text-[#0D2B52]'}>SMART PE</span>
+            <span className={`ml-1.5 ${isLight ? 'text-[#D4A017]' : 'text-[#D4A017]'}`}>INDIA</span>
           </div>
 
-          {/* Tagline: — MANAGE • TRACK • EMPOWER — */}
-          <div className="flex items-center gap-1.5 mt-1 leading-none">
-            <div className={`h-[1.5px] w-3.5 ${isLight ? 'bg-white/30' : 'bg-[#0F2C59]/30'}`}></div>
-            <div className={`flex items-center space-x-1 font-bold uppercase tracking-[0.18em] ${subtitleSizes[size]} ${isLight ? 'text-slate-300' : 'text-[#0F2C59]'}`}>
-              <span>MANAGE</span>
-              <span className="text-[#FF8C1A] font-black">•</span>
-              <span>TRACK</span>
-              <span className="text-[#2BB673] font-black">•</span>
-              <span>EMPOWER</span>
-            </div>
-            <div className={`h-[1.5px] w-3.5 ${isLight ? 'bg-white/30' : 'bg-[#0F2C59]/30'}`}></div>
-          </div>
+          {/* Official Tagline: Plan Smarter. Teach Better. */}
+          <p className={`font-bold font-sans tracking-wide mt-1 leading-none ${taglineSizes[size]} ${isLight ? 'text-slate-300' : 'text-[#333333]'}`}>
+            Plan Smarter. Teach Better.
+          </p>
         </div>
       )}
     </div>

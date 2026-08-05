@@ -1741,28 +1741,28 @@ const TournamentMaker: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setHideFormulaBoardInPrint(!hideFormulaBoardInPrint)}
-                      className={`p-2.5 rounded-xl border text-left text-[11px] font-extrabold transition-all flex flex-col justify-between h-20 ${hideFormulaBoardInPrint ? 'bg-rose-50 border-rose-200 text-rose-800 shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600'}`}
+                      className={`p-2.5 rounded-xl border text-left text-[11px] font-extrabold transition-all flex flex-col justify-between h-20 ${hideFormulaBoardInPrint ? 'bg-slate-100 border-slate-300 text-slate-800 shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600'}`}
                     >
                       <span className="leading-tight">CBSE PE Formula Block</span>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-rose-600/90">{hideFormulaBoardInPrint ? '❌ Hidden from print' : '✅ Will print'}</span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-600">{hideFormulaBoardInPrint ? '❌ Hidden from print' : '✅ Will print'}</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setHideRosterInPrint(!hideRosterInPrint)}
-                      className={`p-2.5 rounded-xl border text-left text-[11px] font-extrabold transition-all flex flex-col justify-between h-20 ${hideRosterInPrint ? 'bg-rose-50 border-rose-200 text-rose-800 shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600'}`}
+                      className={`p-2.5 rounded-xl border text-left text-[11px] font-extrabold transition-all flex flex-col justify-between h-20 ${hideRosterInPrint ? 'bg-slate-100 border-slate-300 text-slate-800 shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600'}`}
                     >
                       <span className="leading-tight">Registered Roster List</span>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-rose-600/90">{hideRosterInPrint ? '❌ Hidden' : '✅ Will print'}</span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-600">{hideRosterInPrint ? '❌ Hidden' : '✅ Will print'}</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setHideRulesFooterInPrint(!hideRulesFooterInPrint)}
-                      className={`p-2.5 rounded-xl border text-left text-[11px] font-extrabold transition-all flex flex-col justify-between h-20 ${hideRulesFooterInPrint ? 'bg-rose-50 border-rose-200 text-rose-800 shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600'}`}
+                      className={`p-2.5 rounded-xl border text-left text-[11px] font-extrabold transition-all flex flex-col justify-between h-20 ${hideRulesFooterInPrint ? 'bg-slate-100 border-slate-300 text-slate-800 shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600'}`}
                     >
                       <span className="leading-tight">Directives & Signatures</span>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-rose-600/90">{hideRulesFooterInPrint ? '❌ Hidden' : '✅ Will print'}</span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-600">{hideRulesFooterInPrint ? '❌ Hidden' : '✅ Will print'}</span>
                     </button>
                   </div>
                 </div>
@@ -1773,7 +1773,7 @@ const TournamentMaker: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* PDF & Printer Direct Options */}
               <div className="bg-slate-50/50 p-5 rounded-3xl border border-slate-100 space-y-4">
-                <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest block">PDF & Print Actions</span>
+                <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest block">PDF & Print Actions</span>
                 <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">Print directly using those pagination styles, or open a style-pure pop-up window if sandbox constraints block dialogs.</p>
                 <div className="flex flex-col gap-2 pt-2">
                   <button 

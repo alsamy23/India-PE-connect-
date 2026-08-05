@@ -98,10 +98,10 @@ const ParentLetters: React.FC = () => {
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-3">
             <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-1.5 rounded-full">
-              <Mail size={14} className="text-rose-400" />
+              <Mail size={14} className="text-[#D4A017]" />
               <span className="text-[10px] font-black uppercase tracking-widest">Communication Hub</span>
             </div>
-            <h1 className="text-4xl font-black tracking-tighter">Parent <span className="text-rose-500">Letters</span></h1>
+            <h1 className="text-4xl font-black tracking-tighter">Parent <span className="text-[#D4A017]">Letters</span></h1>
             <p className="text-slate-400 text-sm font-medium max-w-md">
               AI-written professional letters to parents in seconds.
             </p>
@@ -232,7 +232,7 @@ const ParentLetters: React.FC = () => {
               </button>
               <button 
                 onClick={handlePrint}
-                className="p-3 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-all"
+                className="p-3 bg-[#0D2B52] text-white rounded-xl hover:bg-[#164077] transition-all"
                 title="Print Letter"
               >
                 <Printer size={20} />

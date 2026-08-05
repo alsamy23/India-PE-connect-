@@ -395,21 +395,21 @@ const TestPaperGenerator: React.FC = () => {
                 </div>
 
                 {error && (
-                  <div className="p-6 bg-rose-50 border border-rose-100 rounded-[2rem] flex flex-col space-y-4 text-rose-600">
+                  <div className="p-6 bg-slate-100 border border-slate-200 rounded-[2rem] flex flex-col space-y-4 text-slate-800">
                     <div className="flex items-center space-x-3">
-                      <AlertTriangle size={20} />
+                      <AlertTriangle size={20} className="text-amber-600" />
                       <p className="text-xs font-black uppercase tracking-tight">{error}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <button 
                         onClick={handleGenerate}
-                        className="py-3 bg-rose-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/20"
+                        className="py-3 bg-[#0D2B52] text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#164077] transition-all shadow-md"
                       >
                         Retry
                       </button>
                       <button 
                         onClick={() => window.aistudio?.openSelectKey().catch(e => console.error("Key selection cancelled:", e))}
-                        className="py-3 bg-white border border-rose-200 text-rose-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 transition-all"
+                        className="py-3 bg-white border border-slate-300 text-slate-800 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all"
                       >
                         Setup AI
                       </button>
