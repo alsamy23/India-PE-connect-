@@ -19,7 +19,8 @@ import {
   Check,
   Printer,
   CheckSquare,
-  Square
+  Square,
+  AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { jsPDF } from 'jspdf';
@@ -47,6 +48,10 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
   const [isGeneratingBulkPDF, setIsGeneratingBulkPDF] = useState(false);
   const [bulkProgressText, setBulkProgressText] = useState('');
+  const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
+  const [confirmDeleteText, setConfirmDeleteText] = useState('');
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+  const [deleteProgressText, setDeleteProgressText] = useState('');
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const isSuperAdmin = auth.currentUser?.email === 'alsamy36@gmail.com';
@@ -673,6 +678,62 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     }
   };
 
+  // Bulk Delete Selected Students
+  const handleDeleteSelectedStudents = async () => {
+    const selectedList = students.filter(s => selectedStudentIds.has(s.id));
+    if (selectedList.length === 0) return;
+
+    if (!window.confirm(`Are you sure you want to delete ${selectedList.length} selected student(s) and all their associated fitness test records? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeletingBulk(true);
+    setDeleteProgressText(`Deleting ${selectedList.length} selected student(s)...`);
+
+    try {
+      await fitnessService.bulkDeleteStudents(Array.from(selectedStudentIds));
+      toast.success(`Successfully deleted ${selectedList.length} student(s) from the school roster.`);
+      setSelectedStudentIds(new Set());
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to delete selected students: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setIsDeletingBulk(false);
+      setDeleteProgressText('');
+    }
+  };
+
+  // Delete All Students in School
+  const handleDeleteAllStudents = async () => {
+    if (students.length === 0) {
+      toast.error('There are no students to delete.');
+      return;
+    }
+
+    if (confirmDeleteText.trim().toUpperCase() !== 'DELETE ALL') {
+      toast.error('Please type "DELETE ALL" to confirm clearing the school roster.');
+      return;
+    }
+
+    setIsDeletingBulk(true);
+    setDeleteProgressText(`Clearing all ${students.length} student records from school roster...`);
+
+    try {
+      const allIds = students.map(s => s.id);
+      await fitnessService.bulkDeleteStudents(allIds);
+      toast.success(`Successfully cleared all ${allIds.length} student records from school roster.`);
+      setSelectedStudentIds(new Set());
+      setIsDeleteAllModalOpen(false);
+      setConfirmDeleteText('');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to clear school roster: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setIsDeletingBulk(false);
+      setDeleteProgressText('');
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
@@ -690,6 +751,19 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
           <p className="text-slate-500 font-medium">Manage student profiles, search records instantly, and track academic details.</p>
         </div>
         <div className="flex items-center gap-3">
+          {students.length > 0 && (
+            <button 
+              onClick={() => {
+                setConfirmDeleteText('');
+                setIsDeleteAllModalOpen(true);
+              }}
+              className="px-5 py-3 bg-rose-50 text-rose-700 border-2 border-rose-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-100 transition-all shadow-[4px_4px_0px_0px_rgba(159,18,57,1)] flex items-center gap-2"
+              title="Delete all student records in school roster"
+            >
+              <Trash2 size={16} />
+              <span className="hidden sm:inline">Delete All Students</span>
+            </button>
+          )}
           <button 
             onClick={() => setIsImporting(true)}
             className="px-6 py-3 bg-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] flex items-center gap-2"
@@ -1061,8 +1135,21 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
 
             <div className="flex items-center gap-2">
               <button
+                onClick={handleDeleteSelectedStudents}
+                disabled={isDeletingBulk || isGeneratingBulkPDF}
+                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-md shadow-rose-900/50 disabled:opacity-50"
+              >
+                {isDeletingBulk ? (
+                  <Loader2 size={16} className="animate-spin text-white" />
+                ) : (
+                  <Trash2 size={16} />
+                )}
+                <span>Delete Selected ({selectedStudentIds.size})</span>
+              </button>
+
+              <button
                 onClick={handleGenerateBulkPDF}
-                disabled={isGeneratingBulkPDF}
+                disabled={isGeneratingBulkPDF || isDeletingBulk}
                 className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-md shadow-indigo-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isGeneratingBulkPDF ? (
@@ -1107,6 +1194,105 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Deleting Progress Overlay */}
+      <AnimatePresence>
+        {isDeletingBulk && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <div className="bg-white rounded-3xl p-8 max-w-md w-full border-2 border-slate-900 text-center space-y-4 shadow-2xl">
+              <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto text-rose-600 border border-rose-100">
+                <Trash2 size={32} className="animate-bounce" />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Deleting Student Data</h3>
+              <p className="text-xs text-slate-500 font-bold">{deleteProgressText}</p>
+              <div className="flex items-center justify-center gap-2 text-rose-600 font-black text-xs uppercase tracking-wider pt-2">
+                <Loader2 size={18} className="animate-spin" />
+                <span>Updating School Database...</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete All Students Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteAllModalOpen && (
+          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-[2.5rem] border-4 border-slate-900 p-8 max-w-lg w-full shadow-2xl space-y-6"
+            >
+              <div className="flex items-center justify-between border-b-2 border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-rose-100 text-rose-600 rounded-2xl border-2 border-rose-300">
+                    <AlertTriangle size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Delete All Students</h3>
+                    <p className="text-xs font-bold text-rose-600">Danger Zone: Irreversible Action</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsDeleteAllModalOpen(false)}
+                  className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-700 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-4 text-xs font-medium text-rose-900 space-y-2">
+                <p className="font-black uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
+                  <AlertTriangle size={16} /> Warning: Clear Entire Roster
+                </p>
+                <p>
+                  This action will permanently delete <strong>ALL {students.length} students</strong> currently registered in your school directory along with all their recorded CBSE fitness test results and historical data.
+                </p>
+                <p className="text-[11px] text-rose-800">
+                  Use this option when resetting the school database for a new academic year or before re-uploading an updated master CSV list.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
+                  Type <span className="text-rose-600 underline">DELETE ALL</span> to confirm:
+                </label>
+                <input
+                  type="text"
+                  value={confirmDeleteText}
+                  onChange={e => setConfirmDeleteText(e.target.value)}
+                  placeholder="Type DELETE ALL here..."
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 focus:border-rose-600 rounded-2xl font-bold outline-none text-slate-900 uppercase tracking-wider text-sm transition-all"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setIsDeleteAllModalOpen(false)}
+                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAllStudents}
+                  disabled={confirmDeleteText.trim().toUpperCase() !== 'DELETE ALL'}
+                  className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(159,18,57,1)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Trash2 size={16} />
+                  <span>Confirm Delete All</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 

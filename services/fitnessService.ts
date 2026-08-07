@@ -315,6 +315,28 @@ export const fitnessService = {
     }
   },
 
+  bulkDeleteStudents: async (studentIds: string[]) => {
+    if (!studentIds || studentIds.length === 0) return;
+    try {
+      // Chunk processing to delete efficiently
+      const chunkSize = 15;
+      for (let i = 0; i < studentIds.length; i += chunkSize) {
+        const chunk = studentIds.slice(i, i + chunkSize);
+        const chunkPromises = chunk.map(async (id) => {
+          const q = query(collection(db, 'results'), where('studentId', '==', id));
+          const snapshot = await getDocs(q);
+          const deletePromises = snapshot.docs.map(docSnap => deleteDoc(doc(db, 'results', docSnap.id)));
+          await Promise.all(deletePromises);
+          await deleteDoc(doc(db, 'students', id));
+        });
+        await Promise.all(chunkPromises);
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, 'bulk_students_delete');
+      throw err;
+    }
+  },
+
   // Teams
   saveTeam: async (team: Team) => {
     const path = `teams/${team.id}`;
