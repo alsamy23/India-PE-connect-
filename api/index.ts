@@ -77,9 +77,12 @@ apiRouter.get("/ai/test", async (req, res) => {
   try {
     const geminiKeys = getGeminiKeys();
     if (geminiKeys.length > 0) {
-      const ai = new GoogleGenAI({ apiKey: geminiKeys[0] });
+      const ai = new GoogleGenAI({ 
+        apiKey: geminiKeys[0],
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
+        model: "gemini-3.6-flash",
         contents: [{ role: 'user', parts: [{ text: "Say 'Gemini Connection Successful'" }] }]
       });
       return res.json({ message: response.text, provider: "gemini" });
@@ -107,14 +110,10 @@ apiRouter.post("/ai/generate", async (req, res) => {
     
     const resolveModel = (modelName: string): string => {
       const m = (modelName || "").toLowerCase();
-      if (
-        m.includes("gemini-3") ||
-        m.includes("gemini-2") ||
-        m === "gemini-pro"
-      ) {
-        return "gemini-2.0-flash";
+      if (m.includes("3.1-pro") || m.includes("pro-preview")) {
+        return "gemini-3.1-pro-preview";
       }
-      return "gemini-1.5-flash";
+      return "gemini-3.6-flash";
     };
 
     const resolvedModel = resolveModel(model);
@@ -137,15 +136,18 @@ apiRouter.post("/ai/generate", async (req, res) => {
       // Determine which models we can try
       const modelsToTry = [
         resolvedModel,
-        "gemini-2.0-flash",
-        "gemini-1.5-flash"
+        "gemini-3.6-flash",
+        "gemini-flash-latest"
       ];
       
       // Filter out duplicates but keep order
       const uniqueModels = [...new Set(modelsToTry)];
 
       for (const key of shuffledKeys) {
-        const ai = new GoogleGenAI({ apiKey: key });
+        const ai = new GoogleGenAI({ 
+          apiKey: key,
+          httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+        });
         
         for (const currentModel of uniqueModels) {
           try {
@@ -156,16 +158,15 @@ apiRouter.post("/ai/generate", async (req, res) => {
               ? contents 
               : (typeof contents === 'string' ? [{ role: 'user', parts: [{ text: contents }] }] : [contents]);
 
-            // Ensure thinkingLevel is only used if supported
+            // Ensure thinkingLevel is only used if supported (Gemini 3 series)
             const finalConfig = { ...config };
-            const isSupportedModel = currentModel.includes("gemini-2.0");
+            const isSupportedModel = currentModel.includes("gemini-3");
             
             if (isSupportedModel && ThinkingLevel) {
               if (!finalConfig.thinkingConfig) {
                 finalConfig.thinkingConfig = { thinkingLevel: (ThinkingLevel as any).LOW || "LOW" };
               }
             } else {
-              // Always remove thinkingConfig for safety on unsupported models or if ThinkingLevel enum is missing
               delete finalConfig.thinkingConfig;
             }
 

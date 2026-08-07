@@ -450,6 +450,27 @@ export const fitnessService = {
     });
   },
 
+  getAllSchoolResultsOnce: async (teacherId: string, schoolId?: string, isAdmin = false): Promise<FitnessResult[]> => {
+    try {
+      let q;
+      const effectiveSchoolId = schoolId || `personal_${teacherId}`;
+      if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+        q = query(collection(db, 'results'));
+      } else if (isAdmin) {
+        q = query(collection(db, 'results'), where('schoolId', '==', effectiveSchoolId));
+      } else {
+        q = query(collection(db, 'results'), where('schoolId', '==', effectiveSchoolId), where('teacherId', '==', teacherId));
+      }
+      const snapshot = await getDocs(q);
+      const results = snapshot.docs.map((doc: any) => doc.data() as FitnessResult);
+      results.sort((a: FitnessResult, b: FitnessResult) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      return results;
+    } catch (err) {
+      logError(err, 'error', { context: 'getAllSchoolResultsOnce failed' });
+      return [];
+    }
+  },
+
   subscribeToStudents: (teacherId: string, schoolId: string | undefined, isAdmin: boolean, callback: (students: Student[]) => void) => {
     let q;
     const effectiveSchoolId = schoolId || `personal_${teacherId}`;

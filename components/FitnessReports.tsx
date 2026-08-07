@@ -11,6 +11,7 @@ import {
   Search, 
   Filter, 
   TrendingUp, 
+  TrendingDown,
   Users, 
   User,
   Activity,
@@ -42,6 +43,12 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { fitnessService, Student, FitnessResult, Team, SchoolMember, School, KIFT_BATTERIES } from '../services/fitnessService.ts';
+import { 
+  parseFitnessValue, 
+  calculateExactBMI, 
+  calculateTestTrend, 
+  formatTestDisplayValue 
+} from '../utils/bmiUtils.ts';
 import { auth } from '../services/firebase.ts';
 import { toast } from '../services/toast.ts';
 import Logo from './Logo.tsx';
@@ -161,7 +168,7 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
 
   const calculateAvg = (resultsList: FitnessResult[]) => {
     if (resultsList.length === 0) return 'N/A';
-    const sum = resultsList.reduce((acc, r) => acc + parseFloat(r.value), 0);
+    const sum = resultsList.reduce((acc, r) => acc + parseFitnessValue(r.value), 0);
     return (sum / resultsList.length).toFixed(1);
   };
 
@@ -174,12 +181,7 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
   };
 
   const parseValue = (val: string) => {
-    if (!val) return 0;
-    if (val.includes(':')) {
-      const [min, sec] = val.split(':').map(Number);
-      return min + (sec / 60);
-    }
-    return parseFloat(val) || 0;
+    return parseFitnessValue(val);
   };
 
   const generateReport = React.useCallback(() => {
@@ -300,20 +302,11 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           }
 
           // Specific test rating rules
-          if (testId === 'bmi') {
-            if (val < 18.5) {
-              rating = 'Below Average (Underweight)';
-              status = 'Needs Improvement';
-              details = 'Slightly below healthy weight range. Consuming a balanced, protein-rich diet and resistance exercises will support muscle mass development.';
-            } else if (val <= 24.9) {
-              rating = 'Excellent (Healthy BMI)';
-              status = 'Excellent';
-              details = 'Outstanding physical stature! Perfect body-mass ratio for healthy development and high-performance physical activity.';
-            } else {
-              rating = 'Needs Improvement (Overweight)';
-              status = 'Needs Improvement';
-              details = 'Body-mass ratio is higher than standard guidelines. Incorporating daily calorie-burning play and reducing processed sugars is recommended.';
-            }
+          if (testId === 'bmi' || name.toLowerCase().includes('bmi')) {
+            const bmiRes = calculateExactBMI(result.value);
+            rating = `${bmiRes.category} (${bmiRes.bmi} kg/m²)`;
+            status = bmiRes.rating;
+            details = bmiRes.details;
           } else if (testId === 'sprint_50m') {
             if (val < 8.5) {
               rating = 'Excellent (Exceptional Speed)';
@@ -1034,7 +1027,7 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in pb-20">
+    <div className="space-y-8 animate-in fade-in pb-36">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -1858,26 +1851,32 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                               {/* Group results by test name for row-wise display */}
                               {Object.entries(
                                 (reportData.studentResults || []).reduce((acc: any, r: FitnessResult) => {
-                                  if (!acc[r.testName]) acc[r.testName] = {};
-                                  acc[r.testName][r.term] = r.unit === 'rating' ? `${r.value}/10` : `${r.value} ${r.unit}`;
+                                  if (!acc[r.testName]) acc[r.testName] = { testId: r.testId, unit: r.unit, rawTerms: {}, terms: {} };
+                                  acc[r.testName].rawTerms[r.term] = r.value;
+                                  acc[r.testName].terms[r.term] = formatTestDisplayValue(r.testName, r.testId, r.value, r.unit);
                                   return acc;
                                 }, {})
-                              ).map(([testName, termValues]: [string, any]) => (
-                                <tr key={testName}>
-                                  <td className="p-4 font-black text-sm uppercase tracking-tight">{testName}</td>
-                                  {['Baseline', 'Term 1', 'Term 2', 'Final'].filter(t => reportData.terms.includes(t)).map(term => (
-                                    <td key={term} className="p-4 text-sm font-bold text-slate-500 text-center">
-                                      {termValues[term] || '-'}
+                              ).map(([testName, testData]: [string, any]) => {
+                                const trend = calculateTestTrend(testData.testId, testName, testData.rawTerms);
+                                return (
+                                  <tr key={testName} className="hover:bg-slate-50 transition-colors">
+                                    <td className="p-4 font-black text-xs md:text-sm uppercase tracking-tight text-slate-800">{testName}</td>
+                                    {['Baseline', 'Term 1', 'Term 2', 'Final'].filter(t => reportData.terms.includes(t)).map(term => (
+                                      <td key={term} className="p-4 text-xs font-bold text-slate-700 text-center">
+                                        {testData.terms[term] || '-'}
+                                      </td>
+                                    ))}
+                                    <td className="p-4 text-right">
+                                      <div className={`flex items-center justify-end font-black text-xs gap-1 ${
+                                        trend.isPositive ? 'text-emerald-600' : 'text-amber-600'
+                                      }`}>
+                                        {trend.isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                        <span>{trend.text}</span>
+                                      </div>
                                     </td>
-                                  ))}
-                                  <td className="p-4 text-right">
-                                    <div className="flex items-center justify-end text-emerald-500 font-black text-[10px] gap-1">
-                                      <TrendingUp size={12} />
-                                      <span>+12%</span>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>

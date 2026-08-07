@@ -271,6 +271,7 @@ export interface SchoolMember {
   role: 'admin' | 'teacher';
   displayName: string;
   email: string;
+  schoolName?: string;
 }
 
 export interface FitnessResult {
