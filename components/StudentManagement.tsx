@@ -50,11 +50,13 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
   const [bulkProgressText, setBulkProgressText] = useState('');
   const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
   const [confirmDeleteText, setConfirmDeleteText] = useState('');
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isDeletingBulk, setIsDeletingBulk] = useState(false);
   const [deleteProgressText, setDeleteProgressText] = useState('');
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const isSuperAdmin = auth.currentUser?.email === 'alsamy36@gmail.com';
+  const isAdmin = isSuperAdmin || userProfile?.role === 'admin';
 
   // Close predictive dropdown when clicking outside
   useEffect(() => {
@@ -188,16 +190,20 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
   }, [highlightStudentId, students]);
 
   const handleDeleteStudent = async (studentId: string) => {
-    if (!auth.currentUser || !userProfile) return;
+    if (!isAdmin) {
+      toast.error('Only school administrators can delete student records.');
+      return;
+    }
+    if (!auth.currentUser) return;
     if (!window.confirm("Are you sure you want to delete this student and all their fitness records? This cannot be undone.")) return;
 
     setLoading(true);
     try {
-      await fitnessService.deleteStudent(studentId);
-      // The real-time listener will update the list
-    } catch (err) {
+      await fitnessService.deleteStudent(studentId, userProfile?.schoolId);
+      toast.success("Student record deleted successfully.");
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to delete student.");
+      toast.error("Failed to delete student: " + formatErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -693,8 +699,25 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     }
   };
 
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+    try {
+      await fitnessService.saveStudent(editingStudent);
+      toast.success(`Updated details for ${editingStudent.name}.`);
+      setEditingStudent(null);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to update student: ' + formatErrorMessage(err));
+    }
+  };
+
   // Bulk Delete Selected Students
   const handleDeleteSelectedStudents = async () => {
+    if (!isAdmin) {
+      toast.error('Only school administrators can delete student records.');
+      return;
+    }
     const selectedList = students.filter(s => selectedStudentIds.has(s.id));
     if (selectedList.length === 0) return;
 
@@ -723,6 +746,10 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
 
   // Delete All Students in School
   const handleDeleteAllStudents = async () => {
+    if (!isAdmin) {
+      toast.error('Only school administrators can delete student records.');
+      return;
+    }
     if (students.length === 0) {
       toast.error('There are no students to delete.');
       return;
@@ -769,17 +796,17 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">Student Directory</h2>
-          <p className="text-slate-500 font-medium">Manage student profiles, search records instantly, and track academic details.</p>
+          <p className="text-slate-500 font-medium">Manage student profiles, search records instantly, and track class & section statistics.</p>
         </div>
         <div className="flex items-center gap-3">
-          {students.length > 0 && (
+          {students.length > 0 && isAdmin && (
             <button 
               onClick={() => {
                 setConfirmDeleteText('');
                 setIsDeleteAllModalOpen(true);
               }}
               className="px-5 py-3 bg-rose-50 text-rose-700 border-2 border-rose-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-100 transition-all shadow-[4px_4px_0px_0px_rgba(159,18,57,1)] flex items-center gap-2"
-              title="Delete all student records in school roster"
+              title="Delete all student records in school roster (Admin Only)"
             >
               <Trash2 size={16} />
               <span className="hidden sm:inline">Delete All Students</span>
@@ -799,6 +826,44 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
             <UserPlus size={16} />
             <span>Add Student</span>
           </button>
+        </div>
+      </div>
+
+      {/* Directory Overview Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-5 rounded-2xl border-2 border-slate-900 flex items-center gap-4 shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black">
+            <Users size={22} />
+          </div>
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total School Roster</div>
+            <div className="text-2xl font-black text-slate-900">{students.length} Students</div>
+            <div className="text-[11px] font-bold text-slate-500">Entire school database</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border-2 border-slate-900 flex items-center gap-4 shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">
+            <Filter size={22} />
+          </div>
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Classes & Sections</div>
+            <div className="text-2xl font-black text-slate-900">{availableGrades.length} Grades • {availableSections.length} Sections</div>
+            <div className="text-[11px] font-bold text-slate-500">Active class breakdown</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border-2 border-slate-900 flex items-center gap-4 shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
+            <CheckSquare size={22} />
+          </div>
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current View Selection</div>
+            <div className="text-2xl font-black text-slate-900">{filteredStudents.length} Students</div>
+            <div className="text-[11px] font-bold text-slate-500">
+              {selectedGrade === 'all' ? 'All Classes' : `Grade ${selectedGrade}`} {selectedSection === 'all' ? '' : `• Sec ${selectedSection}`}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -926,7 +991,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
         <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2">
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2 flex items-center gap-1">
             <Filter size={12} />
-            <span>Grade Filter:</span>
+            <span>Class Filter:</span>
           </div>
 
           <button
@@ -937,22 +1002,25 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            All Grades
+            All Classes ({students.length})
           </button>
 
-          {availableGrades.map(grade => (
-            <button
-              key={grade}
-              onClick={() => setSelectedGrade(selectedGrade === grade ? 'all' : grade)}
-              className={`px-3.5 py-1.5 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all ${
-                selectedGrade === grade
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Grade {grade}
-            </button>
-          ))}
+          {availableGrades.map(grade => {
+            const gradeCount = students.filter(s => s.grade === grade).length;
+            return (
+              <button
+                key={grade}
+                onClick={() => setSelectedGrade(selectedGrade === grade ? 'all' : grade)}
+                className={`px-3.5 py-1.5 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all ${
+                  selectedGrade === grade
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Grade {grade} ({gradeCount})
+              </button>
+            );
+          })}
 
           {availableSections.length > 0 && (
             <>
@@ -968,19 +1036,24 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
               >
                 All Sec
               </button>
-              {availableSections.map(sec => (
-                <button
-                  key={sec}
-                  onClick={() => setSelectedSection(selectedSection === sec ? 'all' : sec)}
-                  className={`px-3 py-1 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all ${
-                    selectedSection === sec
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  Sec {sec}
-                </button>
-              ))}
+              {availableSections.map(sec => {
+                const secCount = students.filter(s => 
+                  (selectedGrade === 'all' || s.grade === selectedGrade) && s.section === sec
+                ).length;
+                return (
+                  <button
+                    key={sec}
+                    onClick={() => setSelectedSection(selectedSection === sec ? 'all' : sec)}
+                    className={`px-3 py-1 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all ${
+                      selectedSection === sec
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    Sec {sec} ({secCount})
+                  </button>
+                );
+              })}
             </>
           )}
         </div>
@@ -1004,17 +1077,18 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                   )}
                 </button>
               </th>
-              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Info</th>
-              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Roll No</th>
-              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Grade/Sec</th>
-              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender/Age</th>
+              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Name</th>
+              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Register / Roll No</th>
+              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Class (Grade)</th>
+              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Section</th>
+              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender & Age</th>
               <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredStudents.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-20 text-center">
+                <td colSpan={7} className="p-20 text-center">
                   <div className="space-y-4">
                     <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
                       <Users size={32} className="text-slate-200" />
@@ -1091,17 +1165,22 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                     </div>
                   </td>
                   <td className="p-6">
-                    <span className="font-bold text-slate-600">
+                    <span className="font-bold text-slate-700 font-mono text-xs">
                       {highlightMatch(student.rollNumber, searchTerm)}
                     </span>
                   </td>
                   <td className="p-6">
-                    <span className="inline-flex px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                      Grade {student.grade} - {student.section}
+                    <span className="inline-flex px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                      Grade {student.grade}
                     </span>
                   </td>
                   <td className="p-6">
-                    <span className="text-xs font-bold text-slate-600">{student.gender}, {student.age}y</span>
+                    <span className="inline-flex px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                      Section {student.section}
+                    </span>
+                  </td>
+                  <td className="p-6">
+                    <span className="text-xs font-bold text-slate-600">{student.gender}, {student.age} yrs</span>
                   </td>
                   <td className="p-6 text-right">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1113,15 +1192,22 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                         <FileText size={16} />
                         <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">Report</span>
                       </button>
-                      <button className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors">
+                      <button 
+                        onClick={() => setEditingStudent(student)}
+                        className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors"
+                        title="Edit Student Profile"
+                      >
                         <Edit2 size={16} />
                       </button>
-                      <button 
-                        onClick={() => handleDeleteStudent(student.id)}
-                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {isAdmin && (
+                        <button 
+                          onClick={() => handleDeleteStudent(student.id)}
+                          className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                          title="Delete Student Record (Admin Only)"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1155,18 +1241,21 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleDeleteSelectedStudents}
-                disabled={isDeletingBulk || isGeneratingBulkPDF}
-                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-md shadow-rose-900/50 disabled:opacity-50"
-              >
-                {isDeletingBulk ? (
-                  <Loader2 size={16} className="animate-spin text-white" />
-                ) : (
-                  <Trash2 size={16} />
-                )}
-                <span>Delete Selected ({selectedStudentIds.size})</span>
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={handleDeleteSelectedStudents}
+                  disabled={isDeletingBulk || isGeneratingBulkPDF}
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-md shadow-rose-900/50 disabled:opacity-50"
+                  title="Admin only delete option"
+                >
+                  {isDeletingBulk ? (
+                    <Loader2 size={16} className="animate-spin text-white" />
+                  ) : (
+                    <Trash2 size={16} />
+                  )}
+                  <span>Delete Selected ({selectedStudentIds.size})</span>
+                </button>
+              )}
 
               <button
                 onClick={handleGenerateBulkPDF}
@@ -1395,6 +1484,120 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                   className="flex-1 py-4 bg-indigo-600 text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]"
                 >
                   Save Student
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Student Modal */}
+      {editingStudent && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-[2.5rem] border-4 border-slate-900 p-10 max-w-xl w-full shadow-2xl"
+          >
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Edit Student Profile</h3>
+                <p className="text-slate-500 font-medium text-xs">Update details for {editingStudent.name}</p>
+              </div>
+              <button 
+                onClick={() => setEditingStudent(null)}
+                className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-700 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateStudent} className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Full Name</label>
+                  <input 
+                    type="text" 
+                    required
+                    className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-indigo-600 transition-all text-slate-900"
+                    value={editingStudent.name}
+                    onChange={e => setEditingStudent({...editingStudent, name: e.target.value})}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Register / Roll Number</label>
+                  <input 
+                    type="text" 
+                    required
+                    className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-indigo-600 transition-all text-slate-900"
+                    value={editingStudent.rollNumber}
+                    onChange={e => setEditingStudent({...editingStudent, rollNumber: e.target.value})}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Age (Years)</label>
+                  <input 
+                    type="number" 
+                    required
+                    min={3}
+                    max={25}
+                    className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-indigo-600 transition-all text-slate-900"
+                    value={editingStudent.age}
+                    onChange={e => setEditingStudent({...editingStudent, age: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Class / Grade</label>
+                  <input 
+                    type="text" 
+                    required
+                    className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-indigo-600 transition-all text-slate-900"
+                    value={editingStudent.grade}
+                    onChange={e => setEditingStudent({...editingStudent, grade: e.target.value})}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Section</label>
+                  <input 
+                    type="text" 
+                    required
+                    className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-indigo-600 transition-all text-slate-900"
+                    value={editingStudent.section}
+                    onChange={e => setEditingStudent({...editingStudent, section: e.target.value})}
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Gender</label>
+                  <select
+                    value={editingStudent.gender}
+                    onChange={e => setEditingStudent({...editingStudent, gender: e.target.value as any})}
+                    className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-indigo-600 transition-all text-slate-900"
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setEditingStudent(null)}
+                  className="flex-1 py-4 border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 py-4 bg-indigo-600 text-white border-2 border-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]"
+                >
+                  Update Profile
                 </button>
               </div>
             </form>
