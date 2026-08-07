@@ -254,13 +254,28 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     }
   };
 
+  const formatErrorMessage = (err: any) => {
+    if (!err) return 'An unknown error occurred.';
+    const msg = err.message || String(err);
+    try {
+      const parsed = JSON.parse(msg);
+      if (parsed && parsed.error) {
+        return parsed.error;
+      }
+    } catch {
+      // Not JSON
+    }
+    return msg;
+  };
+
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this student?')) {
       try {
-        await fitnessService.deleteStudent(id);
+        await fitnessService.deleteStudent(id, userProfile?.schoolId);
+        toast.success('Student deleted successfully.');
       } catch (err) {
         console.error(err);
-        alert('Failed to delete student. Please try again.');
+        toast.error('Failed to delete student: ' + formatErrorMessage(err));
       }
     }
   };
@@ -688,15 +703,18 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     }
 
     setIsDeletingBulk(true);
-    setDeleteProgressText(`Deleting ${selectedList.length} selected student(s)...`);
+    setDeleteProgressText(`Deleting 0 of ${selectedList.length} selected student(s)...`);
 
     try {
-      await fitnessService.bulkDeleteStudents(Array.from(selectedStudentIds));
+      const selectedIds = Array.from(selectedStudentIds);
+      await fitnessService.bulkDeleteStudents(selectedIds, userProfile?.schoolId, (processed, total) => {
+        setDeleteProgressText(`Deleting ${processed} of ${total} selected student(s)...`);
+      });
       toast.success(`Successfully deleted ${selectedList.length} student(s) from the school roster.`);
       setSelectedStudentIds(new Set());
     } catch (err: any) {
       console.error(err);
-      toast.error('Failed to delete selected students: ' + (err?.message || 'Unknown error'));
+      toast.error('Failed to delete selected students: ' + formatErrorMessage(err));
     } finally {
       setIsDeletingBulk(false);
       setDeleteProgressText('');
@@ -716,18 +734,21 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     }
 
     setIsDeletingBulk(true);
-    setDeleteProgressText(`Clearing all ${students.length} student records from school roster...`);
+    const totalCount = students.length;
+    setDeleteProgressText(`Clearing 0 of ${totalCount} student records...`);
 
     try {
       const allIds = students.map(s => s.id);
-      await fitnessService.bulkDeleteStudents(allIds);
-      toast.success(`Successfully cleared all ${allIds.length} student records from school roster.`);
+      await fitnessService.bulkDeleteStudents(allIds, userProfile?.schoolId, (processed, total) => {
+        setDeleteProgressText(`Clearing ${processed} of ${total} student records...`);
+      });
+      toast.success(`Successfully cleared all ${totalCount} student records from school roster.`);
       setSelectedStudentIds(new Set());
       setIsDeleteAllModalOpen(false);
       setConfirmDeleteText('');
     } catch (err: any) {
       console.error(err);
-      toast.error('Failed to clear school roster: ' + (err?.message || 'Unknown error'));
+      toast.error('Failed to clear school roster: ' + formatErrorMessage(err));
     } finally {
       setIsDeletingBulk(false);
       setDeleteProgressText('');

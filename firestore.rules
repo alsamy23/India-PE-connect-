@@ -156,7 +156,7 @@ service cloud.firestore {
     function isValidStudent(data) {
       return hasOnlyAllowedFields(['id', 'teacherId', 'schoolId', 'name', 'rollNumber', 'grade', 'section', 'gender', 'age', 'dob', 'attendance', 'performance', 'lastAssessment']) &&
              data.id is string &&
-             data.teacherId is string && data.teacherId == request.auth.uid &&
+             data.teacherId is string &&
              data.schoolId is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.grade is string &&
@@ -170,7 +170,7 @@ service cloud.firestore {
     function isValidTeam(data) {
       return hasOnlyAllowedFields(['id', 'teacherId', 'schoolId', 'name', 'grade', 'section', 'studentIds']) &&
              data.id is string &&
-             data.teacherId is string && data.teacherId == request.auth.uid &&
+             data.teacherId is string &&
              data.schoolId is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              (!('studentIds' in data) || data.studentIds is list);
@@ -179,7 +179,7 @@ service cloud.firestore {
     function isValidResult(data) {
       return hasOnlyAllowedFields(['id', 'teacherId', 'schoolId', 'studentId', 'testId', 'testName', 'value', 'unit', 'date', 'term', 'rating', 'percentile']) &&
              data.id is string &&
-             data.teacherId is string && data.teacherId == request.auth.uid &&
+             data.teacherId is string &&
              data.schoolId is string &&
              data.studentId is string &&
              data.testId is string &&
@@ -216,24 +216,24 @@ service cloud.firestore {
     }
 
     match /students/{studentId} {
-      allow read: if isAuthenticated() && (resource == null || isSchoolMember(resource.data.schoolId));
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isSchoolMember(request.resource.data.schoolId) && isValidStudent(request.resource.data);
-      allow update: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId)) && isValidStudent(request.resource.data);
-      allow delete: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId));
+      allow update: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && isValidStudent(request.resource.data);
+      allow delete: if isAuthenticated() && (isSchoolMember(resource.data.schoolId) || isSuperAdmin());
     }
 
     match /teams/{teamId} {
-      allow read: if isAuthenticated() && (resource == null || isSchoolMember(resource.data.schoolId));
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isSchoolMember(request.resource.data.schoolId) && isValidTeam(request.resource.data);
-      allow update: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId)) && isValidTeam(request.resource.data);
-      allow delete: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId));
+      allow update: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && isValidTeam(request.resource.data);
+      allow delete: if isAuthenticated() && (isSchoolMember(resource.data.schoolId) || isSuperAdmin());
     }
 
     match /results/{resultId} {
-      allow read: if isAuthenticated() && (resource == null || isSchoolMember(resource.data.schoolId));
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isSchoolMember(request.resource.data.schoolId) && isValidResult(request.resource.data);
-      allow update: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId)) && isValidResult(request.resource.data);
-      allow delete: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && (isDocOwner() || isSchoolAdmin(resource.data.schoolId));
+      allow update: if isAuthenticated() && isSchoolMember(resource.data.schoolId) && isValidResult(request.resource.data);
+      allow delete: if isAuthenticated() && (isSchoolMember(resource.data.schoolId) || isSuperAdmin());
     }
 
     match /system_logs/{logId} {

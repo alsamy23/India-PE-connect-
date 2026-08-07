@@ -297,14 +297,19 @@ export const fitnessService = {
     }
   },
 
-  deleteStudent: async (id: string) => {
+  deleteStudent: async (id: string, schoolId?: string) => {
     const studentPath = `students/${id}`;
     try {
       // Get all results for this student
-      const q = query(collection(db, 'results'), where('studentId', '==', id));
+      let q;
+      if (schoolId) {
+        q = query(collection(db, 'results'), where('schoolId', '==', schoolId), where('studentId', '==', id));
+      } else {
+        q = query(collection(db, 'results'), where('studentId', '==', id));
+      }
       const snapshot = await getDocs(q);
       
-      // Delete results (could use writeBatch for efficiency)
+      // Delete results
       const deletePromises = snapshot.docs.map(docSnap => deleteDoc(doc(db, 'results', docSnap.id)));
       await Promise.all(deletePromises);
       
@@ -315,21 +320,37 @@ export const fitnessService = {
     }
   },
 
-  bulkDeleteStudents: async (studentIds: string[]) => {
+  bulkDeleteStudents: async (studentIds: string[], schoolId?: string, onProgress?: (processed: number, total: number) => void) => {
     if (!studentIds || studentIds.length === 0) return;
     try {
-      // Chunk processing to delete efficiently
-      const chunkSize = 15;
+      // Process in chunks of 25 using Firestore 'in' query for results
+      const chunkSize = 25;
+      let processed = 0;
+      const total = studentIds.length;
+
       for (let i = 0; i < studentIds.length; i += chunkSize) {
         const chunk = studentIds.slice(i, i + chunkSize);
-        const chunkPromises = chunk.map(async (id) => {
-          const q = query(collection(db, 'results'), where('studentId', '==', id));
-          const snapshot = await getDocs(q);
-          const deletePromises = snapshot.docs.map(docSnap => deleteDoc(doc(db, 'results', docSnap.id)));
-          await Promise.all(deletePromises);
-          await deleteDoc(doc(db, 'students', id));
-        });
-        await Promise.all(chunkPromises);
+        
+        // 1. Delete associated test results for chunk of students
+        let resultsQuery;
+        if (schoolId) {
+          resultsQuery = query(collection(db, 'results'), where('schoolId', '==', schoolId), where('studentId', 'in', chunk));
+        } else {
+          resultsQuery = query(collection(db, 'results'), where('studentId', 'in', chunk));
+        }
+
+        const resultsSnap = await getDocs(resultsQuery);
+        const resultDeletePromises = resultsSnap.docs.map(docSnap => deleteDoc(doc(db, 'results', docSnap.id)));
+        await Promise.all(resultDeletePromises);
+
+        // 2. Delete student docs
+        const studentDeletePromises = chunk.map(id => deleteDoc(doc(db, 'students', id)));
+        await Promise.all(studentDeletePromises);
+
+        processed += chunk.length;
+        if (onProgress) {
+          onProgress(processed, total);
+        }
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, 'bulk_students_delete');
