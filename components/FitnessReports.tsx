@@ -52,6 +52,7 @@ import {
 import { auth } from '../services/firebase.ts';
 import { toast } from '../services/toast.ts';
 import Logo from './Logo.tsx';
+import { D3StudentProgressChart } from './fitness/D3StudentProgressChart.tsx';
 
 interface FitnessReportsProps {
   initialStudentId?: string;
@@ -1383,6 +1384,16 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                         </p>
                       </div>
 
+                      {/* Interactive D3 Student Progress Chart (On-Screen Visualization) */}
+                      {reportData.student && (
+                        <div className="print:hidden">
+                          <D3StudentProgressChart 
+                            student={reportData.student} 
+                            results={reportData.studentResults || []} 
+                          />
+                        </div>
+                      )}
+
                       {/* PAGE 1: STUDENT OVERVIEW & FITNESS RADAR */}
                       <div id="pdf-page-1" className="pdf-page-section bg-white p-10 rounded-[3rem] border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] space-y-8 flex flex-col justify-between animate-fade-in relative overflow-hidden" style={{ minHeight: '297mm' }}>
                         {/* Subtle Confidential Watermark */}
@@ -1589,9 +1600,18 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
 
                           <div className="mb-4">
                             <span className="text-[9px] font-black uppercase tracking-widest text-indigo-600 px-2.5 py-1 bg-indigo-50 rounded-full border border-indigo-100">Performance History</span>
-                            <h3 className="text-xl font-black uppercase tracking-tight text-slate-800 mt-2">Test Progression Trends</h3>
-                            <p className="text-[10px] font-bold text-slate-400">Chronological analysis of physical standard indicators across consecutive academic terms.</p>
+                            <h3 className="text-xl font-black uppercase tracking-tight text-slate-800 mt-2">D3 Progress Chart & CBSE Benchmarks</h3>
+                            <p className="text-[10px] font-bold text-slate-400">Chronological analysis of physical standard indicators vs. CBSE benchmarks across consecutive terms.</p>
                           </div>
+
+                          {reportData.student && (
+                            <div className="mb-6">
+                              <D3StudentProgressChart 
+                                student={reportData.student} 
+                                results={reportData.studentResults || []} 
+                              />
+                            </div>
+                          )}
 
                           <div className="grid grid-cols-2 gap-6 items-stretch">
                             {Object.entries((reportData.studentResults || []).reduce((acc: any, r: FitnessResult) => {

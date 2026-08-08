@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { Activity, Trophy, ChevronRight, Calculator, RefreshCw, Loader2, Award, ClipboardList, AlertCircle } from 'lucide-react';
+import { Activity, Trophy, ChevronRight, Calculator, RefreshCw, Loader2, Award, ClipboardList, AlertCircle, Info } from 'lucide-react';
 import { evaluateKheloIndiaScores } from '../services/geminiService.ts';
 import { FitnessAssessment } from '../types.ts';
+import { getDescriptiveFieldInfo } from '../utils/bmiUtils.ts';
 
 const KheloIndia: React.FC = () => {
   const [age, setAge] = useState('12');
@@ -87,18 +88,31 @@ const KheloIndia: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              {tests.map((t, i) => (
-                <div key={i}>
-                  <label className="text-xs font-bold text-slate-700 mb-1 block">{t.name}</label>
-                  <input 
-                    type="text" 
-                    placeholder="Result (e.g. 8.5s, 12cm)" 
-                    className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-orange-200 transition-all"
-                    value={t.value}
-                    onChange={(e) => handleTestChange(i, e.target.value)}
-                  />
-                </div>
-              ))}
+              {tests.map((t, i) => {
+                const fieldInfo = getDescriptiveFieldInfo({ name: t.name });
+                return (
+                  <div key={i}>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-xs font-bold text-slate-800 block">{t.name}</label>
+                      <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100">
+                        {fieldInfo.shortLabel}
+                      </span>
+                    </div>
+                    <input 
+                      type="text" 
+                      placeholder={fieldInfo.placeholder} 
+                      title={fieldInfo.hint}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-orange-200 transition-all text-xs font-bold"
+                      value={t.value}
+                      onChange={(e) => handleTestChange(i, e.target.value)}
+                    />
+                    <p className="text-[10px] text-slate-400 font-medium mt-1 flex items-center gap-1">
+                      <Info size={11} className="text-orange-500 shrink-0" />
+                      <span>{fieldInfo.hint}</span>
+                    </p>
+                  </div>
+                );
+              })}
             </div>
 
             {error && (

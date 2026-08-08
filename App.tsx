@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useTransition } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { SEOHead } from './components/SEOHead.tsx';
+import { OfflineBanner } from './components/OfflineBanner.tsx';
 import { 
   Users, 
   BookOpen, 
@@ -50,6 +51,7 @@ import FitnessDashboard from './components/FitnessDashboard.tsx';
 import StudentManagement from './components/StudentManagement.tsx';
 import TeamManagement from './components/TeamManagement.tsx';
 import TestPaperGenerator from './components/TestPaperGenerator.tsx';
+import TournamentMaker from './components/TournamentMaker.tsx';
 import ParentLetters from './components/ParentLetters.tsx';
 import ClassroomWidgets from './components/ClassroomWidgets.tsx';
 import Disclaimer from './components/Disclaimer.tsx';
@@ -75,7 +77,7 @@ import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth
 import { trackEvent } from './services/analytics.ts';
 import { toast, SHOW_TOAST_EVENT, SHOW_CONFIRM_EVENT, ToastConfig, ConfirmConfig } from './services/toast.ts';
 
-type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact' | 'principal-dashboard' | 'department-office' | 'brand-welcome' | 'subscription-plans';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'tournament-fixtures' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact' | 'principal-dashboard' | 'department-office' | 'brand-welcome' | 'subscription-plans';
 
 import { BoardType, Language } from './types.ts';
 
@@ -100,6 +102,7 @@ const navigation = [
     items: [
       { id: 'fitness', name: 'Fitness Tests', icon: Activity, subtitle: 'All Khelo India Fitness tests pre-loaded.' },
       { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, subtitle: 'Official battery tests and student profiles.' },
+      { id: 'tournament-fixtures', name: 'Tournament Fixtures', icon: Trophy, subtitle: 'Generate Knockout Brackets & Round Robin League schedules.' },
       { id: 'testpaper', name: 'Question Paper Generator', icon: ClipboardList, subtitle: 'Create MCQ and theory papers for PE.' },
       { id: 'skill-analysis', name: 'Skill Analysis Lab', icon: Video, subtitle: 'Compare and analyze sports techniques.' },
       { id: 'rules', name: 'Game Rules Bot', icon: Book, subtitle: 'Ask AI about sports rules and doubts.' },
@@ -768,6 +771,7 @@ const App: React.FC = () => {
       case 'logs': return <AdminLogs />;
       case 'fitness-reports': return <FitnessReports initialStudentId={selectedReportStudentId || undefined} />;
       case 'testpaper': return <TestPaperGenerator />;
+      case 'tournament-fixtures': return <TournamentMaker />;
       case 'parentletters': return <ParentLetters />;
       case 'widgets': return <ClassroomWidgets />;
       case 'skill-analysis': return <SkillAnalysis />;
@@ -929,7 +933,12 @@ const App: React.FC = () => {
             </p>
           </div>
         </div>
-      )}        {/* Mobile Header */}
+      )}
+
+        {/* Outdoor Offline Status Banner */}
+        <OfflineBanner />
+
+        {/* Mobile Header */}
         <MobileHeader 
           isSidebarOpen={isSidebarOpen} 
           setIsSidebarOpen={setIsSidebarOpen} 

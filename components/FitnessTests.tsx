@@ -41,16 +41,20 @@ import { evaluateFitnessTests } from '../services/geminiService.ts';
 import { FitnessAssessment, KIFTBattery, KIFTTest, FitnessResult } from '../types.ts';
 import { storageService } from '../services/storageService.ts';
 import { fitnessService, Student, KIFT_BATTERIES } from '../services/fitnessService.ts';
-import { calculateExactBMI, parseFitnessValue } from '../utils/bmiUtils.ts';
+import { calculateExactBMI, parseFitnessValue, getDescriptiveFieldInfo } from '../utils/bmiUtils.ts';
 import { auth } from '../services/firebase.ts';
 import { toast } from '../services/toast.ts';
 import GamesProficiencyGenerator from './GamesProficiencyGenerator.tsx';
+import { TestGuideModal } from './fitness/TestGuideModal.tsx';
+import { BMISpectrumGauge } from './fitness/BMISpectrumGauge.tsx';
+import { TestFieldTooltip } from './fitness/TestFieldTooltip.tsx';
 
 const FitnessTests: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'fitness' | 'games'>('fitness');
   const [selectedBattery, setSelectedBattery] = useState<KIFTBattery | null>(null);
 
   const [selectedTest, setSelectedTest] = useState<KIFTTest | null>(null);
+  const [activeGuideTest, setActiveGuideTest] = useState<KIFTTest | null>(null);
   const [age, setAge] = useState('10');
   const [gender, setGender] = useState('Male');
   const [testValue, setTestValue] = useState('');
@@ -999,31 +1003,72 @@ const FitnessTests: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   {selectedBattery.tests.map((test) => (
-                    <button
+                    <div 
                       key={test.id}
-                      onClick={() => handleTestClick(test)}
-                      className={`w-full p-4 rounded-xl text-left transition-all flex items-center justify-between group ${
+                      className={`p-3 rounded-xl transition-all flex items-center justify-between group ${
                         selectedTest?.id === test.id 
                           ? 'bg-indigo-600 text-white shadow-lg' 
-                          : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
                       }`}
                     >
-                      <span className="font-bold text-sm">{test.name}</span>
-                      <ChevronRight size={16} className={selectedTest?.id === test.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} />
-                    </button>
+                      <button
+                        onClick={() => handleTestClick(test)}
+                        className="flex-1 text-left flex flex-col cursor-pointer"
+                      >
+                        <span className="font-bold text-sm leading-tight">{test.name}</span>
+                        {test.duration && (
+                          <span className={`text-[10px] font-black uppercase tracking-wider mt-1 flex items-center gap-1 ${
+                            selectedTest?.id === test.id ? 'text-indigo-200' : 'text-slate-500'
+                          }`}>
+                            <Timer size={11} />
+                            {test.duration}
+                          </span>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveGuideTest(test);
+                        }}
+                        className={`p-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0 ml-2 ${
+                          selectedTest?.id === test.id 
+                            ? 'bg-white/20 hover:bg-white/30 text-white' 
+                            : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'
+                        }`}
+                        title="View Official CBSE Test Guide & Rules"
+                      >
+                        <Info size={14} />
+                        <span className="text-[10px] font-extrabold hidden sm:inline uppercase">Guide</span>
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
 
               {selectedTest && (
-                <div className="bg-indigo-50 p-6 rounded-[2rem] border border-indigo-100">
-                  <div className="flex items-center space-x-2 mb-3 text-indigo-600">
-                    <Info size={16} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Test Protocol</span>
+                <div className="bg-indigo-50 p-6 rounded-[2rem] border border-indigo-100 space-y-3">
+                  <div className="flex items-center justify-between text-indigo-900">
+                    <div className="flex items-center space-x-2">
+                      <Info size={16} className="text-indigo-600" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Selected Test Protocol</span>
+                    </div>
+                    {selectedTest.duration && (
+                      <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 rounded-full text-[9px] font-black uppercase">
+                        {selectedTest.duration}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-indigo-900/70 text-sm leading-relaxed font-medium">
+                  <p className="text-indigo-950/80 text-xs leading-relaxed font-medium">
                     {selectedTest.description}
                   </p>
+                  <button
+                    onClick={() => setActiveGuideTest(selectedTest)}
+                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Info size={14} />
+                    <span>View Full CBSE Guide Pop-Up</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -1203,12 +1248,25 @@ const FitnessTests: React.FC = () => {
                                       <th className="p-3 border-r border-slate-700 w-12 text-center select-none">Roll</th>
                                       <th className="p-3 border-r border-slate-700 min-w-[150px] select-none">Student Name</th>
                                       <th className="p-3 border-r border-slate-700 w-20 text-center select-none">Class</th>
-                                      {currentTests.map((t, tIdx) => (
-                                        <th key={t.id} className="p-3 border-r border-slate-700 min-w-[130px] text-center select-none">
-                                          <div className="truncate max-w-[140px] mx-auto" title={t.name}>{t.name}</div>
-                                          <div className="text-[9px] font-normal text-[#D4A017]">({t.unit})</div>
-                                        </th>
-                                      ))}
+                                      {currentTests.map((t, tIdx) => {
+                                        const fieldInfo = getDescriptiveFieldInfo(t);
+                                        return (
+                                          <th key={t.id} className="p-3 border-r border-slate-700 min-w-[155px] text-center select-none group">
+                                            <div className="flex items-center justify-center gap-1">
+                                              <div className="truncate max-w-[110px]" title={`${t.name} - ${fieldInfo.label}`}>{t.name}</div>
+                                              <TestFieldTooltip test={t} onOpenModal={setActiveGuideTest} compact />
+                                            </div>
+                                            <div className="text-[9px] font-bold text-[#D4A017] flex items-center justify-center gap-1 mt-0.5">
+                                              <span>{fieldInfo.shortLabel}</span>
+                                              {t.duration && (
+                                                <span className="text-[8.5px] bg-white/10 px-1.5 py-0.2 rounded text-slate-200">
+                                                  {t.duration.includes('60') ? '⏱️ 60s' : t.duration.includes('30') ? '⏱️ 30s' : t.duration.includes('min') ? '⏱️ MM:SS' : ''}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </th>
+                                        );
+                                      })}
                                       <th className="p-3 text-center w-14 select-none">Save</th>
                                     </tr>
                                   </thead>
@@ -1231,6 +1289,7 @@ const FitnessTests: React.FC = () => {
                                             const cellKey = `${student.id}_${test.id}`;
                                             const currentVal = batchScores[cellKey] ?? (currentTests.length === 1 ? batchScores[student.id] : '') ?? '';
                                             const isSavedCell = batchSavedStatus[cellKey] ?? (currentTests.length === 1 ? batchSavedStatus[student.id] : false);
+                                            const fieldInfo = getDescriptiveFieldInfo(test);
 
                                             return (
                                               <td key={test.id} className="p-1 border-r border-slate-100 text-center">
@@ -1238,7 +1297,8 @@ const FitnessTests: React.FC = () => {
                                                   <input
                                                     id={`grid-input-${sIdx}-${tIdx}`}
                                                     type="text"
-                                                    placeholder={test.id === 'bmi' || test.name.toLowerCase().includes('bmi') ? 'wt/ht (e.g. 28/140)' : test.unit}
+                                                    placeholder={fieldInfo.placeholder}
+                                                    title={`${test.name}: ${fieldInfo.label} (${fieldInfo.hint})`}
                                                     className={`w-full p-2 text-center font-black text-xs rounded-xl border-2 outline-none transition-all ${
                                                       isSavedCell 
                                                         ? 'bg-emerald-50/90 border-emerald-300 text-emerald-900 focus:ring-2 focus:ring-emerald-500' 
@@ -1399,53 +1459,107 @@ const FitnessTests: React.FC = () => {
                           </select>
                         </div>
 
-                        <div className="flex-[2] min-w-[220px]">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Score ({selectedTest.unit})</label>
-                          <div className="flex gap-2">
-                            <input 
-                              type="text"
-                              placeholder={selectedTest.unit}
-                              className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                              value={testValue}
-                              onChange={e => {
-                                setTestValue(e.target.value);
-                                setResult(null);
-                              }}
-                            />
-                            <button 
-                              onClick={handleCalculate}
-                              disabled={loading || !testValue}
-                              className="bg-indigo-600 text-white px-4 rounded-xl font-black text-xs uppercase tracking-wider hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
-                              title="Analyze Performance"
-                            >
-                              {loading ? <Loader2 className="animate-spin" size={14} /> : <Calculator size={14} />}
-                              <span>Analyze</span>
-                            </button>
-                            <button 
-                              onClick={async () => {
-                                if (!testValue) return;
-                                if (!result) {
-                                  setLoading(true);
-                                  try {
-                                    await handleSaveDirectly();
-                                  } finally {
-                                    setLoading(false);
-                                  }
-                                } else {
-                                  handleSave();
-                                }
-                              }}
-                              disabled={loading || !testValue}
-                              className={`px-5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
-                                isSaved ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white hover:bg-slate-800'
-                              }`}
-                            >
-                              {isSaved ? <CheckCircle2 size={14} /> : <Save size={14} />}
-                              <span>{isSaved ? 'Saved' : 'Save'}</span>
-                            </button>
-                          </div>
-                        </div>
+                        {(() => {
+                          const fieldInfo = getDescriptiveFieldInfo(selectedTest);
+                          return (
+                            <div className="flex-[2] min-w-[220px]">
+                              <div className="flex flex-wrap justify-between items-center gap-2 mb-1.5">
+                                <div className="flex items-center gap-2">
+                                  <label className="text-[10px] font-black text-indigo-950 uppercase tracking-widest block">
+                                    {fieldInfo.label}
+                                  </label>
+                                  {selectedTest && (
+                                    <TestFieldTooltip test={selectedTest} onOpenModal={setActiveGuideTest} />
+                                  )}
+                                </div>
+                                {selectedTest.duration && (
+                                  <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1">
+                                    <Timer size={11} />
+                                    {selectedTest.duration}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <input 
+                                  type="text"
+                                  placeholder={fieldInfo.placeholder}
+                                  title={fieldInfo.hint}
+                                  className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                                  value={testValue}
+                                  onChange={e => {
+                                    setTestValue(e.target.value);
+                                    setResult(null);
+                                  }}
+                                />
+                                <button 
+                                  onClick={handleCalculate}
+                                  disabled={loading || !testValue}
+                                  className="bg-indigo-600 text-white px-4 rounded-xl font-black text-xs uppercase tracking-wider hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                                  title="Analyze Performance"
+                                >
+                                  {loading ? <Loader2 className="animate-spin" size={14} /> : <Calculator size={14} />}
+                                  <span>Analyze</span>
+                                </button>
+                                <button 
+                                  onClick={async () => {
+                                    if (!testValue) return;
+                                    if (!result) {
+                                      setLoading(true);
+                                      try {
+                                        await handleSaveDirectly();
+                                      } finally {
+                                        setLoading(false);
+                                      }
+                                    } else {
+                                      handleSave();
+                                    }
+                                  }}
+                                  disabled={loading || !testValue}
+                                  className={`px-5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                                    isSaved ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white hover:bg-slate-800'
+                                  }`}
+                                >
+                                  {isSaved ? <CheckCircle2 size={14} /> : <Save size={14} />}
+                                  <span>{isSaved ? 'Saved' : 'Save'}</span>
+                                </button>
+                              </div>
+                              <p className="text-[11px] font-medium text-slate-500 mt-1.5 flex items-center gap-1">
+                                <Info size={12} className="text-indigo-500 shrink-0" />
+                                <span>{fieldInfo.hint}</span>
+                              </p>
+                            </div>
+                          );
+                        })()}
                       </div>
+
+                      {/* Explicit Protocol & Timing Guidance Card */}
+                      <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Timer size={16} className="text-amber-700 shrink-0" />
+                            <span className="font-black text-xs text-amber-950 uppercase tracking-tight">
+                              {selectedTest.name} &bull; {selectedTest.duration || 'Standard Trial'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-amber-900/80 font-medium leading-relaxed">
+                            {selectedTest.scoringGuide || selectedTest.description}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setActiveGuideTest(selectedTest)}
+                          className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer shadow-xs"
+                        >
+                          View Guide Pop-Up
+                        </button>
+                      </div>
+
+                      {/* Live BMI Gauge Visualization if test is BMI or value is provided */}
+                      {(selectedTest.id === 'bmi' || selectedTest.name.toLowerCase().includes('bmi')) && testValue && (
+                        <BMISpectrumGauge 
+                          bmiResult={calculateExactBMI(testValue)}
+                          studentName={students.find(s => s.id === selectedStudentId)?.name}
+                        />
+                      )}
 
                       {error && (
                         <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-xs font-bold flex items-start space-x-2">
@@ -1569,6 +1683,15 @@ const FitnessTests: React.FC = () => {
         </div>
       )}
      </div>
+    )}
+
+    {/* CBSE Test Guide Pop-Up Modal */}
+    {activeGuideTest && (
+      <TestGuideModal
+        test={activeGuideTest}
+        categoryName={selectedBattery?.category}
+        onClose={() => setActiveGuideTest(null)}
+      />
     )}
   </div>
   );

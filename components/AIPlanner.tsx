@@ -1,10 +1,11 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target, User, CalendarDays, BookOpen, PenTool, Languages, FileText, Save, CheckCircle2, ShieldCheck, WifiOff, ZapOff, KeyRound } from 'lucide-react';
+import { Sparkles, Loader2, Download, Printer, RotateCcw, Image as ImageIcon, Clock, GraduationCap, AlertCircle, PlayCircle, Layers, ClipboardList, Target, User, CalendarDays, BookOpen, PenTool, Languages, FileText, Save, CheckCircle2, ShieldCheck, WifiOff, ZapOff, KeyRound, X, ChevronRight } from 'lucide-react';
 import { LessonPlan, Language, BoardType } from '../types.ts';
 import { generateLessonPlan, generateLessonDiagram } from '../services/geminiService.ts';
 import { storageService } from '../services/storageService.ts';
+import { offlineCacheService, PRELOADED_OFFLINE_LESSON_PLANS } from '../services/offlineCacheService.ts';
 import { exportToPdf, exportToWord } from '../lib/exportUtils.ts';
 import { trackEvent } from '../services/analytics.ts';
 
@@ -34,6 +35,14 @@ const AIPlanner: React.FC = () => {
   
   const [plan, setPlan] = useState<LessonPlan | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [showOfflineModal, setShowOfflineModal] = useState(false);
+
+  const handleLoadOfflineTemplate = (item: typeof PRELOADED_OFFLINE_LESSON_PLANS[0]) => {
+    setPlan(item.content);
+    setSport(item.metadata?.sport || 'PE Activity');
+    setTopic(item.metadata?.topic || 'Field Skills');
+    setShowOfflineModal(false);
+  };
 
   const handleSaveToHistory = () => {
     if (!plan) return;
@@ -48,6 +57,15 @@ const AIPlanner: React.FC = () => {
   };
 
   const handleGenerate = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setShowOfflineModal(true);
+      setError({
+        message: 'Outdoor Offline Mode Active: You are currently offline. Select from pre-loaded PE field templates or saved plans below.',
+        type: 'network'
+      });
+      return;
+    }
+
     setLoading(true);
     setLoadingStep(`Generating in ${language}...`);
     setError(null);
@@ -327,6 +345,15 @@ const AIPlanner: React.FC = () => {
             >
               {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={20} />}
               <span className="text-sm uppercase tracking-wider">{loading ? loadingStep || 'Processing...' : 'Generate Plan'}</span>
+            </button>
+
+            <button 
+              onClick={() => setShowOfflineModal(true)} 
+              type="button"
+              className="w-full py-3.5 bg-amber-500 text-slate-950 border-2 border-amber-600 rounded-2xl font-extrabold shadow-md hover:bg-amber-400 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+            >
+              <WifiOff size={16} />
+              <span className="text-xs uppercase tracking-wider">⚡ Offline Field Templates & Plans</span>
             </button>
             
             {error && (
@@ -647,6 +674,79 @@ const AIPlanner: React.FC = () => {
              </div>
            )}
         </div>
+
+        {/* Offline Field Templates Modal */}
+        <AnimatePresence>
+          {showOfflineModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fadeIn">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full max-h-[85vh] overflow-y-auto border-2 border-slate-900 shadow-2xl relative"
+              >
+                <button 
+                  onClick={() => setShowOfflineModal(false)}
+                  className="absolute top-5 right-5 p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-700 transition-all cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-amber-500 text-slate-950 rounded-2xl font-black">
+                    <WifiOff size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Outdoor Offline PE Field Templates</h3>
+                    <p className="text-xs font-bold text-slate-500">Access cached & pre-loaded PE lesson plans with zero internet connection required</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">Pre-Loaded Sports & Activities</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {offlineCacheService.getOfflineLessonPlans().map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => handleLoadOfflineTemplate(item)}
+                        className="p-4 bg-slate-50 hover:bg-amber-50 border-2 border-slate-200 hover:border-amber-500 rounded-2xl text-left transition-all group flex flex-col justify-between cursor-pointer"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 px-2 py-0.5 rounded-md">
+                              {item.metadata?.sport || item.type}
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400">{item.metadata?.grade ? `Grade ${item.metadata.grade}` : 'Field Plan'}</span>
+                          </div>
+                          <h5 className="font-extrabold text-sm text-slate-900 group-hover:text-amber-900 transition-colors line-clamp-2">
+                            {item.title}
+                          </h5>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between text-[11px] font-black text-amber-600">
+                          <span>Load Offline Plan</span>
+                          <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-indigo-50 border border-indigo-200 p-4 rounded-2xl flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-indigo-900 text-xs font-bold">
+                    <ShieldCheck size={18} className="text-indigo-600 shrink-0" />
+                    <span>All loaded plans can be printed or exported to PDF offline!</span>
+                  </div>
+                  <button
+                    onClick={() => setShowOfflineModal(false)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-indigo-700 transition-all cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     );
   };

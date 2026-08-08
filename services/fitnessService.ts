@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { logError } from './logService';
+import { offlineCacheService } from './offlineCacheService';
 import { 
   Student, 
   Team, 
@@ -88,69 +89,366 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
   {
     category: 'Primary',
     grades: ['1', '2', '3'],
-    objective: 'Basic motor skills & coordination',
+    objective: 'Basic motor skills, coordination & body composition',
     tests: [
-      { id: 'bmi', name: 'BMI (Height & Weight)', unit: 'kg/m²', description: 'Body Mass Index calculation.' },
-      { id: 'flamingo', name: 'Flamingo Balance Test', unit: 'count', description: 'Number of falls in 60 seconds.' },
-      { id: 'plate_tapping', name: 'Plate Tapping Test', unit: 'count', description: 'Number of taps in 30 seconds.' },
-      { id: 'sit_reach', name: 'Sit and Reach Test', unit: 'cm', description: 'Lower back and hamstring flexibility.' },
-      { id: 'shuttle_run', name: 'Shuttle Run (4x10m)', unit: 'seconds', description: 'Agility and coordination test.' }
+      { 
+        id: 'bmi', 
+        name: 'BMI (Height & Weight)', 
+        unit: 'kg/m²', 
+        description: 'Body Mass Index calculation evaluating stature & weight.',
+        duration: 'Untimed (Single Measurement)',
+        equipment: ['Stadiometer / Measuring Tape', 'Digital Weighing Scale'],
+        scoringGuide: 'Enter weight in kg and height in cm separated by slash (e.g., 28/140). BMI is auto-calculated.',
+        protocol: 'Student stands bare-foot on weighing scale for mass in kg. Height measured using stadiometer against a flat wall with heels and shoulders aligned.'
+      },
+      { 
+        id: 'flamingo', 
+        name: 'Flamingo Balance Test', 
+        unit: 'count', 
+        description: 'Single leg balance evaluating static core stability and leg strength.',
+        duration: '60 Seconds (1 Minute)',
+        equipment: ['Flamingo Balance Beam (50cm x 3cm x 4cm)', 'Stopwatch'],
+        scoringGuide: 'Record the total number of falls or balance breaks during the 60-second trial.',
+        protocol: 'Student balances on preferred leg on beam, bends free leg back holding foot at instep. Start 60s timer once stable. Each time student loses balance, pause timer and add 1 to count until full 60s of balance is completed.'
+      },
+      { 
+        id: 'plate_tapping', 
+        name: 'Plate Tapping Test', 
+        unit: 'count', 
+        description: 'Tests speed and limb coordination of upper extremities.',
+        duration: '30 Seconds',
+        equipment: ['Table with 2 Yellow Disc Plates (20cm dia) & 1 Rectangle Plate (30x20cm)', 'Stopwatch'],
+        scoringGuide: 'Record total number of taps completed in 30 seconds.',
+        protocol: 'Student places non-preferred hand on center rectangle plate. Moves preferred hand back and forth touching two yellow discs as fast as possible. 1 tap = touching disc A and disc B.'
+      },
+      { 
+        id: 'sit_reach', 
+        name: 'Sit and Reach Test', 
+        unit: 'cm', 
+        description: 'Evaluates lower back and hamstring flexibility.',
+        duration: '2 Attempts (Best score recorded)',
+        equipment: ['Sit and Reach Flexibility Box / Ruler'],
+        scoringGuide: 'Record maximum distance reached in cm (to nearest 0.5cm). Best of 2 trials.',
+        protocol: 'Student sits with feet bare against box, knees fully extended. Reaches smoothly forward with arms stacked without bouncing. Hold max reach position for 2 seconds.'
+      },
+      { 
+        id: 'shuttle_run', 
+        name: 'Shuttle Run (4x10m)', 
+        unit: 'seconds', 
+        description: 'Evaluates speed, acceleration, agility and turning coordination.',
+        duration: 'Timed Run (~10-20 seconds)',
+        equipment: ['2 Cones', '2 Wooden Blocks (5x5x10cm)', 'Stopwatch', '10m Runway'],
+        scoringGuide: 'Record time taken in seconds (e.g., 11.45) to finish sprint picking up two blocks.',
+        protocol: 'Student starts at line, sprints 10m to pick up block 1, returns and places it behind start line, sprints back for block 2, and sprints back across start line.'
+      }
     ]
   },
   {
     category: 'Upper Primary',
     grades: ['4', '5'],
-    objective: 'Introduce fitness components',
+    objective: 'Foundational physical fitness components',
     tests: [
-      { id: 'bmi', name: 'BMI', unit: 'kg/m²', description: 'Body Mass Index.' },
-      { id: 'flamingo', name: 'Flamingo Balance', unit: 'count', description: 'Number of falls in 60 seconds.' },
-      { id: 'plate_tapping', name: 'Plate Tapping', unit: 'count', description: 'Number of taps in 30 seconds.' },
-      { id: 'sit_reach', name: 'Sit & Reach', unit: 'cm', description: 'Flexibility.' },
-      { id: 'broad_jump', name: 'Standing Broad Jump', unit: 'cm', description: 'Leg power.' },
-      { id: 'sprint_50m', name: '50m Sprint', unit: 'seconds', description: 'Speed test.' }
+      { 
+        id: 'bmi', 
+        name: 'BMI (Height & Weight)', 
+        unit: 'kg/m²', 
+        description: 'Body Mass Index calculation.',
+        duration: 'Untimed',
+        equipment: ['Stadiometer', 'Weighing Scale'],
+        scoringGuide: 'Format: "weight_kg / height_cm" (e.g. 32/145).',
+        protocol: 'Measure stature height in cm and body mass in kg. System calculates exact BMI and CBSE percentile.'
+      },
+      { 
+        id: 'flamingo', 
+        name: 'Flamingo Balance', 
+        unit: 'count', 
+        description: 'Balance and posture control.',
+        duration: '60 Seconds (1 Minute)',
+        equipment: ['Balance Beam', 'Stopwatch'],
+        scoringGuide: 'Record total balance disruptions/falls in 60s.',
+        protocol: 'Balance on dominant leg for 60 seconds total. Count each stumble.'
+      },
+      { 
+        id: 'plate_tapping', 
+        name: 'Plate Tapping', 
+        unit: 'count', 
+        description: 'Speed and reaction coordination.',
+        duration: '30 Seconds',
+        equipment: ['Tapping Board', 'Stopwatch'],
+        scoringGuide: 'Record count of disc taps in 30 seconds.',
+        protocol: 'Rapid hand tapping between two side discs for 30s.'
+      },
+      { 
+        id: 'sit_reach', 
+        name: 'Sit & Reach', 
+        unit: 'cm', 
+        description: 'Lower trunk flexibility.',
+        duration: '2 Attempts',
+        equipment: ['Sit & Reach Box'],
+        scoringGuide: 'Record distance reached in cm.',
+        protocol: 'Sit barefoot with knees locked, reach forward along measuring ruler.'
+      },
+      { 
+        id: 'broad_jump', 
+        name: 'Standing Broad Jump', 
+        unit: 'cm', 
+        description: 'Explosive leg power.',
+        duration: '2 Jumps (Best score)',
+        equipment: ['Non-slip Jump Mat / Sand Pit', 'Measuring Tape'],
+        scoringGuide: 'Record distance in cm from take-off line to back heel nearest line.',
+        protocol: 'Two-legged standing jump. Swing arms and bend knees before explosive takeoff. Measure from line to rear heel landing.'
+      },
+      { 
+        id: 'sprint_50m', 
+        name: '50m Sprint', 
+        unit: 'seconds', 
+        description: 'Maximum linear running speed.',
+        duration: 'Timed Sprint (~7-12 seconds)',
+        equipment: ['50m Straight Track', 'Cones', 'Stopwatch'],
+        scoringGuide: 'Record sprint time in seconds (e.g. 8.42s).',
+        protocol: 'Standing start behind line. On "GO", sprint 50m full speed across finish line.'
+      }
     ]
   },
   {
     category: 'Middle School',
     grades: ['6', '7', '8'],
-    objective: 'Skill + performance tracking',
+    objective: 'Cardiovascular endurance & muscular agility tracking',
     tests: [
-      { id: 'bmi', name: 'BMI', unit: 'kg/m²', description: 'Body Mass Index.' },
-      { id: 'sprint_50m', name: '50m Sprint', unit: 'seconds', description: 'Speed.' },
-      { id: 'run_600m', name: '600m Run/Walk', unit: 'min:sec', description: 'Endurance.' },
-      { id: 'broad_jump', name: 'Standing Broad Jump', unit: 'cm', description: 'Power.' },
-      { id: 'sit_reach', name: 'Sit & Reach', unit: 'cm', description: 'Flexibility.' },
-      { id: 'shuttle_4x10', name: '4×10m Shuttle Run', unit: 'seconds', description: 'Agility.' }
+      { 
+        id: 'bmi', 
+        name: 'BMI (Height & Weight)', 
+        unit: 'kg/m²', 
+        description: 'Body Mass Index.',
+        duration: 'Untimed',
+        equipment: ['Stadiometer', 'Weighing Scale'],
+        scoringGuide: 'Enter weight in kg and height in cm (e.g. 42/155).',
+        protocol: 'Standard anthropometric measurement.'
+      },
+      { 
+        id: 'sprint_50m', 
+        name: '50m Sprint', 
+        unit: 'seconds', 
+        description: 'Max running velocity.',
+        duration: 'Timed Sprint',
+        equipment: ['Stopwatch', '50m Track'],
+        scoringGuide: 'Record time in seconds (e.g. 7.85s).',
+        protocol: 'High intensity 50m dash from standing start.'
+      },
+      { 
+        id: 'run_600m', 
+        name: '600m Run/Walk', 
+        unit: 'min:sec', 
+        description: 'Cardiovascular aerobic endurance.',
+        duration: 'Timed Endurance Run (~2-5 minutes)',
+        equipment: ['200m or 400m Oval Track', 'Stopwatch'],
+        scoringGuide: 'Record time in MM:SS format (e.g. 2:45).',
+        protocol: 'Run or walk 600m as quickly as possible. Time stopped as student crosses finish line.'
+      },
+      { 
+        id: 'broad_jump', 
+        name: 'Standing Broad Jump', 
+        unit: 'cm', 
+        description: 'Lower body explosive muscle power.',
+        duration: '2 Jumps',
+        equipment: ['Measuring Tape', 'Landing Mat'],
+        scoringGuide: 'Record max jump distance in cm.',
+        protocol: 'Standing jump with simultaneous foot takeoff.'
+      },
+      { 
+        id: 'sit_reach', 
+        name: 'Sit & Reach', 
+        unit: 'cm', 
+        description: 'Hamstring & lower back flexibility.',
+        duration: '2 Attempts',
+        equipment: ['Flexibility Box'],
+        scoringGuide: 'Record best reach in cm.',
+        protocol: 'Slow forward reach holding position for 2 seconds.'
+      },
+      { 
+        id: 'shuttle_4x10', 
+        name: '4×10m Shuttle Run', 
+        unit: 'seconds', 
+        description: 'Agility, direction change & velocity.',
+        duration: 'Timed Shuttle (~10-15 seconds)',
+        equipment: ['Stopwatch', 'Cones', '2 Blocks'],
+        scoringGuide: 'Record time in seconds (e.g. 10.8s).',
+        protocol: 'Sprint 10m 4 times, moving 2 wooden blocks across boundary lines.'
+      }
     ]
   },
   {
     category: 'Secondary',
     grades: ['9', '10'],
-    objective: 'Fitness benchmarking',
+    objective: 'CBSE HPE Strand 1 physical fitness benchmarking',
     tests: [
-      { id: 'bmi', name: 'BMI', unit: 'kg/m²', description: 'Body Mass Index.' },
-      { id: 'sprint_50m', name: '50m Sprint', unit: 'seconds', description: 'Speed.' },
-      { id: 'run_600m', name: '600m Run', unit: 'min:sec', description: 'Endurance.' },
-      { id: 'broad_jump', name: 'Standing Broad Jump', unit: 'cm', description: 'Power.' },
-      { id: 'sit_reach', name: 'Sit & Reach', unit: 'cm', description: 'Flexibility.' },
-      { id: 'shuttle_4x10', name: '4×10m Shuttle Run', unit: 'seconds', description: 'Agility.' },
-      { id: 'pushups', name: 'Push-Ups / Modified Push-Ups', unit: 'count', description: 'Strength (Boys: Standard, Girls: Modified).' },
-      { id: 'curl_ups', name: 'Partial Curl-Ups', unit: 'count', description: 'Core strength.' }
+      { 
+        id: 'bmi', 
+        name: 'BMI (Height & Weight)', 
+        unit: 'kg/m²', 
+        description: 'Body Mass Index classification.',
+        duration: 'Untimed',
+        equipment: ['Stadiometer', 'Weighing Scale'],
+        scoringGuide: 'Format: "weight/height" (e.g. 52/165). Auto-categorized.',
+        protocol: 'Height in cm and weight in kg entered to compute exact BMI category.'
+      },
+      { 
+        id: 'sprint_50m', 
+        name: '50m Sprint', 
+        unit: 'seconds', 
+        description: 'Anaerobic explosive acceleration.',
+        duration: 'Timed Sprint',
+        equipment: ['Stopwatch', '50m Track'],
+        scoringGuide: 'Record time in seconds (e.g. 7.20s).',
+        protocol: 'Standing start sprint over 50m.'
+      },
+      { 
+        id: 'run_600m', 
+        name: '600m Run', 
+        unit: 'min:sec', 
+        description: 'Aerobic endurance capacity.',
+        duration: 'Timed Endurance Run',
+        equipment: ['Stopwatch', '400m Track'],
+        scoringGuide: 'Record time in MM:SS format (e.g. 2:20).',
+        protocol: 'Paced 600m continuous run.'
+      },
+      { 
+        id: 'broad_jump', 
+        name: 'Standing Broad Jump', 
+        unit: 'cm', 
+        description: 'Muscular strength and leg power.',
+        duration: '2 Attempts',
+        equipment: ['Landing Mat', 'Tape'],
+        scoringGuide: 'Record best distance in cm.',
+        protocol: 'Explosive standing forward jump landing on both feet.'
+      },
+      { 
+        id: 'sit_reach', 
+        name: 'Sit & Reach', 
+        unit: 'cm', 
+        description: 'Flexibility of lower back & hamstrings.',
+        duration: '2 Attempts',
+        equipment: ['Flexibility Box'],
+        scoringGuide: 'Record reach in cm.',
+        protocol: 'Stretch forward without bending knees.'
+      },
+      { 
+        id: 'shuttle_4x10', 
+        name: '4×10m Shuttle Run', 
+        unit: 'seconds', 
+        description: 'Agility & rapid deceleration/acceleration.',
+        duration: 'Timed Shuttle',
+        equipment: ['Cones', 'Blocks', 'Stopwatch'],
+        scoringGuide: 'Record shuttle time in seconds.',
+        protocol: '4 lengths of 10m retrieving blocks.'
+      },
+      { 
+        id: 'pushups', 
+        name: 'Push-Ups / Modified Push-Ups', 
+        unit: 'count', 
+        description: 'Upper body muscular strength & endurance.',
+        duration: '60 Seconds (1 Minute)',
+        equipment: ['Exercise Mat', 'Stopwatch / Metronome'],
+        scoringGuide: 'Enter total valid repetitions completed in 60 seconds (1 Minute). Boys: Standard push-ups; Girls: Modified (knee) push-ups.',
+        protocol: 'Boys assume standard push-up plank posture (hands shoulder-width, body straight). Girls assume modified push-up posture with knees resting on mat. Lower chest to 90-degree elbow bend, then extend fully. Record max completed reps in 60s.'
+      },
+      { 
+        id: 'curl_ups', 
+        name: 'Partial Curl-Ups', 
+        unit: 'count', 
+        description: 'Abdominal core muscle strength & endurance.',
+        duration: '60 Seconds (1 Minute)',
+        equipment: ['Exercise Mat', 'Measuring Strip (10cm wide)', 'Stopwatch'],
+        scoringGuide: 'Enter total valid curl-up repetitions completed in 60 seconds (max score capped at 75).',
+        protocol: 'Student lies flat on back with knees bent at 140 degrees, feet flat on floor. Arms extended at sides touching measuring strip. Curl upper body until fingers slide across 10cm strip. Lower down until head touches mat. Cadence of 1 curl every 3 seconds or max in 60s.'
+      }
     ]
   },
   {
     category: 'Senior Secondary',
     grades: ['11', '12'],
-    objective: 'Performance + health profiling',
+    objective: 'High-performance athletic profiling & health wellness',
     tests: [
-      { id: 'bmi', name: 'BMI', unit: 'kg/m²', description: 'Body Mass Index.' },
-      { id: 'sprint_50m', name: '50m Sprint', unit: 'seconds', description: 'Speed.' },
-      { id: 'run_long', name: '1000m (Boys) / 800m (Girls)', unit: 'min:sec', description: 'Endurance.' },
-      { id: 'broad_jump', name: 'Standing Broad Jump', unit: 'cm', description: 'Power.' },
-      { id: 'sit_reach', name: 'Sit & Reach', unit: 'cm', description: 'Flexibility.' },
-      { id: 'shuttle_run', name: 'Shuttle Run', unit: 'seconds', description: 'Agility.' },
-      { id: 'pushups', name: 'Push-Ups', unit: 'count', description: 'Strength.' },
-      { id: 'curl_ups', name: 'Curl-Ups', unit: 'count', description: 'Core strength.' }
+      { 
+        id: 'bmi', 
+        name: 'BMI (Height & Weight)', 
+        unit: 'kg/m²', 
+        description: 'Body Mass Index profiling.',
+        duration: 'Untimed',
+        equipment: ['Stadiometer', 'Weighing Scale'],
+        scoringGuide: 'Format: "weight/height" (e.g. 60/172).',
+        protocol: 'Measurement of height and weight for secondary PE profiling.'
+      },
+      { 
+        id: 'sprint_50m', 
+        name: '50m Sprint', 
+        unit: 'seconds', 
+        description: 'Sprint acceleration & maximum speed.',
+        duration: 'Timed Sprint',
+        equipment: ['50m Track', 'Stopwatch'],
+        scoringGuide: 'Record time in seconds (e.g. 6.95s).',
+        protocol: 'Maximum effort 50m sprint.'
+      },
+      { 
+        id: 'run_long', 
+        name: '1000m (Boys) / 800m (Girls)', 
+        unit: 'min:sec', 
+        description: 'Cardiorespiratory fitness & stamina.',
+        duration: 'Timed Long Run (~3-6 minutes)',
+        equipment: ['Running Track', 'Stopwatch'],
+        scoringGuide: 'Record time in MM:SS format (e.g. 3:45 for 1000m or 3:10 for 800m).',
+        protocol: 'Continuous run over 1000m for male students or 800m for female students.'
+      },
+      { 
+        id: 'broad_jump', 
+        name: 'Standing Broad Jump', 
+        unit: 'cm', 
+        description: 'Leg power & muscle velocity.',
+        duration: '2 Attempts',
+        equipment: ['Jump Mat / Tape'],
+        scoringGuide: 'Record distance in cm.',
+        protocol: 'Standing horizontal broad jump.'
+      },
+      { 
+        id: 'sit_reach', 
+        name: 'Sit & Reach', 
+        unit: 'cm', 
+        description: 'Spinal & hamstring elasticity.',
+        duration: '2 Attempts',
+        equipment: ['Flexibility Box'],
+        scoringGuide: 'Record best reach in cm.',
+        protocol: 'Hamstring & lower lumbar flexibility check.'
+      },
+      { 
+        id: 'shuttle_run', 
+        name: 'Shuttle Run (4x10m)', 
+        unit: 'seconds', 
+        description: 'Multi-directional agility & footwork.',
+        duration: 'Timed Shuttle',
+        equipment: ['Cones', 'Stopwatch'],
+        scoringGuide: 'Record time in seconds.',
+        protocol: 'High speed direction change run.'
+      },
+      { 
+        id: 'pushups', 
+        name: 'Push-Ups (Boys / Girls)', 
+        unit: 'count', 
+        description: 'Upper body push strength & endurance.',
+        duration: '60 Seconds (1 Minute)',
+        equipment: ['Exercise Mat', 'Stopwatch'],
+        scoringGuide: 'Enter total valid repetitions completed in 60 seconds (1 Minute).',
+        protocol: '60-second timed push-up test. Boys: standard plank push-ups; Girls: modified knee push-ups.'
+      },
+      { 
+        id: 'curl_ups', 
+        name: 'Partial Curl-Ups', 
+        unit: 'count', 
+        description: 'Abdominal core endurance & stamina.',
+        duration: '60 Seconds (1 Minute)',
+        equipment: ['Mat', 'Measuring Tape', 'Stopwatch'],
+        scoringGuide: 'Enter total valid curl-ups completed in 60 seconds.',
+        protocol: 'Controlled partial curl-ups sliding fingers 10cm forward on mat.'
+      }
     ]
   }
 ];
@@ -243,25 +541,36 @@ export const fitnessService = {
   // Students
   saveStudent: async (student: Student) => {
     const path = `students/${student.id}`;
-    // Default schoolId for records not specifically linked
     if (!student.schoolId) {
       student.schoolId = `personal_${student.teacherId}`;
     }
-    try {
-      await setDoc(doc(db, 'students', student.id), student);
-    } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, path);
+
+    // Save to offline local storage immediately
+    offlineCacheService.saveStudentOffline(student);
+
+    // If online, save to Firestore
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      try {
+        await setDoc(doc(db, 'students', student.id), student);
+      } catch (err) {
+        console.warn('Firestore save failed, preserved in offline queue:', err);
+      }
     }
   },
 
   bulkSaveStudents: async (students: Student[]) => {
-    // For smaller batches, we can iterate, but for larger we'd use writeBatch
-    // Let's use individual setDoc for now as it's easier to track errors if any
-    const promises = students.map(student => setDoc(doc(db, 'students', student.id), student));
-    try {
-      await Promise.all(promises);
-    } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'bulk_students');
+    // Save all to local offline cache
+    students.forEach(student => {
+      offlineCacheService.saveStudentOffline(student);
+    });
+
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      const promises = students.map(student => setDoc(doc(db, 'students', student.id), student));
+      try {
+        await Promise.all(promises);
+      } catch (err) {
+        console.warn('Bulk Firestore write failed, preserved in offline queue:', err);
+      }
     }
   },
   
@@ -290,33 +599,40 @@ export const fitnessService = {
         q = query(collection(db, 'students'), where('teacherId', '==', teacherId));
       }
       const snapshot = await getDocs(q);
-      return snapshot.docs.map((doc: any) => doc.data() as Student);
+      const data = snapshot.docs.map((doc: any) => doc.data() as Student);
+      
+      // Cache fetched students locally
+      offlineCacheService.saveStudentsToOfflineCache(data);
+      return data;
     } catch (err) {
       logError(err, 'error', { context: 'getStudents failed', teacherId, schoolId, isAdmin });
-      return [];
+      // Fallback to offline cached students
+      const cached = offlineCacheService.getStudentsFromOfflineCache();
+      return cached;
     }
   },
 
   deleteStudent: async (id: string, schoolId?: string) => {
     const studentPath = `students/${id}`;
-    try {
-      // Get all results for this student
-      let q;
-      if (schoolId) {
-        q = query(collection(db, 'results'), where('schoolId', '==', schoolId), where('studentId', '==', id));
-      } else {
-        q = query(collection(db, 'results'), where('studentId', '==', id));
+    // Delete from local cache
+    offlineCacheService.deleteStudentOffline(id);
+
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      try {
+        let q;
+        if (schoolId) {
+          q = query(collection(db, 'results'), where('schoolId', '==', schoolId), where('studentId', '==', id));
+        } else {
+          q = query(collection(db, 'results'), where('studentId', '==', id));
+        }
+        const snapshot = await getDocs(q);
+        
+        const deletePromises = snapshot.docs.map(docSnap => deleteDoc(doc(db, 'results', docSnap.id)));
+        await Promise.all(deletePromises);
+        await deleteDoc(doc(db, 'students', id));
+      } catch (err) {
+        console.warn('Firestore delete failed, queued offline:', err);
       }
-      const snapshot = await getDocs(q);
-      
-      // Delete results
-      const deletePromises = snapshot.docs.map(docSnap => deleteDoc(doc(db, 'results', docSnap.id)));
-      await Promise.all(deletePromises);
-      
-      // Delete student
-      await deleteDoc(doc(db, 'students', id));
-    } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, studentPath);
     }
   },
 
@@ -524,11 +840,23 @@ export const fitnessService = {
     } else {
       q = query(collection(db, 'students'), where('schoolId', '==', effectiveSchoolId), where('teacherId', '==', teacherId));
     }
+
+    // Immediately trigger callback with offline cache if available for instant non-blocking load
+    const cachedStudents = offlineCacheService.getStudentsFromOfflineCache();
+    if (cachedStudents.length > 0) {
+      callback(cachedStudents);
+    }
+
     return onSnapshot(q, (snapshot: any) => {
-      callback(snapshot.docs.map((doc: any) => doc.data() as Student));
+      const data = snapshot.docs.map((doc: any) => doc.data() as Student);
+      // Cache latest students locally
+      offlineCacheService.saveStudentsToOfflineCache(data);
+      callback(data);
     }, (error: any) => {
-      console.error("Firestore Error in students subscription:", error);
+      console.error("Firestore Error in students subscription (switching to offline cache):", error);
       logError(error, 'error', { context: 'Students subscription failed' });
+      const offlineStudents = offlineCacheService.getStudentsFromOfflineCache();
+      callback(offlineStudents);
     });
   },
 

@@ -296,6 +296,10 @@ export interface KIFTTest {
   name: string;
   unit: string;
   description: string;
+  duration?: string;      // e.g. "60 Seconds (1 Minute)" or "30 Seconds"
+  protocol?: string;      // Detailed step-by-step procedure according to CBSE / Khelo India
+  equipment?: string[];   // e.g. ["Mat", "Stopwatch", "Cones"]
+  scoringGuide?: string;  // e.g. "Count total completed valid push-ups in 60s"
 }
 
 export interface KIFTBattery {

@@ -33,7 +33,8 @@ const tools: Tool[] = [
   { id: 'worksheet-maker', name: 'Worksheet Maker', description: 'Engagement worksheets and theoretical tests.', icon: FileText, color: 'bg-indigo-500' },
   { id: 'report-writer', name: 'Report Writer', description: 'Professional feedback and student report comments.', icon: FileSpreadsheet, color: 'bg-emerald-500' },
   { id: 'game-generator', name: 'PE Games Generator', description: '5 skill-specific games for your class.', icon: Gamepad2, color: 'bg-orange-500' },
-  { id: 'round-robin', name: 'Tournament Maker', description: 'Balanced schedules for teams and playing areas.', icon: Split, color: 'bg-pink-500', custom: true },
+  { id: 'tournament-fixtures', name: 'Tournament Fixtures', description: 'Generate Knockout Brackets & Round Robin League Schedules in one place.', icon: Split, color: 'bg-pink-500', custom: true },
+  { id: 'round-robin', name: 'Round Robin League', description: 'Generate Round Robin League schedules with live standings table.', icon: Split, color: 'bg-indigo-500', custom: true },
   { id: 'adapted-pe', name: 'Adapted PE', description: 'Inclusion modifications for students with disabilities.', icon: Accessibility, color: 'bg-sky-500' },
   { id: 'differentiator', name: 'Differentiated Instruction', description: 'Tailored modifications for all skill levels.', icon: Target, color: 'bg-red-500' },
   { id: 'sports-science', name: 'Sports Science', description: 'Experiential learning connecting PE with science.', icon: Microscope, color: 'bg-yellow-500' },
@@ -119,7 +120,7 @@ const AIToolCenter: React.FC = () => {
       );
     }
 
-    if (selectedTool.id === 'round-robin') {
+    if (selectedTool.id === 'round-robin' || selectedTool.id === 'tournament-fixtures') {
       return (
         <div className="space-y-6">
           <button 
