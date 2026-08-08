@@ -28,8 +28,13 @@ import {
   Tag,
   Info,
   Layers,
-  Check
+  Check,
+  School,
+  Trophy,
+  Camera,
+  X
 } from 'lucide-react';
+import Logo from './Logo.tsx';
 import { toast } from '../services/toast.ts';
 import { motion } from 'motion/react';
 import { collection, query, where, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
@@ -52,7 +57,21 @@ const SchoolAdmin: React.FC = () => {
   const [allSchools, setAllSchools] = useState<any[]>([]);
 
   // Tab & Timetable Doc Ingest States
-  const [activeAdminTab, setActiveAdminTab] = useState<'access' | 'ocr' | 'seo'>('access');
+  const [activeAdminTab, setActiveAdminTab] = useState<'profile' | 'access' | 'ocr' | 'seo'>('profile');
+  const [currentSchool, setCurrentSchool] = useState<any>(null);
+  const [schoolNameInput, setSchoolNameInput] = useState<string>('');
+  const [schoolLogoInput, setSchoolLogoInput] = useState<string>('');
+  const [schoolAddressInput, setSchoolAddressInput] = useState<string>('');
+  const [savingBranding, setSavingBranding] = useState<boolean>(false);
+
+  // Camera Capture States for School Logo
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [ocrLogs, setOcrLogs] = useState<string[]>([]);
@@ -99,6 +118,17 @@ const SchoolAdmin: React.FC = () => {
         }
 
         if (currentSchoolId) {
+          const sData = await fitnessService.getSchool(currentSchoolId, true);
+          if (sData) {
+            setCurrentSchool(sData);
+            setSchoolNameInput(sData.name || profile?.schoolName || '');
+            setSchoolLogoInput(sData.logoUrl || profile?.schoolLogo || '');
+            setSchoolAddressInput(sData.address || '');
+          } else if (profile?.schoolName) {
+            setSchoolNameInput(profile.schoolName);
+            if (profile.schoolLogo) setSchoolLogoInput(profile.schoolLogo);
+          }
+
           const q = query(collection(db, 'workloads'), where('schoolId', '==', currentSchoolId));
           const snap = await getDocs(q);
           const loadedWorkloads = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -118,6 +148,146 @@ const SchoolAdmin: React.FC = () => {
 
     fetchData().catch(err => console.error("Unhandled error in SchoolAdmin fetch:", err));
   }, [auth.currentUser?.uid]);
+
+  const handleSaveSchoolBranding = async () => {
+    const schoolIdToUpdate = currentSchool?.id || userProfile?.schoolId;
+    if (!schoolIdToUpdate) {
+      toast.error('No registered school found for update.');
+      return;
+    }
+    setSavingBranding(true);
+    try {
+      const updatedName = schoolNameInput.trim() || 'SmartPE Partner School';
+      const updatedData = {
+        name: updatedName,
+        logoUrl: schoolLogoInput,
+        address: schoolAddressInput.trim()
+      };
+
+      await fitnessService.updateSchool(schoolIdToUpdate, updatedData);
+
+      if (auth.currentUser?.uid) {
+        await setDoc(doc(db, 'users', auth.currentUser.uid), {
+          schoolName: updatedName,
+          schoolLogo: updatedData.logoUrl
+        }, { merge: true });
+
+        await setDoc(doc(db, 'schoolMembers', auth.currentUser.uid), {
+          schoolName: updatedName,
+          schoolLogo: updatedData.logoUrl
+        }, { merge: true });
+      }
+
+      const freshSchool = await fitnessService.getSchool(schoolIdToUpdate, true);
+      if (freshSchool) setCurrentSchool(freshSchool);
+
+      // Dispatch custom event to update App header and sidebar in real time
+      window.dispatchEvent(new CustomEvent('school_branding_updated', {
+        detail: {
+          schoolName: updatedName,
+          schoolLogo: updatedData.logoUrl
+        }
+      }));
+
+      toast.success('School profile and custom logo saved! All reports & headers will reflect your branding.');
+    } catch (err: any) {
+      console.error('Error saving school branding:', err);
+      toast.error('Failed to update school profile.');
+    } finally {
+      setSavingBranding(false);
+    }
+  };
+
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo image size must be under 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setSchoolLogoInput(result);
+      toast.success('Logo file attached! Click "Save School Profile & Logo" to apply.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Camera Control Handlers
+  const startCamera = async (mode = facingMode) => {
+    setCameraError(null);
+    setCapturedPhoto(null);
+    setIsCameraOpen(true);
+    try {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: mode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err: any) {
+      console.error("Camera access error:", err);
+      setCameraError(err.message || 'Unable to access camera. Please check camera permissions or upload an image file.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraOpen(false);
+    setCapturedPhoto(null);
+    setCameraError(null);
+  };
+
+  useEffect(() => {
+    if (isCameraOpen && cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream;
+    }
+  }, [isCameraOpen, cameraStream]);
+
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/png');
+      setCapturedPhoto(dataUrl);
+    }
+  };
+
+  const applyCapturedPhoto = () => {
+    if (capturedPhoto) {
+      setSchoolLogoInput(capturedPhoto);
+      stopCamera();
+      toast.success('Camera photo attached as school logo! Click "Save School Profile & Custom Logo" to apply.');
+    }
+  };
 
   // Core OCR Ingestion methods
   const parseOCRTimetableText = (text: string): { coach: string; day: string; period: number; assignment: string }[] => {
@@ -524,14 +694,25 @@ Friday Period 3: Grade 7B - Fitness`;
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex border-b-4 border-slate-900 select-none">
+      <div className="flex border-b-4 border-slate-900 select-none overflow-x-auto">
+        <button
+          onClick={() => {
+            setActiveAdminTab('profile');
+            setError(null);
+            setSuccess(null);
+          }}
+          className={`pb-4 px-8 text-xs font-black uppercase tracking-widest border-b-4 -mb-[4px] transition-all flex items-center gap-2 whitespace-nowrap ${activeAdminTab === 'profile' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+        >
+          <School size={14} />
+          <span>School Profile & Branding</span>
+        </button>
         <button
           onClick={() => {
             setActiveAdminTab('access');
             setError(null);
             setSuccess(null);
           }}
-          className={`pb-4 px-8 text-xs font-black uppercase tracking-widest border-b-4 -mb-[4px] transition-all flex items-center gap-2 ${activeAdminTab === 'access' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+          className={`pb-4 px-8 text-xs font-black uppercase tracking-widest border-b-4 -mb-[4px] transition-all flex items-center gap-2 whitespace-nowrap ${activeAdminTab === 'access' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
         >
           <User size={14} />
           <span>Team Access Control</span>
@@ -542,7 +723,7 @@ Friday Period 3: Grade 7B - Fitness`;
             setError(null);
             setSuccess(null);
           }}
-          className={`pb-4 px-8 text-xs font-black uppercase tracking-widest border-b-4 -mb-[4px] transition-all flex items-center gap-2 ${activeAdminTab === 'ocr' ? 'border-[#FF6B00] text-[#FF6B00]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+          className={`pb-4 px-8 text-xs font-black uppercase tracking-widest border-b-4 -mb-[4px] transition-all flex items-center gap-2 whitespace-nowrap ${activeAdminTab === 'ocr' ? 'border-[#FF6B00] text-[#FF6B00]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
         >
           <Sparkles className="animate-pulse" size={14} />
           <span>Timetable OCR Ingest Hub</span>
@@ -553,7 +734,7 @@ Friday Period 3: Grade 7B - Fitness`;
             setError(null);
             setSuccess(null);
           }}
-          className={`pb-4 px-8 text-xs font-black uppercase tracking-widest border-b-4 -mb-[4px] transition-all flex items-center gap-2 ${activeAdminTab === 'seo' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+          className={`pb-4 px-8 text-xs font-black uppercase tracking-widest border-b-4 -mb-[4px] transition-all flex items-center gap-2 whitespace-nowrap ${activeAdminTab === 'seo' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
         >
           <Globe size={14} />
           <span>SEO Configuration</span>
@@ -580,7 +761,218 @@ Friday Period 3: Grade 7B - Fitness`;
         </div>
       )}
 
-      {activeAdminTab === 'access' ? (
+      {activeAdminTab === 'profile' ? (
+        /* School Profile & Custom Logo Branding Panel */
+        <div className="space-y-8 animate-in fade-in duration-300">
+          <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 border-2 border-slate-900 p-8 rounded-[2.5rem] text-white shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] relative overflow-hidden">
+            <div className="relative z-10">
+              <span className="inline-flex px-3 py-1 border border-indigo-400 bg-indigo-800/80 text-indigo-100 rounded-lg text-[9px] font-black uppercase tracking-widest mb-4">
+                Official School Profile & Custom Logo Branding
+              </span>
+              <h3 className="text-3xl font-black uppercase tracking-tighter mb-2">School Branding & Report Card Header</h3>
+              <p className="text-indigo-200 text-sm font-medium max-w-3xl leading-relaxed">
+                Configure your school's official registered name and upload a custom school logo. All student fitness reports, KIFT scorecards, test paper headers, and physical education registers will automatically reflect your school's logo alongside SmartPE India.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Form Column */}
+            <div className="bg-white border-2 border-slate-900 p-8 rounded-[2.5rem] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] space-y-6">
+              <h4 className="text-lg font-black uppercase tracking-tight text-slate-900 flex items-center gap-2">
+                <School className="text-indigo-600" size={20} />
+                <span>School Profile Details</span>
+              </h4>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">
+                  Registered School Name *
+                </label>
+                <input
+                  type="text"
+                  value={schoolNameInput}
+                  onChange={(e) => setSchoolNameInput(e.target.value)}
+                  placeholder="e.g. Delhi Public School, R.K. Puram"
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-2xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-[10px] text-slate-400 font-bold">
+                  Appears on report card headers, certificates, and student scorecards.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">
+                  School Address / Affiliation Details (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={schoolAddressInput}
+                  onChange={(e) => setSchoolAddressInput(e.target.value)}
+                  placeholder="e.g. CBSE Affiliation No. 1930211 • New Delhi"
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-2xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Custom Logo Upload */}
+              <div className="space-y-3 pt-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">
+                  Official Custom School Logo
+                </label>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl">
+                  {schoolLogoInput ? (
+                    <div className="relative group flex-shrink-0">
+                      <img src={schoolLogoInput} alt="School Logo" className="w-20 h-20 object-contain bg-white p-2 rounded-xl border border-slate-300 shadow-sm" />
+                      <button
+                        onClick={() => setSchoolLogoInput('')}
+                        className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 shadow hover:bg-red-700"
+                        title="Remove Logo"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 bg-indigo-50 border-2 border-slate-300 rounded-xl flex flex-col items-center justify-center text-indigo-600 flex-shrink-0">
+                      <UploadCloud size={24} />
+                      <span className="text-[9px] font-black uppercase mt-1">No Logo</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 flex-1 text-center sm:text-left">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startCamera('environment')}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-indigo-700 transition-colors inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <Camera size={14} />
+                        <span>Snap Photo via Camera</span>
+                      </button>
+
+                      <label className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer hover:bg-indigo-600 transition-colors inline-flex items-center gap-1.5 shadow-sm">
+                        <UploadCloud size={14} />
+                        <span>Upload Logo File</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoFileUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold">
+                      Snap live logo with camera or upload PNG/JPG (max 2MB).
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Preset Emblem Options */}
+              <div className="space-y-2 pt-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">
+                  Or Pick a Preset Emblem
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: 'shield', name: 'Gold Crest', icon: Shield, color: 'bg-amber-100 text-amber-800 border-amber-300' },
+                    { id: 'trophy', name: 'Royal Trophy', icon: Trophy, color: 'bg-indigo-100 text-indigo-800 border-indigo-300' },
+                    { id: 'star', name: 'Star Shield', icon: Sparkles, color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+                    { id: 'globe', name: 'Academic Star', icon: Globe, color: 'bg-slate-100 text-slate-800 border-slate-300' }
+                  ].map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        const svgData = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="%234f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>`;
+                        setSchoolLogoInput(svgData);
+                        toast.success(`Selected ${preset.name} emblem!`);
+                      }}
+                      className={`p-2.5 rounded-xl border-2 flex flex-col items-center justify-center gap-1 hover:border-indigo-600 transition-all ${preset.color}`}
+                    >
+                      <preset.icon size={18} />
+                      <span className="text-[9px] font-black uppercase">{preset.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveSchoolBranding}
+                disabled={savingBranding}
+                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:bg-indigo-700 active:translate-x-[1px] active:translate-y-[1px] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {savingBranding ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} />
+                    <span>Saving School Profile...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={16} />
+                    <span>Save School Profile & Custom Logo</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Live Preview Column */}
+            <div className="space-y-6">
+              <div className="bg-white border-2 border-slate-900 p-8 rounded-[2.5rem] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                    <Eye className="text-indigo-600" size={18} />
+                    <span>Report Card Co-Branding Preview</span>
+                  </h4>
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md border border-emerald-300">
+                    Live Header Mode
+                  </span>
+                </div>
+
+                <p className="text-xs font-bold text-slate-500">
+                  This preview shows how your official school custom logo & registered school name will render alongside SmartPE India on Page 1, Page 2, Page 3, & Page 4 of student report cards:
+                </p>
+
+                {/* Simulated Header Card */}
+                <div className="p-6 bg-slate-50 border-2 border-slate-900 rounded-2xl space-y-4 shadow-sm">
+                  <div className="flex justify-between items-center border-b-2 border-slate-900 pb-3">
+                    <div className="flex items-center gap-3">
+                      <Logo showText={false} className="scale-75 origin-left -my-2" />
+                      <span className="text-slate-300 font-bold">×</span>
+                      {schoolLogoInput ? (
+                        <img src={schoolLogoInput} alt="School Logo" className="h-8 w-auto max-w-[80px] object-contain" />
+                      ) : (
+                        <div className="p-1.5 bg-indigo-100 rounded-lg text-indigo-700">
+                          <Shield size={16} />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-sans font-black text-xs text-indigo-950 uppercase tracking-widest">
+                          {schoolNameInput || 'YOUR REGISTERED SCHOOL NAME'}
+                        </div>
+                        {schoolAddressInput && (
+                          <div className="text-[9px] font-bold text-slate-400">
+                            {schoolAddressInput}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9px] font-black uppercase tracking-wider bg-slate-900 text-white px-2.5 py-1 rounded-md">
+                        Page 2: Trend & Progress
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-center py-6 text-slate-400 text-xs font-mono border-2 border-dashed border-slate-300 rounded-xl bg-white space-y-1">
+                    <p className="font-sans font-black text-slate-700 uppercase">Official CBSE & KIFT Physical Literacy Scorecard</p>
+                    <p className="text-[10px] text-slate-400">[ Co-branded Report Content & Trend Analytics ]</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : activeAdminTab === 'access' ? (
         /* Members List */
         <div className="bg-white rounded-[2.5rem] border-2 border-slate-900 overflow-hidden shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] animate-in fade-in slide-in-from-bottom-2 duration-300">
           <table className="w-full text-left border-collapse">
@@ -1674,6 +2066,106 @@ Friday Period 3: Grade 7B - Fitness`;
               </div>
             </form>
           </motion.div>
+        </div>
+      )}
+      {/* Live Camera Viewport Modal */}
+      {isCameraOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border-2 border-slate-900 rounded-[2.5rem] p-6 max-w-lg w-full shadow-2xl space-y-4 relative animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center border-b-2 border-slate-900 pb-3">
+              <div className="flex items-center gap-2">
+                <Camera className="text-indigo-600" size={20} />
+                <h3 className="font-black text-sm uppercase tracking-wider text-slate-900">
+                  Camera Logo Capture
+                </h3>
+              </div>
+              <button
+                onClick={stopCamera}
+                className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors cursor-pointer"
+                title="Close Camera"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {cameraError ? (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-2xl space-y-3 text-center">
+                <p className="text-xs font-bold text-red-700">{cameraError}</p>
+                <button
+                  onClick={() => startCamera('environment')}
+                  className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-red-700 cursor-pointer"
+                >
+                  Retry Camera Access
+                </button>
+              </div>
+            ) : capturedPhoto ? (
+              <div className="space-y-4">
+                <div className="relative rounded-2xl overflow-hidden border-2 border-slate-900 bg-slate-900 flex items-center justify-center p-2">
+                  <img src={capturedPhoto} alt="Captured School Logo" className="max-h-64 object-contain rounded-xl bg-white" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCapturedPhoto(null)}
+                    className="flex-1 py-3 bg-slate-200 text-slate-800 rounded-2xl font-black text-xs uppercase tracking-wider hover:bg-slate-300 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <RefreshCw size={14} />
+                    <span>Retake Photo</span>
+                  </button>
+                  <button
+                    onClick={applyCapturedPhoto}
+                    className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Check size={14} />
+                    <span>Use as School Logo</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="relative rounded-2xl overflow-hidden border-2 border-slate-900 bg-black aspect-video flex items-center justify-center">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-3 right-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newMode = facingMode === 'environment' ? 'user' : 'environment';
+                        setFacingMode(newMode);
+                        startCamera(newMode);
+                      }}
+                      className="p-2 bg-black/60 hover:bg-black/80 text-white rounded-xl backdrop-blur-sm border border-white/20 transition-all flex items-center gap-1 text-[10px] font-black uppercase cursor-pointer"
+                      title="Switch Camera"
+                    >
+                      <RefreshCw size={12} />
+                      <span>Switch Camera</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    className="flex-1 py-3 bg-slate-200 text-slate-800 rounded-2xl font-black text-xs uppercase tracking-wider hover:bg-slate-300 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={capturePhoto}
+                    className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                  >
+                    <Camera size={16} />
+                    <span>Snap Photo</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

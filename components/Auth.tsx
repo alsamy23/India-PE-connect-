@@ -48,6 +48,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         
         let schoolId = '';
         let role = 'admin';
+        const finalSchoolName = schoolName.trim() || (user.displayName ? `${user.displayName} Academy` : 'PE Partner School');
 
         if (!querySnapshot.empty) {
           const pendingMemberDoc = querySnapshot.docs[0];
@@ -59,7 +60,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           schoolId = Math.random().toString(36).substr(2, 9);
           await setDoc(doc(db, 'schools', schoolId), {
             id: schoolId,
-            name: 'My School',
+            name: finalSchoolName,
             adminId: user.uid,
             createdAt: new Date().toISOString()
           });
@@ -69,7 +70,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName || 'Teacher',
-          schoolName: 'My School',
+          schoolName: finalSchoolName,
           schoolId,
           role,
           createdAt: new Date().toISOString()
@@ -80,7 +81,8 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           schoolId: schoolId,
           role,
           displayName: user.displayName || 'Teacher',
-          email: user.email
+          email: user.email,
+          schoolName: finalSchoolName
         });
 
         trackEvent('signup', { method: 'google', user_role: role });
@@ -116,6 +118,8 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         let schoolId = '';
         let role = 'admin';
 
+        const finalSchoolName = schoolName.trim() || (displayName ? `${displayName}'s School` : 'SmartPE Member School');
+
         if (!querySnapshot.empty) {
           // Claim existing pending membership
           const pendingMemberDoc = querySnapshot.docs[0];
@@ -131,7 +135,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           
           await setDoc(doc(db, 'schools', schoolId), {
             id: schoolId,
-            name: schoolName || 'New School',
+            name: finalSchoolName,
             adminId: user.uid,
             createdAt: new Date().toISOString()
           });
@@ -142,7 +146,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           uid: user.uid,
           email: user.email,
           displayName,
-          schoolName: schoolName || (schoolId ? 'My School' : 'New School'),
+          schoolName: finalSchoolName,
           schoolId,
           role,
           createdAt: new Date().toISOString()
@@ -154,7 +158,8 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           schoolId: schoolId,
           role,
           displayName,
-          email: user.email
+          email: user.email,
+          schoolName: finalSchoolName
         });
 
         trackEvent('signup', { method: 'email', user_role: role });

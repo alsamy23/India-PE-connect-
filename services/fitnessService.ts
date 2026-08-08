@@ -468,17 +468,33 @@ export const fitnessService = {
       const member = {
         uid: school.adminId,
         schoolId: school.id,
-        role: 'admin'
+        role: 'admin',
+        schoolName: school.name,
+        schoolLogo: school.logoUrl
       };
-      await setDoc(doc(db, 'schoolMembers', school.adminId), member);
+      await setDoc(doc(db, 'schoolMembers', school.adminId), member, { merge: true });
       schoolMemberCache[school.adminId] = member as any; // cache
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, path);
     }
   },
 
-  getSchool: async (schoolId: string): Promise<School | null> => {
-    if (schoolCache[schoolId] !== undefined) {
+  updateSchool: async (schoolId: string, data: Partial<School>) => {
+    const path = `schools/${schoolId}`;
+    try {
+      await setDoc(doc(db, 'schools', schoolId), data, { merge: true });
+      if (schoolCache[schoolId]) {
+        schoolCache[schoolId] = { ...schoolCache[schoolId]!, ...data };
+      } else {
+        delete schoolCache[schoolId];
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, path);
+    }
+  },
+
+  getSchool: async (schoolId: string, forceFresh = false): Promise<School | null> => {
+    if (!forceFresh && schoolCache[schoolId] !== undefined) {
       return schoolCache[schoolId];
     }
     try {

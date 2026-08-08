@@ -23,7 +23,10 @@ import {
   Info,
   Loader2,
   Database,
-  Sparkles
+  Sparkles,
+  Shield,
+  UploadCloud,
+  Trash2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -86,6 +89,7 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
   const [userProfile, setUserProfile] = useState<SchoolMember | null>(null);
   const [school, setSchool] = useState<School | null>(null);
   const [editableSchoolName, setEditableSchoolName] = useState("SmartPE Public School");
+  const [schoolLogoUrl, setSchoolLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let unsubResults: (() => void) | undefined;
@@ -104,10 +108,18 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
 
         if (profile) {
           try {
-            const schoolData = await fitnessService.getSchool(profile.schoolId);
+            const schoolData = await fitnessService.getSchool(profile.schoolId, true);
             setSchool(schoolData);
             if (schoolData?.name) {
               setEditableSchoolName(schoolData.name);
+            } else if (profile.schoolName) {
+              setEditableSchoolName(profile.schoolName);
+            }
+
+            if (schoolData?.logoUrl) {
+              setSchoolLogoUrl(schoolData.logoUrl);
+            } else if (profile.schoolLogo) {
+              setSchoolLogoUrl(profile.schoolLogo);
             }
           } catch (schoolErr) {
             console.error("Error loading school info:", schoolErr);
@@ -1376,12 +1388,64 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                 <div className="p-6 md:p-10 bg-slate-50 space-y-12 print:p-0 print:space-y-0">
                   {selectedType === 'individual' ? (
                     <>
-                      {/* Interactive Edit Tip (Only shown on screen) */}
-                      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center gap-3 print:hidden shadow-sm">
-                        <span className="text-xl">💡</span>
-                        <p className="text-xs font-bold text-indigo-950">
-                          <strong className="text-indigo-600">Interactive Feature:</strong> You can click and type to edit the <strong className="uppercase">School Name</strong> directly in any page header below. The name will automatically update across all pages and save perfectly in your PDF / Print report.
-                        </p>
+                      {/* Interactive School Branding Banner */}
+                      <div className="p-4 bg-indigo-50 border-2 border-indigo-200 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 print:hidden shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-sm">
+                            <Shield size={20} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-black uppercase text-indigo-950 tracking-wide">
+                                Active School Branding: <span className="text-indigo-600 underline decoration-dashed">{editableSchoolName}</span>
+                              </span>
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-500 mt-0.5">
+                              Upload your custom school logo or click and edit the school name in any header below. All reports automatically reflect your branding.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <label className="px-3 py-2 bg-white text-indigo-900 border-2 border-indigo-300 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer hover:bg-indigo-100 transition-colors flex items-center gap-1.5 shadow-sm">
+                            <UploadCloud size={14} className="text-indigo-600" />
+                            <span>{schoolLogoUrl ? 'Change Custom Logo' : 'Upload School Logo'}</span>
+                            <input
+                              type="file"
+                              accept="image/png, image/jpeg, image/webp"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  const logoData = event.target?.result as string;
+                                  setSchoolLogoUrl(logoData);
+                                  if (school?.id) {
+                                    fitnessService.updateSchool(school.id, { logoUrl: logoData });
+                                  }
+                                  toast.success('School custom logo saved for all report cards!');
+                                };
+                                reader.readAsDataURL(file);
+                              }}
+                              className="hidden"
+                            />
+                          </label>
+                          {schoolLogoUrl && (
+                            <button
+                              onClick={() => {
+                                setSchoolLogoUrl(null);
+                                if (school?.id) {
+                                  fitnessService.updateSchool(school.id, { logoUrl: '' });
+                                }
+                                toast.success('Custom logo removed');
+                              }}
+                              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                              title="Remove Custom Logo"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Interactive D3 Student Progress Chart (On-Screen Visualization) */}
@@ -1408,17 +1472,33 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                           </div>
                         </div>
 
-                        {/* Page 1 Header with SmartPE India Branding */}
+                        {/* Page 1 Header with SmartPE India Logo & Registered School Logo */}
                         <div className="border-b-2 border-slate-900 pb-4 flex justify-between items-start bg-white relative z-10">
                           <div className="space-y-3">
-                            <Logo variant="color" showText={true} className="scale-90 origin-left" />
+                            <div className="flex items-center gap-3">
+                              <Logo variant="color" showText={true} className="scale-90 origin-left" />
+                              <span className="text-slate-300 font-black text-xl">×</span>
+                              {schoolLogoUrl ? (
+                                <img src={schoolLogoUrl} alt={editableSchoolName} className="h-10 w-auto max-w-[120px] object-contain" />
+                              ) : (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-700">
+                                  <Shield size={16} />
+                                  <span className="text-[10px] font-black uppercase text-indigo-900">{editableSchoolName}</span>
+                                </div>
+                              )}
+                            </div>
                             <div className="space-y-1 mt-1">
                               <input
                                 type="text"
                                 value={editableSchoolName}
-                                onChange={(e) => setEditableSchoolName(e.target.value)}
+                                onChange={(e) => {
+                                  setEditableSchoolName(e.target.value);
+                                  if (school?.id) {
+                                    fitnessService.updateSchool(school.id, { name: e.target.value });
+                                  }
+                                }}
                                 placeholder="Enter School Name"
-                                className="text-xs font-black uppercase tracking-widest text-indigo-600 bg-transparent border-b border-dashed border-indigo-200 hover:border-indigo-600 focus:border-indigo-600 focus:outline-none py-0.5 px-1 w-full max-w-[350px] transition-all"
+                                className="text-xs font-black uppercase tracking-widest text-indigo-950 bg-transparent border-b border-dashed border-indigo-300 hover:border-indigo-600 focus:border-indigo-600 focus:outline-none py-0.5 px-1 w-full max-w-[350px] transition-all"
                                 title="Click to edit school name"
                               />
                               <div className="flex items-center gap-2 text-slate-400">
@@ -1584,11 +1664,19 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                         </div>
 
                         <div>
-                          {/* Running Page Header with SmartPE India Logo */}
+                          {/* Running Page Header with SmartPE India Logo & Registered School Custom Logo */}
                           <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-6 relative z-10">
                             <div className="flex items-center gap-2">
                               <Logo showText={false} className="scale-50 origin-left -mr-6 -my-3 flex-shrink-0" />
-                              <span className="font-sans font-black text-xs text-indigo-600 uppercase tracking-widest">{editableSchoolName}</span>
+                              <span className="text-slate-300 font-bold">×</span>
+                              {schoolLogoUrl ? (
+                                <img src={schoolLogoUrl} alt={editableSchoolName} className="h-6 w-auto max-w-[60px] object-contain flex-shrink-0" />
+                              ) : (
+                                <div className="p-1 bg-indigo-100 rounded text-indigo-700 flex-shrink-0">
+                                  <Shield size={14} />
+                                </div>
+                              )}
+                              <span className="font-sans font-black text-xs text-indigo-950 uppercase tracking-widest">{editableSchoolName}</span>
                               <span className="text-slate-300">|</span>
                               <span className="font-sans text-[10px] font-black text-slate-400 uppercase tracking-widest">Page 2: Trend & Progress</span>
                             </div>
@@ -1699,11 +1787,19 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                         </div>
 
                         <div>
-                          {/* Running Page Header with SmartPE India Logo */}
+                          {/* Running Page Header with SmartPE India Logo & Registered School Custom Logo */}
                           <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-6 relative z-10">
                             <div className="flex items-center gap-2">
                               <Logo showText={false} className="scale-50 origin-left -mr-6 -my-3 flex-shrink-0" />
-                              <span className="font-sans font-black text-xs text-indigo-600 uppercase tracking-widest">{editableSchoolName}</span>
+                              <span className="text-slate-300 font-bold">×</span>
+                              {schoolLogoUrl ? (
+                                <img src={schoolLogoUrl} alt={editableSchoolName} className="h-6 w-auto max-w-[60px] object-contain flex-shrink-0" />
+                              ) : (
+                                <div className="p-1 bg-indigo-100 rounded text-indigo-700 flex-shrink-0">
+                                  <Shield size={14} />
+                                </div>
+                              )}
+                              <span className="font-sans font-black text-xs text-indigo-950 uppercase tracking-widest">{editableSchoolName}</span>
                               <span className="text-slate-300">|</span>
                               <span className="font-sans text-[10px] font-black text-slate-400 uppercase tracking-widest">Page 3: Skill Mastery Matrices</span>
                             </div>
@@ -1917,11 +2013,19 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                         </div>
 
                         <div>
-                          {/* Running Page Header with SmartPE India Logo */}
+                          {/* Running Page Header with SmartPE India Logo & Registered School Custom Logo */}
                           <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-6 relative z-10">
                             <div className="flex items-center gap-2">
                               <Logo showText={false} className="scale-50 origin-left -mr-6 -my-3 flex-shrink-0" />
-                              <span className="font-sans font-black text-xs text-indigo-600 uppercase tracking-widest">{editableSchoolName}</span>
+                              <span className="text-slate-300 font-bold">×</span>
+                              {schoolLogoUrl ? (
+                                <img src={schoolLogoUrl} alt={editableSchoolName} className="h-6 w-auto max-w-[60px] object-contain flex-shrink-0" />
+                              ) : (
+                                <div className="p-1 bg-indigo-100 rounded text-indigo-700 flex-shrink-0">
+                                  <Shield size={14} />
+                                </div>
+                              )}
+                              <span className="font-sans font-black text-xs text-indigo-950 uppercase tracking-widest">{editableSchoolName}</span>
                               <span className="text-slate-300">|</span>
                               <span className="font-sans text-[10px] font-black text-slate-400 uppercase tracking-widest">Page 4: Qualitative Feedback & Parameter Matrix</span>
                             </div>

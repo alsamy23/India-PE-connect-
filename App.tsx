@@ -72,6 +72,7 @@ import PricingAndPlans from './components/PricingAndPlans.tsx';
 import WelcomeOnboardingModal from './components/WelcomeOnboardingModal.tsx';
 import { GlobalSearch } from './components/GlobalSearch.tsx';
 import { logError } from './services/logService.ts';
+import { fitnessService } from './services/fitnessService.ts';
 import { auth } from './services/firebase.ts';
 import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
 import { trackEvent } from './services/analytics.ts';
@@ -161,12 +162,14 @@ const isProtectedTab = (tabId: string) => {
 interface MobileHeaderProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
+  schoolName?: string | null;
+  schoolLogo?: string | null;
 }
-const MobileHeader: React.FC<MobileHeaderProps> = React.memo(({ isSidebarOpen, setIsSidebarOpen }) => {
+const MobileHeader: React.FC<MobileHeaderProps> = React.memo(({ isSidebarOpen, setIsSidebarOpen, schoolName, schoolLogo }) => {
   return (
     <header className="md:hidden sticky top-0 bg-white backdrop-blur-xl text-slate-900 px-4 py-3 flex items-center justify-between z-30 border-b border-slate-200 shadow-sm print:hidden">
       <div className="flex-grow-0 flex-shrink-0">
-        <Logo variant="color" size="md" />
+        <Logo variant="color" size="md" customLogoUrl={schoolLogo} customSchoolName={schoolName} />
       </div>
       <button 
         onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
@@ -190,6 +193,8 @@ interface SidebarProps {
   user: FirebaseUser | null;
   handleLogout: () => void;
   setIsAuthView: (view: boolean) => void;
+  schoolName?: string | null;
+  schoolLogo?: string | null;
 }
 const Sidebar: React.FC<SidebarProps> = React.memo(({
   activeTab,
@@ -200,7 +205,9 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
   handleSelectKey,
   user,
   handleLogout,
-  setIsAuthView
+  setIsAuthView,
+  schoolName,
+  schoolLogo
 }) => {
   return (
     <aside className={`
@@ -212,7 +219,7 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
       {/* Sidebar Header with Logo and Close Button (Mobile Only) */}
       <div className="p-6 md:p-10 flex items-center border-b border-white/5 md:border-b-0">
         <div className="flex-grow-0 flex-shrink-0">
-          <Logo variant="light" className="scale-95 origin-left" />
+          <Logo variant="light" className="scale-95 origin-left" customLogoUrl={schoolLogo} customSchoolName={schoolName} />
         </div>
         <button 
           onClick={() => setIsSidebarOpen(false)}
@@ -348,17 +355,21 @@ interface StickyHeaderProps {
   activeTab: Tab;
   handleTabChange: (tabId: Tab) => void;
   setHighlightStudentId: (id: string | null) => void;
+  schoolName?: string | null;
+  schoolLogo?: string | null;
 }
 const StickyHeader: React.FC<StickyHeaderProps> = React.memo(({
   activeTab,
   handleTabChange,
   setHighlightStudentId,
+  schoolName,
+  schoolLogo
 }) => {
   return (
     <div className="relative md:sticky md:top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 md:px-8 md:py-3.5 print:hidden shadow-sm flex items-center justify-between gap-4">
-      {/* Primary Header dedicated to Smart PE India Logo */}
+      {/* Primary Header dedicated to Smart PE / Custom School Logo */}
       <div className="hidden md:flex items-center cursor-pointer" onClick={() => handleTabChange('dashboard')}>
-        <Logo variant="color" size="lg" />
+        <Logo variant="color" size="lg" customLogoUrl={schoolLogo} customSchoolName={schoolName} />
       </div>
       <div className="w-full md:max-w-xs lg:max-w-sm">
         <GlobalSearch onNavigate={(tabId, data) => {
@@ -425,6 +436,10 @@ const App: React.FC = () => {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [schoolBranding, setSchoolBranding] = useState<{ schoolName: string | null; schoolLogo: string | null }>({
+    schoolName: null,
+    schoolLogo: null
+  });
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isAuthView, setIsAuthView] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
@@ -525,6 +540,55 @@ const App: React.FC = () => {
     });
     return () => unsubscribe();
   }, []);
+
+  // Fetch registered school branding and listen to live updates
+  useEffect(() => {
+    if (!user?.uid) {
+      setSchoolBranding({ schoolName: null, schoolLogo: null });
+      return;
+    }
+
+    let isMounted = true;
+    const fetchBranding = async () => {
+      try {
+        const member = await fitnessService.getSchoolMember(user.uid);
+        if (member && isMounted) {
+          let name = member.schoolName || null;
+          let logo = member.schoolLogo || null;
+
+          if (member.schoolId) {
+            const schoolData = await fitnessService.getSchool(member.schoolId, true);
+            if (schoolData) {
+              if (schoolData.name) name = schoolData.name;
+              if (schoolData.logoUrl) logo = schoolData.logoUrl;
+            }
+          }
+
+          setSchoolBranding({ schoolName: name, schoolLogo: logo });
+        }
+      } catch (err) {
+        console.error("Error fetching school branding:", err);
+      }
+    };
+
+    fetchBranding();
+
+    const handleBrandingUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<{ schoolName?: string; schoolLogo?: string }>;
+      if (customEvent.detail && isMounted) {
+        setSchoolBranding({
+          schoolName: customEvent.detail.schoolName || null,
+          schoolLogo: customEvent.detail.schoolLogo || null
+        });
+      }
+    };
+
+    window.addEventListener('school_branding_updated', handleBrandingUpdated);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('school_branding_updated', handleBrandingUpdated);
+    };
+  }, [user?.uid]);
 
   const handleLogout = useCallback(() => {
     toast.confirm('Are you sure you want to log out?', async () => {
@@ -942,6 +1006,8 @@ const App: React.FC = () => {
         <MobileHeader 
           isSidebarOpen={isSidebarOpen} 
           setIsSidebarOpen={setIsSidebarOpen} 
+          schoolName={schoolBranding.schoolName}
+          schoolLogo={schoolBranding.schoolLogo}
         />
 
         {/* Mobile Sidebar Backdrop */}
@@ -963,6 +1029,8 @@ const App: React.FC = () => {
           handleLogout={handleLogout} 
           setIsAuthView={setIsAuthView} 
           setIsSidebarOpen={setIsSidebarOpen} 
+          schoolName={schoolBranding.schoolName}
+          schoolLogo={schoolBranding.schoolLogo}
         />
 
         {/* Content Area */}
@@ -971,6 +1039,8 @@ const App: React.FC = () => {
             activeTab={activeTab} 
             handleTabChange={handleTabChange} 
             setHighlightStudentId={setHighlightStudentId} 
+            schoolName={schoolBranding.schoolName}
+            schoolLogo={schoolBranding.schoolLogo}
           />
           {globalError && (
             <div className="max-w-7xl mx-auto px-6 pt-6 md:px-12">

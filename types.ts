@@ -262,6 +262,8 @@ export interface School {
   name: string;
   adminId: string;
   address?: string;
+  logoUrl?: string;
+  code?: string;
   createdAt: string;
 }
 
@@ -272,6 +274,7 @@ export interface SchoolMember {
   displayName: string;
   email: string;
   schoolName?: string;
+  schoolLogo?: string;
 }
 
 export interface FitnessResult {

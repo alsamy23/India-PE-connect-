@@ -6,13 +6,17 @@ interface LogoProps {
   showText?: boolean;
   variant?: 'light' | 'dark' | 'color';
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  customLogoUrl?: string | null;
+  customSchoolName?: string | null;
 }
 
 const Logo: React.FC<LogoProps> = ({ 
   className = '', 
   showText = true, 
   variant = 'color',
-  size = 'md' 
+  size = 'md',
+  customLogoUrl,
+  customSchoolName
 }) => {
   const isLight = variant === 'light';
 
@@ -24,24 +28,33 @@ const Logo: React.FC<LogoProps> = ({
   };
 
   const textSizes = {
-    sm: 'text-base',
-    md: 'text-xl',
-    lg: 'text-2xl',
-    xl: 'text-3xl'
+    sm: 'text-xs md:text-sm',
+    md: 'text-sm md:text-base',
+    lg: 'text-base md:text-lg',
+    xl: 'text-xl md:text-2xl'
   };
 
   const taglineSizes = {
     sm: 'text-[8px]',
-    md: 'text-[10px]',
-    lg: 'text-[12px]',
-    xl: 'text-[14px]'
+    md: 'text-[9px]',
+    lg: 'text-[10px]',
+    xl: 'text-[12px]'
   };
 
+  const hasCustomLogo = Boolean(customLogoUrl);
+  const displayName = customSchoolName || 'SMART PE INDIA';
+
   return (
-    <div className={`inline-flex items-center gap-3 select-none ${className}`}>
-      {/* Smart PE India Official Shield Emblem */}
+    <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
+      {/* Smart PE / Custom School Emblem */}
       <div className={`relative flex items-center justify-center flex-shrink-0 ${emblemSizes[size]}`}>
-        {logoImg ? (
+        {hasCustomLogo ? (
+          <img 
+            src={customLogoUrl!} 
+            alt={displayName} 
+            className="w-full h-full object-contain transition-transform duration-200 hover:scale-105 drop-shadow-md rounded-lg bg-white p-0.5 border border-slate-200/50"
+          />
+        ) : logoImg ? (
           <img 
             src={logoImg} 
             alt="Smart PE India Logo" 
@@ -74,18 +87,15 @@ const Logo: React.FC<LogoProps> = ({
         )}
       </div>
 
-      {/* Brand Wordmark & Tagline Block */}
+      {/* Brand / Custom School Title */}
       {showText && (
-        <div className="flex flex-col justify-center leading-none">
-          {/* Main Title: SMART PE INDIA */}
-          <div className={`font-black font-display tracking-tight flex items-center ${textSizes[size]}`}>
-            <span className={isLight ? 'text-white' : 'text-[#0D2B52]'}>SMART PE</span>
-            <span className={`ml-1.5 ${isLight ? 'text-[#D4A017]' : 'text-[#D4A017]'}`}>INDIA</span>
+        <div className="flex flex-col justify-center leading-tight max-w-[200px] md:max-w-[260px]">
+          <div className={`font-black uppercase tracking-tight truncate ${textSizes[size]} ${isLight ? 'text-white' : 'text-[#0D2B52]'}`}>
+            {displayName}
           </div>
 
-          {/* Official Tagline: Plan Smarter. Teach Better. */}
-          <p className={`font-bold font-sans tracking-wide mt-1 leading-none ${taglineSizes[size]} ${isLight ? 'text-slate-300' : 'text-[#333333]'}`}>
-            Plan Smarter. Teach Better.
+          <p className={`font-bold font-sans tracking-wide mt-0.5 leading-none truncate ${taglineSizes[size]} ${isLight ? 'text-slate-300' : 'text-slate-500'}`}>
+            {customSchoolName ? 'PE Department Portal' : 'Plan Smarter. Teach Better.'}
           </p>
         </div>
       )}
