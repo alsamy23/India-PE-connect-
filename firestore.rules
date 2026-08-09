@@ -98,6 +98,9 @@ service cloud.firestore {
         isSuperAdmin() ||
         schoolId == 'master_registry' ||
         schoolId == 'personal_' + request.auth.uid ||
+        schoolId == 'school_' + request.auth.uid ||
+        (exists(/databases/$(database)/documents/schools/$(schoolId)) && 
+         get(/databases/$(database)/documents/schools/$(schoolId)).data.adminId == request.auth.uid) ||
         (exists(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)).data.schoolId == schoolId)
       );
@@ -106,6 +109,9 @@ service cloud.firestore {
     function isSchoolAdmin(schoolId) {
       return isAuthenticated() && (
         isSuperAdmin() ||
+        schoolId == 'school_' + request.auth.uid ||
+        (exists(/databases/$(database)/documents/schools/$(schoolId)) && 
+         get(/databases/$(database)/documents/schools/$(schoolId)).data.adminId == request.auth.uid) ||
         (exists(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)).data.schoolId == schoolId &&
          get(/databases/$(database)/documents/schoolMembers/$(request.auth.uid)).data.role == 'admin')
@@ -133,21 +139,21 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'schoolName', 'schoolId', 'role', 'createdAt']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'schoolName', 'schoolId', 'schoolLogo', 'role', 'createdAt']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              data.role in ['teacher', 'admin'];
     }
 
     function isValidSchool(data) {
-      return hasOnlyAllowedFields(['id', 'name', 'adminId', 'address', 'createdAt']) &&
+      return hasOnlyAllowedFields(['id', 'name', 'adminId', 'address', 'logoUrl', 'createdAt']) &&
              data.id is string &&
              data.name is string && data.name.size() > 0 &&
-             data.adminId is string && data.adminId == request.auth.uid;
+             data.adminId is string;
     }
 
     function isValidSchoolMember(data) {
-      return hasOnlyAllowedFields(['uid', 'schoolId', 'role', 'displayName', 'email']) &&
+      return hasOnlyAllowedFields(['uid', 'schoolId', 'role', 'displayName', 'email', 'schoolName', 'schoolLogo']) &&
              data.uid is string &&
              data.schoolId is string &&
              data.role in ['teacher', 'admin'];

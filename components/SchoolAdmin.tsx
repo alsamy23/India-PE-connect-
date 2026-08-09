@@ -149,18 +149,59 @@ const SchoolAdmin: React.FC = () => {
     fetchData().catch(err => console.error("Unhandled error in SchoolAdmin fetch:", err));
   }, [auth.currentUser?.uid]);
 
+  const compressImage = (dataUrl: string, maxDim = 300): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/png', 0.85));
+        } else {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  };
+
   const handleSaveSchoolBranding = async () => {
-    const schoolIdToUpdate = currentSchool?.id || userProfile?.schoolId;
-    if (!schoolIdToUpdate) {
-      toast.error('No registered school found for update.');
+    if (!auth.currentUser?.uid) {
+      toast.error('You must be logged in to update school settings.');
       return;
     }
+
     setSavingBranding(true);
     try {
+      const schoolIdToUpdate = currentSchool?.id || userProfile?.schoolId || `school_${auth.currentUser.uid}`;
       const updatedName = schoolNameInput.trim() || 'SmartPE Partner School';
+      
+      let logoUrl = schoolLogoInput;
+      if (logoUrl && logoUrl.startsWith('data:image')) {
+        logoUrl = await compressImage(logoUrl, 300);
+      }
+
       const updatedData = {
+        id: schoolIdToUpdate,
         name: updatedName,
-        logoUrl: schoolLogoInput,
+        adminId: currentSchool?.adminId || auth.currentUser.uid,
+        logoUrl: logoUrl || '',
         address: schoolAddressInput.trim()
       };
 
@@ -168,18 +209,45 @@ const SchoolAdmin: React.FC = () => {
 
       if (auth.currentUser?.uid) {
         await setDoc(doc(db, 'users', auth.currentUser.uid), {
+          uid: auth.currentUser.uid,
           schoolName: updatedName,
-          schoolLogo: updatedData.logoUrl
+          schoolLogo: updatedData.logoUrl,
+          schoolId: schoolIdToUpdate
         }, { merge: true });
 
         await setDoc(doc(db, 'schoolMembers', auth.currentUser.uid), {
+          uid: auth.currentUser.uid,
+          schoolId: schoolIdToUpdate,
+          role: userProfile?.role || 'admin',
           schoolName: updatedName,
-          schoolLogo: updatedData.logoUrl
+          schoolLogo: updatedData.logoUrl,
+          displayName: auth.currentUser.displayName || userProfile?.displayName || 'School Admin',
+          email: auth.currentUser.email || userProfile?.email || ''
         }, { merge: true });
       }
 
       const freshSchool = await fitnessService.getSchool(schoolIdToUpdate, true);
-      if (freshSchool) setCurrentSchool(freshSchool);
+      if (freshSchool) {
+        setCurrentSchool(freshSchool);
+      } else {
+        setCurrentSchool({
+          id: schoolIdToUpdate,
+          name: updatedName,
+          adminId: auth.currentUser.uid,
+          logoUrl: updatedData.logoUrl,
+          address: updatedData.address,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      if (userProfile) {
+        setUserProfile({
+          ...userProfile,
+          schoolId: schoolIdToUpdate,
+          schoolName: updatedName,
+          schoolLogo: updatedData.logoUrl
+        });
+      }
 
       // Dispatch custom event to update App header and sidebar in real time
       window.dispatchEvent(new CustomEvent('school_branding_updated', {
@@ -189,10 +257,10 @@ const SchoolAdmin: React.FC = () => {
         }
       }));
 
-      toast.success('School profile and custom logo saved! All reports & headers will reflect your branding.');
+      toast.success('School profile and custom logo saved successfully!');
     } catch (err: any) {
       console.error('Error saving school branding:', err);
-      toast.error('Failed to update school profile.');
+      toast.error(err?.message || 'Failed to update school profile.');
     } finally {
       setSavingBranding(false);
     }
@@ -202,16 +270,17 @@ const SchoolAdmin: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Logo image size must be under 2MB.');
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Logo image size must be under 5MB.');
       return;
     }
 
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setSchoolLogoInput(result);
-      toast.success('Logo file attached! Click "Save School Profile & Logo" to apply.');
+    reader.onload = async (event) => {
+      const rawData = event.target?.result as string;
+      const compressed = await compressImage(rawData, 300);
+      setSchoolLogoInput(compressed);
+      toast.success('Logo file attached and optimized! Click "Save School Profile & Custom Logo" to apply.');
     };
     reader.readAsDataURL(file);
   };
@@ -270,13 +339,25 @@ const SchoolAdmin: React.FC = () => {
   const capturePhoto = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
+    const maxDim = 300;
+    let w = video.videoWidth || 640;
+    let h = video.videoHeight || 480;
+    if (w > maxDim || h > maxDim) {
+      if (w > h) {
+        h = Math.round((h * maxDim) / w);
+        w = maxDim;
+      } else {
+        w = Math.round((w * maxDim) / h);
+        h = maxDim;
+      }
+    }
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/png');
+      ctx.drawImage(video, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/png', 0.85);
       setCapturedPhoto(dataUrl);
     }
   };

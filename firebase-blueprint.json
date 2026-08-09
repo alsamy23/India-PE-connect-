@@ -10,6 +10,7 @@
         "displayName": { "type": "string" },
         "schoolName": { "type": "string" },
         "schoolId": { "type": "string" },
+        "schoolLogo": { "type": "string" },
         "role": { "type": "string", "enum": ["teacher", "admin"] },
         "createdAt": { "type": "string", "format": "date" }
       },
@@ -23,6 +24,8 @@
         "id": { "type": "string" },
         "name": { "type": "string" },
         "adminId": { "type": "string" },
+        "address": { "type": "string" },
+        "logoUrl": { "type": "string" },
         "createdAt": { "type": "string", "format": "date" }
       },
       "required": ["id", "name", "adminId"]
@@ -36,7 +39,9 @@
         "schoolId": { "type": "string" },
         "role": { "type": "string", "enum": ["teacher", "admin"] },
         "displayName": { "type": "string" },
-        "email": { "type": "string" }
+        "email": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "schoolLogo": { "type": "string" }
       },
       "required": ["uid", "schoolId", "role"]
     },
