@@ -197,6 +197,54 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
     return parseFitnessValue(val);
   };
 
+  // Dynamically group students into grade/section options so all registered KG to Grade 12 students are selectable
+  const dynamicClassOptions = React.useMemo(() => {
+    const classMap: Record<string, { id: string; name: string; grade: string; section: string; studentIds: string[] }> = {};
+
+    students.forEach(s => {
+      const g = (s.grade || 'Unassigned').toString().trim();
+      const sec = (s.section || '').toString().trim();
+      const classKey = sec ? `class_${g}_sec_${sec}` : `class_${g}`;
+      const className = sec ? `Grade ${g} - Section ${sec}` : `Grade ${g}`;
+
+      if (!classMap[classKey]) {
+        classMap[classKey] = {
+          id: classKey,
+          name: className,
+          grade: g,
+          section: sec,
+          studentIds: []
+        };
+      }
+      classMap[classKey].studentIds.push(s.id);
+    });
+
+    const gradeOrder = ['NURSERY', 'KG', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+    
+    return Object.values(classMap).sort((a, b) => {
+      const gA = a.grade.toUpperCase();
+      const gB = b.grade.toUpperCase();
+      const idxA = gradeOrder.indexOf(gA);
+      const idxB = gradeOrder.indexOf(gB);
+
+      if (idxA !== -1 && idxB !== -1) {
+        if (idxA !== idxB) return idxA - idxB;
+        return a.section.localeCompare(b.section);
+      }
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+
+      const numA = parseInt(gA, 10);
+      const numB = parseInt(gB, 10);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        if (numA !== numB) return numA - numB;
+        return a.section.localeCompare(b.section);
+      }
+
+      return a.name.localeCompare(b.name);
+    });
+  }, [students]);
+
   const generateReport = React.useCallback(() => {
     if (!selectedId && selectedType !== 'school') return;
     
@@ -476,9 +524,30 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           comparisonData
         };
       } else if (selectedType === 'class') {
+        let targetStudents: Student[] = [];
+        let className = '';
+        let classSubtitle = '';
+
+        const dynamicOption = dynamicClassOptions.find(c => c.id === selectedId);
         const team = teams.find(t => t.id === selectedId);
-        const teamStudents = team?.studentIds ? students.filter(s => team.studentIds.includes(s.id)) : [];
-        const teamResults = results.filter(r => teamStudents.some(s => s.id === r.studentId));
+
+        if (dynamicOption) {
+          targetStudents = students.filter(s => dynamicOption.studentIds.includes(s.id));
+          className = dynamicOption.name;
+          classSubtitle = `Grade: ${dynamicOption.grade}${dynamicOption.section ? `-${dynamicOption.section}` : ''} | Total Students: ${targetStudents.length}`;
+        } else if (team) {
+          targetStudents = team.studentIds && team.studentIds.length > 0 
+            ? students.filter(s => team.studentIds.includes(s.id))
+            : students.filter(s => s.grade === team.grade && (!team.section || s.section === team.section));
+          className = team.name;
+          classSubtitle = `Grade: ${team.grade}${team.section ? `-${team.section}` : ''} | Total Students: ${targetStudents.length}`;
+        } else {
+          targetStudents = students.filter(s => s.grade === selectedId || `class_${s.grade}` === selectedId);
+          className = `Class ${selectedId || 'All'}`;
+          classSubtitle = `Total Students: ${targetStudents.length}`;
+        }
+
+        const teamResults = results.filter(r => targetStudents.some(s => s.id === r.studentId));
         
         // Distribution of tests
         const testCounts = groupCount(teamResults, 'testName');
@@ -494,23 +563,30 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
             testAverages[r.testName] = { sum: 0, count: 0, unit: r.unit };
           }
           const val = parseValue(r.value);
-          testAverages[r.testName].sum += val;
-          testAverages[r.testName].count += 1;
+          if (!isNaN(val)) {
+            testAverages[r.testName].sum += val;
+            testAverages[r.testName].count += 1;
+          }
         });
 
         const classAverageData = Object.entries(testAverages).map(([name, stats]) => ({
           name: name.split('(')[0].trim(),
-          average: parseFloat((stats.sum / stats.count).toFixed(1)),
+          average: stats.count > 0 ? parseFloat((stats.sum / stats.count).toFixed(1)) : 0,
           unit: stats.unit
         }));
 
+        const assessedCount = new Set(teamResults.map(r => r.studentId)).size;
+        const participationPct = targetStudents.length > 0 
+          ? `${Math.round((assessedCount / targetStudents.length) * 100)}%`
+          : '0%';
+
         data = {
-          title: `Class Progress Report: ${team?.name}`,
-          subtitle: `Grade: ${team?.grade}-${team?.section} | Total Students: ${teamStudents.length}`,
-          team,
-          studentCount: teamStudents.length,
+          title: `Class Progress Report: ${className}`,
+          subtitle: classSubtitle,
+          team: team || dynamicOption,
+          studentCount: targetStudents.length,
           avgBmi: calculateAvg(teamResults.filter(r => r.testId === 'bmi')),
-          participation: `${Math.round((new Set(teamResults.map(r => r.studentId)).size / teamStudents.length) * 100)}%`,
+          participation: participationPct,
           testCounts,
           distributionData,
           classAverageData,
@@ -525,43 +601,52 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           const student = students.find(s => s.id === r.studentId);
           if (!student) return;
           
-          if (!gradeStats[student.grade]) {
-            gradeStats[student.grade] = { total: 0, results: 0, avg: 0, bmiSum: 0, bmiCount: 0 };
+          const gradeKey = (student.grade || 'Unassigned').toString().trim();
+
+          if (!gradeStats[gradeKey]) {
+            gradeStats[gradeKey] = { total: 0, results: 0, avg: 0, bmiSum: 0, bmiCount: 0 };
           }
           
           const val = parseValue(r.value);
-          gradeStats[student.grade].avg += val;
-          gradeStats[student.grade].results += 1;
+          if (!isNaN(val)) {
+            gradeStats[gradeKey].avg += val;
+            gradeStats[gradeKey].results += 1;
 
-          if (r.testId === 'bmi') {
-            gradeStats[student.grade].bmiSum += val;
-            gradeStats[student.grade].bmiCount += 1;
+            if (r.testId === 'bmi') {
+              gradeStats[gradeKey].bmiSum += val;
+              gradeStats[gradeKey].bmiCount += 1;
+            }
           }
 
           if (!schoolTestAverages[r.testName]) {
             schoolTestAverages[r.testName] = { sum: 0, count: 0 };
           }
-          schoolTestAverages[r.testName].sum += val;
-          schoolTestAverages[r.testName].count += 1;
+          if (!isNaN(val)) {
+            schoolTestAverages[r.testName].sum += val;
+            schoolTestAverages[r.testName].count += 1;
+          }
         });
 
         const barChartData = Object.entries(gradeStats).map(([grade, stats]) => ({
-          grade: `Gen ${grade}`,
-          average: parseFloat((stats.avg / stats.results).toFixed(1)),
+          grade: `Grade ${grade}`,
+          average: stats.results > 0 ? parseFloat((stats.avg / stats.results).toFixed(1)) : 0,
           bmi: stats.bmiCount > 0 ? parseFloat((stats.bmiSum / stats.bmiCount).toFixed(1)) : 0
         })).sort((a, b) => a.grade.localeCompare(b.grade));
 
         const schoolAverages = Object.entries(schoolTestAverages).map(([name, stats]) => ({
           name: name.split('(')[0].trim(),
-          average: parseFloat((stats.sum / stats.count).toFixed(1))
+          average: stats.count > 0 ? parseFloat((stats.sum / stats.count).toFixed(1)) : 0
         }));
 
         Object.keys(gradeStats).forEach(grade => {
-          gradeStats[grade].avg = gradeStats[grade].avg / gradeStats[grade].results;
+          gradeStats[grade].avg = gradeStats[grade].results > 0 
+            ? gradeStats[grade].avg / gradeStats[grade].results 
+            : 0;
         });
 
-        // Identify grades needing improvement (bottom 30% or below a certain threshold)
+        // Identify grades needing improvement
         const sortedGrades = Object.entries(gradeStats)
+          .filter(([_, stats]) => stats.results > 0)
           .sort((a, b) => a[1].avg - b[1].avg);
         
         const focusGrades = sortedGrades.slice(0, Math.ceil(sortedGrades.length * 0.3)).map(g => g[0]);
@@ -570,10 +655,10 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
           title: "School-wide Fitness Overview",
           subtitle: `Total Students: ${students.length} | Academic Year: 2024-25`,
           totalResults: results.length,
-          topPerformers: students.slice(0, 5), // Mock
+          topPerformers: students.slice(0, 5),
           testDistribution: groupCount(results, 'testName'),
           gradeStats,
-          focusGrades,
+          focusGrades: focusGrades || [],
           totalStudents: students.length,
           barChartData,
           schoolAverages
@@ -583,13 +668,20 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
       setReportData(data);
       setIsGenerating(false);
     }, 1000);
-  }, [selectedId, selectedType, students, results, teams, studentSpecificResults]);
+  }, [selectedId, selectedType, students, results, teams, studentSpecificResults, dynamicClassOptions]);
 
   useEffect(() => {
     if (initialStudentId && students.length > 0 && results.length > 0) {
       generateReport();
     }
   }, [initialStudentId, students.length, results.length, generateReport]);
+
+  // Auto generate report when scope is changed to 'school'
+  useEffect(() => {
+    if (selectedType === 'school' && students.length > 0) {
+      generateReport();
+    }
+  }, [selectedType, students.length, generateReport]);
 
   // Also trigger if student results subscription updates for the selected student
   useEffect(() => {
@@ -1006,6 +1098,15 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
       Object.entries(reportData.testDistribution || reportData.testCounts || {}).forEach(([name, count]) => {
         csvContent += `"${name}",${count}\n`;
       });
+    } else if (selectedType === 'school') {
+      const headers = ["Grade", "Average Score", "Average BMI", "Assessments Completed"];
+      csvContent += headers.join(",") + "\n";
+      
+      Object.entries(reportData.gradeStats || {}).forEach(([grade, stats]: [string, any]) => {
+        const avgScore = stats.results > 0 ? (stats.avg / stats.results).toFixed(1) : "0.0";
+        const avgBmi = stats.bmiCount > 0 ? (stats.bmiSum / stats.bmiCount).toFixed(1) : "0.0";
+        csvContent += `"Grade ${grade}",${avgScore},${avgBmi},${stats.results}\n`;
+      });
     }
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1261,9 +1362,32 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                   >
                     <option value="">Choose {selectedType === 'individual' ? 'Student' : 'Class'}...</option>
                     {selectedType === 'individual' ? (
-                      students.map(s => <option key={s.id} value={s.id}>{s.name} ({s.rollNumber})</option>)
+                      students.map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.rollNumber || 'PE'}) - Grade {s.grade}{s.section ? `-${s.section}` : ''}
+                        </option>
+                      ))
                     ) : (
-                      teams.map(t => <option key={t.id} value={t.id}>{t.name} (Grade {t.grade})</option>)
+                      <>
+                        {dynamicClassOptions.length > 0 && (
+                          <optgroup label="Classes by Grade & Section">
+                            {dynamicClassOptions.map(c => (
+                              <option key={c.id} value={c.id}>
+                                {c.name} ({c.studentIds.length} Students)
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {teams.length > 0 && (
+                          <optgroup label="Saved Teams & Groups">
+                            {teams.map(t => (
+                              <option key={t.id} value={t.id}>
+                                {t.name} (Grade {t.grade})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </>
                     )}
                   </select>
                 </div>
@@ -2167,7 +2291,7 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                         <div className="p-8 bg-orange-50 rounded-[2rem] border-2 border-orange-100">
                           <div className="text-orange-600 mb-4"><Zap size={32} /></div>
                           <div className="text-4xl font-black text-orange-900 mb-1">
-                            {selectedType === 'class' ? reportData.avgBmi : (reportData.focusGrades.length > 0 ? `Grade ${reportData.focusGrades[0]}` : 'None')}
+                            {selectedType === 'class' ? reportData.avgBmi : (reportData.focusGrades?.length > 0 ? `Grade ${reportData.focusGrades[0]}` : 'None')}
                           </div>
                           <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">
                             {selectedType === 'class' ? 'Average BMI' : 'Requires Improvement'}

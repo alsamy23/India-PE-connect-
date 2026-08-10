@@ -859,13 +859,13 @@ export const fitnessService = {
     if (auth.currentUser?.email === 'alsamy36@gmail.com') {
       q = query(
         collection(db, 'results'),
-        limit(100)
+        limit(5000)
       );
     } else {
       q = query(
         collection(db, 'results'),
         where('schoolId', '==', effectiveSchoolId),
-        limit(100)
+        limit(5000)
       );
     }
     return onSnapshot(q, (snapshot: any) => {
