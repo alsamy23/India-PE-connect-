@@ -675,6 +675,8 @@ Friday Period 3: Grade 7B - Fitness`;
       await fitnessService.addTeamMember({
         uid: `pending_${Math.random().toString(36).substr(2, 9)}`,
         schoolId: userProfile.schoolId,
+        schoolName: currentSchool?.name || userProfile.schoolName || 'SmartPE Partner School',
+        schoolLogo: currentSchool?.logoUrl || userProfile.schoolLogo || '',
         ...newMember
       });
       

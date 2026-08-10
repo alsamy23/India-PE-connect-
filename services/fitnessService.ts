@@ -519,14 +519,93 @@ export const fitnessService = {
   },
 
   getSchoolMember: async (uid: string): Promise<SchoolMember | null> => {
-    if (schoolMemberCache[uid] !== undefined) {
+    if (schoolMemberCache[uid] !== undefined && schoolMemberCache[uid] !== null) {
       return schoolMemberCache[uid];
     }
     try {
       const docSnap = await getDoc(doc(db, 'schoolMembers', uid));
-      const res = docSnap.exists() ? docSnap.data() as SchoolMember : null;
-      schoolMemberCache[uid] = res;
-      return res;
+      if (docSnap.exists()) {
+        const res = docSnap.data() as SchoolMember;
+        schoolMemberCache[uid] = res;
+        return res;
+      }
+
+      // Check if there is an invited record with matching email
+      const userEmail = auth.currentUser?.email;
+      if (userEmail) {
+        const q = query(collection(db, 'schoolMembers'), where('email', '==', userEmail));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const matchDoc = snap.docs.find(d => d.id !== uid) || snap.docs[0];
+          const data = matchDoc.data();
+          const memberRecord: SchoolMember = {
+            uid: uid,
+            schoolId: data.schoolId || `school_${uid}`,
+            role: data.role || 'teacher',
+            displayName: auth.currentUser?.displayName || data.displayName || 'Teacher',
+            email: userEmail,
+            schoolName: data.schoolName || '',
+            schoolLogo: data.schoolLogo || ''
+          };
+
+          await setDoc(doc(db, 'schoolMembers', uid), memberRecord, { merge: true });
+          await setDoc(doc(db, 'users', uid), {
+            uid: uid,
+            email: userEmail,
+            displayName: memberRecord.displayName,
+            schoolId: memberRecord.schoolId,
+            schoolName: memberRecord.schoolName,
+            schoolLogo: memberRecord.schoolLogo,
+            role: memberRecord.role
+          }, { merge: true });
+
+          if (matchDoc.id.startsWith('pending_')) {
+            try {
+              await deleteDoc(doc(db, 'schoolMembers', matchDoc.id));
+            } catch (e) {
+              console.warn("Could not delete pending member doc:", e);
+            }
+          }
+
+          schoolMemberCache[uid] = memberRecord;
+          return memberRecord;
+        }
+      }
+
+      // Check users/{uid}
+      const userSnap = await getDoc(doc(db, 'users', uid));
+      if (userSnap.exists()) {
+        const uData = userSnap.data();
+        if (uData.schoolId) {
+          const memberRecord: SchoolMember = {
+            uid: uid,
+            schoolId: uData.schoolId,
+            role: uData.role || 'teacher',
+            displayName: uData.displayName || auth.currentUser?.displayName || 'Teacher',
+            email: uData.email || auth.currentUser?.email || '',
+            schoolName: uData.schoolName || '',
+            schoolLogo: uData.schoolLogo || ''
+          };
+          await setDoc(doc(db, 'schoolMembers', uid), memberRecord, { merge: true });
+          schoolMemberCache[uid] = memberRecord;
+          return memberRecord;
+        }
+      }
+
+      if (auth.currentUser) {
+        const fallbackRecord: SchoolMember = {
+          uid: uid,
+          schoolId: `personal_${uid}`,
+          role: 'teacher',
+          displayName: auth.currentUser.displayName || 'Teacher',
+          email: auth.currentUser.email || ''
+        };
+        schoolMemberCache[uid] = fallbackRecord;
+        return fallbackRecord;
+      }
+
+      schoolMemberCache[uid] = null;
+      return null;
     } catch (err) {
       logError(err, 'error', { context: 'getSchoolMember failed', uid });
       return null;
@@ -609,7 +688,7 @@ export const fitnessService = {
       let q;
       if (auth.currentUser?.email === 'alsamy36@gmail.com') {
         q = query(collection(db, 'students'));
-      } else if (isAdmin && schoolId) {
+      } else if (schoolId) {
         q = query(collection(db, 'students'), where('schoolId', '==', schoolId));
       } else {
         q = query(collection(db, 'students'), where('teacherId', '==', teacherId));
@@ -705,7 +784,7 @@ export const fitnessService = {
       let q;
       if (auth.currentUser?.email === 'alsamy36@gmail.com') {
         q = query(collection(db, 'teams'));
-      } else if (isAdmin && schoolId) {
+      } else if (schoolId) {
         q = query(collection(db, 'teams'), where('schoolId', '==', schoolId));
       } else {
         q = query(collection(db, 'teams'), where('teacherId', '==', teacherId));
@@ -741,7 +820,7 @@ export const fitnessService = {
           orderBy('date', 'desc'),
           limit(limitCount)
         );
-      } else if (isAdmin && schoolId) {
+      } else if (schoolId) {
         q = query(
           collection(db, 'results'), 
           where('schoolId', '==', schoolId),
@@ -782,17 +861,10 @@ export const fitnessService = {
         collection(db, 'results'),
         limit(100)
       );
-    } else if (isAdmin) {
-      q = query(
-        collection(db, 'results'),
-        where('schoolId', '==', effectiveSchoolId),
-        limit(100)
-      );
     } else {
       q = query(
         collection(db, 'results'),
         where('schoolId', '==', effectiveSchoolId),
-        where('teacherId', '==', teacherId),
         limit(100)
       );
     }
@@ -831,10 +903,8 @@ export const fitnessService = {
       const effectiveSchoolId = schoolId || `personal_${teacherId}`;
       if (auth.currentUser?.email === 'alsamy36@gmail.com') {
         q = query(collection(db, 'results'));
-      } else if (isAdmin) {
-        q = query(collection(db, 'results'), where('schoolId', '==', effectiveSchoolId));
       } else {
-        q = query(collection(db, 'results'), where('schoolId', '==', effectiveSchoolId), where('teacherId', '==', teacherId));
+        q = query(collection(db, 'results'), where('schoolId', '==', effectiveSchoolId));
       }
       const snapshot = await getDocs(q);
       const results = snapshot.docs.map((doc: any) => doc.data() as FitnessResult);
@@ -851,10 +921,8 @@ export const fitnessService = {
     const effectiveSchoolId = schoolId || `personal_${teacherId}`;
     if (auth.currentUser?.email === 'alsamy36@gmail.com') {
       q = query(collection(db, 'students'));
-    } else if (isAdmin) {
-      q = query(collection(db, 'students'), where('schoolId', '==', effectiveSchoolId));
     } else {
-      q = query(collection(db, 'students'), where('schoolId', '==', effectiveSchoolId), where('teacherId', '==', teacherId));
+      q = query(collection(db, 'students'), where('schoolId', '==', effectiveSchoolId));
     }
 
     // Immediately trigger callback with offline cache if available for instant non-blocking load
@@ -881,10 +949,8 @@ export const fitnessService = {
     const effectiveSchoolId = schoolId || `personal_${teacherId}`;
     if (auth.currentUser?.email === 'alsamy36@gmail.com') {
       q = query(collection(db, 'teams'));
-    } else if (isAdmin) {
-      q = query(collection(db, 'teams'), where('schoolId', '==', effectiveSchoolId));
     } else {
-      q = query(collection(db, 'teams'), where('schoolId', '==', effectiveSchoolId), where('teacherId', '==', teacherId));
+      q = query(collection(db, 'teams'), where('schoolId', '==', effectiveSchoolId));
     }
     return onSnapshot(q, (snapshot: any) => {
       callback(snapshot.docs.map((doc: any) => doc.data() as Team));

@@ -43,34 +43,47 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         // Handle new user registration from Google
         // Check for pending invited memberships
         const membersRef = collection(db, 'schoolMembers');
-        const q = query(membersRef, where('email', '==', user.email), where('uid', '>=', 'pending_'), where('uid', '<=', 'pending_' + '\uf8ff'));
+        const q = query(membersRef, where('email', '==', user.email));
         const querySnapshot = await getDocs(q);
         
         let schoolId = '';
         let role = 'admin';
-        const finalSchoolName = schoolName.trim() || (user.displayName ? `${user.displayName} Academy` : 'PE Partner School');
+        let customSchoolName = '';
+        let customSchoolLogo = '';
 
         if (!querySnapshot.empty) {
-          const pendingMemberDoc = querySnapshot.docs[0];
+          const pendingMemberDoc = querySnapshot.docs.find(d => d.id.startsWith('pending_')) || querySnapshot.docs[0];
           const data = pendingMemberDoc.data();
           schoolId = data.schoolId;
           role = data.role || 'teacher';
-          await deleteDoc(pendingMemberDoc.ref);
+          customSchoolName = data.schoolName || '';
+          customSchoolLogo = data.schoolLogo || '';
+          if (pendingMemberDoc.id.startsWith('pending_')) {
+            try {
+              await deleteDoc(pendingMemberDoc.ref);
+            } catch (e) {
+              console.warn("Could not delete pending doc:", e);
+            }
+          }
         } else {
-          schoolId = Math.random().toString(36).substr(2, 9);
+          schoolId = `school_${user.uid}`;
+          const initialSchoolName = schoolName.trim() || (user.displayName ? `${user.displayName} Academy` : 'PE Partner School');
           await setDoc(doc(db, 'schools', schoolId), {
             id: schoolId,
-            name: finalSchoolName,
+            name: initialSchoolName,
             adminId: user.uid,
             createdAt: new Date().toISOString()
           });
         }
+
+        const finalSchoolName = customSchoolName || schoolName.trim() || (user.displayName ? `${user.displayName} Academy` : 'PE Partner School');
         
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName || 'Teacher',
           schoolName: finalSchoolName,
+          schoolLogo: customSchoolLogo,
           schoolId,
           role,
           createdAt: new Date().toISOString()
@@ -82,7 +95,8 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           role,
           displayName: user.displayName || 'Teacher',
           email: user.email,
-          schoolName: finalSchoolName
+          schoolName: finalSchoolName,
+          schoolLogo: customSchoolLogo
         });
 
         trackEvent('signup', { method: 'google', user_role: role });
@@ -112,41 +126,52 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
 
         // Check for pending invited memberships
         const membersRef = collection(db, 'schoolMembers');
-        const q = query(membersRef, where('email', '==', email), where('uid', '>=', 'pending_'), where('uid', '<=', 'pending_' + '\uf8ff'));
+        const q = query(membersRef, where('email', '==', email));
         const querySnapshot = await getDocs(q);
         
         let schoolId = '';
         let role = 'admin';
-
-        const finalSchoolName = schoolName.trim() || (displayName ? `${displayName}'s School` : 'SmartPE Member School');
+        let customSchoolName = '';
+        let customSchoolLogo = '';
 
         if (!querySnapshot.empty) {
           // Claim existing pending membership
-          const pendingMemberDoc = querySnapshot.docs[0];
+          const pendingMemberDoc = querySnapshot.docs.find(d => d.id.startsWith('pending_')) || querySnapshot.docs[0];
           const data = pendingMemberDoc.data();
           schoolId = data.schoolId;
           role = data.role || 'teacher';
+          customSchoolName = data.schoolName || '';
+          customSchoolLogo = data.schoolLogo || '';
           
-          // Delete pending record
-          await deleteDoc(pendingMemberDoc.ref);
+          if (pendingMemberDoc.id.startsWith('pending_')) {
+            try {
+              await deleteDoc(pendingMemberDoc.ref);
+            } catch (e) {
+              console.warn("Could not delete pending doc:", e);
+            }
+          }
         } else {
           // Create new school if no pending invitation
-          schoolId = Math.random().toString(36).substr(2, 9);
+          schoolId = `school_${user.uid}`;
+          const initialSchoolName = schoolName.trim() || (displayName ? `${displayName}'s School` : 'SmartPE Member School');
           
           await setDoc(doc(db, 'schools', schoolId), {
             id: schoolId,
-            name: finalSchoolName,
+            name: initialSchoolName,
             adminId: user.uid,
             createdAt: new Date().toISOString()
           });
         }
         
+        const finalSchoolName = customSchoolName || schoolName.trim() || (displayName ? `${displayName}'s School` : 'SmartPE Member School');
+
         // Create user document in Firestore
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
           email: user.email,
           displayName,
           schoolName: finalSchoolName,
+          schoolLogo: customSchoolLogo,
           schoolId,
           role,
           createdAt: new Date().toISOString()
@@ -159,7 +184,8 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           role,
           displayName,
           email: user.email,
-          schoolName: finalSchoolName
+          schoolName: finalSchoolName,
+          schoolLogo: customSchoolLogo
         });
 
         trackEvent('signup', { method: 'email', user_role: role });
