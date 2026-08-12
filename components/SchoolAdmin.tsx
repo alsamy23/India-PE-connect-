@@ -59,8 +59,8 @@ const SchoolAdmin: React.FC = () => {
   // Tab & Timetable Doc Ingest States
   const [activeAdminTab, setActiveAdminTab] = useState<'profile' | 'access' | 'ocr' | 'seo'>('profile');
   const [currentSchool, setCurrentSchool] = useState<any>(null);
-  const [schoolNameInput, setSchoolNameInput] = useState<string>('');
-  const [schoolLogoInput, setSchoolLogoInput] = useState<string>('');
+  const [schoolNameInput, setSchoolNameInput] = useState<string>(() => localStorage.getItem('smartpe_school_name') || '');
+  const [schoolLogoInput, setSchoolLogoInput] = useState<string>(() => localStorage.getItem('smartpe_school_logo') || '');
   const [schoolAddressInput, setSchoolAddressInput] = useState<string>('');
   const [savingBranding, setSavingBranding] = useState<boolean>(false);
 
@@ -248,6 +248,10 @@ const SchoolAdmin: React.FC = () => {
           schoolLogo: updatedData.logoUrl
         });
       }
+
+      // Save locally to localStorage so it is displayed directly on app load
+      localStorage.setItem('smartpe_school_name', updatedName);
+      localStorage.setItem('smartpe_school_logo', updatedData.logoUrl || '');
 
       // Dispatch custom event to update App header and sidebar in real time
       window.dispatchEvent(new CustomEvent('school_branding_updated', {

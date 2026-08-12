@@ -436,9 +436,11 @@ const App: React.FC = () => {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [schoolBranding, setSchoolBranding] = useState<{ schoolName: string | null; schoolLogo: string | null }>({
-    schoolName: null,
-    schoolLogo: null
+  const [schoolBranding, setSchoolBranding] = useState<{ schoolName: string | null; schoolLogo: string | null }>(() => {
+    return {
+      schoolName: localStorage.getItem('smartpe_school_name') || null,
+      schoolLogo: localStorage.getItem('smartpe_school_logo') || null
+    };
   });
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isAuthView, setIsAuthView] = useState(false);
@@ -541,12 +543,31 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Fetch registered school branding and listen to live updates
+  // Listen to live school branding updates globally
   useEffect(() => {
-    if (!user?.uid) {
-      setSchoolBranding({ schoolName: null, schoolLogo: null });
-      return;
-    }
+    const handleBrandingUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<{ schoolName?: string; schoolLogo?: string }>;
+      if (customEvent.detail) {
+        const name = customEvent.detail.schoolName || null;
+        const logo = customEvent.detail.schoolLogo || null;
+        if (name) localStorage.setItem('smartpe_school_name', name);
+        if (logo) localStorage.setItem('smartpe_school_logo', logo);
+        setSchoolBranding({
+          schoolName: name,
+          schoolLogo: logo
+        });
+      }
+    };
+
+    window.addEventListener('school_branding_updated', handleBrandingUpdated);
+    return () => {
+      window.removeEventListener('school_branding_updated', handleBrandingUpdated);
+    };
+  }, []);
+
+  // Fetch registered school branding from Firestore when user logs in
+  useEffect(() => {
+    if (!user?.uid) return;
 
     let isMounted = true;
     const fetchBranding = async () => {
@@ -564,6 +585,8 @@ const App: React.FC = () => {
             }
           }
 
+          if (name) localStorage.setItem('smartpe_school_name', name);
+          if (logo) localStorage.setItem('smartpe_school_logo', logo);
           setSchoolBranding({ schoolName: name, schoolLogo: logo });
         }
       } catch (err) {
@@ -572,22 +595,6 @@ const App: React.FC = () => {
     };
 
     fetchBranding();
-
-    const handleBrandingUpdated = (e: Event) => {
-      const customEvent = e as CustomEvent<{ schoolName?: string; schoolLogo?: string }>;
-      if (customEvent.detail && isMounted) {
-        setSchoolBranding({
-          schoolName: customEvent.detail.schoolName || null,
-          schoolLogo: customEvent.detail.schoolLogo || null
-        });
-      }
-    };
-
-    window.addEventListener('school_branding_updated', handleBrandingUpdated);
-    return () => {
-      isMounted = false;
-      window.removeEventListener('school_branding_updated', handleBrandingUpdated);
-    };
   }, [user?.uid]);
 
   const handleLogout = useCallback(() => {

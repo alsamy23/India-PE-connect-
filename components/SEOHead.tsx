@@ -88,6 +88,10 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
       {/* Canonical Link */}
       <link rel="canonical" href={canonicalFullUrl} />
 
+      {/* Favicon & Brand Icons */}
+      <link rel="icon" type="image/png" href="/favicon.png" />
+      <link rel="apple-touch-icon" href="/logo.jpg" />
+
       {/* Open Graph / Facebook / WhatsApp Tags */}
       <meta property="og:site_name" content={config.siteName || 'Smart PE India'} />
       <meta property="og:type" content="website" />
