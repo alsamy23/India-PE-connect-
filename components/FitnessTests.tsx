@@ -74,6 +74,7 @@ const FitnessTests: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState('Baseline');
   const [userProfile, setUserProfile] = useState<any>(null);
   const [studentResults, setStudentResults] = useState<FitnessResult[]>([]);
+  const [allResults, setAllResults] = useState<FitnessResult[]>([]);
   const [showReportModal, setShowReportModal] = useState(false);
 
   const formatFitnessError = (err: any): string => {
@@ -101,28 +102,197 @@ const FitnessTests: React.FC = () => {
     return err.message || "An unexpected error occurred. Please try again.";
   };
 
+  /**
+   * Helper to accurately match a test result in the database for a given student, test, and term.
+   */
+  const findSavedResult = (
+    studentId: string, 
+    testId: string, 
+    testName: string, 
+    term: string, 
+    resultsList: FitnessResult[]
+  ): FitnessResult | undefined => {
+    if (!resultsList || resultsList.length === 0 || !studentId) return undefined;
+
+    const studentMatchingResults = resultsList.filter(r => 
+      r.studentId === studentId && 
+      (r.term === term || (!r.term && term === 'Baseline'))
+    );
+
+    if (studentMatchingResults.length === 0) return undefined;
+
+    const tId = (testId || '').toLowerCase().trim();
+    const tName = (testName || '').toLowerCase().trim();
+
+    return studentMatchingResults.find(r => {
+      const rId = (r.testId || '').toLowerCase().trim();
+      const rName = (r.testName || '').toLowerCase().trim();
+
+      if (rId === tId || (rName && rName === tName)) return true;
+
+      if (tId === 'sprint_25m') {
+        return rId === 'sprint_25m' || 
+               rId.includes('25m') || 
+               rName.includes('25m') || 
+               rName.includes('25 meter') || 
+               rName.includes('25 mts') || 
+               rName.includes('25-m');
+      }
+
+      if (tId === 'sprint_30m') {
+        return rId === 'sprint_30m' || 
+               rId.includes('30m') || 
+               rName.includes('30m') || 
+               rName.includes('30 meter') || 
+               rName.includes('30 mts') || 
+               rName.includes('30-m');
+      }
+
+      if (tId === 'sprint_50m') {
+        return (rId === 'sprint_50m' || rName.includes('50m') || rName.includes('50 meter') || rName.includes('50 mts') || rName.includes('dash')) &&
+               !rId.includes('25') && !rId.includes('30') && !rName.includes('25') && !rName.includes('30');
+      }
+
+      if (tId === 'sit_reach') {
+        return rId === 'sit_reach' || rName.includes('sit') || rName.includes('reach');
+      }
+
+      if (tId === 'shuttle_4x10' || tId === 'shuttle_run') {
+        return rId === 'shuttle_4x10' || rId === 'shuttle_run' || rName.includes('shuttle');
+      }
+
+      if (tId === 'run_600m') {
+        return rId === 'run_600m' || rName.includes('600');
+      }
+
+      if (tId === 'run_long') {
+        return rId === 'run_long' || rName.includes('1000m') || rName.includes('800m') || rName.includes('long run');
+      }
+
+      if (tId === 'bmi') {
+        return rId === 'bmi' || rName.includes('bmi') || rName.includes('height & weight');
+      }
+
+      if (tId === 'pushups') {
+        return rId === 'pushups' || rName.includes('push');
+      }
+
+      if (tId === 'curl_ups') {
+        return rId === 'curl_ups' || rName.includes('curl');
+      }
+
+      if (tId === 'broad_jump') {
+        return rId === 'broad_jump' || rName.includes('jump');
+      }
+
+      if (tId === 'flamingo') {
+        return rId === 'flamingo' || rName.includes('flamingo');
+      }
+
+      if (tId === 'plate_tapping') {
+        return rId === 'plate_tapping' || rName.includes('plate') || rName.includes('tapping');
+      }
+
+      return false;
+    });
+  };
+
   useEffect(() => {
-    let unsub: (() => void) | undefined;
+    let unsubStudents: (() => void) | undefined;
+    let unsubResults: (() => void) | undefined;
 
     const fetchProfileData = async () => {
       if (auth.currentUser) {
         const profile = await fitnessService.getSchoolMember(auth.currentUser.uid);
         setUserProfile(profile);
         
-        // Subscribe to students after profile is loaded to know if admin
         try {
           const isAdmin = profile?.role === 'admin';
           const schoolId = profile?.schoolId;
-          unsub = fitnessService.subscribeToStudents(auth.currentUser.uid, schoolId, isAdmin, setStudents);
+          
+          unsubStudents = fitnessService.subscribeToStudents(auth.currentUser.uid, schoolId, isAdmin, setStudents);
+          unsubResults = fitnessService.subscribeToResults(auth.currentUser.uid, schoolId, isAdmin, (fetched) => {
+            setAllResults(fetched);
+          });
         } catch (err) {
-          console.error("Error subscribing to students in FitnessTests:", err);
+          console.error("Error subscribing to data in FitnessTests:", err);
         }
       }
     };
     fetchProfileData();
     
-    return () => unsub?.();
+    return () => {
+      unsubStudents?.();
+      unsubResults?.();
+    };
   }, [auth.currentUser?.uid]);
+
+  // When grade filter changes, auto-select corresponding battery if not already set
+  useEffect(() => {
+    if (selectedGradeFilter && selectedGradeFilter !== 'ALL') {
+      const matchingBattery = fitnessService.getBatteryForGrade(selectedGradeFilter);
+      if (matchingBattery && (!selectedBattery || !selectedBattery.grades.includes(selectedGradeFilter))) {
+        setSelectedBattery(matchingBattery);
+      }
+    }
+  }, [selectedGradeFilter]);
+
+  // Synchronize batch scores and saved indicators with database results
+  useEffect(() => {
+    if (!allResults || allResults.length === 0) return;
+
+    const currentTests = selectedBattery ? selectedBattery.tests : (selectedTest ? [selectedTest] : []);
+    if (currentTests.length === 0 || students.length === 0) return;
+
+    setBatchScores(prev => {
+      const next = { ...prev };
+      students.forEach(student => {
+        currentTests.forEach(testItem => {
+          const cellKey = `${student.id}_${testItem.id}`;
+          // Only populate if not in middle of unsaved user typing
+          if (batchSavedStatus[cellKey] !== false) {
+            const saved = findSavedResult(student.id, testItem.id, testItem.name, selectedTerm, allResults);
+            if (saved && saved.value) {
+              next[cellKey] = saved.value;
+            }
+          }
+        });
+      });
+      return next;
+    });
+
+    setBatchSavedStatus(prev => {
+      const next = { ...prev };
+      students.forEach(student => {
+        currentTests.forEach(testItem => {
+          const cellKey = `${student.id}_${testItem.id}`;
+          if (prev[cellKey] !== false) {
+            const saved = findSavedResult(student.id, testItem.id, testItem.name, selectedTerm, allResults);
+            if (saved && saved.value) {
+              next[cellKey] = true;
+            }
+          }
+        });
+      });
+      return next;
+    });
+  }, [allResults, selectedTerm, selectedBattery, selectedTest, students]);
+
+  // In single student mode, auto-fill testValue when student, test, or term changes
+  useEffect(() => {
+    if (selectedStudentId && selectedTest) {
+      const saved = findSavedResult(selectedStudentId, selectedTest.id, selectedTest.name, selectedTerm, allResults);
+      if (saved && saved.value) {
+        setTestValue(saved.value);
+        setIsSaved(true);
+        setResult(null);
+      } else {
+        setTestValue('');
+        setIsSaved(false);
+        setResult(null);
+      }
+    }
+  }, [selectedStudentId, selectedTest?.id, selectedTerm, allResults]);
 
   useEffect(() => {
     let unsubStudentResults: (() => void) | undefined;
@@ -523,11 +693,6 @@ const FitnessTests: React.FC = () => {
   const handleSaveDirectly = async () => {
     if (!auth.currentUser || !selectedTest || !testValue) return;
 
-    // Determine schoolId: 
-    // 1. From selected student
-    // 2. From user's school profile
-    // 3. Super Admin global fallback
-    // 4. Personal fallback for teachers without schools
     const student = students.find(s => s.id === selectedStudentId);
     let schoolId = student?.schoolId || userProfile?.schoolId;
 
@@ -547,8 +712,11 @@ const FitnessTests: React.FC = () => {
         directRating = bmiRes.category;
       }
 
+      const existing = findSavedResult(selectedStudentId || 'manual_entry', selectedTest.id, selectedTest.name, selectedTerm, allResults);
+      const resultId = existing ? existing.id : (selectedStudentId ? `${selectedStudentId}_${selectedTest.id}_${selectedTerm.replace(/\s+/g, '_')}` : Math.random().toString(36).substr(2, 9));
+
       await fitnessService.saveResult({
-        id: Math.random().toString(36).substr(2, 9),
+        id: resultId,
         teacherId: auth.currentUser.uid,
         schoolId: schoolId,
         studentId: selectedStudentId || 'manual_entry',
@@ -593,19 +761,22 @@ const FitnessTests: React.FC = () => {
 
       // Save to school database if student is selected
       if (selectedStudentId || userProfile?.schoolId || auth.currentUser.email === 'alsamy36@gmail.com') {
-          const student = students.find(s => s.id === selectedStudentId);
-          let schoolId = student?.schoolId || userProfile?.schoolId;
-          
-          if (!schoolId) {
-            if (auth.currentUser.email === 'alsamy36@gmail.com') {
-              schoolId = 'master_registry';
-            } else {
-              schoolId = `personal_${auth.currentUser.uid}`;
-            }
+        const student = students.find(s => s.id === selectedStudentId);
+        let schoolId = student?.schoolId || userProfile?.schoolId;
+        
+        if (!schoolId) {
+          if (auth.currentUser.email === 'alsamy36@gmail.com') {
+            schoolId = 'master_registry';
+          } else {
+            schoolId = `personal_${auth.currentUser.uid}`;
           }
+        }
+
+        const existing = findSavedResult(selectedStudentId || 'manual_entry', selectedTest?.id || '', selectedTest?.name || '', selectedTerm, allResults);
+        const resultId = existing ? existing.id : (selectedStudentId ? `${selectedStudentId}_${selectedTest?.id}_${selectedTerm.replace(/\s+/g, '_')}` : Math.random().toString(36).substr(2, 9));
 
         await fitnessService.saveResult({
-          id: Math.random().toString(36).substr(2, 9),
+          id: resultId,
           teacherId: auth.currentUser.uid,
           schoolId: schoolId,
           studentId: selectedStudentId || 'manual_entry',
@@ -656,15 +827,19 @@ const FitnessTests: React.FC = () => {
         }
 
         for (const testItem of currentTests) {
-          const val = (batchScores[`${student.id}_${testItem.id}`] || (currentTests.length === 1 ? batchScores[student.id] : '') || '').trim();
+          const cellKey = `${student.id}_${testItem.id}`;
+          const val = (batchScores[cellKey] || (currentTests.length === 1 ? batchScores[student.id] : '') || '').trim();
           if (val) {
             let cellRating = 'Recorded';
             if (testItem.id === 'bmi' || testItem.name.toLowerCase().includes('bmi')) {
               cellRating = calculateExactBMI(val).category;
             }
 
+            const existing = findSavedResult(student.id, testItem.id, testItem.name, selectedTerm, allResults);
+            const resultId = existing ? existing.id : `${student.id}_${testItem.id}_${selectedTerm.replace(/\s+/g, '_')}`;
+
             await fitnessService.saveResult({
-              id: Math.random().toString(36).substr(2, 9),
+              id: resultId,
               teacherId: auth.currentUser.uid,
               schoolId: schoolId,
               studentId: student.id,
@@ -680,8 +855,8 @@ const FitnessTests: React.FC = () => {
 
             setBatchSavedStatus(prev => ({
               ...prev,
-              [student.id]: true,
-              [`${student.id}_${testItem.id}`]: true
+              [cellKey]: true,
+              [student.id]: true
             }));
             savedCount++;
           }
@@ -706,11 +881,8 @@ const FitnessTests: React.FC = () => {
 
   const handleSingleRowSave = async (student: Student, testItem?: KIFTTest) => {
     if (!auth.currentUser) return;
-    const targetTest = testItem || selectedTest;
-    if (!targetTest) return;
-
-    const val = (batchScores[`${student.id}_${targetTest.id}`] || batchScores[student.id])?.trim();
-    if (!val) return;
+    const currentTests = testItem ? [testItem] : (selectedBattery ? selectedBattery.tests : (selectedTest ? [selectedTest] : []));
+    if (currentTests.length === 0) return;
 
     try {
       let schoolId = student.schoolId || userProfile?.schoolId;
@@ -718,32 +890,48 @@ const FitnessTests: React.FC = () => {
         schoolId = auth.currentUser.email === 'alsamy36@gmail.com' ? 'master_registry' : `personal_${auth.currentUser.uid}`;
       }
 
-      let singleRating = 'Recorded';
-      if (targetTest.id === 'bmi' || targetTest.name.toLowerCase().includes('bmi')) {
-        singleRating = calculateExactBMI(val).category;
+      let rowSavedCount = 0;
+      for (const t of currentTests) {
+        const cellKey = `${student.id}_${t.id}`;
+        const val = (batchScores[cellKey] || (currentTests.length === 1 ? batchScores[student.id] : ''))?.trim();
+        if (val) {
+          let singleRating = 'Recorded';
+          if (t.id === 'bmi' || t.name.toLowerCase().includes('bmi')) {
+            singleRating = calculateExactBMI(val).category;
+          }
+
+          const existing = findSavedResult(student.id, t.id, t.name, selectedTerm, allResults);
+          const resultId = existing ? existing.id : `${student.id}_${t.id}_${selectedTerm.replace(/\s+/g, '_')}`;
+
+          await fitnessService.saveResult({
+            id: resultId,
+            teacherId: auth.currentUser.uid,
+            schoolId: schoolId,
+            studentId: student.id,
+            testId: t.id,
+            testName: t.name,
+            value: val,
+            unit: t.unit,
+            date: new Date().toISOString(),
+            term: selectedTerm,
+            rating: singleRating,
+            percentile: 0
+          });
+
+          setBatchSavedStatus(prev => ({ 
+            ...prev, 
+            [cellKey]: true,
+            [student.id]: true
+          }));
+          rowSavedCount++;
+        }
       }
 
-      await fitnessService.saveResult({
-        id: Math.random().toString(36).substr(2, 9),
-        teacherId: auth.currentUser.uid,
-        schoolId: schoolId,
-        studentId: student.id,
-        testId: targetTest.id,
-        testName: targetTest.name,
-        value: val,
-        unit: targetTest.unit,
-        date: new Date().toISOString(),
-        term: selectedTerm,
-        rating: singleRating,
-        percentile: 0
-      });
-
-      setBatchSavedStatus(prev => ({ 
-        ...prev, 
-        [student.id]: true,
-        [`${student.id}_${targetTest.id}`]: true
-      }));
-      toast.success(`Saved score for ${student.name} (${targetTest.name})`);
+      if (rowSavedCount > 0) {
+        toast.success(`Saved ${rowSavedCount} score(s) for ${student.name}`);
+      } else {
+        toast.error(`Please enter a score for ${student.name} first`);
+      }
     } catch (err: any) {
       toast.error("Failed to save score");
     }
@@ -892,8 +1080,20 @@ const FitnessTests: React.FC = () => {
     return a.name.localeCompare(b.name);
   });
 
-  // Count unsaved batch scores
-  const unsavedBatchCount = filteredStudentsForSelect.filter(s => batchScores[s.id] && batchScores[s.id].trim() !== '' && !batchSavedStatus[s.id]).length;
+  // Count unsaved batch scores across all visible students and tests
+  const currentTestsForCount = selectedBattery ? selectedBattery.tests : (selectedTest ? [selectedTest] : []);
+  const unsavedBatchCount = filteredStudentsForSelect.reduce((count, s) => {
+    let studentUnsaved = false;
+    currentTestsForCount.forEach(t => {
+      const cellKey = `${s.id}_${t.id}`;
+      const val = (batchScores[cellKey] || (currentTestsForCount.length === 1 ? batchScores[s.id] : '') || '').trim();
+      const isSaved = batchSavedStatus[cellKey] || (currentTestsForCount.length === 1 ? batchSavedStatus[s.id] : false);
+      if (val && !isSaved) {
+        studentUnsaved = true;
+      }
+    });
+    return count + (studentUnsaved ? 1 : 0);
+  }, 0);
 
   // Ensure currently selected student is always presented in the dropdown
   const isSelectedInFiltered = filteredStudentsForSelect.some(s => s.id === selectedStudentId);
@@ -1312,12 +1512,12 @@ const FitnessTests: React.FC = () => {
                                                       setBatchScores(prev => ({
                                                         ...prev,
                                                         [cellKey]: val,
-                                                        [student.id]: val
+                                                        ...(currentTests.length === 1 ? { [student.id]: val } : {})
                                                       }));
                                                       setBatchSavedStatus(prev => ({
                                                         ...prev,
                                                         [cellKey]: false,
-                                                        [student.id]: false
+                                                        ...(currentTests.length === 1 ? { [student.id]: false } : {})
                                                       }));
                                                     }}
                                                     onKeyDown={e => handleGridKeyDown(e, sIdx, tIdx, filteredStudentsForSelect.length, currentTests.length)}
