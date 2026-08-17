@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Activity, Trophy, ChevronRight, Calculator, RefreshCw, Loader2, Award, ClipboardList, AlertCircle, Info } from 'lucide-react';
+import { Activity, Trophy, ChevronRight, Calculator, RefreshCw, Loader2, Award, ClipboardList, AlertCircle, Info, Zap } from 'lucide-react';
 import { evaluateKheloIndiaScores } from '../services/geminiService.ts';
 import { FitnessAssessment } from '../types.ts';
 import { getDescriptiveFieldInfo } from '../utils/bmiUtils.ts';
@@ -11,8 +11,9 @@ const KheloIndia: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FitnessAssessment | null>(null);
+  const [sprintTrackType, setSprintTrackType] = useState<'50m' | '30m' | '25m'>('50m');
 
-  // Default battery tests
+  // Battery tests with support for 25m and 30m races
   const [tests, setTests] = useState([
     { name: '50m Dash', value: '' },
     { name: '600m Run/Walk', value: '' },
@@ -20,6 +21,21 @@ const KheloIndia: React.FC = () => {
     { name: 'Partial Curl Up', value: '' },
     { name: 'Push Ups (Modified for Girls)', value: '' }
   ]);
+
+  const handleSprintTypeChange = (type: '50m' | '30m' | '25m') => {
+    setSprintTrackType(type);
+    const sprintName = type === '25m' ? '25m Race / Sprint' : type === '30m' ? '30m Race / Sprint' : '50m Dash';
+    setTests(prev => {
+      const next = [...prev];
+      const sprintIdx = next.findIndex(t => t.name.includes('50m') || t.name.includes('30m') || t.name.includes('25m') || t.name.includes('Dash') || t.name.includes('Sprint') || t.name.includes('Race'));
+      if (sprintIdx !== -1) {
+        next[sprintIdx] = { ...next[sprintIdx], name: sprintName };
+      } else {
+        next.unshift({ name: sprintName, value: '' });
+      }
+      return next;
+    });
+  };
 
   const handleTestChange = (index: number, val: string) => {
     const newTests = [...tests];
@@ -58,7 +74,7 @@ const KheloIndia: React.FC = () => {
         <div className="relative z-10">
           <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter">Khelo India Assessment</h2>
           <p className="text-orange-100 max-w-xl text-lg font-medium leading-relaxed">
-            Instant percentile calculations and medal criteria based on the official National Fitness Protocols.
+            Instant percentile calculations and medal criteria based on the official National Fitness Protocols and CBSE metrics.
           </p>
         </div>
         <Trophy className="absolute right-[-20px] bottom-[-40px] w-64 h-64 text-white/10 rotate-12" />
@@ -71,20 +87,70 @@ const KheloIndia: React.FC = () => {
               <ClipboardList className="mr-2 text-indigo-600" /> Student Data
             </h3>
             
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-2 gap-4 mb-5">
                <div>
                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Age</label>
-                 <select className="w-full mt-2 p-3 bg-slate-50 border rounded-xl font-bold" value={age} onChange={e => setAge(e.target.value)}>
+                 <select className="w-full mt-2 p-3 bg-slate-50 border rounded-xl font-bold text-xs" value={age} onChange={e => setAge(e.target.value)}>
                    {[...Array(14)].map((_, i) => <option key={i} value={i+5}>{i+5} Years</option>)}
                  </select>
                </div>
                <div>
                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender</label>
-                 <select className="w-full mt-2 p-3 bg-slate-50 border rounded-xl font-bold" value={gender} onChange={e => setGender(e.target.value)}>
+                 <select className="w-full mt-2 p-3 bg-slate-50 border rounded-xl font-bold text-xs" value={gender} onChange={e => setGender(e.target.value)}>
                    <option value="Male">Boy</option>
                    <option value="Female">Girl</option>
                  </select>
                </div>
+            </div>
+
+            {/* Sprint Distance Track Selector */}
+            <div className="mb-6 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+              <label className="text-[10px] font-black text-slate-600 uppercase tracking-wider mb-2 flex items-center justify-between">
+                <span>School Running Track Metric</span>
+                <span className="text-orange-600 text-[9px] font-extrabold">CBSE Metric</span>
+              </label>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleSprintTypeChange('50m')}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    sprintTrackType === '50m' 
+                      ? 'bg-[#0D2B52] text-white shadow-xs' 
+                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  50m Track
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSprintTypeChange('30m')}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    sprintTrackType === '30m' 
+                      ? 'bg-[#0D2B52] text-white shadow-xs' 
+                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                  title="30m Race / Sprint for schools with compact tracks"
+                >
+                  30m Race
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSprintTypeChange('25m')}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    sprintTrackType === '25m' 
+                      ? 'bg-[#0D2B52] text-white shadow-xs' 
+                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                  title="25m Race / Sprint for compact school grounds"
+                >
+                  25m Race
+                </button>
+              </div>
+              <p className="text-[9.5px] text-slate-500 font-medium mt-1.5">
+                {sprintTrackType === '50m' && 'Standard 50m straight sprint.'}
+                {sprintTrackType === '30m' && 'CBSE standard sprint metric for compact school grounds.'}
+                {sprintTrackType === '25m' && 'Ideal for primary grades & schools without a 100m running track.'}
+              </p>
             </div>
 
             <div className="space-y-4">

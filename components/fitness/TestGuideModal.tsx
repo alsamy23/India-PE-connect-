@@ -58,6 +58,8 @@ export const TestGuideModal: React.FC<TestGuideModalProps> = ({ test, categoryNa
                 {test.id === 'curl_ups' && 'Must be conducted over exactly 60 seconds (1 Minute) or 20 reps/min cadence.'}
                 {test.id === 'plate_tapping' && 'Must be conducted over exactly 30 seconds.'}
                 {test.id === 'flamingo' && 'Must be conducted over exactly 60 seconds total balance duration.'}
+                {test.id === 'sprint_25m' && 'Recorded in seconds (0.01s accuracy) over 25m straight runway from standing start. Tailored for compact school grounds.'}
+                {test.id === 'sprint_30m' && 'Recorded in seconds (0.01s accuracy) over 30m straight runway from standing start. Official CBSE compact sprint metric.'}
                 {test.id === 'sprint_50m' && 'Recorded in seconds (0.01s accuracy) from standing start.'}
                 {test.id === 'run_600m' && 'Recorded in minutes and seconds (MM:SS) for 600 meters continuous pace.'}
                 {test.id === 'bmi' && 'Untimed static measurement of weight (kg) and height (cm).'}

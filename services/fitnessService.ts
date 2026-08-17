@@ -140,6 +140,26 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         equipment: ['2 Cones', '2 Wooden Blocks (5x5x10cm)', 'Stopwatch', '10m Runway'],
         scoringGuide: 'Record time taken in seconds (e.g., 11.45) to finish sprint picking up two blocks.',
         protocol: 'Student starts at line, sprints 10m to pick up block 1, returns and places it behind start line, sprints back for block 2, and sprints back across start line.'
+      },
+      { 
+        id: 'sprint_25m', 
+        name: '25m Race / Sprint', 
+        unit: 'seconds', 
+        description: 'Linear speed & acceleration test ideal for compact grounds/indoor halls without 100m tracks.',
+        duration: 'Timed Sprint (~4-8 seconds)',
+        equipment: ['25m Straight Runway / Hall', 'Measuring Tape', '2 Cones / Chalk Line', 'Stopwatch'],
+        scoringGuide: 'Record sprint duration in seconds (e.g. 5.12s) to 0.01s accuracy from standing start.',
+        protocol: 'Student takes a standing start behind the 25m start line. On "On Your Mark, GO!" or whistle, sprint 25 meters across the finish line at maximum effort. Ideal for primary grades and schools with limited track space.'
+      },
+      { 
+        id: 'sprint_30m', 
+        name: '30m Race / Sprint', 
+        unit: 'seconds', 
+        description: 'Standard 30m sprint measuring acceleration & speed on compact school tracks.',
+        duration: 'Timed Sprint (~5-9 seconds)',
+        equipment: ['30m Straight Track / Hall', 'Measuring Tape', 'Cones', 'Stopwatch'],
+        scoringGuide: 'Record sprint time in seconds (e.g. 5.85s) to 0.01s accuracy from standing start.',
+        protocol: 'Standing start behind the 30m line. On command, student sprints 30 meters at full velocity past the finish line. Standard CBSE metric for schools without full-size 100m tracks.'
       }
     ]
   },
@@ -207,6 +227,26 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         equipment: ['50m Straight Track', 'Cones', 'Stopwatch'],
         scoringGuide: 'Record sprint time in seconds (e.g. 8.42s).',
         protocol: 'Standing start behind line. On "GO", sprint 50m full speed across finish line.'
+      },
+      { 
+        id: 'sprint_25m', 
+        name: '25m Race / Sprint (Compact Track)', 
+        unit: 'seconds', 
+        description: 'Alternative linear speed test for schools without 50m/100m tracks.',
+        duration: 'Timed Sprint (~4-7 seconds)',
+        equipment: ['25m Straight Track / Hall', 'Cones', 'Stopwatch'],
+        scoringGuide: 'Record sprint time in seconds (e.g. 4.85s).',
+        protocol: 'Standing start behind 25m mark. Sprint at maximum velocity across finish line. Ideal for compact school facilities.'
+      },
+      { 
+        id: 'sprint_30m', 
+        name: '30m Race / Sprint (Compact Track)', 
+        unit: 'seconds', 
+        description: 'Standard 30m speed and acceleration measurement on compact grounds.',
+        duration: 'Timed Sprint (~5-8 seconds)',
+        equipment: ['30m Straight Track / Hall', 'Cones', 'Stopwatch'],
+        scoringGuide: 'Record sprint time in seconds (e.g. 5.42s).',
+        protocol: 'Standing start behind 30m line. Sprint 30 meters at full pace past finish line.'
       }
     ]
   },
@@ -234,6 +274,26 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         equipment: ['Stopwatch', '50m Track'],
         scoringGuide: 'Record time in seconds (e.g. 7.85s).',
         protocol: 'High intensity 50m dash from standing start.'
+      },
+      { 
+        id: 'sprint_30m', 
+        name: '30m Race / Sprint (Compact Track)', 
+        unit: 'seconds', 
+        description: 'Speed & acceleration measurement for schools without 100m tracks.',
+        duration: 'Timed Sprint',
+        equipment: ['30m Track / Ground', 'Stopwatch', 'Cones'],
+        scoringGuide: 'Record time in seconds (e.g. 4.95s).',
+        protocol: 'High intensity 30m dash from standing start. Standard CBSE metric for compact grounds.'
+      },
+      { 
+        id: 'sprint_25m', 
+        name: '25m Race / Sprint (Compact Track)', 
+        unit: 'seconds', 
+        description: 'Explosive start & short sprint speed evaluation.',
+        duration: 'Timed Sprint',
+        equipment: ['25m Track / Hall', 'Stopwatch', 'Cones'],
+        scoringGuide: 'Record time in seconds (e.g. 4.35s).',
+        protocol: 'High-speed 25m sprint from standing start.'
       },
       { 
         id: 'run_600m', 
@@ -301,6 +361,26 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         equipment: ['Stopwatch', '50m Track'],
         scoringGuide: 'Record time in seconds (e.g. 7.20s).',
         protocol: 'Standing start sprint over 50m.'
+      },
+      { 
+        id: 'sprint_30m', 
+        name: '30m Race / Sprint (Compact Track)', 
+        unit: 'seconds', 
+        description: 'Linear speed & acceleration test for schools without 100m tracks.',
+        duration: 'Timed Sprint',
+        equipment: ['30m Track / Ground', 'Stopwatch'],
+        scoringGuide: 'Record sprint time in seconds (e.g. 4.60s).',
+        protocol: 'Standing start sprint over 30m. CBSE metric for compact school grounds.'
+      },
+      { 
+        id: 'sprint_25m', 
+        name: '25m Race / Sprint (Compact Track)', 
+        unit: 'seconds', 
+        description: 'Acceleration & speed test for compact school spaces.',
+        duration: 'Timed Sprint',
+        equipment: ['25m Track / Corridor', 'Stopwatch'],
+        scoringGuide: 'Record sprint time in seconds (e.g. 3.95s).',
+        protocol: 'Standing start sprint over 25m.'
       },
       { 
         id: 'run_600m', 
@@ -388,6 +468,26 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         equipment: ['50m Track', 'Stopwatch'],
         scoringGuide: 'Record time in seconds (e.g. 6.95s).',
         protocol: 'Maximum effort 50m sprint.'
+      },
+      { 
+        id: 'sprint_30m', 
+        name: '30m Race / Sprint (Compact Track)', 
+        unit: 'seconds', 
+        description: 'Acceleration & speed metric for schools without 100m tracks.',
+        duration: 'Timed Sprint',
+        equipment: ['30m Track / Ground', 'Stopwatch'],
+        scoringGuide: 'Record sprint time in seconds (e.g. 4.35s).',
+        protocol: 'Maximum effort 30m sprint from standing start. Standard CBSE alternative for compact campus grounds.'
+      },
+      { 
+        id: 'sprint_25m', 
+        name: '25m Race / Sprint (Compact Track)', 
+        unit: 'seconds', 
+        description: 'Speed & acceleration metric for compact campus facilities.',
+        duration: 'Timed Sprint',
+        equipment: ['25m Track / Hall', 'Stopwatch'],
+        scoringGuide: 'Record sprint time in seconds (e.g. 3.75s).',
+        protocol: 'Maximum effort 25m sprint from standing start.'
       },
       { 
         id: 'run_long', 

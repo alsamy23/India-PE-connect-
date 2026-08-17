@@ -186,9 +186,14 @@ export function calculateTestTrend(
   }
 
   const isTimed = testId === 'sprint_50m' || 
+                  testId === 'sprint_25m' || 
+                  testId === 'sprint_30m' || 
                   testId === 'shuttle_4x10' || 
+                  testId === 'shuttle_run' || 
                   testId === 'run_600m' || 
+                  testId === 'run_long' || 
                   testName.toLowerCase().includes('sprint') || 
+                  testName.toLowerCase().includes('race') || 
                   testName.toLowerCase().includes('shuttle') || 
                   testName.toLowerCase().includes('run');
 
@@ -336,8 +341,30 @@ export function getDescriptiveFieldInfo(test: {
     };
   }
 
-  // 8. 50m Sprint / Dash
-  if (id === 'sprint_50m' || name.includes('50m') || name.includes('dash') || name.includes('sprint')) {
+  // 8. 25m Sprint / Race
+  if (id === 'sprint_25m' || name.includes('25m') || name.includes('25-m') || name.includes('25 meter') || name.includes('25-meter')) {
+    return {
+      label: '25m Sprint Time (seconds)',
+      shortLabel: 'Time (25m s)',
+      placeholder: 'e.g. 5.12 sec',
+      hint: 'Recorded duration in seconds (0.01s precision) over 25m track from standing start',
+      unitBadge: 'Seconds (0.01s)'
+    };
+  }
+
+  // 9. 30m Sprint / Race
+  if (id === 'sprint_30m' || name.includes('30m') || name.includes('30-m') || name.includes('30 meter') || name.includes('30-meter')) {
+    return {
+      label: '30m Sprint Time (seconds)',
+      shortLabel: 'Time (30m s)',
+      placeholder: 'e.g. 5.85 sec',
+      hint: 'Recorded duration in seconds (0.01s precision) over 30m track from standing start',
+      unitBadge: 'Seconds (0.01s)'
+    };
+  }
+
+  // 10. 50m Sprint / Dash
+  if (id === 'sprint_50m' || name.includes('50m') || name.includes('dash') || name.includes('sprint') || name.includes('race')) {
     return {
       label: 'Sprint Time (seconds)',
       shortLabel: 'Time (seconds)',

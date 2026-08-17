@@ -676,9 +676,13 @@ export const evaluateFitnessTests = async (
     Student: Age ${age}, ${gender}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
-      systemInstruction: `You are a professional Sports Scientist and Fitness Assessor. 
+      systemInstruction: `You are a professional Sports Scientist and Fitness Assessor specializing in CBSE Physical Education & Khelo India Fitness Test (KIFT) protocols. 
       Be decisive and do not ask for clarification.
-      Task: Compare the provided test result to international standard norms (e.g. ACSM, NSCA).
+      Task: Compare the provided test result to CBSE/Khelo India standards and international norms (ACSM, NSCA, SAI).
+      Speed & Sprint Guidelines (e.g. for schools with compact grounds without 100m tracks):
+      - 25m Race / Sprint: Measures explosive start & acceleration (Ages 5-8: 4.8s-6.8s; Ages 9-14: 4.0s-5.6s; Ages 15-18: 3.4s-4.8s).
+      - 30m Race / Sprint: Standard compact track sprint metric (Ages 5-8: 5.8s-7.8s; Ages 9-14: 4.6s-6.5s; Ages 15-18: 3.9s-5.4s).
+      - 50m Sprint / Dash: Standard linear speed metric (Ages 9-14: 7.5s-10.8s; Ages 15-18: 6.4s-9.2s).
       Output JSON must be fully populated.
       Calculate percentile and rating strictly based on standard age/gender norms.`,
       responseMimeType: "application/json",
@@ -725,9 +729,13 @@ export const evaluateKheloIndiaScores = async (
     Tests Provided: ${JSON.stringify(tests)}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
-      systemInstruction: `You are a Khelo India Assessor. 
+      systemInstruction: `You are an official Khelo India & CBSE Physical Education Fitness Assessor. 
       Be decisive and do not ask for clarification.
-      Task: Compare scores to Indian National Fitness Protocols.
+      Task: Compare scores to Indian National Fitness Protocols (Sports Authority of India & CBSE guidelines).
+      Speed & Sprint Metric Reference (supports schools without standard 100m tracks):
+      - 25m Race / Sprint: Acceleration and explosive speed (Ages 5-8: 4.8s-6.8s; Ages 9-14: 4.0s-5.6s; Ages 15-18: 3.4s-4.8s).
+      - 30m Race / Sprint: Standard compact ground sprint metric (Ages 5-8: 5.8s-7.8s; Ages 9-14: 4.6s-6.5s; Ages 15-18: 3.9s-5.4s).
+      - 50m Dash: Standard track sprint (Ages 9-14: 7.5s-10.8s; Ages 15-18: 6.4s-9.2s).
       CRITICAL: If test scores are missing or empty in the input, ESTIMATE typical scores for a student of this age/gender who is 'Average' and label them as (Estimated).
       Output JSON must be fully populated. Do not return empty strings for recommendations or ratings.
       Calculate percentiles strictly.`,

@@ -29,6 +29,10 @@ export const TestFieldTooltip: React.FC<TestFieldTooltipProps> = ({
         return '60s Total Balance Duration. Pause stopwatch on every stumble or fall. Count total balance breaks.';
       case 'sprint_50m':
         return 'Timed 50m Linear Sprint. Standing start behind line. Record time in seconds to 0.01s accuracy.';
+      case 'sprint_25m':
+        return 'Timed 25m Linear Race/Sprint. Standing start. Measures explosive acceleration & speed for compact grounds without 100m tracks.';
+      case 'sprint_30m':
+        return 'Timed 30m Linear Race/Sprint. Standing start. Standard CBSE sprint metric on compact grounds (0.01s accuracy).';
       case 'run_600m':
         return 'Continuous 600m Run/Walk. Record time in MM:SS (Minutes:Seconds) format for aerobic stamina.';
       case 'sit_reach':
