@@ -128,68 +128,88 @@ const FitnessTests: React.FC = () => {
       const rId = (r.testId || '').toLowerCase().trim();
       const rName = (r.testName || '').toLowerCase().trim();
 
-      if (rId === tId || (rName && rName === tName)) return true;
+      // 1. Exact ID match (Strongest)
+      if (rId && rId === tId) return true;
 
-      if (tId === 'sprint_25m') {
-        return rId === 'sprint_25m' || 
-               rId.includes('25m') || 
-               rName.includes('25m') || 
-               rName.includes('25 meter') || 
-               rName.includes('25 mts') || 
-               rName.includes('25-m');
+      // 2. Exact Name match
+      if (rName && tName && rName === tName) return true;
+
+      // 3. Strict isolated test matching:
+
+      // Sit & Reach (Flexibility) - strictly forbidden from matching curl_ups or sit-ups
+      if (tId === 'sit_reach' || tName.includes('sit & reach') || tName.includes('reach flexibility') || tName.includes('reach distance')) {
+        if (rId === 'curl_ups' || rId === 'pushups') return false;
+        if (rName.includes('curl') || rName.includes('push') || rName.includes('sit-up') || rName.includes('sit up') || rName.includes('situp')) return false;
+        return rId === 'sit_reach' || rName.includes('reach') || rName.includes('sit & reach') || rName.includes('sit and reach');
       }
 
-      if (tId === 'sprint_30m') {
-        return rId === 'sprint_30m' || 
-               rId.includes('30m') || 
-               rName.includes('30m') || 
-               rName.includes('30 meter') || 
-               rName.includes('30 mts') || 
-               rName.includes('30-m');
+      // Sit-Ups / Partial Curl-Ups - strictly forbidden from matching sit & reach
+      if (tId === 'curl_ups' || tName.includes('curl') || tName.includes('sit-up') || tName.includes('sit up') || tName.includes('situp')) {
+        if (rId === 'sit_reach' || rId === 'pushups') return false;
+        if (rName.includes('reach') || rName.includes('push')) return false;
+        return rId === 'curl_ups' || rName.includes('curl') || rName.includes('sit-up') || rName.includes('sit up') || rName.includes('situp');
       }
 
-      if (tId === 'sprint_50m') {
+      // Push-Ups / Modified Push-Ups - strictly isolated
+      if (tId === 'pushups' || tName.includes('push')) {
+        if (rId === 'curl_ups' || rId === 'sit_reach') return false;
+        if (rName.includes('curl') || rName.includes('reach') || rName.includes('sit')) return false;
+        return rId === 'pushups' || rName.includes('push');
+      }
+
+      // 25m Sprint
+      if (tId === 'sprint_25m' || tName.includes('25m') || tName.includes('25 meter')) {
+        if (rId === 'sprint_50m' || rId === 'sprint_30m' || rId === 'run_600m') return false;
+        return rId === 'sprint_25m' || (rName.includes('25') && (rName.includes('sprint') || rName.includes('meter') || rName.includes('run') || rName.includes('dash')));
+      }
+
+      // 30m Sprint
+      if (tId === 'sprint_30m' || tName.includes('30m') || tName.includes('30 meter')) {
+        if (rId === 'sprint_50m' || rId === 'sprint_25m' || rId === 'run_600m') return false;
+        return rId === 'sprint_30m' || (rName.includes('30') && (rName.includes('sprint') || rName.includes('meter') || rName.includes('run') || rName.includes('dash')));
+      }
+
+      // 50m Sprint
+      if (tId === 'sprint_50m' || tName.includes('50m') || tName.includes('50 meter')) {
+        if (rId === 'sprint_25m' || rId === 'sprint_30m' || rId === 'run_600m') return false;
         return (rId === 'sprint_50m' || rName.includes('50m') || rName.includes('50 meter') || rName.includes('50 mts') || rName.includes('dash')) &&
                !rId.includes('25') && !rId.includes('30') && !rName.includes('25') && !rName.includes('30');
       }
 
-      if (tId === 'sit_reach') {
-        return rId === 'sit_reach' || rName.includes('sit') || rName.includes('reach');
+      // Shuttle Run
+      if (tId === 'shuttle_4x10' || tId === 'shuttle_run' || tName.includes('shuttle')) {
+        return rId === 'shuttle_4x10' || rId === 'shuttle_run' || rName.includes('shuttle') || rName.includes('4x10') || rName.includes('4×10');
       }
 
-      if (tId === 'shuttle_4x10' || tId === 'shuttle_run') {
-        return rId === 'shuttle_4x10' || rId === 'shuttle_run' || rName.includes('shuttle');
+      // 600m Run/Walk
+      if (tId === 'run_600m' || tName.includes('600')) {
+        if (rId === 'run_long') return false;
+        return (rId === 'run_600m' || rName.includes('600')) && !rName.includes('1000') && !rName.includes('800');
       }
 
-      if (tId === 'run_600m') {
-        return rId === 'run_600m' || rName.includes('600');
-      }
-
-      if (tId === 'run_long') {
+      // Long Endurance Run (800m / 1000m)
+      if (tId === 'run_long' || tName.includes('1000m') || tName.includes('800m')) {
+        if (rId === 'run_600m') return false;
         return rId === 'run_long' || rName.includes('1000m') || rName.includes('800m') || rName.includes('long run');
       }
 
-      if (tId === 'bmi') {
-        return rId === 'bmi' || rName.includes('bmi') || rName.includes('height & weight');
+      // BMI
+      if (tId === 'bmi' || tName.includes('bmi') || tName.includes('height & weight') || tName.includes('body mass')) {
+        return rId === 'bmi' || rName.includes('bmi') || rName.includes('height & weight') || rName.includes('body mass');
       }
 
-      if (tId === 'pushups') {
-        return rId === 'pushups' || rName.includes('push');
+      // Standing Broad Jump
+      if (tId === 'broad_jump' || tName.includes('broad jump') || tName.includes('standing jump')) {
+        return (rId === 'broad_jump' || rName.includes('broad') || rName.includes('standing jump')) && !rName.includes('vertical');
       }
 
-      if (tId === 'curl_ups') {
-        return rId === 'curl_ups' || rName.includes('curl');
-      }
-
-      if (tId === 'broad_jump') {
-        return rId === 'broad_jump' || rName.includes('jump');
-      }
-
-      if (tId === 'flamingo') {
+      // Flamingo Balance
+      if (tId === 'flamingo' || tName.includes('flamingo')) {
         return rId === 'flamingo' || rName.includes('flamingo');
       }
 
-      if (tId === 'plate_tapping') {
+      // Plate Tapping
+      if (tId === 'plate_tapping' || tName.includes('plate tap') || tName.includes('tapping')) {
         return rId === 'plate_tapping' || rName.includes('plate') || rName.includes('tapping');
       }
 
@@ -239,8 +259,6 @@ const FitnessTests: React.FC = () => {
 
   // Synchronize batch scores and saved indicators with database results
   useEffect(() => {
-    if (!allResults || allResults.length === 0) return;
-
     const currentTests = selectedBattery ? selectedBattery.tests : (selectedTest ? [selectedTest] : []);
     if (currentTests.length === 0 || students.length === 0) return;
 
@@ -251,9 +269,12 @@ const FitnessTests: React.FC = () => {
           const cellKey = `${student.id}_${testItem.id}`;
           // Only populate if not in middle of unsaved user typing
           if (batchSavedStatus[cellKey] !== false) {
-            const saved = findSavedResult(student.id, testItem.id, testItem.name, selectedTerm, allResults);
+            const saved = findSavedResult(student.id, testItem.id, testItem.name, selectedTerm, allResults || []);
             if (saved && saved.value) {
               next[cellKey] = saved.value;
+            } else if (allResults && allResults.length > 0) {
+              // Clear stale value if not saved in current term
+              delete next[cellKey];
             }
           }
         });
@@ -267,9 +288,11 @@ const FitnessTests: React.FC = () => {
         currentTests.forEach(testItem => {
           const cellKey = `${student.id}_${testItem.id}`;
           if (prev[cellKey] !== false) {
-            const saved = findSavedResult(student.id, testItem.id, testItem.name, selectedTerm, allResults);
+            const saved = findSavedResult(student.id, testItem.id, testItem.name, selectedTerm, allResults || []);
             if (saved && saved.value) {
               next[cellKey] = true;
+            } else {
+              delete next[cellKey];
             }
           }
         });
