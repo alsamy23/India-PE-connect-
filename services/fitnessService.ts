@@ -334,6 +334,26 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         equipment: ['Stopwatch', 'Cones', '2 Blocks'],
         scoringGuide: 'Record time in seconds (e.g. 10.8s).',
         protocol: 'Sprint 10m 4 times, moving 2 wooden blocks across boundary lines.'
+      },
+      { 
+        id: 'pushups', 
+        name: 'Push-Ups (Boys) / Modified Push-Ups (Girls)', 
+        unit: 'count', 
+        description: 'Upper body muscular strength & endurance for Middle School (Class 6-8).',
+        duration: '60 Seconds (1 Minute)',
+        equipment: ['Exercise Mat', 'Stopwatch / Metronome'],
+        scoringGuide: 'Enter total valid repetitions in 60s. Boys: Standard plank push-ups; Girls: Modified push-ups with knees resting on mat.',
+        protocol: 'Boys assume standard push-up plank posture (body straight, hands shoulder-width). Girls assume modified push-up posture with knees resting on mat and torso straight. Lower chest to 90-degree elbow bend, then push up to full arm extension. Record maximum completed repetitions in 60 seconds.'
+      },
+      { 
+        id: 'curl_ups', 
+        name: 'Sit-Ups / Partial Curl-Ups', 
+        unit: 'count', 
+        description: 'Abdominal core muscle strength & endurance for Middle School (Class 6-8).',
+        duration: '60 Seconds (1 Minute)',
+        equipment: ['Exercise Mat', '10cm Measuring Strip / Tape', 'Stopwatch'],
+        scoringGuide: 'Enter total valid sit-up / curl-up repetitions completed in 60 seconds (max score capped at 75 reps).',
+        protocol: 'Student lies flat on back with knees bent at 140 degrees, feet flat on floor. Arms extended at sides touching measuring strip. Curl upper body until fingers slide across 10cm strip. Lower down until head touches mat. Cadence of 1 curl every 3 seconds or maximum reps in 60s.'
       }
     ]
   },

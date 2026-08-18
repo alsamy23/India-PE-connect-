@@ -683,6 +683,10 @@ export const evaluateFitnessTests = async (
       - 25m Race / Sprint: Measures explosive start & acceleration (Ages 5-8: 4.8s-6.8s; Ages 9-14: 4.0s-5.6s; Ages 15-18: 3.4s-4.8s).
       - 30m Race / Sprint: Standard compact track sprint metric (Ages 5-8: 5.8s-7.8s; Ages 9-14: 4.6s-6.5s; Ages 15-18: 3.9s-5.4s).
       - 50m Sprint / Dash: Standard linear speed metric (Ages 9-14: 7.5s-10.8s; Ages 15-18: 6.4s-9.2s).
+      Strength & Core Norms for Middle School (Class 6, 7, 8 / Ages 11-14) & Secondary:
+      - Push-Ups (Boys): 60s trial (Class 6-8: Needs Imp <12, Avg 12-18, Good 19-27, Excellent 28-35, Elite >35).
+      - Modified Push-Ups (Girls on knees): 60s trial (Class 6-8: Needs Imp <10, Avg 10-16, Good 17-25, Excellent 26-32, Elite >32).
+      - Sit-Ups / Partial Curl-Ups: 60s trial (Class 6-8: Needs Imp <15, Avg 15-24, Good 25-38, Excellent 39-48, Elite >48).
       Output JSON must be fully populated.
       Calculate percentile and rating strictly based on standard age/gender norms.`,
       responseMimeType: "application/json",
@@ -736,6 +740,10 @@ export const evaluateKheloIndiaScores = async (
       - 25m Race / Sprint: Acceleration and explosive speed (Ages 5-8: 4.8s-6.8s; Ages 9-14: 4.0s-5.6s; Ages 15-18: 3.4s-4.8s).
       - 30m Race / Sprint: Standard compact ground sprint metric (Ages 5-8: 5.8s-7.8s; Ages 9-14: 4.6s-6.5s; Ages 15-18: 3.9s-5.4s).
       - 50m Dash: Standard track sprint (Ages 9-14: 7.5s-10.8s; Ages 15-18: 6.4s-9.2s).
+      Strength & Core Norms for Middle School (Class 6-8, Ages 11-14) & Secondary:
+      - Push-Ups (Boys): 60s trial (Class 6-8: Needs Imp <12, Avg 12-18, Good 19-27, Excellent 28-35, Elite >35).
+      - Modified Push-Ups (Girls on knees): 60s trial (Class 6-8: Needs Imp <10, Avg 10-16, Good 17-25, Excellent 26-32, Elite >32).
+      - Sit-Ups / Partial Curl-Ups: 60s trial (Class 6-8: Needs Imp <15, Avg 15-24, Good 25-38, Excellent 39-48, Elite >48).
       CRITICAL: If test scores are missing or empty in the input, ESTIMATE typical scores for a student of this age/gender who is 'Average' and label them as (Estimated).
       Output JSON must be fully populated. Do not return empty strings for recommendations or ratings.
       Calculate percentiles strictly.`,

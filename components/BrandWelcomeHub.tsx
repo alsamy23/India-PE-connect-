@@ -22,6 +22,7 @@ import {
 import Logo from './Logo';
 import { toast } from '../services/toast';
 import { trackEvent } from '../services/analytics';
+import { sendAutomatedWelcomeEmail, sendFeatureAnnouncementEmail, getEmailConfigStatus } from '../services/emailService';
 
 interface BrandWelcomeHubProps {
   userEmail?: string | null;
@@ -390,13 +391,51 @@ https://smartpeindia.app
 
             <div className="pt-2 flex flex-wrap gap-4">
               <button
+                onClick={async () => {
+                  if (!recipientEmail || !recipientEmail.includes('@')) {
+                    toast.error('Please enter a valid recipient email');
+                    return;
+                  }
+                  setIsSending(true);
+                  try {
+                    const result = await sendAutomatedWelcomeEmail(recipientEmail, userName || 'Physical Education Educator', schoolName || 'Partner School');
+                    if (result.success) {
+                      toast.success(`Automated Corporate Welcome Email sent to ${recipientEmail}!`);
+                    } else {
+                      toast.info(`Dispatched: ${result.message}`);
+                    }
+                  } catch (err: any) {
+                    toast.error(err.message || 'Failed to dispatch email');
+                  } finally {
+                    setIsSending(false);
+                  }
+                }}
+                disabled={!recipientEmail || isSending}
+                className="px-8 py-4 bg-primary text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-primary-container disabled:opacity-50 transition-all flex items-center space-x-2 shadow-lg cursor-pointer"
+              >
+                <Zap size={16} />
+                <span>{isSending ? 'Sending Automated Corporate Email...' : '⚡ Send Real Welcome Email Directly'}</span>
+              </button>
+
+              <button
                 onClick={handleSendMailto}
                 disabled={!recipientEmail}
                 className="px-8 py-4 bg-slate-900 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center space-x-2 shadow-lg"
               >
                 <Send size={16} />
-                <span>Open Email App to Send</span>
+                <span>Open in Email App</span>
               </button>
+            </div>
+
+            {/* Corporate Email Engine Status Card */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-1 mt-4">
+              <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                <ShieldCheck size={15} className="text-emerald-600" />
+                <span>Automated Corporate Email Dispatcher Active</span>
+              </p>
+              <p>
+                Every new user who registers or logs in with Google / Email automatically receives this branded corporate HTML welcome email to their inbox with their 1-Year Free Founding Pass confirmation.
+              </p>
             </div>
           </div>
         </div>

@@ -6,6 +6,12 @@ import Groq from "groq-sdk";
 import "dotenv/config";
 import path from "path";
 import { fileURLToPath } from "url";
+import { 
+  getEmailConfig, 
+  buildCorporateWelcomeEmail, 
+  buildCorporateFeatureEmail, 
+  dispatchEmail 
+} from "./email.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,12 +70,84 @@ const apiRouter = express.Router();
 apiRouter.get("/health", (req, res) => {
   try {
     const status = getAI();
+    const emailStatus = getEmailConfig();
     res.json({ 
       status: (status.hasGemini || status.hasGroq) ? "ok" : "missing",
+      emailConfigured: emailStatus.configured,
+      emailProvider: emailStatus.provider,
       ...status
     });
   } catch (err: any) {
     res.status(500).json({ status: "error", message: "Health check failed" });
+  }
+});
+
+// Check transactional email service configuration
+apiRouter.get("/email/status", (req, res) => {
+  try {
+    const config = getEmailConfig();
+    res.json(config);
+  } catch (err: any) {
+    res.status(500).json({ configured: false, error: err.message });
+  }
+});
+
+// Automated Corporate Welcome Email endpoint
+apiRouter.post("/email/welcome", async (req, res) => {
+  try {
+    const { toEmail, recipientName, schoolName } = req.body;
+
+    if (!toEmail || typeof toEmail !== "string" || !toEmail.includes("@")) {
+      return res.status(400).json({ success: false, error: "Valid recipient email address is required" });
+    }
+
+    const { subject, html, text } = buildCorporateWelcomeEmail(recipientName, schoolName);
+    const result = await dispatchEmail(toEmail, subject, html, text);
+
+    res.json({
+      success: result.success,
+      message: result.message,
+      provider: result.provider,
+      recipient: toEmail
+    });
+  } catch (error: any) {
+    console.error("Welcome email error:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to dispatch welcome email" });
+  }
+});
+
+// Corporate Feature Update & Announcement email endpoint
+apiRouter.post("/email/announcement", async (req, res) => {
+  try {
+    const { toEmails, featureTitle, featureDescription, actionUrl } = req.body;
+
+    if (!Array.isArray(toEmails) || toEmails.length === 0) {
+      return res.status(400).json({ success: false, error: "Recipient emails list is required" });
+    }
+
+    if (!featureTitle || !featureDescription) {
+      return res.status(400).json({ success: false, error: "Feature title and description are required" });
+    }
+
+    const { subject, html, text } = buildCorporateFeatureEmail(featureTitle, featureDescription, actionUrl);
+
+    let sentCount = 0;
+    const sanitizedEmails = [...new Set(toEmails.filter(e => typeof e === "string" && e.includes("@")))];
+
+    for (const email of sanitizedEmails) {
+      const resSend = await dispatchEmail(email, subject, html, text);
+      if (resSend.success) sentCount++;
+    }
+
+    res.json({
+      success: true,
+      sentCount,
+      totalRequested: sanitizedEmails.length,
+      message: `Dispatched feature announcement to ${sentCount} recipient(s).`
+    });
+  } catch (error: any) {
+    console.error("Announcement email error:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to dispatch announcement" });
   }
 });
 

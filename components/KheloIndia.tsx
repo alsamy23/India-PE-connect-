@@ -13,14 +13,27 @@ const KheloIndia: React.FC = () => {
   const [result, setResult] = useState<FitnessAssessment | null>(null);
   const [sprintTrackType, setSprintTrackType] = useState<'50m' | '30m' | '25m'>('50m');
 
-  // Battery tests with support for 25m and 30m races
+  // Battery tests with support for 25m and 30m races, Sit-ups, and gender-specific Push-ups
   const [tests, setTests] = useState([
     { name: '50m Dash', value: '' },
     { name: '600m Run/Walk', value: '' },
     { name: 'Sit & Reach', value: '' },
-    { name: 'Partial Curl Up', value: '' },
-    { name: 'Push Ups (Modified for Girls)', value: '' }
+    { name: 'Sit-Ups / Partial Curl Up (60s)', value: '' },
+    { name: 'Push Ups (Boys - 60s)', value: '' }
   ]);
+
+  const handleGenderChange = (newGender: string) => {
+    setGender(newGender);
+    const pushupName = newGender === 'Female' ? 'Modified Push Ups (Girls - Knees on Mat)' : 'Push Ups (Boys - Standard Plank)';
+    setTests(prev => {
+      return prev.map(t => {
+        if (t.name.toLowerCase().includes('push')) {
+          return { ...t, name: pushupName };
+        }
+        return t;
+      });
+    });
+  };
 
   const handleSprintTypeChange = (type: '50m' | '30m' | '25m') => {
     setSprintTrackType(type);
@@ -96,7 +109,7 @@ const KheloIndia: React.FC = () => {
                </div>
                <div>
                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender</label>
-                 <select className="w-full mt-2 p-3 bg-slate-50 border rounded-xl font-bold text-xs" value={gender} onChange={e => setGender(e.target.value)}>
+                 <select className="w-full mt-2 p-3 bg-slate-50 border rounded-xl font-bold text-xs" value={gender} onChange={e => handleGenderChange(e.target.value)}>
                    <option value="Male">Boy</option>
                    <option value="Female">Girl</option>
                  </select>

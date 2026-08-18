@@ -14,6 +14,7 @@ import { Mail, Lock, User, School, ArrowRight, Loader2, ArrowLeft } from 'lucide
 import Logo from './Logo';
 import { trackEvent } from '../services/analytics.ts';
 import { toast } from '../services/toast.ts';
+import { sendAutomatedWelcomeEmail } from '../services/emailService.ts';
 
 interface AuthProps {
   onBack?: () => void;
@@ -101,6 +102,17 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
 
         trackEvent('signup', { method: 'google', user_role: role });
         trackEvent('profile_created', { user_role: role });
+
+        // Corporate Automated Welcome Email Dispatch
+        if (user.email) {
+          sendAutomatedWelcomeEmail(user.email, user.displayName || 'Physical Education Educator', finalSchoolName)
+            .then(res => {
+              if (res.success) {
+                console.log('Automated welcome email dispatched:', res);
+              }
+            })
+            .catch(e => console.warn('Welcome email trigger note:', e));
+        }
       }
     } catch (err: any) {
       console.error('Google Auth Error:', err);
@@ -190,6 +202,17 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
 
         trackEvent('signup', { method: 'email', user_role: role });
         trackEvent('profile_created', { user_role: role });
+
+        // Corporate Automated Welcome Email Dispatch
+        if (user.email) {
+          sendAutomatedWelcomeEmail(user.email, displayName || 'Physical Education Educator', finalSchoolName)
+            .then(res => {
+              if (res.success) {
+                console.log('Automated welcome email dispatched:', res);
+              }
+            })
+            .catch(e => console.warn('Welcome email trigger note:', e));
+        }
       }
     } catch (err: any) {
       console.error('Auth Error:', err);
