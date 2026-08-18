@@ -22,7 +22,7 @@ export const TestFieldTooltip: React.FC<TestFieldTooltipProps> = ({
       case 'pushups':
         return '60s Time Limit. Boys: Standard plank posture (elbows to 90°). Girls: Modified push-up with knees on mat.';
       case 'curl_ups':
-        return '60s Time Limit. Lie flat, knees at 140°, slide fingers across 10cm strip. Head must touch mat on down phase.';
+        return '30s Time Limit (Official Khelo India Standard) or 60s CBSE Cadence. Lie flat, knees at 140°, slide fingers across 10cm strip.';
       case 'plate_tapping':
         return '30s Time Limit. Rapid back-and-forth hand taps between two 20cm discs across center table.';
       case 'flamingo':
@@ -41,7 +41,7 @@ export const TestFieldTooltip: React.FC<TestFieldTooltipProps> = ({
         return '2 Attempts. Two-footed standing takeoff and landing. Measure from line to rear heel landing point.';
       case 'shuttle_run':
       case 'shuttle_4x10':
-        return 'Timed 4x10m Shuttle. Sprint 10m 4 times, retrieving two 5x5x10cm wooden blocks across lines.';
+        return 'Timed 4x10m Shuttle Sprint (~9-15 seconds). Sprint 10m 4 times, retrieving two 5x5x10cm wooden blocks across lines.';
       case 'bmi':
         return 'Untimed Measurement. Height in cm using stadiometer + Weight in kg using calibrated scale.';
       default:
@@ -50,9 +50,11 @@ export const TestFieldTooltip: React.FC<TestFieldTooltipProps> = ({
   };
 
   const getDurationBadge = (duration?: string, testId?: string): string => {
-    if (testId === 'pushups' || testId === 'curl_ups' || testId === 'flamingo') return '⏱️ 60 Seconds (1 Min)';
+    if (testId === 'pushups' || testId === 'flamingo') return '⏱️ 60 Seconds (1 Min)';
+    if (testId === 'curl_ups') return '⏱️ 30s (or 60s)';
     if (testId === 'plate_tapping') return '⏱️ 30 Seconds';
-    if (testId === 'sprint_50m') return '⏱️ Timed Dash';
+    if (testId === 'shuttle_run' || testId === 'shuttle_4x10') return '⏱️ ~9-15 Seconds';
+    if (testId === 'sprint_50m' || testId === 'sprint_30m' || testId === 'sprint_25m') return '⏱️ Timed Sprint';
     if (testId === 'run_600m') return '⏱️ MM:SS Format';
     if (testId === 'bmi') return '📐 Untimed';
     return duration ? `⏱️ ${duration}` : '⏱️ Standard Trial';

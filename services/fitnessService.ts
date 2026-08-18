@@ -350,10 +350,10 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         name: 'Sit-Ups / Partial Curl-Ups', 
         unit: 'count', 
         description: 'Abdominal core muscle strength & endurance for Middle School (Class 6-8).',
-        duration: '60 Seconds (1 Minute)',
+        duration: '30 Seconds (or 60s Cadence)',
         equipment: ['Exercise Mat', '10cm Measuring Strip / Tape', 'Stopwatch'],
-        scoringGuide: 'Enter total valid sit-up / curl-up repetitions completed in 60 seconds (max score capped at 75 reps).',
-        protocol: 'Student lies flat on back with knees bent at 140 degrees, feet flat on floor. Arms extended at sides touching measuring strip. Curl upper body until fingers slide across 10cm strip. Lower down until head touches mat. Cadence of 1 curl every 3 seconds or maximum reps in 60s.'
+        scoringGuide: 'Enter total valid repetitions completed. (Official Khelo India protocol: 30 seconds count; CBSE 1-minute cadence also supported).',
+        protocol: 'Student lies flat on back with knees bent at 140 degrees, feet flat on floor. Arms extended at sides touching measuring strip. Curl upper body until fingers slide across 10cm strip. Lower down until head touches mat. Count valid repetitions completed in 30 seconds (or 60s).'
       }
     ]
   },
@@ -457,10 +457,10 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         name: 'Partial Curl-Ups', 
         unit: 'count', 
         description: 'Abdominal core muscle strength & endurance.',
-        duration: '60 Seconds (1 Minute)',
+        duration: '30 Seconds (or 60s Cadence)',
         equipment: ['Exercise Mat', 'Measuring Strip (10cm wide)', 'Stopwatch'],
-        scoringGuide: 'Enter total valid curl-up repetitions completed in 60 seconds (max score capped at 75).',
-        protocol: 'Student lies flat on back with knees bent at 140 degrees, feet flat on floor. Arms extended at sides touching measuring strip. Curl upper body until fingers slide across 10cm strip. Lower down until head touches mat. Cadence of 1 curl every 3 seconds or max in 60s.'
+        scoringGuide: 'Enter total valid curl-up repetitions completed. (Official Khelo India standard: 30 seconds; 60s cadence supported).',
+        protocol: 'Student lies flat on back with knees bent at 140 degrees, feet flat on floor. Arms extended at sides touching measuring strip. Curl upper body until fingers slide across 10cm strip. Lower down until head touches mat. Record valid repetitions in 30s (or 60s cadence).'
       }
     ]
   },
@@ -564,10 +564,10 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         name: 'Partial Curl-Ups', 
         unit: 'count', 
         description: 'Abdominal core endurance & stamina.',
-        duration: '60 Seconds (1 Minute)',
+        duration: '30 Seconds (or 60s Cadence)',
         equipment: ['Mat', 'Measuring Tape', 'Stopwatch'],
-        scoringGuide: 'Enter total valid curl-ups completed in 60 seconds.',
-        protocol: 'Controlled partial curl-ups sliding fingers 10cm forward on mat.'
+        scoringGuide: 'Enter total valid curl-ups completed. (Official Khelo India: 30s; 60s cadence supported).',
+        protocol: 'Controlled partial curl-ups sliding fingers 10cm forward on mat. Record repetitions in 30 seconds (or 60s cadence).'
       }
     ]
   }

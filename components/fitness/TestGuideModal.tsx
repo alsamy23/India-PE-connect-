@@ -54,8 +54,9 @@ export const TestGuideModal: React.FC<TestGuideModalProps> = ({ test, categoryNa
               </div>
               <p className="text-slate-900 font-black text-sm">{test.duration || 'Standard Trial'}</p>
               <p className="text-slate-600 text-[11px] font-medium mt-0.5">
-                {test.id === 'pushups' && 'Must be conducted over exactly 60 seconds (1 Minute). Count all valid reps.'}
-                {test.id === 'curl_ups' && 'Must be conducted over exactly 60 seconds (1 Minute) or 20 reps/min cadence.'}
+                {test.id === 'pushups' && 'Must be conducted over exactly 60 seconds (1 Minute). Count all valid reps (Boys: standard plank; Girls: knees on mat).'}
+                {test.id === 'curl_ups' && 'Official Khelo India National Standard is 30 Seconds (Count valid reps in 30s). CBSE 60-second (1-minute) cadence is also supported.'}
+                {(test.id === 'shuttle_4x10' || test.id === 'shuttle_run') && 'Timed sprint agility test recorded in seconds to 0.01s precision (typical completion time ~9.0s to 15.0s).'}
                 {test.id === 'plate_tapping' && 'Must be conducted over exactly 30 seconds.'}
                 {test.id === 'flamingo' && 'Must be conducted over exactly 60 seconds total balance duration.'}
                 {test.id === 'sprint_25m' && 'Recorded in seconds (0.01s accuracy) over 25m straight runway from standing start. Tailored for compact school grounds.'}
@@ -63,7 +64,7 @@ export const TestGuideModal: React.FC<TestGuideModalProps> = ({ test, categoryNa
                 {test.id === 'sprint_50m' && 'Recorded in seconds (0.01s accuracy) from standing start.'}
                 {test.id === 'run_600m' && 'Recorded in minutes and seconds (MM:SS) for 600 meters continuous pace.'}
                 {test.id === 'bmi' && 'Untimed static measurement of weight (kg) and height (cm).'}
-                {!['pushups','curl_ups','plate_tapping','flamingo','sprint_50m','run_600m','bmi'].includes(test.id) && 'Perform as specified under CBSE PE guidelines.'}
+                {!['pushups','curl_ups','plate_tapping','flamingo','sprint_50m','sprint_30m','sprint_25m','shuttle_4x10','shuttle_run','run_600m','bmi'].includes(test.id) && 'Perform as specified under CBSE PE guidelines.'}
               </p>
             </div>
 

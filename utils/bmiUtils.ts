@@ -289,11 +289,11 @@ export function getDescriptiveFieldInfo(test: {
   // 3. Curl-ups / Partial Curl-ups
   if (id === 'curl_ups' || name.includes('curl-up') || name.includes('curl up')) {
     return {
-      label: 'Curl-Up Repetitions (60s)',
-      shortLabel: 'Reps (60s)',
-      placeholder: 'e.g. 28 reps in 60s',
-      hint: 'Count total valid partial curl-up reps completed in 1 minute (60 seconds)',
-      unitBadge: 'Reps in 60s'
+      label: 'Curl-Up Repetitions (30s / 60s)',
+      shortLabel: 'Reps (30s/60s)',
+      placeholder: 'e.g. 18 reps (30s) or 32 (60s)',
+      hint: 'Count total valid partial curl-ups (Official Khelo India: 30 seconds; CBSE: 60s cadence)',
+      unitBadge: 'Reps'
     };
   }
 
