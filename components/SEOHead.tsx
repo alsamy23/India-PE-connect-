@@ -53,9 +53,21 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   // Determine Page Title
   const prefix = config.metaTitlePrefix || 'Smart PE India';
   const pageTitlePart = customTitle || routeOverride.title;
-  const fullTitle = pageTitlePart 
-    ? `${pageTitlePart} | ${prefix}`
-    : `${prefix} - India's #1 AI Platform for PE Teachers`;
+  let fullTitle: string;
+  if (!pageTitlePart) {
+    fullTitle = `${prefix} | #1 AI Platform for PE Teachers`;
+  } else if (pageTitlePart.includes(prefix) || pageTitlePart.includes('Smart PE India')) {
+    fullTitle = pageTitlePart;
+  } else {
+    fullTitle = `${prefix} | ${pageTitlePart}`;
+  }
+
+  // Update browser document.title for instant feedback during navigation
+  useEffect(() => {
+    if (fullTitle) {
+      document.title = fullTitle;
+    }
+  }, [fullTitle]);
 
   // Determine Meta Description
   const metaDescription = customDescription || routeOverride.description || config.metaDescription;
@@ -88,16 +100,25 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
       {/* Canonical Link */}
       <link rel="canonical" href={canonicalFullUrl} />
 
-      {/* Favicon & Brand Icons */}
-      <link rel="icon" type="image/png" href="/favicon.png" />
-      <link rel="apple-touch-icon" href="/logo.jpg" />
+      {/* Favicon & Brand Icons for Google Search & Browsers */}
+      <link rel="shortcut icon" href="/favicon.ico" />
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+      <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+      <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+      <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+      <link rel="manifest" href="/site.webmanifest" />
+      <meta name="theme-color" content="#0D2B52" />
 
       {/* Open Graph / Facebook / WhatsApp Tags */}
       <meta property="og:site_name" content={config.siteName || 'Smart PE India'} />
       <meta property="og:type" content="website" />
       <meta property="og:title" content={ogTitle} />
       <meta property="og:description" content={ogDescription} />
-      <meta property="og:image" content={ogImage} />
+      <meta property="og:image" content={ogImage || 'https://smartpeindia.app/logo.png'} />
       <meta property="og:url" content={canonicalFullUrl} />
 
       {/* Twitter Cards */}
@@ -105,7 +126,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
       <meta name="twitter:site" content={config.twitterHandle || '@smartpeindia'} />
       <meta name="twitter:title" content={ogTitle} />
       <meta name="twitter:description" content={ogDescription} />
-      <meta name="twitter:image" content={ogImage} />
+      <meta name="twitter:image" content={ogImage || 'https://smartpeindia.app/logo.png'} />
     </Helmet>
   );
 };

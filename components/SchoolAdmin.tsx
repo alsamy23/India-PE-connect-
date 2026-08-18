@@ -1925,32 +1925,44 @@ Friday Period 3: Grade 7B - Fitness`;
                 {/* GOOGLE SEARCH PREVIEW */}
                 {seoPreviewMode === 'google' && (
                   <div className="space-y-3 animate-in fade-in duration-200">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Google Search Result Snippet</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Google Search Result Snippet Preview</span>
                     
-                    <div className="p-4 bg-white border-2 border-slate-200 rounded-2xl space-y-1.5 shadow-sm">
-                      <div className="text-[11px] text-[#006621] font-mono font-medium truncate flex items-center gap-1">
-                        <Globe size={10} />
-                        <span>{(seoConfig.canonicalUrl || 'https://smartpeindia.app/').replace(/\/$/, '')}{selectedSeoSubTab === 'routes' ? (seoConfig.routeOverrides?.[selectedRouteKey]?.canonicalPath || `/#${selectedRouteKey}`) : ''}</span>
+                    <div className="p-4 bg-white border-2 border-slate-200 rounded-2xl space-y-2 shadow-sm font-sans">
+                      {/* Brand Favicon & Site Name Line (Google's Search format) */}
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0 p-0.5">
+                          <img src="/favicon-48x48.png" alt="Smart PE Logo" className="w-full h-full object-contain" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-slate-900 leading-none truncate">
+                            {seoConfig.siteName || 'Smart PE India'}
+                          </span>
+                          <span className="text-[11px] text-slate-500 font-mono leading-tight truncate">
+                            {(seoConfig.canonicalUrl || 'https://smartpeindia.app/').replace(/\/$/, '')}{selectedSeoSubTab === 'routes' ? (seoConfig.routeOverrides?.[selectedRouteKey]?.canonicalPath || `/#${selectedRouteKey}`) : ''}
+                          </span>
+                        </div>
                       </div>
 
-                      <h5 className="text-blue-800 hover:underline font-medium text-sm leading-snug cursor-pointer font-sans">
+                      {/* Snippet Title */}
+                      <h5 className="text-[#1a0dab] hover:underline font-normal text-base leading-snug cursor-pointer font-sans line-clamp-2">
                         {selectedSeoSubTab === 'routes' && seoConfig.routeOverrides?.[selectedRouteKey]?.title
                           ? `${seoConfig.routeOverrides[selectedRouteKey].title} | ${seoConfig.metaTitlePrefix || 'Smart PE India'}`
-                          : `${seoConfig.metaTitlePrefix || 'Smart PE India'} - India's #1 AI Platform for PE Teachers`}
+                          : `${seoConfig.metaTitlePrefix || 'Smart PE India (smartpeindia.app)'} | #1 AI Platform for PE Teachers`}
                       </h5>
 
-                      <p className="text-xs text-slate-600 font-normal leading-normal line-clamp-3">
-                        {selectedSeoSubTab === 'routes' && seoConfig.routeOverrides?.[selectedRouteKey]?.description
+                      {/* Snippet Description */}
+                      <p className="text-xs text-[#4d5156] font-normal leading-relaxed line-clamp-3">
+                        <strong className="text-slate-800">SmartPE India</strong> {selectedSeoSubTab === 'routes' && seoConfig.routeOverrides?.[selectedRouteKey]?.description
                           ? seoConfig.routeOverrides[selectedRouteKey].description
-                          : seoConfig.metaDescription}
+                          : (seoConfig.metaDescription || "India's #1 AI-powered platform for Physical Education teachers and schools.")}
                       </p>
 
                       {/* Google Sitelinks */}
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[10px] text-blue-800 font-medium">
-                        <span className="hover:underline cursor-pointer">PE Lesson Planner</span>
-                        <span className="hover:underline cursor-pointer">Khelo India Tests</span>
-                        <span className="hover:underline cursor-pointer">School Admin</span>
-                        <span className="hover:underline cursor-pointer">Pricing Plans</span>
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[11px] text-[#1a0dab]">
+                        <span className="hover:underline cursor-pointer font-medium">PE Lesson Planner</span>
+                        <span className="hover:underline cursor-pointer font-medium">Khelo India Tests</span>
+                        <span className="hover:underline cursor-pointer font-medium">Curriculum Planner</span>
+                        <span className="hover:underline cursor-pointer font-medium">1-Year Free Pass</span>
                       </div>
                     </div>
                   </div>
