@@ -160,7 +160,7 @@ apiRouter.get("/ai/test", async (req, res) => {
         httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
       });
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-3.7-flash",
         contents: [{ role: 'user', parts: [{ text: "Say 'Gemini Connection Successful'" }] }]
       });
       return res.json({ message: response.text, provider: "gemini" });
@@ -169,11 +169,28 @@ apiRouter.get("/ai/test", async (req, res) => {
     const groqKey = getGroqKey();
     if (groqKey) {
       const groq = new Groq({ apiKey: groqKey });
-      const completion = await groq.chat.completions.create({
-        messages: [{ role: "user", content: "Say 'Groq Connection Successful'" }],
-        model: "llama-3.3-70b-versatile",
-      });
-      return res.json({ message: completion.choices[0]?.message?.content, provider: "groq" });
+      const testModels = [
+        "openai/gpt-oss-120b",
+        "qwen/qwen3-32b",
+        "meta-llama/llama-4-scout-17b-16e-instruct",
+        "llama-3.1-8b-instant",
+        "gemma2-9b-it"
+      ];
+      
+      let lastTestErr: any = null;
+      for (const tModel of testModels) {
+        try {
+          const completion = await groq.chat.completions.create({
+            messages: [{ role: "user", content: "Say 'Groq Connection Successful'" }],
+            model: tModel,
+          });
+          return res.json({ message: completion.choices[0]?.message?.content, provider: "groq", model: tModel });
+        } catch (err) {
+          lastTestErr = err;
+          continue;
+        }
+      }
+      if (lastTestErr) throw lastTestErr;
     }
 
     res.status(401).json({ error: "No AI API keys found" });
@@ -191,7 +208,7 @@ apiRouter.post("/ai/generate", async (req, res) => {
       if (m.includes("3.1-pro") || m.includes("pro-preview")) {
         return "gemini-3.1-pro-preview";
       }
-      return "gemini-3.6-flash";
+      return "gemini-3.7-flash";
     };
 
     const resolvedModel = resolveModel(model);
@@ -214,10 +231,9 @@ apiRouter.post("/ai/generate", async (req, res) => {
       // Determine which models we can try
       const modelsToTry = [
         resolvedModel,
-        "gemini-3.6-flash",
+        "gemini-3.7-flash",
         "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
+        "gemini-3.1-flash-lite",
         "gemini-flash-latest"
       ];
       
@@ -330,22 +346,50 @@ apiRouter.post("/ai/generate", async (req, res) => {
           ? config.systemInstruction 
           : (config?.systemInstruction?.parts ? config.systemInstruction.parts.map((p: any) => p.text).join("\n") : "You are a professional assistant.");
         
-        const completion = await groq.chat.completions.create({
-          messages: [
-            { role: "system", content: systemPrompt + (config?.responseMimeType === "application/json" ? "\n\nIMPORTANT: Return ONLY valid JSON that strictly follows this schema structure:\n" + JSON.stringify(config.responseSchema || {}) : "") },
-            { role: "user", content: prompt }
-          ],
-          model: "llama-3.3-70b-versatile",
-          temperature: config?.temperature || 0.7,
-          response_format: config?.responseMimeType === "application/json" ? { type: "json_object" } : undefined
-        });
+        // Active Groq models after August 16, 2026 decommissioning of llama-3.3-70b-versatile
+        const groqModelsToTry = [
+          "openai/gpt-oss-120b",
+          "qwen/qwen3-32b",
+          "meta-llama/llama-4-scout-17b-16e-instruct",
+          "llama-3.1-8b-instant",
+          "gemma2-9b-it",
+          "openai/gpt-oss-20b"
+        ];
 
-        return res.json({
-          text: completion.choices[0]?.message?.content,
-          provider: "groq"
-        });
+        let groqSuccess = false;
+        let groqResult: any = null;
+
+        for (const groqModel of groqModelsToTry) {
+          try {
+            console.log(`Attempting Groq generation with model: ${groqModel}...`);
+            const completion = await groq.chat.completions.create({
+              messages: [
+                { role: "system", content: systemPrompt + (config?.responseMimeType === "application/json" ? "\n\nIMPORTANT: Return ONLY valid JSON that strictly follows this schema structure:\n" + JSON.stringify(config.responseSchema || {}) : "") },
+                { role: "user", content: prompt }
+              ],
+              model: groqModel,
+              temperature: config?.temperature || 0.7,
+              response_format: config?.responseMimeType === "application/json" ? { type: "json_object" } : undefined
+            });
+
+            groqResult = completion.choices[0]?.message?.content;
+            if (groqResult) {
+              groqSuccess = true;
+              console.log(`Success with Groq model: ${groqModel}`);
+              return res.json({
+                text: groqResult,
+                provider: "groq",
+                model: groqModel
+              });
+            }
+          } catch (modelErr: any) {
+            console.warn(`Groq model ${groqModel} failed:`, modelErr.message);
+            lastError = modelErr;
+            continue;
+          }
+        }
       } catch (groqError: any) {
-        console.error("Groq fallback failed:", groqError);
+        console.error("Groq fallback execution failed:", groqError);
         lastError = groqError;
       }
     }

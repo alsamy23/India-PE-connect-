@@ -12,7 +12,7 @@ const callAIBase = async (payload: any, retries = 2) => {
   if (m.includes("3.1-pro") || m.includes("pro-preview")) {
     payload.model = "gemini-3.1-pro-preview";
   } else {
-    payload.model = "gemini-3.6-flash";
+    payload.model = "gemini-3.7-flash";
   }
   
   // Add ThinkingLevel.LOW to config to minimize latency for speed (ONLY for Gemini 3 models that support it)
