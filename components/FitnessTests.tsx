@@ -693,7 +693,7 @@ const FitnessTests: React.FC = () => {
 
   const handleBatteryClick = (battery: KIFTBattery) => {
     setSelectedBattery(battery);
-    const defaultTest = battery.category === 'Middle School' 
+    const defaultTest = (battery.category === 'Middle School' || battery.category === 'Secondary' || battery.category === 'Senior Secondary')
       ? (battery.tests.find(t => t.id === 'pushups') || battery.tests[0])
       : battery.tests[0];
     setSelectedTest(defaultTest);
@@ -1811,24 +1811,118 @@ const FitnessTests: React.FC = () => {
                     <div className="bg-indigo-50/90 border-2 border-indigo-200/80 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
                       <div className="flex items-center gap-2.5 text-xs text-indigo-950">
                         <span className="px-2 py-0.5 bg-indigo-600 text-white rounded-md text-[10px] font-black uppercase tracking-wider shrink-0">
-                          Middle School Filter (Grades 6, 7, 8)
+                          Middle School (Grades 6, 7, 8)
                         </span>
                         <span className="font-semibold">
-                          CBSE Khelo India Middle School tests active. Features <strong>Modified Push-Ups</strong> for girls (knee-supported) and standard plank push-ups for boys (60s).
+                          CBSE Khelo India Middle School tests active. Features <strong>Modified Push-Ups</strong> for girls (knee-supported), standard plank push-ups for boys (60s), and <strong>Partial Curl-Ups</strong>.
                         </span>
                       </div>
-                      <button
-                        onClick={() => {
-                          const pushTest = selectedBattery?.tests.find(t => t.id === 'pushups');
-                          if (pushTest) {
-                            setSelectedTest(pushTest);
-                            setTestSelectionFilter('pushups');
-                          }
-                        }}
-                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
-                      >
-                        <span>Focus Modified Push-Ups</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const pushTest = selectedBattery?.tests.find(t => t.id === 'pushups');
+                            if (pushTest) {
+                              setSelectedTest(pushTest);
+                              setTestSelectionFilter('pushups');
+                            }
+                          }}
+                          className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                        >
+                          <span>Focus Push-Ups</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const curlTest = selectedBattery?.tests.find(t => t.id === 'curl_ups');
+                            if (curlTest) {
+                              setSelectedTest(curlTest);
+                              setTestSelectionFilter('curl_ups');
+                            }
+                          }}
+                          className="px-3 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                        >
+                          <span>Focus Curl-Ups</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Secondary School Battery & Test Filter Banner (Grades 9 & 10) */}
+                  {(selectedBattery?.category === 'Secondary' || ['9', '10'].includes(selectedGradeFilter)) && (
+                    <div className="bg-emerald-50/90 border-2 border-emerald-200/80 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-2.5 text-xs text-emerald-950">
+                        <span className="px-2 py-0.5 bg-emerald-700 text-white rounded-md text-[10px] font-black uppercase tracking-wider shrink-0">
+                          Secondary School (Grades 9 & 10)
+                        </span>
+                        <span className="font-semibold">
+                          CBSE HPE Secondary tests active. Standard plank push-ups for boys, <strong>Modified Push-Ups</strong> for girls (60s), <strong>Sit-Ups / Partial Curl-Ups</strong>, Sit & Reach, and 600m Run.
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const pushTest = selectedBattery?.tests.find(t => t.id === 'pushups');
+                            if (pushTest) {
+                              setSelectedTest(pushTest);
+                              setTestSelectionFilter('pushups');
+                            }
+                          }}
+                          className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                        >
+                          <span>Focus Push-Ups</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const curlTest = selectedBattery?.tests.find(t => t.id === 'curl_ups');
+                            if (curlTest) {
+                              setSelectedTest(curlTest);
+                              setTestSelectionFilter('curl_ups');
+                            }
+                          }}
+                          className="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                        >
+                          <span>Focus Partial Curl-Ups</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Senior Secondary School Battery & Test Filter Banner (Grades 11 & 12) */}
+                  {(selectedBattery?.category === 'Senior Secondary' || ['11', '12'].includes(selectedGradeFilter)) && (
+                    <div className="bg-amber-50/90 border-2 border-amber-200/80 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-2.5 text-xs text-amber-950">
+                        <span className="px-2 py-0.5 bg-amber-600 text-white rounded-md text-[10px] font-black uppercase tracking-wider shrink-0">
+                          Senior Secondary (Grades 11 & 12)
+                        </span>
+                        <span className="font-semibold">
+                          CBSE Khelo India Senior Secondary tests active. Features <strong>Push-Ups / Modified Push-Ups (60s)</strong>, <strong>Sit-Ups / Partial Curl-Ups</strong>, 1000m/800m Run, and Sit & Reach.
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const pushTest = selectedBattery?.tests.find(t => t.id === 'pushups');
+                            if (pushTest) {
+                              setSelectedTest(pushTest);
+                              setTestSelectionFilter('pushups');
+                            }
+                          }}
+                          className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                        >
+                          <span>Focus Push-Ups</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const curlTest = selectedBattery?.tests.find(t => t.id === 'curl_ups');
+                            if (curlTest) {
+                              setSelectedTest(curlTest);
+                              setTestSelectionFilter('curl_ups');
+                            }
+                          }}
+                          className="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                        >
+                          <span>Focus Partial Curl-Ups</span>
+                        </button>
+                      </div>
                     </div>
                   )}
 

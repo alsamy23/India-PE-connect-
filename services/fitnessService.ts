@@ -373,6 +373,36 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         protocol: 'Height in cm and weight in kg entered to compute exact BMI category.'
       },
       { 
+        id: 'pushups', 
+        name: 'Push-Ups (Boys) / Modified Push-Ups (Girls)', 
+        unit: 'count', 
+        description: 'Upper body muscular strength & endurance for Secondary School (Class 9-10).',
+        duration: '60 Seconds (1 Minute)',
+        equipment: ['Exercise Mat', 'Stopwatch / Metronome'],
+        scoringGuide: 'Enter total valid repetitions completed in 60 seconds (1 Minute). Boys: Standard plank push-ups; Girls: Modified (knee) push-ups.',
+        protocol: 'Boys assume standard push-up plank posture (hands shoulder-width, body straight). Girls assume modified push-up posture with knees resting on mat. Lower chest to 90-degree elbow bend, then extend fully. Record max completed reps in 60s.'
+      },
+      { 
+        id: 'curl_ups', 
+        name: 'Sit-Ups / Partial Curl-Ups', 
+        unit: 'count', 
+        description: 'Abdominal core muscle strength & endurance for Secondary School (Class 9-10).',
+        duration: '30 Seconds (or 60s Cadence)',
+        equipment: ['Exercise Mat', 'Measuring Strip (10cm wide)', 'Stopwatch'],
+        scoringGuide: 'Enter total valid curl-up repetitions completed. (Official Khelo India standard: 30 seconds; 60s cadence supported).',
+        protocol: 'Student lies flat on back with knees bent at 140 degrees, feet flat on floor. Arms extended at sides touching measuring strip. Curl upper body until fingers slide across 10cm strip. Lower down until head touches mat. Record valid repetitions in 30s (or 60s cadence).'
+      },
+      { 
+        id: 'sit_reach', 
+        name: 'Sit & Reach', 
+        unit: 'cm', 
+        description: 'Flexibility of lower back & hamstrings.',
+        duration: '2 Attempts',
+        equipment: ['Flexibility Box'],
+        scoringGuide: 'Record reach in cm.',
+        protocol: 'Stretch forward without bending knees.'
+      },
+      { 
         id: 'sprint_50m', 
         name: '50m Sprint', 
         unit: 'seconds', 
@@ -404,13 +434,13 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
       },
       { 
         id: 'run_600m', 
-        name: '600m Run', 
+        name: '600m Run / Walk', 
         unit: 'min:sec', 
         description: 'Aerobic endurance capacity.',
         duration: 'Timed Endurance Run',
         equipment: ['Stopwatch', '400m Track'],
         scoringGuide: 'Record time in MM:SS format (e.g. 2:20).',
-        protocol: 'Paced 600m continuous run.'
+        protocol: 'Paced 600m continuous run/walk.'
       },
       { 
         id: 'broad_jump', 
@@ -423,16 +453,6 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         protocol: 'Explosive standing forward jump landing on both feet.'
       },
       { 
-        id: 'sit_reach', 
-        name: 'Sit & Reach', 
-        unit: 'cm', 
-        description: 'Flexibility of lower back & hamstrings.',
-        duration: '2 Attempts',
-        equipment: ['Flexibility Box'],
-        scoringGuide: 'Record reach in cm.',
-        protocol: 'Stretch forward without bending knees.'
-      },
-      { 
         id: 'shuttle_4x10', 
         name: '4×10m Shuttle Run', 
         unit: 'seconds', 
@@ -441,26 +461,6 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         equipment: ['Cones', 'Blocks', 'Stopwatch'],
         scoringGuide: 'Record shuttle time in seconds.',
         protocol: '4 lengths of 10m retrieving blocks.'
-      },
-      { 
-        id: 'pushups', 
-        name: 'Push-Ups / Modified Push-Ups', 
-        unit: 'count', 
-        description: 'Upper body muscular strength & endurance.',
-        duration: '60 Seconds (1 Minute)',
-        equipment: ['Exercise Mat', 'Stopwatch / Metronome'],
-        scoringGuide: 'Enter total valid repetitions completed in 60 seconds (1 Minute). Boys: Standard push-ups; Girls: Modified (knee) push-ups.',
-        protocol: 'Boys assume standard push-up plank posture (hands shoulder-width, body straight). Girls assume modified push-up posture with knees resting on mat. Lower chest to 90-degree elbow bend, then extend fully. Record max completed reps in 60s.'
-      },
-      { 
-        id: 'curl_ups', 
-        name: 'Partial Curl-Ups', 
-        unit: 'count', 
-        description: 'Abdominal core muscle strength & endurance.',
-        duration: '30 Seconds (or 60s Cadence)',
-        equipment: ['Exercise Mat', 'Measuring Strip (10cm wide)', 'Stopwatch'],
-        scoringGuide: 'Enter total valid curl-up repetitions completed. (Official Khelo India standard: 30 seconds; 60s cadence supported).',
-        protocol: 'Student lies flat on back with knees bent at 140 degrees, feet flat on floor. Arms extended at sides touching measuring strip. Curl upper body until fingers slide across 10cm strip. Lower down until head touches mat. Record valid repetitions in 30s (or 60s cadence).'
       }
     ]
   },
@@ -478,6 +478,36 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         equipment: ['Stadiometer', 'Weighing Scale'],
         scoringGuide: 'Format: "weight/height" (e.g. 60/172).',
         protocol: 'Measurement of height and weight for secondary PE profiling.'
+      },
+      { 
+        id: 'pushups', 
+        name: 'Push-Ups (Boys) / Modified Push-Ups (Girls)', 
+        unit: 'count', 
+        description: 'Upper body push muscular strength & endurance for Senior Secondary (Class 11-12).',
+        duration: '60 Seconds (1 Minute)',
+        equipment: ['Exercise Mat', 'Stopwatch'],
+        scoringGuide: 'Enter total valid repetitions completed in 60 seconds (1 Minute). Boys: standard plank push-ups; Girls: modified knee push-ups.',
+        protocol: '60-second timed push-up test. Boys: standard plank push-ups; Girls: modified knee push-ups.'
+      },
+      { 
+        id: 'curl_ups', 
+        name: 'Sit-Ups / Partial Curl-Ups', 
+        unit: 'count', 
+        description: 'Abdominal core endurance & stamina for Senior Secondary (Class 11-12).',
+        duration: '30 Seconds (or 60s Cadence)',
+        equipment: ['Mat', 'Measuring Tape', 'Stopwatch'],
+        scoringGuide: 'Enter total valid curl-ups completed. (Official Khelo India: 30s; 60s cadence supported).',
+        protocol: 'Controlled partial curl-ups sliding fingers 10cm forward on mat. Record repetitions in 30 seconds (or 60s cadence).'
+      },
+      { 
+        id: 'sit_reach', 
+        name: 'Sit & Reach', 
+        unit: 'cm', 
+        description: 'Spinal & hamstring elasticity.',
+        duration: '2 Attempts',
+        equipment: ['Flexibility Box'],
+        scoringGuide: 'Record best reach in cm.',
+        protocol: 'Hamstring & lower lumbar flexibility check.'
       },
       { 
         id: 'sprint_50m', 
@@ -510,6 +540,16 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         protocol: 'Maximum effort 25m sprint from standing start.'
       },
       { 
+        id: 'run_600m', 
+        name: '600m Run / Walk', 
+        unit: 'min:sec', 
+        description: 'Aerobic endurance capacity for campus tracks.',
+        duration: 'Timed Endurance Run',
+        equipment: ['Stopwatch', '400m Track'],
+        scoringGuide: 'Record time in MM:SS format (e.g. 2:15).',
+        protocol: 'Paced 600m continuous run/walk.'
+      },
+      { 
         id: 'run_long', 
         name: '1000m (Boys) / 800m (Girls)', 
         unit: 'min:sec', 
@@ -530,44 +570,14 @@ export const KIFT_BATTERIES: KIFTBattery[] = [
         protocol: 'Standing horizontal broad jump.'
       },
       { 
-        id: 'sit_reach', 
-        name: 'Sit & Reach', 
-        unit: 'cm', 
-        description: 'Spinal & hamstring elasticity.',
-        duration: '2 Attempts',
-        equipment: ['Flexibility Box'],
-        scoringGuide: 'Record best reach in cm.',
-        protocol: 'Hamstring & lower lumbar flexibility check.'
-      },
-      { 
-        id: 'shuttle_run', 
-        name: 'Shuttle Run (4x10m)', 
+        id: 'shuttle_4x10', 
+        name: '4×10m Shuttle Run', 
         unit: 'seconds', 
         description: 'Multi-directional agility & footwork.',
         duration: 'Timed Shuttle',
         equipment: ['Cones', 'Stopwatch'],
         scoringGuide: 'Record time in seconds.',
         protocol: 'High speed direction change run.'
-      },
-      { 
-        id: 'pushups', 
-        name: 'Push-Ups (Boys / Girls)', 
-        unit: 'count', 
-        description: 'Upper body push strength & endurance.',
-        duration: '60 Seconds (1 Minute)',
-        equipment: ['Exercise Mat', 'Stopwatch'],
-        scoringGuide: 'Enter total valid repetitions completed in 60 seconds (1 Minute).',
-        protocol: '60-second timed push-up test. Boys: standard plank push-ups; Girls: modified knee push-ups.'
-      },
-      { 
-        id: 'curl_ups', 
-        name: 'Partial Curl-Ups', 
-        unit: 'count', 
-        description: 'Abdominal core endurance & stamina.',
-        duration: '30 Seconds (or 60s Cadence)',
-        equipment: ['Mat', 'Measuring Tape', 'Stopwatch'],
-        scoringGuide: 'Enter total valid curl-ups completed. (Official Khelo India: 30s; 60s cadence supported).',
-        protocol: 'Controlled partial curl-ups sliding fingers 10cm forward on mat. Record repetitions in 30 seconds (or 60s cadence).'
       }
     ]
   }
