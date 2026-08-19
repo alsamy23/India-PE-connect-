@@ -35,7 +35,17 @@ import {
   FileSpreadsheet,
   Upload,
   ArrowDown,
-  ArrowUp
+  ArrowUp,
+  LayoutGrid,
+  SlidersHorizontal,
+  Layers,
+  Plus,
+  Minus,
+  Smartphone,
+  Laptop,
+  Filter,
+  FastForward,
+  ArrowRight
 } from 'lucide-react';
 import { evaluateFitnessTests } from '../services/geminiService.ts';
 import { FitnessAssessment, KIFTBattery, KIFTTest, FitnessResult } from '../types.ts';
@@ -54,6 +64,9 @@ const FitnessTests: React.FC = () => {
   const [selectedBattery, setSelectedBattery] = useState<KIFTBattery | null>(null);
 
   const [selectedTest, setSelectedTest] = useState<KIFTTest | null>(null);
+  const [testSelectionFilter, setTestSelectionFilter] = useState<string>('single'); // 'single', 'custom', 'all', or a specific test.id
+  const [customSelectedTestIds, setCustomSelectedTestIds] = useState<string[]>([]);
+  const [viewLayoutMode, setViewLayoutMode] = useState<'cards' | 'table'>('cards');
   const [activeGuideTest, setActiveGuideTest] = useState<KIFTTest | null>(null);
   const [age, setAge] = useState('10');
   const [gender, setGender] = useState('Male');
@@ -76,6 +89,8 @@ const FitnessTests: React.FC = () => {
   const [studentResults, setStudentResults] = useState<FitnessResult[]>([]);
   const [allResults, setAllResults] = useState<FitnessResult[]>([]);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [sequentialMode, setSequentialMode] = useState<boolean>(true);
+  const [activeFocusCoord, setActiveFocusCoord] = useState<{ sIdx: number; tIdx: number } | null>(null);
 
   const formatFitnessError = (err: any): string => {
     try {
@@ -247,12 +262,21 @@ const FitnessTests: React.FC = () => {
     };
   }, [auth.currentUser?.uid]);
 
-  // When grade filter changes, auto-select corresponding battery if not already set
+  // When grade filter changes, auto-select corresponding battery and filter available tests
   useEffect(() => {
     if (selectedGradeFilter && selectedGradeFilter !== 'ALL') {
       const matchingBattery = fitnessService.getBatteryForGrade(selectedGradeFilter);
-      if (matchingBattery && (!selectedBattery || !selectedBattery.grades.includes(selectedGradeFilter))) {
-        setSelectedBattery(matchingBattery);
+      if (matchingBattery) {
+        if (!selectedBattery || !selectedBattery.grades.includes(selectedGradeFilter)) {
+          setSelectedBattery(matchingBattery);
+          const isCurrentTestValid = selectedTest && matchingBattery.tests.some(t => t.id === selectedTest.id);
+          const defaultTest = isCurrentTestValid 
+            ? selectedTest 
+            : (matchingBattery.tests.find(t => t.id === 'pushups') || matchingBattery.tests[0]);
+          setSelectedTest(defaultTest);
+          setTestSelectionFilter(defaultTest.id);
+          setCustomSelectedTestIds([defaultTest.id]);
+        }
       }
     }
   }, [selectedGradeFilter]);
@@ -669,14 +693,91 @@ const FitnessTests: React.FC = () => {
 
   const handleBatteryClick = (battery: KIFTBattery) => {
     setSelectedBattery(battery);
-    setSelectedTest(null);
+    const defaultTest = battery.category === 'Middle School' 
+      ? (battery.tests.find(t => t.id === 'pushups') || battery.tests[0])
+      : battery.tests[0];
+    setSelectedTest(defaultTest);
+    setTestSelectionFilter(defaultTest ? defaultTest.id : 'single');
+    setCustomSelectedTestIds(defaultTest ? [defaultTest.id] : []);
     setResult(null);
+    if (selectedGradeFilter !== 'ALL' && !battery.grades.includes(selectedGradeFilter)) {
+      setSelectedGradeFilter(battery.grades[0]);
+    }
+  };
+
+  const handleGradeFilterChange = (newGrade: string) => {
+    setSelectedGradeFilter(newGrade);
+    if (newGrade && newGrade !== 'ALL') {
+      const matchingBattery = fitnessService.getBatteryForGrade(newGrade);
+      if (matchingBattery) {
+        setSelectedBattery(matchingBattery);
+        const isCurrentTestValid = selectedTest && matchingBattery.tests.some(t => t.id === selectedTest.id);
+        const defaultTest = isCurrentTestValid 
+          ? selectedTest 
+          : (matchingBattery.tests.find(t => t.id === 'pushups') || matchingBattery.tests[0]);
+        setSelectedTest(defaultTest);
+        setTestSelectionFilter(defaultTest.id);
+        setCustomSelectedTestIds([defaultTest.id]);
+      }
+    }
   };
 
   const handleTestClick = (test: KIFTTest) => {
     setSelectedTest(test);
+    setTestSelectionFilter(test.id);
+    if (!customSelectedTestIds.includes(test.id)) {
+      setCustomSelectedTestIds(prev => [...prev, test.id]);
+    }
     setResult(null);
     setTestValue('');
+  };
+
+  /**
+   * Returns the list of tests to display and record in the active view:
+   * - 1 focused test (default for lightning-fast mobile entry)
+   * - 2 or 3 custom selected tests
+   * - Full 8-test battery spreadsheet
+   */
+  const getActiveTests = (): KIFTTest[] => {
+    if (!selectedBattery) {
+      return selectedTest ? [selectedTest] : [];
+    }
+    if (testSelectionFilter === 'all') {
+      return selectedBattery.tests;
+    }
+    if (testSelectionFilter === 'custom') {
+      const filtered = selectedBattery.tests.filter(t => customSelectedTestIds.includes(t.id));
+      return filtered.length > 0 ? filtered : (selectedTest ? [selectedTest] : [selectedBattery.tests[0]]);
+    }
+    if (testSelectionFilter && testSelectionFilter !== 'single') {
+      const matched = selectedBattery.tests.find(t => t.id === testSelectionFilter);
+      if (matched) return [matched];
+    }
+    return selectedTest ? [selectedTest] : [selectedBattery.tests[0]];
+  };
+
+  /**
+   * Helper to increment/decrement repetition or numeric scores directly with quick touch steppers
+   */
+  const handleQuickAdjustScore = (studentId: string, testItem: KIFTTest, delta: number) => {
+    const currentActive = getActiveTests();
+    const cellKey = `${studentId}_${testItem.id}`;
+    const currentValStr = batchScores[cellKey] ?? (currentActive.length === 1 ? batchScores[studentId] : '') ?? '';
+    let currentNum = parseFloat(currentValStr);
+    if (isNaN(currentNum)) currentNum = 0;
+    const nextNum = Math.max(0, currentNum + delta);
+    const nextValStr = nextNum.toString();
+    
+    setBatchScores(prev => ({
+      ...prev,
+      [cellKey]: nextValStr,
+      ...(currentActive.length === 1 ? { [studentId]: nextValStr } : {})
+    }));
+    setBatchSavedStatus(prev => ({
+      ...prev,
+      [cellKey]: false,
+      ...(currentActive.length === 1 ? { [studentId]: false } : {})
+    }));
   };
 
   const handleStudentChange = (id: string) => {
@@ -685,11 +786,19 @@ const FitnessTests: React.FC = () => {
     if (student) {
       setAge(student.age.toString());
       setGender(student.gender);
+      setSelectedGradeFilter(student.grade);
       
-      // Automatically select the correct battery for the student's grade
+      // Automatically select the correct battery for the student's grade (Middle School for classes 6, 7, 8)
       const battery = fitnessService.getBatteryForGrade(student.grade);
       if (battery) {
         setSelectedBattery(battery);
+        const isCurrentTestValid = selectedTest && battery.tests.some(t => t.id === selectedTest.id);
+        const defaultTest = isCurrentTestValid 
+          ? selectedTest 
+          : (battery.tests.find(t => t.id === 'pushups') || battery.tests[0]);
+        setSelectedTest(defaultTest);
+        setTestSelectionFilter(defaultTest.id);
+        setCustomSelectedTestIds([defaultTest.id]);
       }
     }
   };
@@ -826,13 +935,39 @@ const FitnessTests: React.FC = () => {
     }
   };
 
+  const handleSaveAndNextStudent = async () => {
+    if (!testValue) return;
+    if (!result) {
+      setLoading(true);
+      try {
+        await handleSaveDirectly();
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      handleSave();
+    }
+
+    // Advance to next student in filtered list
+    const currentIdx = filteredStudentsForSelect.findIndex(s => s.id === selectedStudentId);
+    if (currentIdx !== -1 && currentIdx + 1 < filteredStudentsForSelect.length) {
+      const nextStudent = filteredStudentsForSelect[currentIdx + 1];
+      handleStudentChange(nextStudent.id);
+      setTestValue('');
+      setResult(null);
+      toast.success(`Advanced to next student: ${nextStudent.name}`);
+    } else {
+      toast.success("Saved! Reached end of student list.");
+    }
+  };
+
   const handleBatchSave = async () => {
     if (!auth.currentUser) {
       setError("Please log in before saving class scores.");
       return;
     }
 
-    const currentTests = selectedBattery ? selectedBattery.tests : (selectedTest ? [selectedTest] : []);
+    const currentTests = getActiveTests();
     if (currentTests.length === 0) {
       setError("Please select a fitness test or battery first.");
       return;
@@ -887,7 +1022,7 @@ const FitnessTests: React.FC = () => {
       }
 
       if (savedCount === 0) {
-        setError("Please enter scores in the grid before clicking save.");
+        setError("Please enter scores in the field boxes before clicking save.");
         return;
       }
 
@@ -904,7 +1039,7 @@ const FitnessTests: React.FC = () => {
 
   const handleSingleRowSave = async (student: Student, testItem?: KIFTTest) => {
     if (!auth.currentUser) return;
-    const currentTests = testItem ? [testItem] : (selectedBattery ? selectedBattery.tests : (selectedTest ? [selectedTest] : []));
+    const currentTests = testItem ? [testItem] : getActiveTests();
     if (currentTests.length === 0) return;
 
     try {
@@ -965,7 +1100,7 @@ const FitnessTests: React.FC = () => {
       toast.error("No students in current filter to export.");
       return;
     }
-    const currentTests = selectedBattery ? selectedBattery.tests : (selectedTest ? [selectedTest] : []);
+    const currentTests = getActiveTests();
     const headers = ['Roll Number', 'Student Name', 'Grade', 'Section', 'Gender', ...currentTests.map(t => `${t.name} (${t.unit})`)];
     
     const rows = filteredStudentsForSelect.map(s => [
@@ -1004,7 +1139,7 @@ const FitnessTests: React.FC = () => {
           return;
         }
 
-        const currentTests = selectedBattery ? selectedBattery.tests : (selectedTest ? [selectedTest] : []);
+        const currentTests = getActiveTests();
         let importedCount = 0;
 
         for (let i = 1; i < lines.length; i++) {
@@ -1051,6 +1186,56 @@ const FitnessTests: React.FC = () => {
     e.target.value = '';
   };
 
+  /**
+   * Sequential Data Entry Navigation: Auto-focuses next or previous student input field
+   * and smoothly scrolls the card/row into center view.
+   */
+  const focusNextStudent = (
+    studentIdx: number,
+    testIdx: number,
+    totalStudents: number,
+    totalTests: number,
+    direction: 'next' | 'prev' = 'next'
+  ) => {
+    let nextStudentIdx = studentIdx;
+    let nextTestIdx = testIdx;
+
+    if (direction === 'next') {
+      if (studentIdx + 1 < totalStudents) {
+        nextStudentIdx = studentIdx + 1;
+      } else if (testIdx + 1 < totalTests) {
+        // Reached bottom of current test column in multi-test mode
+        nextStudentIdx = 0;
+        nextTestIdx = testIdx + 1;
+        toast.success("Completed column! Auto-advancing to top of next test.");
+      } else {
+        toast.success("🎉 Reached end of student list! All scores ready.");
+        return;
+      }
+    } else {
+      if (studentIdx > 0) {
+        nextStudentIdx = studentIdx - 1;
+      } else if (testIdx > 0) {
+        nextStudentIdx = totalStudents - 1;
+        nextTestIdx = testIdx - 1;
+      } else {
+        return;
+      }
+    }
+
+    setActiveFocusCoord({ sIdx: nextStudentIdx, tIdx: nextTestIdx });
+
+    const inputId = `grid-input-${nextStudentIdx}-${nextTestIdx}`;
+    const targetEl = document.getElementById(inputId) as HTMLInputElement;
+    if (targetEl) {
+      targetEl.focus();
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        targetEl.select?.();
+      }, 40);
+    }
+  };
+
   const handleGridKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     studentIdx: number,
@@ -1060,21 +1245,17 @@ const FitnessTests: React.FC = () => {
   ) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const nextStudentIdx = e.shiftKey 
-        ? Math.max(0, studentIdx - 1) 
-        : Math.min(totalStudents - 1, studentIdx + 1);
-      const targetEl = document.getElementById(`grid-input-${nextStudentIdx}-${testIdx}`);
-      targetEl?.focus();
+      if (e.shiftKey) {
+        focusNextStudent(studentIdx, testIdx, totalStudents, totalTests, 'prev');
+      } else {
+        focusNextStudent(studentIdx, testIdx, totalStudents, totalTests, 'next');
+      }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      const nextStudentIdx = Math.min(totalStudents - 1, studentIdx + 1);
-      const targetEl = document.getElementById(`grid-input-${nextStudentIdx}-${testIdx}`);
-      targetEl?.focus();
+      focusNextStudent(studentIdx, testIdx, totalStudents, totalTests, 'next');
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      const prevStudentIdx = Math.max(0, studentIdx - 1);
-      const targetEl = document.getElementById(`grid-input-${prevStudentIdx}-${testIdx}`);
-      targetEl?.focus();
+      focusNextStudent(studentIdx, testIdx, totalStudents, totalTests, 'prev');
     }
   };
 
@@ -1104,7 +1285,7 @@ const FitnessTests: React.FC = () => {
   });
 
   // Count unsaved batch scores across all visible students and tests
-  const currentTestsForCount = selectedBattery ? selectedBattery.tests : (selectedTest ? [selectedTest] : []);
+  const currentTestsForCount = getActiveTests();
   const unsavedBatchCount = filteredStudentsForSelect.reduce((count, s) => {
     let studentUnsaved = false;
     currentTestsForCount.forEach(t => {
@@ -1182,8 +1363,92 @@ const FitnessTests: React.FC = () => {
           </div>
 
           {!selectedBattery ? (
-        /* Batteries Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-6">
+          {/* Quick Grade Filter Bar */}
+          <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                  <Filter size={16} className="text-indigo-600" />
+                  <span>Jump Directly by Class / Grade</span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">Select your grade to automatically filter tests and load the corresponding CBSE KIFT battery.</p>
+              </div>
+              <span className="text-[10px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full uppercase tracking-wider">
+                Middle School (Gr 6-8): Includes Modified Push-Ups
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 pt-1">
+              <button
+                onClick={() => handleGradeFilterChange('1')}
+                className="p-3 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl text-left transition-all group cursor-pointer"
+              >
+                <div className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 1–3</div>
+                <div className="text-xs font-black text-slate-800 group-hover:text-indigo-900">Primary Battery</div>
+              </button>
+
+              <button
+                onClick={() => handleGradeFilterChange('4')}
+                className="p-3 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl text-left transition-all group cursor-pointer"
+              >
+                <div className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 4–5</div>
+                <div className="text-xs font-black text-slate-800 group-hover:text-indigo-900">Upper Primary</div>
+              </button>
+
+              <button
+                onClick={() => handleGradeFilterChange('6')}
+                className="p-3 bg-indigo-50/80 hover:bg-indigo-100 border-2 border-indigo-300 rounded-xl text-left transition-all group cursor-pointer shadow-sm"
+              >
+                <div className="text-[10px] font-black text-indigo-700 uppercase tracking-widest flex items-center gap-1">
+                  <span>Classes 6–8</span>
+                  <span className="bg-indigo-600 text-white text-[8px] px-1 rounded">POPULAR</span>
+                </div>
+                <div className="text-xs font-black text-indigo-950">Middle School (Push-Ups)</div>
+              </button>
+
+              <button
+                onClick={() => handleGradeFilterChange('9')}
+                className="p-3 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl text-left transition-all group cursor-pointer"
+              >
+                <div className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 9–10</div>
+                <div className="text-xs font-black text-slate-800 group-hover:text-indigo-900">Secondary Battery</div>
+              </button>
+
+              <button
+                onClick={() => handleGradeFilterChange('11')}
+                className="p-3 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl text-left transition-all group cursor-pointer"
+              >
+                <div className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 11–12</div>
+                <div className="text-xs font-black text-slate-800 group-hover:text-indigo-900">Senior Secondary</div>
+              </button>
+            </div>
+
+            {/* Quick numeric buttons */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Quick Grade:</span>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(gr => {
+                const isMiddle = gr >= 6 && gr <= 8;
+                return (
+                  <button
+                    key={gr}
+                    onClick={() => handleGradeFilterChange(gr.toString())}
+                    className={`px-3 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                      isMiddle 
+                        ? 'bg-indigo-100 text-indigo-900 hover:bg-indigo-200 border border-indigo-300' 
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                    title={isMiddle ? `Class ${gr} (Middle School - Modified Push-Ups)` : `Class ${gr}`}
+                  >
+                    Class {gr}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Batteries Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {KIFT_BATTERIES.map((battery) => (
             <button
               key={battery.category}
@@ -1202,6 +1467,7 @@ const FitnessTests: React.FC = () => {
               </div>
             </button>
           ))}
+          </div>
         </div>
       ) : (
         /* Battery View */
@@ -1331,19 +1597,45 @@ const FitnessTests: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Top Class Filter Toolbar */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  {/* Top Class & Test Filter Toolbar */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <div>
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">1. Class / Grade</label>
                       <select 
                         className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800"
                         value={selectedGradeFilter}
-                        onChange={e => setSelectedGradeFilter(e.target.value)}
+                        onChange={e => handleGradeFilterChange(e.target.value)}
                       >
-                        <option value="ALL">All Grades ({uniqueGrades.length})</option>
-                        {uniqueGrades.map(g => (
-                          <option key={g} value={g}>Grade {g}</option>
-                        ))}
+                        <option value="ALL">All Grades ({uniqueGrades.length > 0 ? uniqueGrades.join(', ') : 'All'})</option>
+                        <optgroup label="Middle School (Classes 6, 7, 8) — Modified Push-Ups">
+                          <option value="6">Class 6 (Middle School)</option>
+                          <option value="7">Class 7 (Middle School)</option>
+                          <option value="8">Class 8 (Middle School)</option>
+                        </optgroup>
+                        <optgroup label="Primary (Classes 1, 2, 3)">
+                          <option value="1">Class 1 (Primary)</option>
+                          <option value="2">Class 2 (Primary)</option>
+                          <option value="3">Class 3 (Primary)</option>
+                        </optgroup>
+                        <optgroup label="Upper Primary (Classes 4, 5)">
+                          <option value="4">Class 4 (Upper Primary)</option>
+                          <option value="5">Class 5 (Upper Primary)</option>
+                        </optgroup>
+                        <optgroup label="Secondary (Classes 9, 10)">
+                          <option value="9">Class 9 (Secondary)</option>
+                          <option value="10">Class 10 (Secondary)</option>
+                        </optgroup>
+                        <optgroup label="Senior Secondary (Classes 11, 12)">
+                          <option value="11">Class 11 (Senior Sec)</option>
+                          <option value="12">Class 12 (Senior Sec)</option>
+                        </optgroup>
+                        {uniqueGrades.filter(g => !['1','2','3','4','5','6','7','8','9','10','11','12'].includes(g)).length > 0 && (
+                          <optgroup label="Other School Classes">
+                            {uniqueGrades.filter(g => !['1','2','3','4','5','6','7','8','9','10','11','12'].includes(g)).map(g => (
+                              <option key={g} value={g}>Class {g}</option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                     </div>
 
@@ -1361,12 +1653,58 @@ const FitnessTests: React.FC = () => {
                       </select>
                     </div>
 
+                    {/* Test Selection Dropdown (Filtered automatically by grade/battery) */}
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">3. Roll # / Name Search</label>
+                      <label className="text-[10px] font-black text-indigo-700 uppercase tracking-widest mb-1 flex items-center gap-1">
+                        <SlidersHorizontal size={11} className="text-indigo-600" />
+                        <span>3. Today's Test(s)</span>
+                      </label>
+                      <select 
+                        className="w-full p-2.5 bg-indigo-50/70 border-2 border-indigo-200 rounded-xl font-black text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-indigo-950"
+                        value={testSelectionFilter}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setTestSelectionFilter(val);
+                          if (val !== 'all' && val !== 'custom' && selectedBattery) {
+                            const found = selectedBattery.tests.find(t => t.id === val);
+                            if (found) setSelectedTest(found);
+                          }
+                        }}
+                      >
+                        <optgroup label={`${selectedBattery?.category || 'Active'} Tests (${selectedBattery?.tests.length || 0} Standard Tests)`}>
+                          {selectedBattery?.tests.map(t => (
+                            <option key={t.id} value={t.id}>
+                              {t.id === 'pushups' ? '⭐ 🎯 ' : '🎯 '}{t.name} {t.duration ? `(${t.duration})` : `(${t.unit})`}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Multi-Test Field Options">
+                          <option value="custom">✨ Custom Selection (Pick 2 or 3 Tests)</option>
+                          <option value="all">📊 All Battery Tests ({selectedBattery?.tests.length || 8} Tests Full Sheet)</option>
+                        </optgroup>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">4. Term / Phase</label>
+                      <select 
+                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800"
+                        value={selectedTerm}
+                        onChange={e => setSelectedTerm(e.target.value)}
+                      >
+                        <option value="Baseline">Baseline</option>
+                        <option value="Term 1">Term 1</option>
+                        <option value="Term 2">Term 2</option>
+                        <option value="Final">Final Report</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">5. Student Search</label>
                       <div className="relative">
                         <input 
                           type="text"
-                          placeholder="Search student..."
+                          placeholder="Search roll / name..."
                           className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800"
                           value={studentSearchQuery}
                           onChange={e => setStudentSearchQuery(e.target.value)}
@@ -1379,53 +1717,216 @@ const FitnessTests: React.FC = () => {
                         )}
                       </div>
                     </div>
-
-                    <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">4. Term</label>
-                      <select 
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800"
-                        value={selectedTerm}
-                        onChange={e => setSelectedTerm(e.target.value)}
-                      >
-                        <option value="Baseline">Baseline</option>
-                        <option value="Term 1">Term 1</option>
-                        <option value="Term 2">Term 2</option>
-                        <option value="Final">Final Report</option>
-                      </select>
-                    </div>
                   </div>
 
+                  {/* Interactive Quick-Test Switcher Pills Carousel */}
+                  {selectedBattery && (
+                    <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <Activity size={12} className="text-indigo-600" />
+                          <span>Quick 1-Tap Test Switcher for {selectedBattery.category}:</span>
+                        </span>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setTestSelectionFilter('custom')}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                              testSelectionFilter === 'custom'
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                          >
+                            <span>Pick 2-3</span>
+                          </button>
+                          <button
+                            onClick={() => setTestSelectionFilter('all')}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                              testSelectionFilter === 'all'
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                          >
+                            <span>All Tests</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        {selectedBattery.tests.map(test => {
+                          const isSingleActive = (testSelectionFilter === test.id) || (testSelectionFilter === 'single' && selectedTest?.id === test.id);
+                          const isCustomActive = testSelectionFilter === 'custom' && customSelectedTestIds.includes(test.id);
+                          const isAllActive = testSelectionFilter === 'all';
+                          const isSelected = isSingleActive || isCustomActive || isAllActive;
+
+                          return (
+                            <button
+                              key={test.id}
+                              onClick={() => {
+                                if (testSelectionFilter === 'custom') {
+                                  if (customSelectedTestIds.includes(test.id)) {
+                                    if (customSelectedTestIds.length > 1) {
+                                      setCustomSelectedTestIds(prev => prev.filter(id => id !== test.id));
+                                    } else {
+                                      toast.error("Please keep at least 1 test selected.");
+                                    }
+                                  } else {
+                                    setCustomSelectedTestIds(prev => [...prev, test.id]);
+                                  }
+                                } else {
+                                  setTestSelectionFilter(test.id);
+                                  setSelectedTest(test);
+                                }
+                              }}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                                isSelected
+                                  ? 'bg-[#0D2B52] text-white shadow-sm ring-2 ring-[#D4A017]'
+                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60'
+                              }`}
+                            >
+                              {testSelectionFilter === 'custom' && (
+                                <span className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[10px] ${
+                                  isCustomActive ? 'bg-[#D4A017] text-slate-900 font-black' : 'bg-slate-300 text-transparent'
+                                }`}>
+                                  ✓
+                                </span>
+                              )}
+                              <span>{test.name}</span>
+                              {test.duration && (
+                                <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
+                                  isSelected ? 'bg-white/20 text-[#D4A017]' : 'bg-slate-200 text-slate-600'
+                                }`}>
+                                  {test.duration.includes('60') ? '60s' : test.duration.includes('30') ? '30s' : test.duration}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Middle School Battery & Test Filter Banner */}
+                  {(selectedBattery?.category === 'Middle School' || ['6', '7', '8'].includes(selectedGradeFilter)) && (
+                    <div className="bg-indigo-50/90 border-2 border-indigo-200/80 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-2.5 text-xs text-indigo-950">
+                        <span className="px-2 py-0.5 bg-indigo-600 text-white rounded-md text-[10px] font-black uppercase tracking-wider shrink-0">
+                          Middle School Filter (Grades 6, 7, 8)
+                        </span>
+                        <span className="font-semibold">
+                          CBSE Khelo India Middle School tests active. Features <strong>Modified Push-Ups</strong> for girls (knee-supported) and standard plank push-ups for boys (60s).
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const pushTest = selectedBattery?.tests.find(t => t.id === 'pushups');
+                          if (pushTest) {
+                            setSelectedTest(pushTest);
+                            setTestSelectionFilter('pushups');
+                          }
+                        }}
+                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                      >
+                        <span>Focus Modified Push-Ups</span>
+                      </button>
+                    </div>
+                  )}
+
                   {entryMode === 'batch' ? (
-                    /* SPREADSHEET-STYLE BULK FITNESS DATA GRID MODE */
-                    <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200 space-y-5">
+                    /* SPREADSHEET OR MOBILE CARDS FITNESS DATA ENTRY */
+                    <div className="bg-white p-5 sm:p-6 rounded-[2.5rem] shadow-sm border border-slate-200 space-y-5">
                       {/* Grid Header & Quick Action Bar */}
                       <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
                         <div>
                           <div className="flex items-center gap-2">
-                            <Table size={18} className="text-[#0D2B52]" />
+                            <Activity size={18} className="text-[#0D2B52]" />
                             <h3 className="text-base font-black text-[#0D2B52] uppercase tracking-tight">
-                              Class Fitness Data Grid ({filteredStudentsForSelect.length})
+                              Class Fitness Testing ({filteredStudentsForSelect.length} Students)
                             </h3>
                           </div>
-                          <p className="text-xs text-slate-500 font-medium mt-0.5">
-                            Battery: <strong className="text-indigo-600 uppercase">{selectedBattery?.category || selectedTest?.name}</strong> &bull; Phase: <strong>{selectedTerm}</strong> &bull; <span className="text-slate-400">Use Enter / Arrow keys to navigate rows</span>
-                          </p>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 font-medium mt-0.5">
+                            <span>Showing:</span>
+                            <span className="bg-indigo-50 text-indigo-800 font-extrabold px-2 py-0.5 rounded-md text-[11px]">
+                              {getActiveTests().length === 1 
+                                ? `🎯 ${getActiveTests()[0].name}` 
+                                : `⚡ ${getActiveTests().length} Active Tests`}
+                            </span>
+                            <span>&bull; Phase: <strong>{selectedTerm}</strong></span>
+                          </div>
                         </div>
 
-                        {/* CSV Import/Export & Batch Save Actions */}
+                        {/* View Mode Switcher + Actions */}
                         <div className="flex flex-wrap items-center gap-2">
+                          {/* Sequential Data Entry Mode Switch */}
                           <button
-                            onClick={handleExportCsvTemplate}
-                            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
-                            title="Export Class Fitness Spreadsheet as CSV"
+                            type="button"
+                            onClick={() => {
+                              setSequentialMode(prev => {
+                                const nextVal = !prev;
+                                if (nextVal) {
+                                  toast.success("Sequential Entry Mode Enabled: Auto-advances to next student upon pressing Enter or Next!");
+                                } else {
+                                  toast.success("Sequential Entry Mode Disabled");
+                                }
+                                return nextVal;
+                              });
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all border cursor-pointer ${
+                              sequentialMode
+                                ? 'bg-amber-400 hover:bg-amber-500 text-slate-950 border-amber-500 shadow-sm'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                            }`}
+                            title="Sequential Data Entry: Automatically jumps focus to next student's test score on Enter/Next"
                           >
-                            <FileSpreadsheet size={14} className="text-emerald-600" />
-                            <span>Export CSV</span>
+                            <Zap size={13} className={sequentialMode ? 'fill-slate-950 text-slate-950 animate-pulse' : 'text-slate-500'} />
+                            <span className="hidden sm:inline">Sequential Mode</span>
+                            <span className={`px-1.5 py-0.2 text-[9px] rounded font-black ${sequentialMode ? 'bg-slate-950 text-amber-400' : 'bg-slate-200 text-slate-700'}`}>
+                              {sequentialMode ? 'ON' : 'OFF'}
+                            </span>
                           </button>
 
-                          <label className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer">
-                            <Upload size={14} className="text-indigo-600" />
-                            <span>Import CSV</span>
+                          {/* Layout Mode Toggle (Cards vs Table) */}
+                          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                            <button
+                              onClick={() => setViewLayoutMode('cards')}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer ${
+                                viewLayoutMode === 'cards'
+                                  ? 'bg-white text-indigo-700 shadow-sm'
+                                  : 'text-slate-500 hover:text-slate-800'
+                              }`}
+                              title="Mobile-Friendly Touch Cards with Steppers"
+                            >
+                              <Smartphone size={13} />
+                              <span className="hidden sm:inline">Field Cards</span>
+                              <span className="sm:hidden">Cards</span>
+                            </button>
+                            <button
+                              onClick={() => setViewLayoutMode('table')}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer ${
+                                viewLayoutMode === 'table'
+                                  ? 'bg-white text-indigo-700 shadow-sm'
+                                  : 'text-slate-500 hover:text-slate-800'
+                              }`}
+                              title="Compact Spreadsheet Table Grid"
+                            >
+                              <Table size={13} />
+                              <span className="hidden sm:inline">Table Grid</span>
+                              <span className="sm:hidden">Table</span>
+                            </button>
+                          </div>
+
+                          <button
+                            onClick={handleExportCsvTemplate}
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
+                            title="Export Class Fitness Spreadsheet as CSV"
+                          >
+                            <FileSpreadsheet size={13} className="text-emerald-600" />
+                            <span className="hidden md:inline">Export CSV</span>
+                          </button>
+
+                          <label className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer">
+                            <Upload size={13} className="text-indigo-600" />
+                            <span className="hidden md:inline">Import CSV</span>
                             <input 
                               type="file" 
                               accept=".csv" 
@@ -1437,32 +1938,220 @@ const FitnessTests: React.FC = () => {
                           <button
                             onClick={handleBatchSave}
                             disabled={batchSaving || filteredStudentsForSelect.length === 0}
-                            className="px-5 py-2.5 bg-[#0D2B52] hover:bg-[#164077] text-white border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer"
+                            className="px-4 py-2 bg-[#0D2B52] hover:bg-[#164077] text-white border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer"
                           >
                             {batchSaving ? (
-                              <Loader2 size={16} className="animate-spin text-[#D4A017]" />
+                              <Loader2 size={15} className="animate-spin text-[#D4A017]" />
                             ) : isSaved ? (
-                              <CheckCircle2 size={16} className="text-emerald-400" />
+                              <CheckCircle2 size={15} className="text-emerald-400" />
                             ) : (
-                              <Save size={16} className="text-[#D4A017]" />
+                              <Save size={15} className="text-[#D4A017]" />
                             )}
-                            <span>{batchSaving ? 'Saving Grid...' : isSaved ? 'Grid Saved!' : `Save All Class Scores (${unsavedBatchCount})`}</span>
+                            <span>{batchSaving ? 'Saving...' : isSaved ? 'Saved!' : `Save All (${unsavedBatchCount})`}</span>
                           </button>
                         </div>
                       </div>
 
-                      {/* Spreadsheet Data Grid */}
+                      {/* Content Area: Field Cards or Table Grid */}
                       {filteredStudentsForSelect.length === 0 ? (
                         <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400">
                           <Users size={32} className="mx-auto mb-2 text-slate-300" />
                           <p className="font-bold text-xs uppercase">No students found matching this class / search filter.</p>
                           <p className="text-[10px] text-slate-400 mt-1">Try changing the Class or Section filter above, or add students in the Student Management tab.</p>
                         </div>
+                      ) : viewLayoutMode === 'cards' ? (
+                        /* MOBILE-FIRST FIELD CARDS MODE */
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+                            {filteredStudentsForSelect.map((student, sIdx) => {
+                              const activeTests = getActiveTests();
+                              const isCardActive = activeFocusCoord?.sIdx === sIdx;
+                              // Check if all active tests are saved for this student
+                              const allSaved = activeTests.every(t => {
+                                const cellKey = `${student.id}_${t.id}`;
+                                return batchSavedStatus[cellKey] || (activeTests.length === 1 ? batchSavedStatus[student.id] : false);
+                              });
+                              const hasAnyScore = activeTests.some(t => {
+                                const cellKey = `${student.id}_${t.id}`;
+                                return (batchScores[cellKey] || (activeTests.length === 1 ? batchScores[student.id] : '') || '').trim() !== '';
+                              });
+
+                              return (
+                                <div 
+                                  key={student.id}
+                                  className={`p-4 rounded-2xl border-2 transition-all relative ${
+                                    isCardActive
+                                      ? 'ring-2 ring-indigo-500 border-indigo-500 shadow-md bg-indigo-50/30'
+                                      : allSaved && hasAnyScore
+                                        ? 'bg-emerald-50/40 border-emerald-300/80 shadow-sm'
+                                        : hasAnyScore
+                                          ? 'bg-amber-50/30 border-amber-300 shadow-sm'
+                                          : 'bg-slate-50/60 border-slate-200 hover:border-indigo-200'
+                                  }`}
+                                >
+                                  {/* Student Header */}
+                                  <div className="flex items-start justify-between gap-2 mb-3 pb-2 border-b border-slate-200/80">
+                                    <div className="flex items-center gap-2.5">
+                                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shadow-sm ${
+                                        isCardActive ? 'bg-indigo-600 text-white animate-pulse' : 'bg-[#0D2B52] text-[#D4A017]'
+                                      }`}>
+                                        #{student.rollNumber || (sIdx + 1)}
+                                      </span>
+                                      <div>
+                                        <div className="flex items-center gap-1.5">
+                                          <h4 className="font-extrabold text-sm text-slate-900 leading-tight truncate max-w-[150px]" title={student.name}>
+                                            {student.name}
+                                          </h4>
+                                          {isCardActive && (
+                                            <span className="px-1.5 py-0.2 bg-indigo-600 text-white text-[9px] font-black rounded uppercase tracking-wider">
+                                              Active
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-[10.5px] text-slate-500 font-medium">
+                                          Gr {student.grade}-{student.section} &bull; {student.gender}, {student.age} yrs
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-1">
+                                      {allSaved && hasAnyScore ? (
+                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-black text-[10px] flex items-center gap-1">
+                                          <Check size={11} /> Saved
+                                        </span>
+                                      ) : hasAnyScore ? (
+                                        <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-bold text-[10px]">
+                                          Unsaved
+                                        </span>
+                                      ) : null}
+
+                                      <button
+                                        onClick={() => handleSingleRowSave(student)}
+                                        className="p-1.5 bg-white hover:bg-[#0D2B52] hover:text-white text-slate-700 rounded-lg border border-slate-200 text-xs transition-colors cursor-pointer"
+                                        title="Save this student's scores"
+                                      >
+                                        <Save size={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Test Inputs */}
+                                  <div className="space-y-3">
+                                    {activeTests.map((test, tIdx) => {
+                                      const cellKey = `${student.id}_${test.id}`;
+                                      const currentVal = batchScores[cellKey] ?? (activeTests.length === 1 ? batchScores[student.id] : '') ?? '';
+                                      const isSavedCell = batchSavedStatus[cellKey] ?? (activeTests.length === 1 ? batchSavedStatus[student.id] : false);
+                                      const fieldInfo = getDescriptiveFieldInfo(test);
+                                      const isRepetitionTest = test.unit.toLowerCase().includes('count') || test.unit.toLowerCase().includes('reps') || test.name.toLowerCase().includes('push') || test.name.toLowerCase().includes('sit-up') || test.name.toLowerCase().includes('curl');
+
+                                      return (
+                                        <div key={test.id} className="bg-white p-3 rounded-xl border border-slate-200 space-y-2 shadow-xs">
+                                          <div className="flex items-center justify-between gap-1 text-xs">
+                                            <span className="font-extrabold text-slate-800 truncate" title={test.name}>
+                                              {test.name}
+                                            </span>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                              {test.duration && (
+                                                <span className="text-[9.5px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                                                  ⏱️ {test.duration}
+                                                </span>
+                                              )}
+                                              <TestFieldTooltip test={test} onOpenModal={setActiveGuideTest} compact />
+                                            </div>
+                                          </div>
+
+                                          <div className="flex items-center gap-1.5">
+                                            <div className="relative flex-1">
+                                              <input
+                                                id={`grid-input-${sIdx}-${tIdx}`}
+                                                type="text"
+                                                inputMode="decimal"
+                                                placeholder={fieldInfo.placeholder}
+                                                onFocus={() => setActiveFocusCoord({ sIdx, tIdx })}
+                                                onKeyDown={e => handleGridKeyDown(e, sIdx, tIdx, filteredStudentsForSelect.length, activeTests.length)}
+                                                className={`w-full p-2.5 font-black text-sm rounded-xl border-2 outline-none transition-all ${
+                                                  isSavedCell 
+                                                    ? 'bg-emerald-50/80 border-emerald-400 text-emerald-950 focus:ring-2 focus:ring-emerald-500' 
+                                                    : currentVal 
+                                                      ? 'bg-amber-50/80 border-amber-400 text-amber-950 focus:ring-2 focus:ring-amber-500' 
+                                                      : 'bg-white border-slate-200 text-slate-900 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100'
+                                                }`}
+                                                value={currentVal}
+                                                onChange={e => {
+                                                  const val = e.target.value;
+                                                  setBatchScores(prev => ({
+                                                    ...prev,
+                                                    [cellKey]: val,
+                                                    ...(activeTests.length === 1 ? { [student.id]: val } : {})
+                                                  }));
+                                                  setBatchSavedStatus(prev => ({
+                                                    ...prev,
+                                                    [cellKey]: false,
+                                                    ...(activeTests.length === 1 ? { [student.id]: false } : {})
+                                                  }));
+                                                }}
+                                              />
+                                              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none">
+                                                {test.unit}
+                                              </span>
+                                            </div>
+
+                                            {/* Quick Stepper Buttons for Repetitions / Count */}
+                                            {isRepetitionTest && (
+                                              <div className="flex items-center gap-1">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleQuickAdjustScore(student.id, test, -1)}
+                                                  className="w-8 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm flex items-center justify-center transition-colors cursor-pointer"
+                                                  title="Subtract 1"
+                                                >
+                                                  -1
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleQuickAdjustScore(student.id, test, 1)}
+                                                  className="w-8 h-9 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-sm flex items-center justify-center transition-colors cursor-pointer"
+                                                  title="Add 1"
+                                                >
+                                                  +1
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleQuickAdjustScore(student.id, test, 5)}
+                                                  className="px-2 h-9 rounded-lg bg-[#0D2B52] hover:bg-[#164077] text-white font-black text-xs flex items-center justify-center transition-colors cursor-pointer"
+                                                  title="Add 5"
+                                                >
+                                                  +5
+                                                </button>
+                                              </div>
+                                            )}
+
+                                            {/* Quick 1-Tap Advance Button for Touch/Mobile */}
+                                            <button
+                                              type="button"
+                                              onClick={() => focusNextStudent(sIdx, tIdx, filteredStudentsForSelect.length, activeTests.length, 'next')}
+                                              className="px-2.5 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs flex items-center justify-center gap-0.5 transition-colors shadow-xs cursor-pointer"
+                                              title="Advance to next student (Enter ➔)"
+                                            >
+                                              <span className="hidden sm:inline">Next</span>
+                                              <ArrowDown size={14} />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       ) : (
+                        /* SPREADSHEET TABLE GRID MODE */
                         <div className="space-y-2">
                           <div className="overflow-x-auto border border-slate-200 rounded-2xl max-h-[520px] shadow-inner custom-scrollbar">
                             {(() => {
-                              const currentTests = selectedBattery ? selectedBattery.tests : (selectedTest ? [selectedTest] : []);
+                              const currentTests = getActiveTests();
 
                               return (
                                 <table className="w-full text-left border-collapse bg-white">
@@ -1495,13 +2184,26 @@ const FitnessTests: React.FC = () => {
                                   </thead>
                                   <tbody>
                                     {filteredStudentsForSelect.map((student, sIdx) => {
+                                      const isRowActive = activeFocusCoord?.sIdx === sIdx;
+
                                       return (
-                                        <tr key={student.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors text-xs">
-                                          <td className="p-2 font-black text-slate-900 border-r border-slate-100 text-center bg-slate-50/60">
+                                        <tr key={student.id} className={`border-b border-slate-100 transition-colors text-xs ${
+                                          isRowActive ? 'bg-indigo-50/60 font-medium' : 'hover:bg-slate-50/80'
+                                        }`}>
+                                          <td className={`p-2 font-black text-slate-900 border-r border-slate-100 text-center ${
+                                            isRowActive ? 'bg-indigo-100/70 text-indigo-900' : 'bg-slate-50/60'
+                                          }`}>
                                             {student.rollNumber || (sIdx + 1)}
                                           </td>
                                           <td className="p-2 font-bold text-slate-800 border-r border-slate-100">
-                                            <div className="truncate max-w-[160px]" title={student.name}>{student.name}</div>
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="truncate max-w-[150px]" title={student.name}>{student.name}</span>
+                                              {isRowActive && (
+                                                <span className="px-1.5 py-0.2 bg-indigo-600 text-white text-[8px] font-black rounded uppercase">
+                                                  Active
+                                                </span>
+                                              )}
+                                            </div>
                                             <div className="text-[9px] font-medium text-slate-400">{student.gender} &bull; {student.age} yrs</div>
                                           </td>
                                           <td className="p-2 font-semibold text-slate-600 border-r border-slate-100 text-center text-[10px]">
@@ -1520,8 +2222,11 @@ const FitnessTests: React.FC = () => {
                                                   <input
                                                     id={`grid-input-${sIdx}-${tIdx}`}
                                                     type="text"
+                                                    inputMode="decimal"
                                                     placeholder={fieldInfo.placeholder}
                                                     title={`${test.name}: ${fieldInfo.label} (${fieldInfo.hint})`}
+                                                    onFocus={() => setActiveFocusCoord({ sIdx, tIdx })}
+                                                    onKeyDown={e => handleGridKeyDown(e, sIdx, tIdx, filteredStudentsForSelect.length, currentTests.length)}
                                                     className={`w-full p-2 text-center font-black text-xs rounded-xl border-2 outline-none transition-all ${
                                                       isSavedCell 
                                                         ? 'bg-emerald-50/90 border-emerald-300 text-emerald-900 focus:ring-2 focus:ring-emerald-500' 
@@ -1543,7 +2248,6 @@ const FitnessTests: React.FC = () => {
                                                         ...(currentTests.length === 1 ? { [student.id]: false } : {})
                                                       }));
                                                     }}
-                                                    onKeyDown={e => handleGridKeyDown(e, sIdx, tIdx, filteredStudentsForSelect.length, currentTests.length)}
                                                   />
                                                   {isSavedCell && (
                                                     <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none">
@@ -1574,10 +2278,48 @@ const FitnessTests: React.FC = () => {
                           </div>
 
                           <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold px-2 pt-1">
-                            <span>Tip: Press Enter to move down rows, Tab to move across columns.</span>
+                            <span>Tip: Press Enter to move down rows, Shift+Enter to move up.</span>
                             <span className="text-emerald-600 font-extrabold flex items-center gap-1">
                               <CheckCircle2 size={12} /> Green cells = Saved to DB
                             </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Mobile Floating Quick Sequential Navigation Dock */}
+                      {sequentialMode && filteredStudentsForSelect.length > 0 && activeFocusCoord && (
+                        <div className="sticky bottom-3 z-30 w-full max-w-md mx-auto bg-[#0D2B52] text-white p-3 rounded-2xl shadow-2xl border-2 border-[#D4A017] flex items-center justify-between gap-2 backdrop-blur-md">
+                          <div className="min-w-0 flex-1 pl-1">
+                            <div className="flex items-center gap-1.5 text-[10px] text-[#D4A017] font-black uppercase tracking-wider">
+                              <Zap size={11} className="fill-[#D4A017] animate-pulse" />
+                              <span>Active Student ({activeFocusCoord.sIdx + 1}/{filteredStudentsForSelect.length})</span>
+                            </div>
+                            <div className="font-extrabold text-xs text-white truncate">
+                              #{filteredStudentsForSelect[activeFocusCoord.sIdx]?.rollNumber || (activeFocusCoord.sIdx + 1)} {filteredStudentsForSelect[activeFocusCoord.sIdx]?.name}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => focusNextStudent(activeFocusCoord.sIdx, activeFocusCoord.tIdx, filteredStudentsForSelect.length, getActiveTests().length, 'prev')}
+                              disabled={activeFocusCoord.sIdx === 0 && activeFocusCoord.tIdx === 0}
+                              className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 disabled:opacity-30 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                              title="Previous Student (Shift+Enter / Up)"
+                            >
+                              <ArrowUp size={14} />
+                              <span className="hidden sm:inline">Prev</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => focusNextStudent(activeFocusCoord.sIdx, activeFocusCoord.tIdx, filteredStudentsForSelect.length, getActiveTests().length, 'next')}
+                              className="px-3 py-1.5 bg-[#D4A017] hover:bg-[#b88b14] text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1 shadow-md cursor-pointer"
+                              title="Next Student (Enter / Down)"
+                            >
+                              <span>Next Student</span>
+                              <ArrowDown size={14} />
+                            </button>
                           </div>
                         </div>
                       )}
@@ -1656,6 +2398,30 @@ const FitnessTests: React.FC = () => {
                         </div>
                       </div>
 
+                      {/* Direct Test Selector for Active Student Battery */}
+                      <div className="pt-4 border-t border-slate-100">
+                        <label className="text-[10px] font-black text-indigo-900 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                          <SlidersHorizontal size={12} className="text-indigo-600" />
+                          <span>Assessment Test ({selectedBattery?.category || 'Active Battery'} - {selectedBattery?.tests.length || 0} Tests for Grade {selectedGradeFilter !== 'ALL' ? selectedGradeFilter : ''})</span>
+                        </label>
+                        <select 
+                          className="w-full p-3 bg-indigo-50/70 border-2 border-indigo-200 rounded-xl font-black text-xs text-indigo-950 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
+                          value={selectedTest?.id || ''}
+                          onChange={e => {
+                            const found = selectedBattery?.tests.find(t => t.id === e.target.value);
+                            if (found) {
+                              handleTestClick(found);
+                            }
+                          }}
+                        >
+                          {selectedBattery?.tests.map(t => (
+                            <option key={t.id} value={t.id}>
+                              {t.id === 'pushups' ? '⭐ 🎯 ' : '🎯 '}{t.name} {t.duration ? `(${t.duration})` : `(${t.unit})`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
                       <div className="flex flex-wrap gap-4 pt-4 border-t border-slate-100">
                         <div className="flex-1 min-w-[130px]">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Age</label>
@@ -1702,13 +2468,20 @@ const FitnessTests: React.FC = () => {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex gap-2">
+                              <div className="flex flex-wrap gap-2">
                                 <input 
                                   type="text"
+                                  inputMode="decimal"
                                   placeholder={fieldInfo.placeholder}
                                   title={fieldInfo.hint}
-                                  className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className="flex-1 min-w-[140px] p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                                   value={testValue}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleSaveAndNextStudent();
+                                    }
+                                  }}
                                   onChange={e => {
                                     setTestValue(e.target.value);
                                     setResult(null);
@@ -1717,7 +2490,7 @@ const FitnessTests: React.FC = () => {
                                 <button 
                                   onClick={handleCalculate}
                                   disabled={loading || !testValue}
-                                  className="bg-indigo-600 text-white px-4 rounded-xl font-black text-xs uppercase tracking-wider hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                                  className="bg-indigo-600 text-white px-4 py-3 rounded-xl font-black text-xs uppercase tracking-wider hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                                   title="Analyze Performance"
                                 >
                                   {loading ? <Loader2 className="animate-spin" size={14} /> : <Calculator size={14} />}
@@ -1738,12 +2511,25 @@ const FitnessTests: React.FC = () => {
                                     }
                                   }}
                                   disabled={loading || !testValue}
-                                  className={`px-5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                                  className={`px-4 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
                                     isSaved ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white hover:bg-slate-800'
                                   }`}
+                                  title="Save score for this student"
                                 >
                                   {isSaved ? <CheckCircle2 size={14} /> : <Save size={14} />}
                                   <span>{isSaved ? 'Saved' : 'Save'}</span>
+                                </button>
+
+                                {/* Save & Next Student Sequential Quick Action */}
+                                <button
+                                  type="button"
+                                  onClick={handleSaveAndNextStudent}
+                                  disabled={loading || !testValue}
+                                  className="px-4 py-3 bg-[#D4A017] hover:bg-[#b88b14] text-slate-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                                  title="Save and automatically select the next student (Enter)"
+                                >
+                                  <span>Save & Next</span>
+                                  <FastForward size={14} />
                                 </button>
                               </div>
                               <p className="text-[11px] font-medium text-slate-500 mt-1.5 flex items-center gap-1">
@@ -1866,15 +2652,17 @@ const FitnessTests: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-[#D4A017] animate-pulse"></span>
                         <p className="text-[10px] font-black uppercase tracking-widest text-[#D4A017] truncate">
-                          {selectedTest.name}
+                          {getActiveTests().length === 1 
+                            ? getActiveTests()[0].name 
+                            : `${getActiveTests().length} Active Tests (${getActiveTests().map(t => t.name).join(', ')})`}
                         </p>
                       </div>
                       <p className="text-xs font-extrabold text-white truncate">
                         {entryMode === 'batch' 
                           ? `${unsavedBatchCount} scores pending save` 
                           : testValue 
-                            ? `Value: ${testValue} ${selectedTest.unit}` 
-                            : 'Enter test value below'}
+                            ? `Value: ${testValue} ${selectedTest?.unit || ''}` 
+                            : 'Enter test score above'}
                       </p>
                     </div>
 

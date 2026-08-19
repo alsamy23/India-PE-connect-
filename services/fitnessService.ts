@@ -1081,7 +1081,14 @@ export const fitnessService = {
   },
 
   // Helper to get battery by grade
-  getBatteryForGrade: (grade: string): KIFTBattery | undefined => {
-    return KIFT_BATTERIES.find(b => b.grades.includes(grade));
+  getBatteryForGrade: (grade: string | number): KIFTBattery | undefined => {
+    if (grade === undefined || grade === null) return undefined;
+    const strGrade = grade.toString().trim();
+    const cleanNum = strGrade.replace(/[^0-9]/g, '');
+    return KIFT_BATTERIES.find(b => 
+      b.grades.includes(strGrade) || 
+      (cleanNum && b.grades.includes(cleanNum)) ||
+      b.grades.some(g => strGrade.toLowerCase().includes(g.toLowerCase()))
+    );
   }
 };
