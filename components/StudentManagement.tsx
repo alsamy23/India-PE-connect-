@@ -20,11 +20,17 @@ import {
   Printer,
   CheckSquare,
   Square,
-  AlertTriangle
+  AlertTriangle,
+  Activity,
+  ClipboardCheck,
+  Award,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { jsPDF } from 'jspdf';
 import { fitnessService, Student, SchoolMember, FitnessResult } from '../services/fitnessService.ts';
+import { PracticalAssessment } from '../types.ts';
+import { isGradeMatching } from './PracticalAssessmentHub.tsx';
 import { auth } from '../services/firebase.ts';
 import { toast } from '../services/toast.ts';
 import { calculateExactBMI } from '../utils/bmiUtils.ts';
@@ -37,6 +43,8 @@ interface StudentManagementProps {
 
 const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSelectStudent, highlightStudentId }) => {
   const [students, setStudents] = useState<Student[]>([]);
+  const [practicalMap, setPracticalMap] = useState<Record<string, PracticalAssessment>>({});
+  const [resultCountMap, setResultCountMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
@@ -55,6 +63,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
   const [isDeletingBulk, setIsDeletingBulk] = useState(false);
   const [isBulkPurgeModalOpen, setIsBulkPurgeModalOpen] = useState(false);
   const [deleteProgressText, setDeleteProgressText] = useState('');
+  const [seedingGrade12, setSeedingGrade12] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const isSuperAdmin = auth.currentUser?.email === 'alsamy36@gmail.com';
@@ -146,7 +155,9 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
   });
 
   useEffect(() => {
-    let unsub: (() => void) | undefined;
+    let unsubStudents: (() => void) | undefined;
+    let unsubPractical: (() => void) | undefined;
+    let unsubResults: (() => void) | undefined;
 
     const fetchProfileAndStudents = async () => {
       if (!auth.currentUser) {
@@ -162,13 +173,38 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
         const schoolId = profile?.schoolId;
 
         // Subscribe to students (Super Admin will get all via service logic)
-        unsub = fitnessService.subscribeToStudents(
+        unsubStudents = fitnessService.subscribeToStudents(
           auth.currentUser.uid,
           schoolId,
           isAdmin,
           (data) => {
             setStudents(data);
             setLoading(false);
+          }
+        );
+
+        // Subscribe to practical assessments to show 30M board status
+        unsubPractical = fitnessService.subscribeToPracticalAssessments(
+          auth.currentUser.uid,
+          schoolId,
+          (data) => {
+            const map: Record<string, PracticalAssessment> = {};
+            data.forEach(p => { map[p.studentId] = p; });
+            setPracticalMap(map);
+          }
+        );
+
+        // Subscribe to fitness results to show test battery completion
+        unsubResults = fitnessService.subscribeToResults(
+          auth.currentUser.uid,
+          schoolId,
+          isAdmin,
+          (resList) => {
+            const countMap: Record<string, number> = {};
+            resList.forEach(r => {
+              countMap[r.studentId] = (countMap[r.studentId] || 0) + 1;
+            });
+            setResultCountMap(countMap);
           }
         );
       } catch (err) {
@@ -179,7 +215,11 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
 
     fetchProfileAndStudents().catch(err => console.error("Unhandled error in StudentManagement fetch:", err));
     
-    return () => unsub?.();
+    return () => {
+      unsubStudents?.();
+      unsubPractical?.();
+      unsubResults?.();
+    };
   }, [auth.currentUser?.uid]);
 
   useEffect(() => {
@@ -288,10 +328,11 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     }
   };
 
-  // Extract unique grades and sections for quick filter pills
-  const availableGrades = Array.from(new Set(students.map(s => s.grade))).sort((a, b) => {
-    const numA = parseInt(a) || 0;
-    const numB = parseInt(b) || 0;
+  // Standard CBSE Grades (1 to 12) merged with any existing student grades
+  const standardGrades = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+  const availableGrades = Array.from(new Set([...standardGrades, ...students.map(s => s.grade.toString().trim())])).sort((a, b) => {
+    const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
+    const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
     return numA - numB;
   });
 
@@ -324,11 +365,41 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
       s.grade.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
       s.section.toLowerCase().includes(searchTerm.toLowerCase().trim());
 
-    const matchesGrade = selectedGrade === 'all' || s.grade === selectedGrade;
+    const matchesGrade = selectedGrade === 'all' || isGradeMatching(s.grade, selectedGrade);
     const matchesSection = selectedSection === 'all' || s.section === selectedSection;
 
     return matchesSearch && matchesGrade && matchesSection;
   });
+
+  const handleSeedGrade12Batch = async () => {
+    setSeedingGrade12(true);
+    try {
+      const currentTeacherId = auth.currentUser?.uid || 'guest_teacher';
+      const schoolId = userProfile?.schoolId || (auth.currentUser ? `personal_${auth.currentUser.uid}` : 'master_registry');
+
+      const sampleGrade12: Student[] = [
+        { id: `std_1201_${Date.now()}`, rollNumber: '1201', name: 'Aarav Sharma', grade: '12', section: 'A', gender: 'Male', age: 17, schoolId, teacherId: currentTeacherId, attendance: 95, performance: 'Excellent' },
+        { id: `std_1202_${Date.now()}`, rollNumber: '1202', name: 'Diya Patel', grade: '12', section: 'A', gender: 'Female', age: 17, schoolId, teacherId: currentTeacherId, attendance: 92, performance: 'Good' },
+        { id: `std_1203_${Date.now()}`, rollNumber: '1203', name: 'Rohan Verma', grade: '12', section: 'A', gender: 'Male', age: 18, schoolId, teacherId: currentTeacherId, attendance: 88, performance: 'Good' },
+        { id: `std_1204_${Date.now()}`, rollNumber: '1204', name: 'Ananya Iyer', grade: '12', section: 'A', gender: 'Female', age: 17, schoolId, teacherId: currentTeacherId, attendance: 96, performance: 'Excellent' },
+        { id: `std_1205_${Date.now()}`, rollNumber: '1205', name: 'Kabir Singh', grade: '12', section: 'A', gender: 'Male', age: 18, schoolId, teacherId: currentTeacherId, attendance: 85, performance: 'Average' },
+        { id: `std_1206_${Date.now()}`, rollNumber: '1206', name: 'Ishita Kapoor', grade: '12', section: 'A', gender: 'Female', age: 17, schoolId, teacherId: currentTeacherId, attendance: 94, performance: 'Excellent' },
+        { id: `std_1207_${Date.now()}`, rollNumber: '1207', name: 'Mohammed Farhan', grade: '12', section: 'A', gender: 'Male', age: 17, schoolId, teacherId: currentTeacherId, attendance: 90, performance: 'Good' },
+        { id: `std_1208_${Date.now()}`, rollNumber: '1208', name: 'Sneha Reddy', grade: '12', section: 'A', gender: 'Female', age: 17, schoolId, teacherId: currentTeacherId, attendance: 93, performance: 'Good' },
+        { id: `std_1209_${Date.now()}`, rollNumber: '1209', name: 'Vikram Joshi', grade: '12', section: 'A', gender: 'Male', age: 18, schoolId, teacherId: currentTeacherId, attendance: 89, performance: 'Good' },
+        { id: `std_1210_${Date.now()}`, rollNumber: '1210', name: 'Tanvi Nair', grade: '12', section: 'A', gender: 'Female', age: 17, schoolId, teacherId: currentTeacherId, attendance: 97, performance: 'Excellent' },
+      ];
+
+      await fitnessService.bulkSaveStudents(sampleGrade12);
+      setSelectedGrade('12');
+      toast.success('Successfully linked and created 10 CBSE Grade 12 students in the database!');
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to seed Grade 12 students');
+    } finally {
+      setSeedingGrade12(false);
+    }
+  };
 
   // Top predictive suggestions for dropdown
   const predictiveSuggestions = searchTerm.trim()
@@ -829,6 +900,21 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
         </div>
       </div>
 
+      {/* Database Isolation Architecture Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-6 py-3.5 rounded-2xl border-2 border-slate-900 flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
+          <span className="font-bold text-slate-200">
+            Database Architecture: <strong className="text-white">Strict Three-Way Collection Isolation</strong>
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5 text-[11px] font-medium text-indigo-200">
+          <span className="bg-white/10 px-3 py-1 rounded-lg border border-white/10">👤 Student Roster: <code className="text-amber-300 font-mono font-bold">students</code></span>
+          <span className="bg-white/10 px-3 py-1 rounded-lg border border-white/10">🏃 Fitness Tests: <code className="text-amber-300 font-mono font-bold">results</code></span>
+          <span className="bg-white/10 px-3 py-1 rounded-lg border border-white/10">📝 CBSE Practical (30M): <code className="text-emerald-300 font-mono font-bold">practical_assessments</code></span>
+        </div>
+      </div>
+
       {/* Directory Overview Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl border-2 border-slate-900 flex items-center gap-4 shadow-sm">
@@ -848,8 +934,8 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
           </div>
           <div>
             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Classes & Sections</div>
-            <div className="text-2xl font-black text-slate-900">{availableGrades.length} Grades • {availableSections.length} Sections</div>
-            <div className="text-[11px] font-bold text-slate-500">Active class breakdown</div>
+            <div className="text-2xl font-black text-slate-900">{availableGrades.length} Grades • {availableSections.length || 1} Sections</div>
+            <div className="text-[11px] font-bold text-slate-500">Standard CBSE Grade range</div>
           </div>
         </div>
 
@@ -1006,7 +1092,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
           </button>
 
           {availableGrades.map(grade => {
-            const gradeCount = students.filter(s => s.grade === grade).length;
+            const gradeCount = students.filter(s => isGradeMatching(s.grade, grade)).length;
             return (
               <button
                 key={grade}
@@ -1014,7 +1100,9 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                 className={`px-3.5 py-1.5 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all ${
                   selectedGrade === grade
                     ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    : gradeCount > 0
+                      ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
                 }`}
               >
                 Grade {grade} ({gradeCount})
@@ -1038,7 +1126,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
               </button>
               {availableSections.map(sec => {
                 const secCount = students.filter(s => 
-                  (selectedGrade === 'all' || s.grade === selectedGrade) && s.section === sec
+                  (selectedGrade === 'all' || isGradeMatching(s.grade, selectedGrade)) && s.section === sec
                 ).length;
                 return (
                   <button
@@ -1077,141 +1165,222 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                   )}
                 </button>
               </th>
-              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Name</th>
+              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Candidate</th>
               <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Register / Roll No</th>
-              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Class (Grade)</th>
-              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Section</th>
-              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender & Age</th>
-              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Class & Sec</th>
+              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender / Age</th>
+              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Test & Practical Status</th>
+              <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Direct Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredStudents.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-20 text-center">
-                  <div className="space-y-4">
-                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
-                      <Users size={32} className="text-slate-200" />
+                <td colSpan={7} className="p-16 text-center">
+                  <div className="space-y-4 max-w-md mx-auto">
+                    <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto text-indigo-600">
+                      <Users size={32} />
                     </div>
-                    <p className="font-black text-slate-900 uppercase tracking-tight">
-                      {searchTerm || selectedGrade !== 'all' || selectedSection !== 'all'
-                        ? 'No students matched your search criteria'
-                        : 'No students found'}
-                    </p>
-                    <p className="text-xs text-slate-400 font-bold max-w-sm mx-auto">
-                      {searchTerm || selectedGrade !== 'all' || selectedSection !== 'all'
-                        ? 'Try clearing your filters or searching with a different student name or roll number.'
-                        : 'Add your first student to build the class roster.'}
-                    </p>
-                    {(searchTerm || selectedGrade !== 'all' || selectedSection !== 'all') ? (
+                    <div>
+                      <p className="font-black text-slate-900 text-base uppercase tracking-tight">
+                        {selectedGrade !== 'all' ? `No Students in Grade ${selectedGrade}` : 'No Students Found'}
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium mt-1">
+                        {selectedGrade === '12' || selectedGrade === '11'
+                          ? `There are currently no Class ${selectedGrade} candidates in the student roster.`
+                          : 'Try clearing your filters or searching with a different keyword.'}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex flex-wrap items-center justify-center gap-2.5">
+                      {(selectedGrade === '12' || selectedGrade === 'all') && (
+                        <button
+                          onClick={handleSeedGrade12Batch}
+                          disabled={seedingGrade12}
+                          className="px-4 py-2.5 bg-[#0D2B52] hover:bg-[#164077] text-[#D4A017] border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          {seedingGrade12 ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                          <span>⚡ Quick Add 10 Class 12 Students</span>
+                        </button>
+                      )}
                       <button 
                         onClick={() => {
-                          setSearchTerm('');
-                          setSelectedGrade('all');
-                          setSelectedSection('all');
+                          setNewStudent(prev => ({ ...prev, grade: selectedGrade !== 'all' ? selectedGrade : '12' }));
+                          setIsAdding(true);
                         }}
-                        className="text-indigo-600 font-black text-xs uppercase tracking-widest hover:underline"
+                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                       >
-                        Clear Search & Filters
+                        <UserPlus size={14} />
+                        <span>Add Student {selectedGrade !== 'all' ? `to Grade ${selectedGrade}` : ''}</span>
                       </button>
-                    ) : (
-                      <button 
-                        onClick={() => setIsAdding(true)}
-                        className="text-indigo-600 font-black text-xs uppercase tracking-widest hover:underline"
-                      >
-                        Add your first student
-                      </button>
-                    )}
+                      {(searchTerm || selectedGrade !== 'all' || selectedSection !== 'all') && (
+                        <button 
+                          onClick={() => {
+                            setSearchTerm('');
+                            setSelectedGrade('all');
+                            setSelectedSection('all');
+                          }}
+                          className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-xs uppercase tracking-wider transition-all"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </td>
               </tr>
             ) : (
-              filteredStudents.map(student => (
-                <tr 
-                  key={student.id} 
-                  className={`transition-colors group ${
-                    selectedStudentIds.has(student.id) 
-                      ? 'bg-indigo-50/70 border-l-4 border-l-indigo-600' 
-                      : highlightStudentId === student.id 
-                        ? 'bg-indigo-50/50' 
-                        : 'hover:bg-slate-50'
-                  }`}
-                >
-                  <td className="p-6 w-12 text-center" onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={(e) => toggleSelectStudent(student.id, e)}
-                      className="text-slate-500 hover:text-indigo-600 transition-colors p-1"
-                      title={selectedStudentIds.has(student.id) ? "Deselect student" : "Select student for bulk print"}
-                    >
-                      {selectedStudentIds.has(student.id) ? (
-                        <CheckSquare size={18} className="text-indigo-600" />
-                      ) : (
-                        <Square size={18} className="text-slate-300 group-hover:text-slate-400" />
-                      )}
-                    </button>
-                  </td>
-                  <td className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${
-                        selectedStudentIds.has(student.id) || highlightStudentId === student.id 
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
-                          : 'bg-indigo-50 text-indigo-600'
-                      }`}>
-                        {student.name.substring(0, 2).toUpperCase()}
+              filteredStudents.map(student => {
+                const resCount = resultCountMap[student.id] || 0;
+                const practical = practicalMap[student.id];
+                const isSenior = isGradeMatching(student.grade, '11') || isGradeMatching(student.grade, '12');
+
+                return (
+                  <tr 
+                    key={student.id} 
+                    className={`transition-colors group ${
+                      selectedStudentIds.has(student.id) 
+                        ? 'bg-indigo-50/70 border-l-4 border-l-indigo-600' 
+                        : highlightStudentId === student.id 
+                          ? 'bg-indigo-50/50' 
+                          : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <td className="p-6 w-12 text-center" onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => toggleSelectStudent(student.id, e)}
+                        className="text-slate-500 hover:text-indigo-600 transition-colors p-1"
+                        title={selectedStudentIds.has(student.id) ? "Deselect student" : "Select student for bulk print"}
+                      >
+                        {selectedStudentIds.has(student.id) ? (
+                          <CheckSquare size={18} className="text-indigo-600" />
+                        ) : (
+                          <Square size={18} className="text-slate-300 group-hover:text-slate-400" />
+                        )}
+                      </button>
+                    </td>
+                    <td className="p-6">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${
+                          selectedStudentIds.has(student.id) || highlightStudentId === student.id 
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
+                            : 'bg-indigo-50 text-indigo-600'
+                        }`}>
+                          {student.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <span className="font-black text-slate-900 uppercase tracking-tight block">
+                            {highlightMatch(student.name, searchTerm)}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400">ID: {student.id.slice(-6)}</span>
+                        </div>
                       </div>
-                      <span className="font-black text-slate-900 uppercase tracking-tight">
-                        {highlightMatch(student.name, searchTerm)}
+                    </td>
+                    <td className="p-6">
+                      <span className="font-bold text-slate-700 font-mono text-xs bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                        {highlightMatch(student.rollNumber || 'N/A', searchTerm)}
                       </span>
-                    </div>
-                  </td>
-                  <td className="p-6">
-                    <span className="font-bold text-slate-700 font-mono text-xs">
-                      {highlightMatch(student.rollNumber, searchTerm)}
-                    </span>
-                  </td>
-                  <td className="p-6">
-                    <span className="inline-flex px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                      Grade {student.grade}
-                    </span>
-                  </td>
-                  <td className="p-6">
-                    <span className="inline-flex px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                      Section {student.section}
-                    </span>
-                  </td>
-                  <td className="p-6">
-                    <span className="text-xs font-bold text-slate-600">{student.gender}, {student.age} yrs</span>
-                  </td>
-                  <td className="p-6 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => onSelectStudent?.(student.id)}
-                        className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors flex items-center gap-1"
-                        title="View Performance Report"
-                      >
-                        <FileText size={16} />
-                        <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">Report</span>
-                      </button>
-                      <button 
-                        onClick={() => setEditingStudent(student)}
-                        className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors"
-                        title="Edit Student Profile"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      {isAdmin && (
+                    </td>
+                    <td className="p-6">
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-flex px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                          Grade {student.grade}
+                        </span>
+                        <span className="inline-flex px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                          {student.section}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <span className="text-xs font-bold text-slate-600">{student.gender}, {student.age} yrs</span>
+                    </td>
+                    <td className="p-6">
+                      <div className="flex flex-col gap-1.5">
+                        {/* Fitness Result Indicator */}
+                        {resCount > 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md text-[10px] font-black tracking-wide w-fit">
+                            <Activity size={11} className="text-emerald-600" />
+                            <span>KIFT: {resCount} Tests Logged</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[10px] font-bold w-fit">
+                            <span>KIFT Pending</span>
+                          </span>
+                        )}
+
+                        {/* CBSE Practical Indicator */}
+                        {isSenior && (
+                          practical ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-900 border border-amber-300 rounded-md text-[10px] font-black tracking-wide w-fit">
+                              <ClipboardCheck size={11} className="text-amber-600" />
+                              <span>CBSE: {practical.totalMarks}/30 Marks</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md text-[10px] font-bold w-fit">
+                              <span>30M Practical Pending</span>
+                            </span>
+                          )
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-6 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button 
-                          onClick={() => setStudentToPurge(student)}
-                          className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
-                          title="Purge / Delete Student Record Permanently (Admin Only)"
+                          onClick={() => {
+                            if (onNavigate) {
+                              onNavigate('fitness');
+                            }
+                          }}
+                          className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-wider"
+                          title="Record Khelo India Fitness Tests for this student"
                         >
-                          <Trash2 size={16} />
+                          <Activity size={13} />
+                          <span className="hidden xl:inline">Fitness</span>
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
+                        
+                        {isSenior && (
+                          <button 
+                            onClick={() => {
+                              if (onNavigate) {
+                                onNavigate('cbse-practical');
+                              }
+                            }}
+                            className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-wider"
+                            title="Evaluate 30-mark CBSE Practical Examination"
+                          >
+                            <ClipboardCheck size={13} className="text-amber-700" />
+                            <span className="hidden xl:inline">30M Practical</span>
+                          </button>
+                        )}
+
+                        <button 
+                          onClick={() => onSelectStudent?.(student.id)}
+                          className="p-1.5 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors flex items-center gap-1"
+                          title="View Comprehensive Report Card"
+                        >
+                          <FileText size={16} />
+                        </button>
+                        <button 
+                          onClick={() => setEditingStudent(student)}
+                          className="p-1.5 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors"
+                          title="Edit Student Profile"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        {isAdmin && (
+                          <button 
+                            onClick={() => setStudentToPurge(student)}
+                            className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                            title="Purge / Delete Student Record Permanently (Admin Only)"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

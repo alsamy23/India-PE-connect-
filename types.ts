@@ -242,8 +242,8 @@ export interface Student {
   age: number;
   schoolId: string;
   teacherId: string;
-  attendance: number;
-  performance: 'Excellent' | 'Good' | 'Average' | 'Needs Improvement';
+  attendance?: number;
+  performance?: 'Excellent' | 'Good' | 'Average' | 'Needs Improvement';
   lastAssessment?: string;
 }
 
@@ -310,6 +310,57 @@ export interface KIFTBattery {
   grades: string[];
   objective: string;
   tests: KIFTTest[];
+}
+
+export interface PracticalAssessment {
+  id: string;
+  studentId: string;
+  studentName: string;
+  rollNumber: string;
+  grade: string;
+  section: string;
+  gender: 'Male' | 'Female';
+  academicYear: string;
+  examType: 'CBSE Board Practical Final' | 'Pre-Board Practical' | 'Term 1 Internal Practical' | 'Term 2 Internal Practical' | 'Mid-Term Evaluation';
+  schoolId: string;
+  teacherId: string;
+  date: string;
+  
+  // CBSE 30-Mark Split Breakdown
+  fitnessTestScore: number;         // Max 7 Marks
+  fitnessDetails?: {
+    testName?: string;
+    rawValue?: string;
+    rating?: string;
+  };
+  
+  yogicPracticesScore: number;      // Max 7 Marks
+  yogaAsanasSelected?: string[];
+  
+  gameProficiencyScore: number;     // Max 7 Marks
+  gameSelected?: string;
+  gameSkillsDemonstrated?: string[];
+  
+  recordFileScore: number;          // Max 5 Marks
+  recordNotes?: string;
+  
+  vivaVoceScore: number;            // Max 5 Marks
+  vivaTopics?: string[];
+  vivaNotes?: string;
+  
+  totalMarks: number;               // Max 30 Marks (Sum of 7+7+7+5+5)
+  totalMarksInWords?: string;
+  examinerRemarks?: string;
+  status: 'completed' | 'draft' | 'absent';
+}
+
+export interface VivaQuestionPrompt {
+  id: string;
+  category: 'Game' | 'Yoga' | 'Fitness' | 'General PE';
+  subCategory: string;
+  question: string;
+  expectedAnswer: string;
+  marksWeight: number;
 }
 
 declare global {

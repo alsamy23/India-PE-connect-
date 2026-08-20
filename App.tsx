@@ -27,6 +27,7 @@ import {
   Activity,
   AlertCircle,
   ClipboardList,
+  ClipboardCheck,
   FileText,
   UserCheck,
   Mail,
@@ -70,6 +71,7 @@ import DepartmentOffice from './components/DepartmentOffice.tsx';
 import BrandWelcomeHub from './components/BrandWelcomeHub.tsx';
 import PricingAndPlans from './components/PricingAndPlans.tsx';
 import WelcomeOnboardingModal from './components/WelcomeOnboardingModal.tsx';
+import PracticalAssessmentHub from './components/PracticalAssessmentHub.tsx';
 import { GlobalSearch } from './components/GlobalSearch.tsx';
 import { logError } from './services/logService.ts';
 import { fitnessService } from './services/fitnessService.ts';
@@ -78,7 +80,7 @@ import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth
 import { trackEvent } from './services/analytics.ts';
 import { toast, SHOW_TOAST_EVENT, SHOW_CONFIRM_EVENT, ToastConfig, ConfirmConfig } from './services/toast.ts';
 
-type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'testpaper' | 'tournament-fixtures' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact' | 'principal-dashboard' | 'department-office' | 'brand-welcome' | 'subscription-plans';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'cbse-practical' | 'testpaper' | 'tournament-fixtures' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact' | 'principal-dashboard' | 'department-office' | 'brand-welcome' | 'subscription-plans';
 
 import { BoardType, Language } from './types.ts';
 
@@ -101,6 +103,7 @@ const navigation = [
   { 
     section: 'Assess',
     items: [
+      { id: 'cbse-practical', name: 'CBSE Practical (30M)', icon: ClipboardCheck, subtitle: 'Class 11 & 12 30-mark practical scoring & award sheet.' },
       { id: 'fitness', name: 'Fitness Tests', icon: Activity, subtitle: 'All Khelo India Fitness tests pre-loaded.' },
       { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, subtitle: 'Official battery tests and student profiles.' },
       { id: 'tournament-fixtures', name: 'Tournament Fixtures', icon: Trophy, subtitle: 'Generate Knockout Brackets & Round Robin League schedules.' },
@@ -825,7 +828,7 @@ const App: React.FC = () => {
       case 'yearly': return <YearlyPlanner onNavigate={handleTabChange} />;
       case 'weekly-planner': return <AcademicWeeklyPlanner />;
       case 'workload-planner': return <DepartmentWorkloadPlanner />;
-      case 'principal-dashboard': return <PrincipalDashboard />;
+      case 'principal-dashboard': return <PrincipalDashboard onNavigate={handleTabChange} />;
       case 'department-office': return <DepartmentOffice />;
       case 'tools': return <AIToolCenter />;
       case 'theory': return <TheoryHub />;
@@ -835,6 +838,7 @@ const App: React.FC = () => {
       case 'khelo': return <KheloIndia />;
       case 'rules': return <RulesBot />;
       case 'fitness': return <FitnessTests />;
+      case 'cbse-practical': return <PracticalAssessmentHub />;
       case 'school-results': return <FitnessDashboard onNavigate={handleTabChange} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} />;
       case 'school-students': return <StudentManagement onNavigate={handleTabChange} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} highlightStudentId={highlightStudentId} />;
       case 'school-teams': return <TeamManagement />;

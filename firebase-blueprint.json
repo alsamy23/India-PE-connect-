@@ -148,6 +148,35 @@
         "updatedBy": { "type": "string" }
       },
       "required": ["schoolId", "updatedAt"]
+    },
+    "PracticalAssessment": {
+      "title": "PracticalAssessment",
+      "description": "CBSE Physical Education Class 11-12 Practical 30-Mark Assessment Record (Subject 048)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "rollNumber": { "type": "string" },
+        "grade": { "type": "string" },
+        "section": { "type": "string" },
+        "gender": { "type": "string", "enum": ["Male", "Female"] },
+        "academicYear": { "type": "string" },
+        "examType": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "date": { "type": "string" },
+        "fitnessTestScore": { "type": "number" },
+        "yogicPracticesScore": { "type": "number" },
+        "gameProficiencyScore": { "type": "number" },
+        "gameSelected": { "type": "string" },
+        "recordFileScore": { "type": "number" },
+        "vivaVoceScore": { "type": "number" },
+        "totalMarks": { "type": "number" },
+        "examinerRemarks": { "type": "string" },
+        "status": { "type": "string", "enum": ["completed", "draft", "absent"] }
+      },
+      "required": ["id", "studentId", "teacherId", "schoolId", "fitnessTestScore", "yogicPracticesScore", "gameProficiencyScore", "recordFileScore", "vivaVoceScore", "totalMarks"]
     }
   },
   "firestore": {
@@ -157,6 +186,7 @@
     "/students/{studentId}": { "schema": "Student", "description": "Student records" },
     "/teams/{teamId}": { "schema": "Team", "description": "Class/Team records" },
     "/results/{resultId}": { "schema": "FitnessResult", "description": "Test results" },
+    "/practical_assessments/{assessmentId}": { "schema": "PracticalAssessment", "description": "CBSE PE 30M Practical Examination assessments" },
     "/system_logs/{logId}": { "schema": "AppErrorLog", "description": "Remote application logs" },
     "/workloads/{workloadId}": { "schema": "DepartmentWorkload", "description": "Teacher workload schedules and curriculum setups" },
     "/sportsDays/{schoolId}": { "schema": "SportsDay", "description": "Sports Day tracker data for schools" }

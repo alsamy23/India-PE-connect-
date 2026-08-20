@@ -25,6 +25,7 @@ import {
   Microscope,
   Dumbbell,
   ClipboardList,
+  ClipboardCheck,
   ShieldCheck,
   Mail,
   Zap,
@@ -281,6 +282,7 @@ const Dashboard: React.FC<{
           <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar py-0.5">
             {[
               { id: 'planner', label: 'Generate Lesson', icon: Sparkles, color: 'bg-[#D4A017] text-slate-900 hover:bg-[#e0b028] shadow-xs' },
+              { id: 'cbse-practical', label: 'CBSE Practical (30M)', icon: ClipboardCheck, color: 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40' },
               { id: 'fitness', label: 'Fitness Test', icon: Activity, color: 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40' },
               { id: 'testpaper', label: 'Question Paper', icon: ClipboardList, color: 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/40' },
               { id: 'principal-dashboard', label: 'Principal Report', icon: ShieldCheck, color: 'bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 border border-sky-500/40' },
