@@ -51,7 +51,9 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
   const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
   const [confirmDeleteText, setConfirmDeleteText] = useState('');
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [studentToPurge, setStudentToPurge] = useState<Student | null>(null);
   const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+  const [isBulkPurgeModalOpen, setIsBulkPurgeModalOpen] = useState(false);
   const [deleteProgressText, setDeleteProgressText] = useState('');
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
@@ -195,12 +197,12 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
       return;
     }
     if (!auth.currentUser) return;
-    if (!window.confirm("Are you sure you want to delete this student and all their fitness records? This cannot be undone.")) return;
 
     setLoading(true);
     try {
       await fitnessService.deleteStudent(studentId, userProfile?.schoolId);
-      toast.success("Student record deleted successfully.");
+      toast.success("Student and all associated fitness records permanently purged.");
+      setStudentToPurge(null);
     } catch (err: any) {
       console.error(err);
       toast.error("Failed to delete student: " + formatErrorMessage(err));
@@ -712,7 +714,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     }
   };
 
-  // Bulk Delete Selected Students
+  // Bulk Delete / Purge Selected Students
   const handleDeleteSelectedStudents = async () => {
     if (!isAdmin) {
       toast.error('Only school administrators can delete student records.');
@@ -721,20 +723,17 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     const selectedList = students.filter(s => selectedStudentIds.has(s.id));
     if (selectedList.length === 0) return;
 
-    if (!window.confirm(`Are you sure you want to delete ${selectedList.length} selected student(s) and all their associated fitness test records? This action cannot be undone.`)) {
-      return;
-    }
-
     setIsDeletingBulk(true);
-    setDeleteProgressText(`Deleting 0 of ${selectedList.length} selected student(s)...`);
+    setDeleteProgressText(`Purging 0 of ${selectedList.length} selected student(s)...`);
 
     try {
       const selectedIds = Array.from(selectedStudentIds);
       await fitnessService.bulkDeleteStudents(selectedIds, userProfile?.schoolId, (processed, total) => {
-        setDeleteProgressText(`Deleting ${processed} of ${total} selected student(s)...`);
+        setDeleteProgressText(`Purging ${processed} of ${total} selected student(s)...`);
       });
-      toast.success(`Successfully deleted ${selectedList.length} student(s) from the school roster.`);
+      toast.success(`Successfully purged ${selectedList.length} student(s) and their fitness test records.`);
       setSelectedStudentIds(new Set());
+      setIsBulkPurgeModalOpen(false);
     } catch (err: any) {
       console.error(err);
       toast.error('Failed to delete selected students: ' + formatErrorMessage(err));
@@ -744,10 +743,10 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
     }
   };
 
-  // Delete All Students in School
+  // Delete All / Purge Entire School Roster
   const handleDeleteAllStudents = async () => {
     if (!isAdmin) {
-      toast.error('Only school administrators can delete student records.');
+      toast.error('Only school administrators can purge school records.');
       return;
     }
     if (students.length === 0) {
@@ -755,21 +754,22 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
       return;
     }
 
-    if (confirmDeleteText.trim().toUpperCase() !== 'DELETE ALL') {
-      toast.error('Please type "DELETE ALL" to confirm clearing the school roster.');
+    const normalizedInput = confirmDeleteText.trim().toUpperCase();
+    if (normalizedInput !== 'DELETE ALL' && normalizedInput !== 'PURGE' && normalizedInput !== 'PURGE ALL') {
+      toast.error('Please type "PURGE" or "DELETE ALL" to confirm permanently clearing the school database.');
       return;
     }
 
     setIsDeletingBulk(true);
     const totalCount = students.length;
-    setDeleteProgressText(`Clearing 0 of ${totalCount} student records...`);
+    setDeleteProgressText(`Purging 0 of ${totalCount} student records and scores...`);
 
     try {
       const allIds = students.map(s => s.id);
       await fitnessService.bulkDeleteStudents(allIds, userProfile?.schoolId, (processed, total) => {
-        setDeleteProgressText(`Clearing ${processed} of ${total} student records...`);
+        setDeleteProgressText(`Purging ${processed} of ${total} student records...`);
       });
-      toast.success(`Successfully cleared all ${totalCount} student records from school roster.`);
+      toast.success(`Successfully purged all ${totalCount} student records and test history from the school database.`);
       setSelectedStudentIds(new Set());
       setIsDeleteAllModalOpen(false);
       setConfirmDeleteText('');
@@ -1201,9 +1201,9 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                       </button>
                       {isAdmin && (
                         <button 
-                          onClick={() => handleDeleteStudent(student.id)}
+                          onClick={() => setStudentToPurge(student)}
                           className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
-                          title="Delete Student Record (Admin Only)"
+                          title="Purge / Delete Student Record Permanently (Admin Only)"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -1235,7 +1235,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                   {selectedStudentIds.size} {selectedStudentIds.size === 1 ? 'Student' : 'Students'} Selected
                 </div>
                 <div className="text-[10px] text-slate-400 font-bold">
-                  Ready for multi-report batch export
+                  Ready for multi-report batch export or permanent purge
                 </div>
               </div>
             </div>
@@ -1243,17 +1243,17 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
             <div className="flex items-center gap-2">
               {isAdmin && (
                 <button
-                  onClick={handleDeleteSelectedStudents}
+                  onClick={() => setIsBulkPurgeModalOpen(true)}
                   disabled={isDeletingBulk || isGeneratingBulkPDF}
-                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-md shadow-rose-900/50 disabled:opacity-50"
-                  title="Admin only delete option"
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-md shadow-rose-900/50 disabled:opacity-50 cursor-pointer"
+                  title="Purge selected student records permanently"
                 >
                   {isDeletingBulk ? (
                     <Loader2 size={16} className="animate-spin text-white" />
                   ) : (
                     <Trash2 size={16} />
                   )}
-                  <span>Delete Selected ({selectedStudentIds.size})</span>
+                  <span>Purge Selected ({selectedStudentIds.size})</span>
                 </button>
               )}
 
@@ -1331,7 +1331,143 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
         )}
       </AnimatePresence>
 
-      {/* Delete All Students Confirmation Modal */}
+      {/* Purge / Delete Permanently Single Student Modal */}
+      <AnimatePresence>
+        {studentToPurge && (
+          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-[2.5rem] border-4 border-slate-900 p-8 max-w-lg w-full shadow-2xl space-y-6"
+            >
+              <div className="flex items-center justify-between border-b-2 border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-rose-100 text-rose-600 rounded-2xl border-2 border-rose-300">
+                    <Trash2 size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Purge Student Record</h3>
+                    <p className="text-xs font-bold text-rose-600">Irreversible Permanent Deletion</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setStudentToPurge(null)}
+                  className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-700 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Student Name</span>
+                  <span className="font-extrabold text-sm text-slate-900">{studentToPurge.name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Roll / Reg No</span>
+                  <span className="font-bold text-xs text-slate-700 font-mono">{studentToPurge.rollNumber}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Class & Section</span>
+                  <span className="font-bold text-xs text-slate-700">Grade {studentToPurge.grade} - Section {studentToPurge.section}</span>
+                </div>
+              </div>
+
+              <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-4 text-xs font-medium text-rose-900 space-y-2">
+                <p className="font-black uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
+                  <AlertTriangle size={16} /> What will be purged permanently:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-[11px] text-rose-900/90 font-medium">
+                  <li>Student roster registration profile from cloud database</li>
+                  <li>All recorded CBSE / Khelo India fitness test attempts & scores</li>
+                  <li>Historical BMI metrics, radar charts, and progress trends</li>
+                  <li>Local offline browser storage and pending sync queue entries</li>
+                </ul>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setStudentToPurge(null)}
+                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteStudent(studentToPurge.id)}
+                  className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(159,18,57,1)] flex items-center gap-2 cursor-pointer"
+                >
+                  <Trash2 size={16} />
+                  <span>Purge Permanently</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Purge Selected Students Modal */}
+      <AnimatePresence>
+        {isBulkPurgeModalOpen && (
+          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-[2.5rem] border-4 border-slate-900 p-8 max-w-lg w-full shadow-2xl space-y-6"
+            >
+              <div className="flex items-center justify-between border-b-2 border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-rose-100 text-rose-600 rounded-2xl border-2 border-rose-300">
+                    <Trash2 size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Purge {selectedStudentIds.size} Students</h3>
+                    <p className="text-xs font-bold text-rose-600">Batch Permanent Deletion</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsBulkPurgeModalOpen(false)}
+                  className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-700 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-4 text-xs font-medium text-rose-900 space-y-2">
+                <p className="font-black uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
+                  <AlertTriangle size={16} /> Warning: Permanent Data Purge
+                </p>
+                <p>
+                  You are about to permanently delete <strong>{selectedStudentIds.size} selected students</strong> and purge all their historical fitness test records from the school database.
+                </p>
+                <p className="text-[11px] text-rose-800">
+                  This action cannot be undone. All report cards, test histories, and scores for these {selectedStudentIds.size} students will be deleted immediately.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setIsBulkPurgeModalOpen(false)}
+                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteSelectedStudents}
+                  disabled={isDeletingBulk}
+                  className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(159,18,57,1)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+                >
+                  {isDeletingBulk ? <Loader2 size={16} className="animate-spin text-white" /> : <Trash2 size={16} />}
+                  <span>Confirm Purge ({selectedStudentIds.size})</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete All Students / Reset Roster Modal */}
       <AnimatePresence>
         {isDeleteAllModalOpen && (
           <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -1347,7 +1483,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                     <AlertTriangle size={24} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Delete All Students</h3>
+                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Purge Entire School Roster</h3>
                     <p className="text-xs font-bold text-rose-600">Danger Zone: Irreversible Action</p>
                   </div>
                 </div>
@@ -1361,10 +1497,10 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
 
               <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-4 text-xs font-medium text-rose-900 space-y-2">
                 <p className="font-black uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
-                  <AlertTriangle size={16} /> Warning: Clear Entire Roster
+                  <AlertTriangle size={16} /> Warning: Complete Database Purge
                 </p>
                 <p>
-                  This action will permanently delete <strong>ALL {students.length} students</strong> currently registered in your school directory along with all their recorded CBSE fitness test results and historical data.
+                  This action will permanently delete <strong>ALL {students.length} students</strong> currently registered in your school directory along with all their recorded CBSE fitness test results, metrics, and historical data.
                 </p>
                 <p className="text-[11px] text-rose-800">
                   Use this option when resetting the school database for a new academic year or before re-uploading an updated master CSV list.
@@ -1373,13 +1509,13 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
 
               <div className="space-y-2">
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
-                  Type <span className="text-rose-600 underline">DELETE ALL</span> to confirm:
+                  Type <span className="text-rose-600 underline font-black">PURGE</span> or <span className="text-rose-600 underline font-black">DELETE ALL</span> to confirm:
                 </label>
                 <input
                   type="text"
                   value={confirmDeleteText}
                   onChange={e => setConfirmDeleteText(e.target.value)}
-                  placeholder="Type DELETE ALL here..."
+                  placeholder="Type PURGE or DELETE ALL..."
                   className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 focus:border-rose-600 rounded-2xl font-bold outline-none text-slate-900 uppercase tracking-wider text-sm transition-all"
                   autoFocus
                 />
@@ -1388,17 +1524,21 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   onClick={() => setIsDeleteAllModalOpen(false)}
-                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-colors"
+                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteAllStudents}
-                  disabled={confirmDeleteText.trim().toUpperCase() !== 'DELETE ALL'}
-                  className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(159,18,57,1)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                  disabled={
+                    confirmDeleteText.trim().toUpperCase() !== 'DELETE ALL' && 
+                    confirmDeleteText.trim().toUpperCase() !== 'PURGE' &&
+                    confirmDeleteText.trim().toUpperCase() !== 'PURGE ALL'
+                  }
+                  className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(159,18,57,1)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                 >
                   <Trash2 size={16} />
-                  <span>Confirm Delete All</span>
+                  <span>Purge Entire Database</span>
                 </button>
               </div>
             </motion.div>

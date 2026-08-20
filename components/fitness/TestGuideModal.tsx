@@ -1,14 +1,15 @@
 import React from 'react';
-import { X, Clock, Wrench, Award, CheckCircle2, ShieldCheck, HelpCircle } from 'lucide-react';
+import { X, Clock, Wrench, Award, CheckCircle2, ShieldCheck, HelpCircle, Play } from 'lucide-react';
 import { KIFTTest } from '../../types.ts';
 
 interface TestGuideModalProps {
   test: KIFTTest | null;
   categoryName?: string;
   onClose: () => void;
+  onOpenVideo?: (test: KIFTTest) => void;
 }
 
-export const TestGuideModal: React.FC<TestGuideModalProps> = ({ test, categoryName, onClose }) => {
+export const TestGuideModal: React.FC<TestGuideModalProps> = ({ test, categoryName, onClose, onOpenVideo }) => {
   if (!test) return null;
 
   return (
@@ -52,10 +53,24 @@ export const TestGuideModal: React.FC<TestGuideModalProps> = ({ test, categoryNa
                 <Clock size={16} className="text-amber-600" />
                 <span>Test Duration / Time Limit</span>
               </div>
-              <p className="text-slate-900 font-black text-sm">{test.duration || 'Standard Trial'}</p>
+              <p className="text-slate-900 font-black text-sm">
+                {test.id === 'curl_ups'
+                  ? (categoryName?.includes('Senior') || categoryName?.includes('11') || categoryName?.includes('12')
+                      ? '60 Seconds (1 Minute CBSE Board)'
+                      : categoryName?.includes('Middle') || categoryName?.includes('6') || categoryName?.includes('7') || categoryName?.includes('8')
+                        ? '30 Seconds (Official Khelo India)'
+                        : '30s Khelo India / 60s CBSE Practical')
+                  : (test.duration || 'Standard Trial')}
+              </p>
               <p className="text-slate-600 text-[11px] font-medium mt-0.5">
                 {test.id === 'pushups' && 'Must be conducted over exactly 60 seconds (1 Minute). Count all valid reps (Boys: standard plank; Girls: knees on mat).'}
-                {test.id === 'curl_ups' && 'Official Khelo India National Standard is 30 Seconds (Count valid reps in 30s). CBSE 60-second (1-minute) cadence is also supported.'}
+                {test.id === 'curl_ups' && (
+                  categoryName?.includes('Senior') || categoryName?.includes('11') || categoryName?.includes('12')
+                    ? 'CBSE Senior Secondary (Grades 11 & 12) Physical Education Practical utilizes the 60-Second (1 Minute) timed abdominal test.'
+                    : categoryName?.includes('Middle') || categoryName?.includes('6') || categoryName?.includes('7') || categoryName?.includes('8')
+                      ? 'Khelo India Middle School (Grades 6-8) uses the 30-Second timed partial curl-up test to evaluate core abdominal endurance without neck strain.'
+                      : 'Khelo India National Protocol uses 30 Seconds with a 10cm measuring strip; CBSE Class 9-10 Board Practical also supports 60-Second cadence.'
+                )}
                 {(test.id === 'shuttle_4x10' || test.id === 'shuttle_run') && 'Timed sprint agility test recorded in seconds to 0.01s precision (typical completion time ~9.0s to 15.0s).'}
                 {test.id === 'plate_tapping' && 'Must be conducted over exactly 30 seconds.'}
                 {test.id === 'flamingo' && 'Must be conducted over exactly 60 seconds total balance duration.'}
@@ -74,9 +89,80 @@ export const TestGuideModal: React.FC<TestGuideModalProps> = ({ test, categoryNa
                 <span>Scoring Unit & Format</span>
               </div>
               <p className="text-indigo-900 font-black text-sm">Unit: {test.unit}</p>
-              <p className="text-slate-600 text-[11px] font-medium mt-0.5">{test.scoringGuide || 'Enter raw numerical score.'}</p>
+              <p className="text-slate-600 text-[11px] font-medium mt-0.5">
+                {test.id === 'curl_ups' 
+                  ? (categoryName?.includes('Senior') || categoryName?.includes('11') || categoryName?.includes('12')
+                      ? 'Enter total valid repetitions completed in 60 seconds (1 minute).'
+                      : categoryName?.includes('Middle') || categoryName?.includes('6') || categoryName?.includes('7') || categoryName?.includes('8')
+                        ? 'Enter total valid repetitions completed in 30 seconds.'
+                        : 'Enter raw rep count (30s Khelo India count or 60s CBSE count).')
+                  : (test.scoringGuide || 'Enter raw numerical score.')}
+              </p>
             </div>
           </div>
+
+          {/* Specialized Curl-Ups Timing Protocol Box for 30s vs 60s */}
+          {test.id === 'curl_ups' && (
+            <div className="p-5 rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50/90 via-white to-amber-50/60 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-black text-xs text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock size={15} className="text-indigo-600" />
+                  <span>Protocol Timing Standards (30s vs 60s)</span>
+                </span>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-indigo-600 text-white rounded-md">
+                  {categoryName || 'Active Category'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {/* 30s Khelo India Box */}
+                <div className={`p-3.5 rounded-xl border ${
+                  !categoryName?.includes('Senior') && !categoryName?.includes('11') && !categoryName?.includes('12')
+                    ? 'bg-white border-indigo-300 ring-2 ring-indigo-400/50 shadow-xs'
+                    : 'bg-slate-50/80 border-slate-200 text-slate-600'
+                }`}>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <strong className="text-indigo-950 font-black text-[11px] uppercase">
+                      1. Khelo India (KIFT) Protocol
+                    </strong>
+                    <span className="px-1.5 py-0.2 bg-indigo-100 text-indigo-800 text-[9px] font-extrabold rounded">
+                      30 Seconds
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-700 leading-relaxed">
+                    <strong>Used in:</strong> Grades 6–10 (Ages 11–15).<br />
+                    <strong>Action:</strong> Student slides fingers across a 10cm measuring strip on mat for 30 seconds.
+                  </p>
+                  <div className="mt-2 pt-2 border-t border-slate-200/80 text-[10px] text-slate-500 font-semibold">
+                    Expected Range: <span className="text-indigo-700 font-black">12–26 reps in 30s</span>
+                  </div>
+                </div>
+
+                {/* 60s CBSE Board Box */}
+                <div className={`p-3.5 rounded-xl border ${
+                  categoryName?.includes('Senior') || categoryName?.includes('11') || categoryName?.includes('12')
+                    ? 'bg-white border-amber-300 ring-2 ring-amber-400/50 shadow-xs'
+                    : 'bg-slate-50/80 border-slate-200 text-slate-600'
+                }`}>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <strong className="text-slate-900 font-black text-[11px] uppercase">
+                      2. CBSE HPE Practical Protocol
+                    </strong>
+                    <span className="px-1.5 py-0.2 bg-amber-100 text-amber-900 text-[9px] font-extrabold rounded">
+                      60 Seconds (1 Min)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-700 leading-relaxed">
+                    <strong>Used in:</strong> Grades 11–12 (Ages 16–18+) & Senior Board Exams.<br />
+                    <strong>Action:</strong> 1-Minute continuous or 20 reps/min cadence test.
+                  </p>
+                  <div className="mt-2 pt-2 border-t border-slate-200/80 text-[10px] text-slate-500 font-semibold">
+                    Expected Range: <span className="text-amber-800 font-black">20–48 reps in 60s</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Required Equipment */}
           {test.equipment && test.equipment.length > 0 && (
@@ -121,7 +207,20 @@ export const TestGuideModal: React.FC<TestGuideModalProps> = ({ test, categoryNa
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          {onOpenVideo ? (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenVideo(test);
+              }}
+              className="px-5 py-2.5 bg-[#D4A017] hover:bg-amber-500 text-slate-950 rounded-xl font-black text-xs uppercase tracking-wider shadow-md cursor-pointer transition-all flex items-center gap-2"
+            >
+              <Play size={14} className="fill-slate-950" />
+              <span>Watch Official Video Demo</span>
+            </button>
+          ) : <div />}
+
           <button 
             onClick={onClose}
             className="px-6 py-2.5 bg-[#0D2B52] hover:bg-[#164077] text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-md cursor-pointer transition-all"

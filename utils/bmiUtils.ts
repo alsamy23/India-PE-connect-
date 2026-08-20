@@ -251,18 +251,37 @@ export interface DescriptiveFieldInfo {
 
 /**
  * Returns contextually descriptive labels, placeholders, and hints for any fitness test.
- * Solves user confusion between generic 'Count', 'Weight', or 'Seconds'.
+ * Solves user confusion between generic 'Count', 'Weight', or 'Seconds', and tailors
+ * timing protocols (e.g. 30s Khelo India vs 60s CBSE Board) based on category/grade/age.
  */
-export function getDescriptiveFieldInfo(test: {
-  id?: string;
-  name?: string;
-  unit?: string;
-  duration?: string;
-}): DescriptiveFieldInfo {
-  const id = (test.id || '').toLowerCase();
-  const name = (test.name || '').toLowerCase();
-  const unit = (test.unit || '').toLowerCase();
-  const duration = test.duration || '';
+export function getDescriptiveFieldInfo(
+  test: {
+    id?: string;
+    name?: string;
+    unit?: string;
+    duration?: string;
+  },
+  context?: {
+    category?: string;
+    grade?: string | number;
+    age?: string | number;
+  } | string
+): DescriptiveFieldInfo {
+  const id = (test?.id || '').toLowerCase();
+  const name = (test?.name || '').toLowerCase();
+  const unit = (test?.unit || '').toLowerCase();
+  const duration = test?.duration || '';
+
+  // Extract category, grade, and age from context if provided
+  const categoryStr = typeof context === 'string' 
+    ? context 
+    : (context?.category || (context?.grade ? `Grade ${context.grade}` : ''));
+  const gradeStr = typeof context === 'object' && context?.grade ? String(context.grade) : '';
+  const ageNum = typeof context === 'object' && context?.age ? Number(context.age) : 0;
+
+  const isSeniorSec = categoryStr.toLowerCase().includes('senior') || ['11', '12'].includes(gradeStr) || ageNum >= 16;
+  const isSecondary = (categoryStr.toLowerCase().includes('secondary') && !categoryStr.toLowerCase().includes('senior')) || ['9', '10'].includes(gradeStr) || (ageNum >= 14 && ageNum <= 15);
+  const isMiddleSchool = categoryStr.toLowerCase().includes('middle') || ['6', '7', '8'].includes(gradeStr) || (ageNum >= 11 && ageNum <= 13);
 
   // 1. BMI / Height & Weight
   if (id === 'bmi' || name.includes('bmi') || name.includes('height & weight') || (name.includes('height') && name.includes('weight'))) {
@@ -281,18 +300,44 @@ export function getDescriptiveFieldInfo(test: {
       label: 'Completed Repetitions (60s)',
       shortLabel: 'Reps (60s)',
       placeholder: 'e.g. 22 reps in 60s',
-      hint: 'Count total valid push-up repetitions in 1 minute (60 seconds)',
+      hint: 'Count total valid push-up repetitions in 1 minute (60 seconds) - standard plank for boys, knee-supported for girls',
       unitBadge: 'Reps in 60s'
     };
   }
 
-  // 3. Curl-ups / Partial Curl-ups
-  if (id === 'curl_ups' || name.includes('curl-up') || name.includes('curl up')) {
+  // 3. Curl-ups / Partial Curl-ups (Contextualized by Category/Age)
+  if (id === 'curl_ups' || name.includes('curl-up') || name.includes('curl up') || name.includes('sit-up')) {
+    if (isSeniorSec) {
+      return {
+        label: 'Abdominal Curl-Up / Sit-Up Reps (60s / 1 Min)',
+        shortLabel: 'Reps (60s / 1 Min)',
+        placeholder: 'e.g. 34 reps in 60s',
+        hint: 'CBSE Senior Secondary PE Practical Protocol: Count total completed valid repetitions in 1 minute (60 seconds)',
+        unitBadge: 'Reps (60s)'
+      };
+    } else if (isSecondary) {
+      return {
+        label: 'Partial Curl-Up Reps (30s KIFT / 60s CBSE)',
+        shortLabel: 'Reps (30s/60s)',
+        placeholder: 'e.g. 22 (30s) or 36 (60s)',
+        hint: 'Secondary PE Protocol: Count valid curl-ups sliding fingers 10cm forward (30s Official Khelo India / 60s CBSE Cadence)',
+        unitBadge: 'Reps (30s/60s)'
+      };
+    } else if (isMiddleSchool) {
+      return {
+        label: 'Partial Curl-Up Repetitions (30s Timed)',
+        shortLabel: 'Reps (30s)',
+        placeholder: 'e.g. 18 reps in 30s',
+        hint: 'Official Khelo India 30-Second Protocol: Count total valid repetitions in 30 seconds sliding fingers across 10cm strip',
+        unitBadge: 'Reps (30s)'
+      };
+    }
+
     return {
-      label: 'Curl-Up Repetitions (30s / 60s)',
+      label: 'Curl-Up Repetitions (30s KIFT / 60s CBSE)',
       shortLabel: 'Reps (30s/60s)',
       placeholder: 'e.g. 18 reps (30s) or 32 (60s)',
-      hint: 'Count total valid partial curl-ups (Official Khelo India: 30 seconds; CBSE: 60s cadence)',
+      hint: 'Count total valid partial curl-ups (Official Khelo India: 30 seconds; CBSE Board: 60s cadence)',
       unitBadge: 'Reps'
     };
   }

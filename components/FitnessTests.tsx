@@ -45,7 +45,9 @@ import {
   Laptop,
   Filter,
   FastForward,
-  ArrowRight
+  ArrowRight,
+  Play,
+  Video
 } from 'lucide-react';
 import { evaluateFitnessTests } from '../services/geminiService.ts';
 import { FitnessAssessment, KIFTBattery, KIFTTest, FitnessResult } from '../types.ts';
@@ -56,6 +58,7 @@ import { auth } from '../services/firebase.ts';
 import { toast } from '../services/toast.ts';
 import GamesProficiencyGenerator from './GamesProficiencyGenerator.tsx';
 import { TestGuideModal } from './fitness/TestGuideModal.tsx';
+import { TestVideoModal } from './fitness/TestVideoModal.tsx';
 import { BMISpectrumGauge } from './fitness/BMISpectrumGauge.tsx';
 import { TestFieldTooltip } from './fitness/TestFieldTooltip.tsx';
 
@@ -68,6 +71,7 @@ const FitnessTests: React.FC = () => {
   const [customSelectedTestIds, setCustomSelectedTestIds] = useState<string[]>([]);
   const [viewLayoutMode, setViewLayoutMode] = useState<'cards' | 'table'>('cards');
   const [activeGuideTest, setActiveGuideTest] = useState<KIFTTest | null>(null);
+  const [activeVideoTest, setActiveVideoTest] = useState<KIFTTest | null>(null);
   const [age, setAge] = useState('10');
   const [gender, setGender] = useState('Male');
   const [testValue, setTestValue] = useState('');
@@ -1518,9 +1522,25 @@ const FitnessTests: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          setActiveVideoTest(test);
+                        }}
+                        className={`p-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0 ml-1.5 ${
+                          selectedTest?.id === test.id 
+                            ? 'bg-[#D4A017] hover:bg-amber-400 text-slate-950 shadow-sm' 
+                            : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80'
+                        }`}
+                        title="Watch Official Video Demonstration"
+                      >
+                        <Play size={12} className="fill-current" />
+                        <span className="text-[10px] font-extrabold hidden sm:inline uppercase">Video</span>
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setActiveGuideTest(test);
                         }}
-                        className={`p-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0 ml-2 ${
+                        className={`p-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0 ml-1 ${
                           selectedTest?.id === test.id 
                             ? 'bg-white/20 hover:bg-white/30 text-white' 
                             : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'
@@ -1551,13 +1571,25 @@ const FitnessTests: React.FC = () => {
                   <p className="text-indigo-950/80 text-xs leading-relaxed font-medium">
                     {selectedTest.description}
                   </p>
-                  <button
-                    onClick={() => setActiveGuideTest(selectedTest)}
-                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <Info size={14} />
-                    <span>View Full CBSE Guide Pop-Up</span>
-                  </button>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      onClick={() => setActiveVideoTest(selectedTest)}
+                      className="py-2.5 px-3 bg-[#D4A017] hover:bg-amber-500 text-slate-950 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      title="Watch Official Video Demonstration"
+                    >
+                      <Play size={13} className="fill-slate-950" />
+                      <span>Video Demo</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveGuideTest(selectedTest)}
+                      className="py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      title="View Full CBSE Guide Pop-Up"
+                    >
+                      <Info size={13} />
+                      <span>CBSE Guide</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -2009,6 +2041,18 @@ const FitnessTests: React.FC = () => {
                             </button>
                           </div>
 
+                          {selectedTest && (
+                            <button
+                              onClick={() => setActiveVideoTest(selectedTest)}
+                              className="px-3 py-1.5 bg-[#D4A017] hover:bg-amber-400 text-slate-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm border border-amber-500"
+                              title="Watch official demonstration video for current test"
+                            >
+                              <Play size={12} className="fill-slate-950" />
+                              <span className="hidden sm:inline">Video Demo</span>
+                              <span className="sm:hidden">Video</span>
+                            </button>
+                          )}
+
                           <button
                             onClick={handleExportCsvTemplate}
                             className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
@@ -2135,7 +2179,7 @@ const FitnessTests: React.FC = () => {
                                       const cellKey = `${student.id}_${test.id}`;
                                       const currentVal = batchScores[cellKey] ?? (activeTests.length === 1 ? batchScores[student.id] : '') ?? '';
                                       const isSavedCell = batchSavedStatus[cellKey] ?? (activeTests.length === 1 ? batchSavedStatus[student.id] : false);
-                                      const fieldInfo = getDescriptiveFieldInfo(test);
+                                      const fieldInfo = getDescriptiveFieldInfo(test, { category: selectedBattery?.category, grade: student.grade, age: student.age });
                                       const isRepetitionTest = test.unit.toLowerCase().includes('count') || test.unit.toLowerCase().includes('reps') || test.name.toLowerCase().includes('push') || test.name.toLowerCase().includes('sit-up') || test.name.toLowerCase().includes('curl');
 
                                       return (
@@ -2150,7 +2194,14 @@ const FitnessTests: React.FC = () => {
                                                   ⏱️ {test.duration}
                                                 </span>
                                               )}
-                                              <TestFieldTooltip test={test} onOpenModal={setActiveGuideTest} compact />
+                                              <TestFieldTooltip 
+                                                test={test} 
+                                                onOpenModal={setActiveGuideTest} 
+                                                compact 
+                                                categoryName={selectedBattery?.category}
+                                                grade={student.grade}
+                                                age={student.age}
+                                              />
                                             </div>
                                           </div>
 
@@ -2308,7 +2359,7 @@ const FitnessTests: React.FC = () => {
                                             const cellKey = `${student.id}_${test.id}`;
                                             const currentVal = batchScores[cellKey] ?? (currentTests.length === 1 ? batchScores[student.id] : '') ?? '';
                                             const isSavedCell = batchSavedStatus[cellKey] ?? (currentTests.length === 1 ? batchSavedStatus[student.id] : false);
-                                            const fieldInfo = getDescriptiveFieldInfo(test);
+                                            const fieldInfo = getDescriptiveFieldInfo(test, { category: selectedBattery?.category, grade: student.grade, age: student.age });
 
                                             return (
                                               <td key={test.id} className="p-1 border-r border-slate-100 text-center">
@@ -2543,7 +2594,15 @@ const FitnessTests: React.FC = () => {
                         </div>
 
                         {(() => {
-                          const fieldInfo = getDescriptiveFieldInfo(selectedTest);
+                          const currentStudent = students.find(s => s.id === selectedStudentId);
+                          const studentGrade = currentStudent?.grade || selectedGradeFilter;
+                          const studentAge = currentStudent?.age || (age ? Number(age) : undefined);
+                          const fieldInfo = getDescriptiveFieldInfo(selectedTest, { 
+                            category: selectedBattery?.category, 
+                            grade: studentGrade, 
+                            age: studentAge 
+                          });
+
                           return (
                             <div className="flex-[2] min-w-[220px]">
                               <div className="flex flex-wrap justify-between items-center gap-2 mb-1.5">
@@ -2552,15 +2611,34 @@ const FitnessTests: React.FC = () => {
                                     {fieldInfo.label}
                                   </label>
                                   {selectedTest && (
-                                    <TestFieldTooltip test={selectedTest} onOpenModal={setActiveGuideTest} />
+                                    <TestFieldTooltip 
+                                      test={selectedTest} 
+                                      onOpenModal={setActiveGuideTest} 
+                                      categoryName={selectedBattery?.category}
+                                      grade={studentGrade}
+                                      age={studentAge}
+                                    />
                                   )}
                                 </div>
-                                {selectedTest.duration && (
-                                  <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1">
-                                    <Timer size={11} />
-                                    {selectedTest.duration}
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-1.5">
+                                  {selectedTest && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveVideoTest(selectedTest)}
+                                      className="px-2 py-0.5 bg-[#D4A017] hover:bg-amber-400 text-slate-950 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs cursor-pointer"
+                                      title="Watch Official Form Video Demo"
+                                    >
+                                      <Play size={10} className="fill-slate-950" />
+                                      <span>Video Demo</span>
+                                    </button>
+                                  )}
+                                  {selectedTest.duration && (
+                                    <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1">
+                                      <Timer size={11} />
+                                      {selectedTest.duration}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 <input 
@@ -2636,25 +2714,64 @@ const FitnessTests: React.FC = () => {
                       </div>
 
                       {/* Explicit Protocol & Timing Guidance Card */}
-                      <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 flex items-start justify-between gap-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Timer size={16} className="text-amber-700 shrink-0" />
-                            <span className="font-black text-xs text-amber-950 uppercase tracking-tight">
-                              {selectedTest.name} &bull; {selectedTest.duration || 'Standard Trial'}
-                            </span>
+                      {(() => {
+                        const currentStudent = students.find(s => s.id === selectedStudentId);
+                        const studentGrade = currentStudent?.grade || selectedGradeFilter;
+                        const studentAge = currentStudent?.age || (age ? Number(age) : 0);
+                        const isSenior = selectedBattery?.category?.toLowerCase().includes('senior') || ['11', '12'].includes(String(studentGrade)) || studentAge >= 16;
+                        const isMiddle = selectedBattery?.category?.toLowerCase().includes('middle') || ['6', '7', '8'].includes(String(studentGrade)) || (studentAge >= 11 && studentAge <= 13);
+
+                        return (
+                          <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 space-y-2">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <Timer size={16} className="text-amber-700 shrink-0" />
+                                  <span className="font-black text-xs text-amber-950 uppercase tracking-tight">
+                                    {selectedTest.name} &bull; {
+                                      selectedTest.id === 'curl_ups'
+                                        ? (isSenior ? '60 Seconds (1 Minute CBSE Board)' : isMiddle ? '30 Seconds (Official Khelo India)' : '30s Khelo India / 60s CBSE Cadence')
+                                        : (selectedTest.duration || 'Standard Trial')
+                                    }
+                                  </span>
+                                </div>
+                                <p className="text-xs text-amber-900/80 font-medium leading-relaxed">
+                                  {selectedTest.id === 'curl_ups'
+                                    ? (isSenior 
+                                        ? 'CBSE Senior Secondary (Grades 11 & 12) Physical Education protocol: Count total completed valid repetitions in 60 seconds (1 minute).'
+                                        : isMiddle 
+                                          ? 'Khelo India Middle School (Grades 6–8) protocol: Count total valid curl-ups completed in 30 seconds sliding fingers across 10cm measuring strip.'
+                                          : 'Secondary (Grades 9–10): Count total valid curl-ups in 30 seconds (Official Khelo India) or 60 seconds (CBSE Cadence).')
+                                    : (selectedTest.scoringGuide || selectedTest.description)}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => setActiveGuideTest(selectedTest)}
+                                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer shadow-xs"
+                              >
+                                View Guide Pop-Up
+                              </button>
+                            </div>
+
+                            {/* Specific 30s vs 60s Protocol Pill Notice for Curl-Ups */}
+                            {selectedTest.id === 'curl_ups' && (
+                              <div className="pt-2 border-t border-amber-200/60 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-amber-950">Active Standard:</span>
+                                  <span className={`px-2 py-0.5 rounded font-extrabold text-[10px] uppercase ${
+                                    isSenior ? 'bg-amber-200 text-amber-900' : 'bg-indigo-100 text-indigo-900'
+                                  }`}>
+                                    {isSenior ? '60s CBSE Board Practical' : isMiddle ? '30s Khelo India (10cm strip)' : '30s KIFT / 60s Cadence'}
+                                  </span>
+                                </div>
+                                <span className="text-slate-500 font-semibold">
+                                  Target Range: <strong className="text-slate-800">{isSenior ? '20–48 reps (60s)' : '12–26 reps (30s)'}</strong>
+                                </span>
+                              </div>
+                            )}
                           </div>
-                          <p className="text-xs text-amber-900/80 font-medium leading-relaxed">
-                            {selectedTest.scoringGuide || selectedTest.description}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => setActiveGuideTest(selectedTest)}
-                          className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer shadow-xs"
-                        >
-                          View Guide Pop-Up
-                        </button>
-                      </div>
+                        );
+                      })()}
 
                       {/* Live BMI Gauge Visualization if test is BMI or value is provided */}
                       {(selectedTest.id === 'bmi' || selectedTest.name.toLowerCase().includes('bmi')) && testValue && (
@@ -2796,6 +2913,23 @@ const FitnessTests: React.FC = () => {
         test={activeGuideTest}
         categoryName={selectedBattery?.category}
         onClose={() => setActiveGuideTest(null)}
+        onOpenVideo={(t) => {
+          setActiveGuideTest(null);
+          setActiveVideoTest(t);
+        }}
+      />
+    )}
+
+    {/* Official Video Demonstration Player Modal */}
+    {activeVideoTest && (
+      <TestVideoModal
+        test={activeVideoTest}
+        battery={selectedBattery}
+        categoryName={selectedBattery?.category}
+        onClose={() => setActiveVideoTest(null)}
+        onSelectTest={(t) => {
+          setSelectedTest(t);
+        }}
       />
     )}
   </div>

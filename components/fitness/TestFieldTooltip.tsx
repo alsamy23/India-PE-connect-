@@ -7,21 +7,40 @@ interface TestFieldTooltipProps {
   onOpenModal: (test: KIFTTest) => void;
   compact?: boolean;
   label?: string;
+  categoryName?: string;
+  grade?: string | number;
+  age?: string | number;
 }
 
 export const TestFieldTooltip: React.FC<TestFieldTooltipProps> = ({
   test,
   onOpenModal,
   compact = false,
-  label
+  label,
+  categoryName,
+  grade,
+  age
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+
+  const gradeStr = grade ? String(grade) : '';
+  const ageNum = age ? Number(age) : 0;
+  const isSeniorSec = categoryName?.toLowerCase().includes('senior') || ['11', '12'].includes(gradeStr) || ageNum >= 16;
+  const isSecondary = (categoryName?.toLowerCase().includes('secondary') && !categoryName?.toLowerCase().includes('senior')) || ['9', '10'].includes(gradeStr) || (ageNum >= 14 && ageNum <= 15);
+  const isMiddle = categoryName?.toLowerCase().includes('middle') || ['6', '7', '8'].includes(gradeStr) || (ageNum >= 11 && ageNum <= 13);
 
   const getMethodSummary = (testId: string): string => {
     switch (testId) {
       case 'pushups':
         return '60s Time Limit. Boys: Standard plank posture (elbows to 90°). Girls: Modified push-up with knees on mat.';
       case 'curl_ups':
+        if (isSeniorSec) {
+          return '60s (1 Minute) CBSE Senior Board Practical Protocol. Lie flat, curl up with controlled cadence. Count total valid reps in 60s.';
+        } else if (isSecondary) {
+          return '30s Khelo India Standard / 60s CBSE Practical Cadence. Lie flat, knees at 140°, slide fingers across 10cm strip.';
+        } else if (isMiddle) {
+          return '30s Time Limit (Official Khelo India Standard). Lie flat, knees at 140°, slide fingers across 10cm strip. Count reps in 30s.';
+        }
         return '30s Time Limit (Official Khelo India Standard) or 60s CBSE Cadence. Lie flat, knees at 140°, slide fingers across 10cm strip.';
       case 'plate_tapping':
         return '30s Time Limit. Rapid back-and-forth hand taps between two 20cm discs across center table.';
@@ -50,10 +69,14 @@ export const TestFieldTooltip: React.FC<TestFieldTooltipProps> = ({
   };
 
   const getDurationBadge = (duration?: string, testId?: string): string => {
-    if (testId === 'pushups' || testId === 'flamingo') return '⏱️ 60 Seconds (1 Min)';
-    if (testId === 'curl_ups') return '⏱️ 30s (or 60s)';
+    if (testId === 'pushups' || testId === 'flamingo') return '⏱️ 60s (1 Min)';
+    if (testId === 'curl_ups') {
+      if (isSeniorSec) return '⏱️ 60s (1 Min)';
+      if (isMiddle) return '⏱️ 30 Seconds';
+      return '⏱️ 30s (or 60s)';
+    }
     if (testId === 'plate_tapping') return '⏱️ 30 Seconds';
-    if (testId === 'shuttle_run' || testId === 'shuttle_4x10') return '⏱️ ~9-15 Seconds';
+    if (testId === 'shuttle_run' || testId === 'shuttle_4x10') return '⏱️ ~9-15s';
     if (testId === 'sprint_50m' || testId === 'sprint_30m' || testId === 'sprint_25m') return '⏱️ Timed Sprint';
     if (testId === 'run_600m') return '⏱️ MM:SS Format';
     if (testId === 'bmi') return '📐 Untimed';
