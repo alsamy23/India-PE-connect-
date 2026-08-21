@@ -322,7 +322,74 @@ const TEST_DEMO_REGISTRY: Record<string, TestDemoData> = {
     equipmentSetup: 'Adjustable table, two 20cm discs placed 60cm center-to-center, 10×20cm center plate, stopwatch.',
     biomechanicCue: 'Keep wrist and elbow relaxed with short, rapid horizontal arm oscillations.',
     idealCadence: 'Average completion time between 9.5s and 14.5s'
+  },
+  shuttle_run: {
+    title: 'Shuttle Run (4×10m Agility & Speed) Protocol',
+    youtubeId: 'x7M9Z0eP1v8',
+    embedUrl: 'https://www.youtube-nocookie.com/embed/x7M9Z0eP1v8?autoplay=1&rel=0&modestbranding=1',
+    durationLabel: 'Timed Agility Shuttle (0.01s Precision)',
+    viewingAngle: 'Mid-court viewing both boundary line touches',
+    keyFormPoints: [
+      'Two parallel lines marked 10 meters apart with two wooden blocks placed on the far line.',
+      'On "Go", student sprints 10m, picks up one block, sprints back, and places it completely behind start line.',
+      'Student immediately turns, sprints back to pick up the second block, and sprints through finish.',
+      'Blocks must be placed gently on or behind the line (never thrown or tossed).',
+      'Timer runs continuously until the student crosses the start/finish line carrying the second block.'
+    ],
+    disqualificationFaults: [
+      'Throwing or dropping wooden blocks across the line instead of placing them.',
+      'Failing to touch boundary line with foot/hand during turns.',
+      'Slipping due to improper footwear or dusty surface.'
+    ],
+    equipmentSetup: 'Two lines 10m apart, 2 wooden blocks (5cm×5cm×10cm), stopwatch, clear flat non-slip ground.',
+    biomechanicCue: 'Drop hips low on deceleration approaching the turn line to pivot rapidly without loss of traction.',
+    idealCadence: 'Fastest times range from 9.0s to 12.5s'
   }
+};
+
+const resolveDemoData = (test: KIFTTest): TestDemoData => {
+  if (TEST_DEMO_REGISTRY[test.id]) {
+    return TEST_DEMO_REGISTRY[test.id];
+  }
+
+  const nameLower = test.name.toLowerCase();
+  const idLower = test.id.toLowerCase();
+
+  if (idLower.includes('push') || nameLower.includes('push')) return TEST_DEMO_REGISTRY.pushups;
+  if (idLower.includes('curl') || nameLower.includes('curl') || idLower.includes('sit_up') || nameLower.includes('sit-up')) return TEST_DEMO_REGISTRY.curl_ups;
+  if (idLower.includes('reach') || nameLower.includes('reach')) return TEST_DEMO_REGISTRY.sit_reach;
+  if (idLower.includes('bmi') || nameLower.includes('bmi') || nameLower.includes('height')) return TEST_DEMO_REGISTRY.bmi;
+  if (idLower.includes('shuttle') || nameLower.includes('shuttle')) return TEST_DEMO_REGISTRY.shuttle_4x10;
+  if (idLower.includes('50m') || nameLower.includes('50m')) return TEST_DEMO_REGISTRY.sprint_50m;
+  if (idLower.includes('30m') || nameLower.includes('30m')) return TEST_DEMO_REGISTRY.sprint_30m;
+  if (idLower.includes('25m') || nameLower.includes('25m')) return TEST_DEMO_REGISTRY.sprint_25m;
+  if (idLower.includes('600') || nameLower.includes('600')) return TEST_DEMO_REGISTRY.run_600m;
+  if (idLower.includes('long') || nameLower.includes('1000') || nameLower.includes('800')) return TEST_DEMO_REGISTRY.run_long;
+  if (idLower.includes('jump') || nameLower.includes('broad')) return TEST_DEMO_REGISTRY.broad_jump;
+  if (idLower.includes('flamingo') || nameLower.includes('balance')) return TEST_DEMO_REGISTRY.flamingo;
+  if (idLower.includes('plate') || nameLower.includes('tapping')) return TEST_DEMO_REGISTRY.plate_tapping;
+
+  return {
+    title: `${test.name} Official CBSE Demonstration`,
+    youtubeId: 'IODxDxX7oi4',
+    embedUrl: `https://www.youtube-nocookie.com/embed/IODxDxX7oi4?autoplay=1&rel=0&modestbranding=1`,
+    durationLabel: test.duration || 'Official CBSE Protocol',
+    viewingAngle: 'Side Angle (Perpendicular View)',
+    keyFormPoints: [
+      'Execute movement through full anatomical range of motion.',
+      'Maintain strict alignment of joints without compensatory twisting.',
+      'Follow standard start commands and timer cues.',
+      'Record accurate numerical scores in the unit specified (' + test.unit + ').'
+    ],
+    disqualificationFaults: [
+      'Incomplete repetitions or failing to meet minimum depth/distance marker.',
+      'Starting before the official whistle or command signal.',
+      'Violating specified equipment boundaries or support rules.'
+    ],
+    equipmentSetup: test.equipment ? test.equipment.join(', ') : 'Standard PE testing facility and stopwatches.',
+    biomechanicCue: 'Ensure student warm-up is conducted prior to maximum effort trials.',
+    idealCadence: test.scoringGuide || 'Standard performance scoring'
+  };
 };
 
 export const TestVideoModal: React.FC<TestVideoModalProps> = ({ 
@@ -344,27 +411,9 @@ export const TestVideoModal: React.FC<TestVideoModalProps> = ({
 
   if (!currentTest) return null;
 
-  const demoData: TestDemoData = TEST_DEMO_REGISTRY[currentTest.id] || {
-    title: `${currentTest.name} Official CBSE Demonstration`,
-    youtubeId: 'IODxDxX7oi4',
-    embedUrl: `https://www.youtube-nocookie.com/embed/IODxDxX7oi4?autoplay=1&rel=0&modestbranding=1`,
-    durationLabel: currentTest.duration || 'Official CBSE Protocol',
-    viewingAngle: 'Side Angle (Perpendicular View)',
-    keyFormPoints: [
-      'Execute movement through full anatomical range of motion.',
-      'Maintain strict alignment of joints without compensatory twisting.',
-      'Follow standard start commands and timer cues.',
-      'Record accurate numerical scores in the unit specified (' + currentTest.unit + ').'
-    ],
-    disqualificationFaults: [
-      'Incomplete repetitions or failing to meet minimum depth/distance marker.',
-      'Starting before the official whistle or command signal.',
-      'Violating specified equipment boundaries or support rules.'
-    ],
-    equipmentSetup: currentTest.equipment ? currentTest.equipment.join(', ') : 'Standard PE testing facility and stopwatches.',
-    biomechanicCue: 'Ensure student warm-up is conducted prior to maximum effort trials.',
-    idealCadence: currentTest.scoringGuide || 'Standard performance scoring'
-  };
+  const demoData: TestDemoData = resolveDemoData(currentTest);
+
+  const youtubeDirectLink = `https://www.youtube.com/watch?v=${demoData.youtubeId}`;
 
   const handleTestSwitch = (t: KIFTTest) => {
     setCurrentTest(t);
@@ -409,14 +458,14 @@ export const TestVideoModal: React.FC<TestVideoModalProps> = ({
 
           <div className="flex items-center gap-2">
             <a
-              href={`https://www.youtube.com/results?search_query=Khelo+India+Fitness+Test+${encodeURIComponent(currentTest.name)}`}
+              href={youtubeDirectLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all text-xs font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hidden sm:flex"
-              title="Open SAI Official Search"
+              className="p-2.5 bg-[#D4A017] hover:bg-amber-400 text-slate-950 rounded-xl transition-all text-xs font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-md"
+              title="Watch full demonstration on YouTube"
             >
               <ExternalLink size={14} />
-              <span className="text-[10px]">YouTube Source</span>
+              <span className="text-[10px] hidden sm:inline">Watch on YouTube</span>
             </a>
             <button 
               onClick={onClose}

@@ -39,6 +39,7 @@ import { toast } from '../services/toast.ts';
 import { motion } from 'motion/react';
 import { collection, query, where, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import { fitnessService, SchoolMember } from '../services/fitnessService.ts';
+import { isBrandSuperAdmin } from '../types';
 import { auth, db } from '../services/firebase.ts';
 import { SEOConfig, DEFAULT_SEO_CONFIG, loadSEOConfig, saveSEOConfig, RouteSEOOverride } from '../services/seoService.ts';
 
@@ -89,7 +90,7 @@ const SchoolAdmin: React.FC = () => {
   const [seoPreviewMode, setSeoPreviewMode] = useState<'google' | 'social' | 'sitemap' | 'robots'>('google');
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
-  const isSuperAdmin = auth.currentUser?.email === 'alsamy36@gmail.com';
+  const isSuperAdmin = isBrandSuperAdmin(auth.currentUser?.email);
 
   useEffect(() => {
     if (!auth.currentUser) {

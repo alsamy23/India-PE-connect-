@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, CheckCircle2, MessageSquare, AlertCircle, FileText, Send, HelpCircle, Loader2 } from 'lucide-react';
+import { BRAND_EMAILS } from '../types';
 
 interface ContactProps {
   onNavigate?: (tab: any) => void;
@@ -9,7 +10,7 @@ interface ContactProps {
 const Contact: React.FC<ContactProps> = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     name: '',
-    email: 'alsamy36@gmail.com', // user-custom pre-filled or destination
+    email: BRAND_EMAILS.contact, // default destination email
     senderEmail: '',
     schoolName: '',
     topic: 'Support',
@@ -30,7 +31,7 @@ const Contact: React.FC<ContactProps> = ({ onNavigate }) => {
         setSubmitted(false);
         setFormData({
           name: '',
-          email: 'alsamy36@gmail.com',
+          email: BRAND_EMAILS.contact,
           senderEmail: '',
           schoolName: '',
           topic: 'Support',
@@ -60,11 +61,11 @@ const Contact: React.FC<ContactProps> = ({ onNavigate }) => {
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-4">
             <a 
-              href="mailto:alsamy36@gmail.com"
+              href={`mailto:${BRAND_EMAILS.contact}`}
               className="px-6 py-4 bg-[#0A1C2A] text-white rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-slate-900 hover:bg-slate-800 transition-all shadow-[4px_4px_0px_0px_rgba(255,107,0,0.2)] flex items-center gap-3"
             >
               <Mail size={18} className="text-[#FF6B00]" />
-              <span>alsamy36@gmail.com</span>
+              <span>{BRAND_EMAILS.contact}</span>
             </a>
             <span className="text-xs font-black uppercase tracking-widest text-slate-400">
               ⚡ Typical response within 12 working hours
@@ -86,25 +87,25 @@ const Contact: React.FC<ContactProps> = ({ onNavigate }) => {
               num: "01",
               title: "General enquiries",
               desc: "Questions about school rollouts, board integration talks, seminars, or standard feature permissions.",
-              email: "alsamy36@gmail.com"
+              email: BRAND_EMAILS.info
             },
             {
               num: "02",
               title: "Teacher support",
               desc: "Account management, class sign-in, or custom metrics calculations help is free for working PE teachers.",
-              email: "alsamy36@gmail.com"
+              email: BRAND_EMAILS.contact
             },
             {
               num: "03",
               title: "Bug reports",
               desc: "Spotted a glitch on active screens? Submit details immediately to the developer for a near-instant hotfix.",
-              email: "alsamy36@gmail.com"
+              email: BRAND_EMAILS.admin
             },
             {
               num: "04",
               title: "Feature requests",
               desc: "A specific sport diagram or special national test battery you want added? Let us know.",
-              email: "alsamy36@gmail.com"
+              email: BRAND_EMAILS.contact
             }
           ].map((item, idx) => (
             <div 
@@ -116,12 +117,13 @@ const Contact: React.FC<ContactProps> = ({ onNavigate }) => {
                 <h4 className="font-black text-slate-900 uppercase tracking-wider text-sm">{item.title}</h4>
                 <p className="text-xs text-slate-500 font-semibold leading-relaxed">{item.desc}</p>
               </div>
-              <div className="pt-4 border-t border-slate-100 mt-6">
+              <div className="pt-4 border-t border-slate-100 mt-6 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400">{item.email}</span>
                 <a 
                   href={`mailto:${item.email}?subject=[smartpeindia] ${item.title}`}
                   className="text-xs font-black text-[#FF6B00] hover:text-[#005BFF] transition-colors uppercase tracking-wider inline-flex items-center gap-1.5"
                 >
-                  <span>Email Channel</span>
+                  <span>Email</span>
                   <span>&rarr;</span>
                 </a>
               </div>
@@ -254,7 +256,7 @@ const Contact: React.FC<ContactProps> = ({ onNavigate }) => {
             </ul>
           </div>
           <div className="pt-6 border-t border-slate-100 mt-8 text-[11px] text-slate-400 font-bold uppercase tracking-wider">
-            🔐 Privacy officer direct: <span className="text-[#0A1C2A]">alsamy36@gmail.com</span>
+            🔐 Privacy & Admin direct: <span className="text-[#0A1C2A]">{BRAND_EMAILS.admin}</span>
           </div>
         </div>
       </section>
@@ -274,7 +276,7 @@ const Contact: React.FC<ContactProps> = ({ onNavigate }) => {
             },
             {
               q: "How fast will I get a reply?",
-              a: "Emails to L. Samy are usually answered in 12-24 working hours. Standard suggestions are triaged weekly, while critical bug reports on live features are resolved with priority."
+              a: `Emails sent to ${BRAND_EMAILS.contact} or ${BRAND_EMAILS.info} are usually answered within 12-24 working hours. Standard suggestions are triaged weekly, while critical bug reports on live features are resolved with top priority.`
             },
             {
               q: "Who handles support?",
@@ -282,7 +284,7 @@ const Contact: React.FC<ContactProps> = ({ onNavigate }) => {
             },
             {
               q: "Can my school roll this out department-wide?",
-              a: "Absolutely! Contact us at alsamy36@gmail.com with your school's name, board type (CBSE/ICSE/State), and estimated student count. We will help you initialize school directories and student testing profiles."
+              a: `Absolutely! Contact us at ${BRAND_EMAILS.contact} with your school's name, board type (CBSE/ICSE/State), and estimated student count. We will help you initialize school directories and student testing profiles.`
             }
           ].map((faq, idx) => (
             <div 
@@ -303,3 +305,4 @@ const Contact: React.FC<ContactProps> = ({ onNavigate }) => {
 };
 
 export default Contact;
+

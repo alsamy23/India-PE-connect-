@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, Loader2, BookOpen, User, ArrowRight, LayoutDashboard, Wrench, GraduationCap, X, FileText, Sparkles, Filter, Check, Trophy, CalendarRange } from 'lucide-react';
 import { fitnessService, Student } from '../services/fitnessService.ts';
+import { isBrandSuperAdmin } from '../types';
 import { auth } from '../services/firebase.ts';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -98,7 +99,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ onNavigate }) => {
         setLoadingStudents(true);
         try {
           const profile = await fitnessService.getSchoolMember(user.uid);
-          const isSuperAdmin = user.email === 'alsamy36@gmail.com';
+          const isSuperAdmin = isBrandSuperAdmin(user.email);
           const isAdmin = profile?.role === 'admin' || isSuperAdmin;
           const schoolId = profile?.schoolId;
           

@@ -3,6 +3,7 @@ import { Trophy, Save, Upload, Shield, Award, Medal, Users, UserPlus } from 'luc
 import { auth, db } from '../services/firebase.ts';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { fitnessService, SchoolMember } from '../services/fitnessService.ts';
+import { isBrandSuperAdmin } from '../types';
 import { toast } from '../services/toast.ts';
 
 const DEFAULT_HOUSES = ['MARS', 'NEPTUNE', 'URANUS', 'VENUS'];
@@ -99,7 +100,7 @@ const SportsDayTracker: React.FC = () => {
 
       try {
         const profile = await fitnessService.getSchoolMember(auth.currentUser.uid);
-        const isSuperAdmin = auth.currentUser.email === 'alsamy36@gmail.com';
+        const isSuperAdmin = isBrandSuperAdmin(auth.currentUser.email);
         
         let sId = profile?.schoolId;
         if (!sId) {

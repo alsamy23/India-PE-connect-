@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { fitnessService, FitnessResult, Team, Student, SchoolMember, School } from '../services/fitnessService.ts';
+import { isBrandSuperAdmin, BRAND_EMAILS } from '../types';
 import { auth } from '../services/firebase.ts';
 
 interface FitnessDashboardProps {
@@ -32,7 +33,7 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<SchoolMember | null>(null);
 
-  const isSuperAdmin = auth.currentUser?.email === 'alsamy36@gmail.com';
+  const isSuperAdmin = isBrandSuperAdmin(auth.currentUser?.email);
 
   useEffect(() => {
     let unsubResults: (() => void) | undefined;
@@ -166,7 +167,7 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({ onNavigate, onSelec
             <span className="text-[10px] font-black uppercase tracking-widest">{isSuperAdmin ? 'Global Platform' : 'Live Results'}</span>
           </div>
           <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">{isSuperAdmin ? 'Super Admin Dashboard' : 'School Overview'}</h2>
-          <p className="text-slate-500 font-medium">{isSuperAdmin ? 'Full platform oversight for alsamy36@gmail.com' : 'Real-time fitness data from every student in your school.'}</p>
+          <p className="text-slate-500 font-medium">{isSuperAdmin ? `Full platform oversight for ${auth.currentUser?.email || BRAND_EMAILS.admin}` : 'Real-time fitness data from every student in your school.'}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button 

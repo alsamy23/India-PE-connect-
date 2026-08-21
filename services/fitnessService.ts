@@ -23,7 +23,8 @@ import {
   SchoolMember, 
   KIFTBattery,
   KIFTGradeCategory,
-  PracticalAssessment
+  PracticalAssessment,
+  isBrandSuperAdmin
 } from '../types';
 
 export enum OperationType {
@@ -801,7 +802,7 @@ export const fitnessService = {
   },
   
   isSuperAdmin: () => {
-    return auth.currentUser?.email === 'alsamy36@gmail.com';
+    return isBrandSuperAdmin(auth.currentUser?.email);
   },
 
   getAllSchools: async (): Promise<School[]> => {
@@ -817,7 +818,7 @@ export const fitnessService = {
   getStudents: async (teacherId: string, schoolId?: string, isAdmin = false): Promise<Student[]> => {
     try {
       let q;
-      if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+      if (isBrandSuperAdmin(auth.currentUser?.email)) {
         q = query(collection(db, 'students'));
       } else if (schoolId) {
         q = query(collection(db, 'students'), where('schoolId', '==', schoolId));
@@ -913,7 +914,7 @@ export const fitnessService = {
   getTeams: async (teacherId: string, schoolId?: string, isAdmin = false): Promise<Team[]> => {
     try {
       let q;
-      if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+      if (isBrandSuperAdmin(auth.currentUser?.email)) {
         q = query(collection(db, 'teams'));
       } else if (schoolId) {
         q = query(collection(db, 'teams'), where('schoolId', '==', schoolId));
@@ -945,7 +946,7 @@ export const fitnessService = {
   getRecentResults: async (teacherId: string, schoolId?: string, isAdmin = false, limitCount = 10): Promise<FitnessResult[]> => {
     try {
       let q;
-      if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+      if (isBrandSuperAdmin(auth.currentUser?.email)) {
         q = query(
           collection(db, 'results'), 
           orderBy('date', 'desc'),
@@ -987,14 +988,14 @@ export const fitnessService = {
   subscribeToResults: (teacherId: string, schoolId: string | undefined, isAdmin: boolean, callback: (results: FitnessResult[]) => void) => {
     let q;
     const effectiveSchoolId = schoolId || `personal_${teacherId}`;
-    if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+    if (isBrandSuperAdmin(auth.currentUser?.email)) {
       q = query(
-        collection(db, 'results'),
+        collection(db, 'results'), 
         limit(5000)
       );
     } else {
       q = query(
-        collection(db, 'results'),
+        collection(db, 'results'), 
         where('schoolId', '==', effectiveSchoolId),
         limit(5000)
       );
@@ -1012,7 +1013,7 @@ export const fitnessService = {
   subscribeToStudentResults: (studentId: string, schoolId: string | undefined, callback: (results: FitnessResult[]) => void) => {
     const effectiveSchoolId = schoolId || (auth.currentUser ? `personal_${auth.currentUser.uid}` : '');
     const q = query(
-      collection(db, 'results'),
+      collection(db, 'results'), 
       where('schoolId', '==', effectiveSchoolId),
       where('studentId', '==', studentId)
     );
@@ -1030,7 +1031,7 @@ export const fitnessService = {
     try {
       let q;
       const effectiveSchoolId = schoolId || `personal_${teacherId}`;
-      if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+      if (isBrandSuperAdmin(auth.currentUser?.email)) {
         q = query(collection(db, 'results'));
       } else {
         q = query(collection(db, 'results'), where('schoolId', '==', effectiveSchoolId));
@@ -1048,7 +1049,7 @@ export const fitnessService = {
   subscribeToStudents: (teacherId: string, schoolId: string | undefined, isAdmin: boolean, callback: (students: Student[]) => void) => {
     let q;
     const effectiveSchoolId = schoolId || `personal_${teacherId}`;
-    if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+    if (isBrandSuperAdmin(auth.currentUser?.email)) {
       q = query(collection(db, 'students'));
     } else {
       q = query(collection(db, 'students'), where('schoolId', '==', effectiveSchoolId));
@@ -1075,7 +1076,7 @@ export const fitnessService = {
   subscribeToTeams: (teacherId: string, schoolId: string | undefined, isAdmin: boolean, callback: (teams: Team[]) => void) => {
     let q;
     const effectiveSchoolId = schoolId || `personal_${teacherId}`;
-    if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+    if (isBrandSuperAdmin(auth.currentUser?.email)) {
       q = query(collection(db, 'teams'));
     } else {
       q = query(collection(db, 'teams'), where('schoolId', '==', effectiveSchoolId));
@@ -1152,7 +1153,7 @@ export const fitnessService = {
     try {
       let q;
       const effectiveSchoolId = schoolId || `personal_${teacherId}`;
-      if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+      if (isBrandSuperAdmin(auth.currentUser?.email)) {
         q = query(collection(db, 'practical_assessments'), limit(2000));
       } else {
         q = query(collection(db, 'practical_assessments'), where('schoolId', '==', effectiveSchoolId), limit(2000));
@@ -1211,7 +1212,7 @@ export const fitnessService = {
 
     let q;
     const effectiveSchoolId = schoolId || `personal_${teacherId}`;
-    if (auth.currentUser?.email === 'alsamy36@gmail.com') {
+    if (isBrandSuperAdmin(auth.currentUser?.email)) {
       q = query(collection(db, 'practical_assessments'), limit(2000));
     } else {
       q = query(collection(db, 'practical_assessments'), where('schoolId', '==', effectiveSchoolId), limit(2000));

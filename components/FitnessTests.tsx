@@ -62,6 +62,12 @@ import { TestVideoModal } from './fitness/TestVideoModal.tsx';
 import { BMISpectrumGauge } from './fitness/BMISpectrumGauge.tsx';
 import { TestFieldTooltip } from './fitness/TestFieldTooltip.tsx';
 
+const ADMIN_EMAILS = ['admin@smartpeindia.app', 'contact@smartpeindia.app', 'info@smartpeindia.app'];
+const isAdminUser = (email?: string | null) => {
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email.toLowerCase());
+};
+
 const FitnessTests: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'fitness' | 'games'>('fitness');
   const [selectedBattery, setSelectedBattery] = useState<KIFTBattery | null>(null);
@@ -738,12 +744,12 @@ const FitnessTests: React.FC = () => {
 
   /**
    * Returns the list of tests to display and record in the active view:
-   * - 1 focused test (default for lightning-fast mobile entry)
-   * - 2 or 3 custom selected tests
+   * - 1 focused single test (e.g. pushups, 50m dash)
+   * - Picked 1, 2, 3+ custom selected tests
    * - Full 8-test battery spreadsheet
    */
   const getActiveTests = (): KIFTTest[] => {
-    if (!selectedBattery) {
+    if (!selectedBattery || !selectedBattery.tests || selectedBattery.tests.length === 0) {
       return selectedTest ? [selectedTest] : [];
     }
     if (testSelectionFilter === 'all') {
@@ -751,22 +757,28 @@ const FitnessTests: React.FC = () => {
     }
     if (testSelectionFilter === 'custom') {
       const filtered = selectedBattery.tests.filter(t => customSelectedTestIds.includes(t.id));
-      return filtered.length > 0 ? filtered : (selectedTest ? [selectedTest] : [selectedBattery.tests[0]]);
+      if (filtered.length > 0) return filtered;
+      if (selectedTest && selectedBattery.tests.some(t => t.id === selectedTest.id)) {
+        return [selectedTest];
+      }
+      return [selectedBattery.tests[0]];
     }
     if (testSelectionFilter && testSelectionFilter !== 'single') {
       const matched = selectedBattery.tests.find(t => t.id === testSelectionFilter);
       if (matched) return [matched];
     }
-    return selectedTest ? [selectedTest] : [selectedBattery.tests[0]];
+    if (selectedTest && selectedBattery.tests.some(t => t.id === selectedTest.id)) {
+      return [selectedTest];
+    }
+    return [selectedBattery.tests[0]];
   };
 
   /**
    * Helper to increment/decrement repetition or numeric scores directly with quick touch steppers
    */
   const handleQuickAdjustScore = (studentId: string, testItem: KIFTTest, delta: number) => {
-    const currentActive = getActiveTests();
     const cellKey = `${studentId}_${testItem.id}`;
-    const currentValStr = batchScores[cellKey] ?? (currentActive.length === 1 ? batchScores[studentId] : '') ?? '';
+    const currentValStr = batchScores[cellKey] ?? '';
     let currentNum = parseFloat(currentValStr);
     if (isNaN(currentNum)) currentNum = 0;
     const nextNum = Math.max(0, currentNum + delta);
@@ -774,13 +786,11 @@ const FitnessTests: React.FC = () => {
     
     setBatchScores(prev => ({
       ...prev,
-      [cellKey]: nextValStr,
-      ...(currentActive.length === 1 ? { [studentId]: nextValStr } : {})
+      [cellKey]: nextValStr
     }));
     setBatchSavedStatus(prev => ({
       ...prev,
-      [cellKey]: false,
-      ...(currentActive.length === 1 ? { [studentId]: false } : {})
+      [cellKey]: false
     }));
   };
 
@@ -833,7 +843,7 @@ const FitnessTests: React.FC = () => {
     let schoolId = student?.schoolId || userProfile?.schoolId;
 
     if (!schoolId) {
-      if (auth.currentUser.email === 'alsamy36@gmail.com') {
+      if (isAdminUser(auth.currentUser.email)) {
         schoolId = 'master_registry';
       } else {
         schoolId = `personal_${auth.currentUser.uid}`;
@@ -896,12 +906,12 @@ const FitnessTests: React.FC = () => {
       });
 
       // Save to school database if student is selected
-      if (selectedStudentId || userProfile?.schoolId || auth.currentUser.email === 'alsamy36@gmail.com') {
+      if (selectedStudentId || userProfile?.schoolId || isAdminUser(auth.currentUser.email)) {
         const student = students.find(s => s.id === selectedStudentId);
         let schoolId = student?.schoolId || userProfile?.schoolId;
         
         if (!schoolId) {
-          if (auth.currentUser.email === 'alsamy36@gmail.com') {
+          if (isAdminUser(auth.currentUser.email)) {
             schoolId = 'master_registry';
           } else {
             schoolId = `personal_${auth.currentUser.uid}`;
@@ -985,12 +995,12 @@ const FitnessTests: React.FC = () => {
       for (const student of filteredStudentsForSelect) {
         let schoolId = student.schoolId || userProfile?.schoolId;
         if (!schoolId) {
-          schoolId = auth.currentUser.email === 'alsamy36@gmail.com' ? 'master_registry' : `personal_${auth.currentUser.uid}`;
+          schoolId = isAdminUser(auth.currentUser.email) ? 'master_registry' : `personal_${auth.currentUser.uid}`;
         }
 
         for (const testItem of currentTests) {
           const cellKey = `${student.id}_${testItem.id}`;
-          const val = (batchScores[cellKey] || (currentTests.length === 1 ? batchScores[student.id] : '') || '').trim();
+          const val = (batchScores[cellKey] || '').trim();
           if (val) {
             let cellRating = 'Recorded';
             if (testItem.id === 'bmi' || testItem.name.toLowerCase().includes('bmi')) {
@@ -1017,8 +1027,7 @@ const FitnessTests: React.FC = () => {
 
             setBatchSavedStatus(prev => ({
               ...prev,
-              [cellKey]: true,
-              [student.id]: true
+              [cellKey]: true
             }));
             savedCount++;
           }
@@ -1049,13 +1058,13 @@ const FitnessTests: React.FC = () => {
     try {
       let schoolId = student.schoolId || userProfile?.schoolId;
       if (!schoolId) {
-        schoolId = auth.currentUser.email === 'alsamy36@gmail.com' ? 'master_registry' : `personal_${auth.currentUser.uid}`;
+        schoolId = isAdminUser(auth.currentUser.email) ? 'master_registry' : `personal_${auth.currentUser.uid}`;
       }
 
       let rowSavedCount = 0;
       for (const t of currentTests) {
         const cellKey = `${student.id}_${t.id}`;
-        const val = (batchScores[cellKey] || (currentTests.length === 1 ? batchScores[student.id] : ''))?.trim();
+        const val = (batchScores[cellKey] || '')?.trim();
         if (val) {
           let singleRating = 'Recorded';
           if (t.id === 'bmi' || t.name.toLowerCase().includes('bmi')) {
@@ -1080,10 +1089,9 @@ const FitnessTests: React.FC = () => {
             percentile: 0
           });
 
-          setBatchSavedStatus(prev => ({ 
-            ...prev, 
-            [cellKey]: true,
-            [student.id]: true
+          setBatchSavedStatus(prev => ({
+            ...prev,
+            [cellKey]: true
           }));
           rowSavedCount++;
         }
@@ -1113,7 +1121,7 @@ const FitnessTests: React.FC = () => {
       s.grade || '',
       s.section || '',
       s.gender || '',
-      ...currentTests.map(t => batchScores[`${s.id}_${t.id}`] || (currentTests.length === 1 ? batchScores[s.id] : '') || '')
+      ...currentTests.map(t => batchScores[`${s.id}_${t.id}`] || '')
     ]);
 
     const csvStr = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -1162,13 +1170,11 @@ const FitnessTests: React.FC = () => {
               if (val && val !== '') {
                 setBatchScores(prev => ({
                   ...prev,
-                  [`${matchedStudent.id}_${t.id}`]: val,
-                  [matchedStudent.id]: val
+                  [`${matchedStudent.id}_${t.id}`]: val
                 }));
                 setBatchSavedStatus(prev => ({
                   ...prev,
-                  [`${matchedStudent.id}_${t.id}`]: false,
-                  [matchedStudent.id]: false
+                  [`${matchedStudent.id}_${t.id}`]: false
                 }));
                 importedCount++;
               }
@@ -1294,8 +1300,8 @@ const FitnessTests: React.FC = () => {
     let studentUnsaved = false;
     currentTestsForCount.forEach(t => {
       const cellKey = `${s.id}_${t.id}`;
-      const val = (batchScores[cellKey] || (currentTestsForCount.length === 1 ? batchScores[s.id] : '') || '').trim();
-      const isSaved = batchSavedStatus[cellKey] || (currentTestsForCount.length === 1 ? batchSavedStatus[s.id] : false);
+      const val = (batchScores[cellKey] || '').trim();
+      const isSaved = batchSavedStatus[cellKey] || false;
       if (val && !isSaved) {
         studentUnsaved = true;
       }
@@ -1697,22 +1703,26 @@ const FitnessTests: React.FC = () => {
                         onChange={e => {
                           const val = e.target.value;
                           setTestSelectionFilter(val);
-                          if (val !== 'all' && val !== 'custom' && selectedBattery) {
+                          if (val === 'custom') {
+                            if (customSelectedTestIds.length === 0 && selectedBattery?.tests.length) {
+                              setCustomSelectedTestIds([selectedBattery.tests[0].id, selectedBattery.tests[1]?.id || selectedBattery.tests[0].id]);
+                            }
+                          } else if (val !== 'all' && selectedBattery) {
                             const found = selectedBattery.tests.find(t => t.id === val);
                             if (found) setSelectedTest(found);
                           }
                         }}
                       >
-                        <optgroup label={`${selectedBattery?.category || 'Active'} Tests (${selectedBattery?.tests.length || 0} Standard Tests)`}>
+                        <optgroup label={`${selectedBattery?.category || 'Active'} Individual Tests`}>
                           {selectedBattery?.tests.map(t => (
                             <option key={t.id} value={t.id}>
                               {t.id === 'pushups' ? '⭐ 🎯 ' : '🎯 '}{t.name} {t.duration ? `(${t.duration})` : `(${t.unit})`}
                             </option>
                           ))}
                         </optgroup>
-                        <optgroup label="Multi-Test Field Options">
-                          <option value="custom">✨ Custom Selection (Pick 2 or 3 Tests)</option>
-                          <option value="all">📊 All Battery Tests ({selectedBattery?.tests.length || 8} Tests Full Sheet)</option>
+                        <optgroup label="Multi-Test Options">
+                          <option value="custom">✨ Multi-Select (Pick 1, 2, or 3 Tests)</option>
+                          <option value="all">📊 All Tests ({selectedBattery?.tests.length || 8} Tests Full Battery)</option>
                         </optgroup>
                       </select>
                     </div>
@@ -1751,89 +1761,191 @@ const FitnessTests: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Interactive Quick-Test Switcher Pills Carousel */}
+                  {/* Interactive Quick-Test Switcher & Multi-Test Selector */}
                   {selectedBattery && (
-                    <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <Activity size={12} className="text-indigo-600" />
-                          <span>Quick 1-Tap Test Switcher for {selectedBattery.category}:</span>
-                        </span>
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-100">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-xs">
+                            <Activity size={14} />
+                          </span>
+                          <div>
+                            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide">
+                              Test Scope &bull; {selectedBattery.category} ({selectedBattery.tests.length} Tests)
+                            </h4>
+                            <p className="text-[10.5px] text-slate-500 font-medium">
+                              {testSelectionFilter === 'all' 
+                                ? 'Displaying full 8-test spreadsheet grid' 
+                                : testSelectionFilter === 'custom' 
+                                  ? `Displaying ${getActiveTests().length} selected tests together` 
+                                  : `Focused on single test: ${selectedTest?.name || selectedBattery.tests[0].name}`}
+                            </p>
+                          </div>
+                        </div>
 
-                        <div className="flex items-center gap-1.5">
+                        {/* 3-Way Mode Segmented Switch */}
+                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                           <button
-                            onClick={() => setTestSelectionFilter('custom')}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                              testSelectionFilter === 'custom'
-                                ? 'bg-indigo-600 text-white shadow-sm'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            type="button"
+                            onClick={() => {
+                              const target = selectedTest?.id || selectedBattery.tests[0].id;
+                              setTestSelectionFilter(target);
+                              const t = selectedBattery.tests.find(item => item.id === target) || selectedBattery.tests[0];
+                              setSelectedTest(t);
+                            }}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 ${
+                              testSelectionFilter !== 'custom' && testSelectionFilter !== 'all'
+                                ? 'bg-white text-indigo-700 shadow-sm font-black'
+                                : 'text-slate-600 hover:text-slate-900'
                             }`}
                           >
-                            <span>Pick 2-3</span>
+                            <span>🎯 Single Test</span>
                           </button>
                           <button
-                            onClick={() => setTestSelectionFilter('all')}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                              testSelectionFilter === 'all'
-                                ? 'bg-indigo-600 text-white shadow-sm'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            type="button"
+                            onClick={() => {
+                              setTestSelectionFilter('custom');
+                              if (customSelectedTestIds.length === 0) {
+                                setCustomSelectedTestIds([
+                                  selectedBattery.tests[0].id, 
+                                  selectedBattery.tests[1]?.id || selectedBattery.tests[0].id
+                                ]);
+                              }
+                            }}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 ${
+                              testSelectionFilter === 'custom'
+                                ? 'bg-white text-indigo-700 shadow-sm font-black'
+                                : 'text-slate-600 hover:text-slate-900'
                             }`}
                           >
-                            <span>All Tests</span>
+                            <span>📑 Pick 1-3 Tests</span>
+                            {customSelectedTestIds.length > 0 && testSelectionFilter === 'custom' && (
+                              <span className="px-1.5 py-0.2 bg-indigo-600 text-white rounded text-[9px] font-black">
+                                {customSelectedTestIds.length}
+                              </span>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTestSelectionFilter('all')}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 ${
+                              testSelectionFilter === 'all'
+                                ? 'bg-white text-indigo-700 shadow-sm font-black'
+                                : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            <span>📊 All Tests</span>
                           </button>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                        {selectedBattery.tests.map(test => {
-                          const isSingleActive = (testSelectionFilter === test.id) || (testSelectionFilter === 'single' && selectedTest?.id === test.id);
-                          const isCustomActive = testSelectionFilter === 'custom' && customSelectedTestIds.includes(test.id);
-                          const isAllActive = testSelectionFilter === 'all';
-                          const isSelected = isSingleActive || isCustomActive || isAllActive;
-
-                          return (
-                            <button
-                              key={test.id}
-                              onClick={() => {
-                                if (testSelectionFilter === 'custom') {
-                                  if (customSelectedTestIds.includes(test.id)) {
-                                    if (customSelectedTestIds.length > 1) {
-                                      setCustomSelectedTestIds(prev => prev.filter(id => id !== test.id));
-                                    } else {
-                                      toast.error("Please keep at least 1 test selected.");
-                                    }
-                                  } else {
-                                    setCustomSelectedTestIds(prev => [...prev, test.id]);
+                      {/* Test Chips Grid */}
+                      <div className="space-y-2">
+                        {testSelectionFilter === 'custom' && (
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] bg-indigo-50/60 p-2.5 rounded-xl border border-indigo-100">
+                            <span className="font-bold text-indigo-900">
+                              👉 Click test chips below to toggle them ON or OFF:
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (selectedBattery.tests.length >= 2) {
+                                    setCustomSelectedTestIds([selectedBattery.tests[0].id, selectedBattery.tests[1].id]);
                                   }
-                                } else {
-                                  setTestSelectionFilter(test.id);
-                                  setSelectedTest(test);
-                                }
-                              }}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
-                                isSelected
-                                  ? 'bg-[#0D2B52] text-white shadow-sm ring-2 ring-[#D4A017]'
-                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60'
-                              }`}
-                            >
-                              {testSelectionFilter === 'custom' && (
-                                <span className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[10px] ${
-                                  isCustomActive ? 'bg-[#D4A017] text-slate-900 font-black' : 'bg-slate-300 text-transparent'
-                                }`}>
-                                  ✓
-                                </span>
-                              )}
-                              <span>{test.name}</span>
-                              {test.duration && (
-                                <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
-                                  isSelected ? 'bg-white/20 text-[#D4A017]' : 'bg-slate-200 text-slate-600'
-                                }`}>
-                                  {test.duration.includes('60') ? '60s' : test.duration.includes('30') ? '30s' : test.duration}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
+                                }}
+                                className="px-2 py-0.5 bg-white hover:bg-indigo-100 text-indigo-700 rounded-md font-bold text-[10px] border border-indigo-200 cursor-pointer"
+                              >
+                                Pick First 2
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (selectedBattery.tests.length >= 3) {
+                                    setCustomSelectedTestIds([selectedBattery.tests[0].id, selectedBattery.tests[1].id, selectedBattery.tests[2].id]);
+                                  }
+                                }}
+                                className="px-2 py-0.5 bg-white hover:bg-indigo-100 text-indigo-700 rounded-md font-bold text-[10px] border border-indigo-200 cursor-pointer"
+                              >
+                                Pick First 3
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCustomSelectedTestIds(selectedBattery.tests.map(t => t.id))}
+                                className="px-2 py-0.5 bg-white hover:bg-indigo-100 text-indigo-700 rounded-md font-bold text-[10px] border border-indigo-200 cursor-pointer"
+                              >
+                                Select All
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          {selectedBattery.tests.map(test => {
+                            const isSingleMode = testSelectionFilter !== 'custom' && testSelectionFilter !== 'all';
+                            const isSingleSelected = isSingleMode && (testSelectionFilter === test.id || selectedTest?.id === test.id);
+                            const isCustomSelected = testSelectionFilter === 'custom' && customSelectedTestIds.includes(test.id);
+                            const isAllMode = testSelectionFilter === 'all';
+                            const isSelected = isSingleSelected || isCustomSelected;
+
+                            return (
+                              <button
+                                key={test.id}
+                                type="button"
+                                onClick={() => {
+                                  if (testSelectionFilter === 'custom') {
+                                    if (customSelectedTestIds.includes(test.id)) {
+                                      if (customSelectedTestIds.length > 1) {
+                                        setCustomSelectedTestIds(prev => prev.filter(id => id !== test.id));
+                                      } else {
+                                        toast.error("Please keep at least 1 test selected.");
+                                      }
+                                    } else {
+                                      setCustomSelectedTestIds(prev => [...prev, test.id]);
+                                    }
+                                  } else if (testSelectionFilter === 'all') {
+                                    // In all mode, clicking switches to focused single test
+                                    setTestSelectionFilter(test.id);
+                                    setSelectedTest(test);
+                                  } else {
+                                    // Single mode
+                                    setTestSelectionFilter(test.id);
+                                    setSelectedTest(test);
+                                  }
+                                }}
+                                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer select-none border ${
+                                  testSelectionFilter === 'custom'
+                                    ? isCustomSelected
+                                      ? 'bg-[#0D2B52] text-white border-slate-900 shadow-md ring-2 ring-[#D4A017]'
+                                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200 opacity-75'
+                                    : isSingleSelected
+                                      ? 'bg-[#0D2B52] text-white border-slate-900 shadow-md ring-2 ring-[#D4A017]'
+                                      : isAllMode
+                                        ? 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'
+                                        : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200'
+                                }`}
+                              >
+                                {testSelectionFilter === 'custom' && (
+                                  <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] font-black transition-all ${
+                                    isCustomSelected ? 'bg-[#D4A017] text-slate-950 shadow-xs' : 'bg-slate-200 text-transparent border border-slate-300'
+                                  }`}>
+                                    ✓
+                                  </span>
+                                )}
+                                <span>{test.name}</span>
+                                {test.duration && (
+                                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${
+                                    isSelected && testSelectionFilter !== 'all' 
+                                      ? 'bg-white/20 text-[#D4A017]' 
+                                      : 'bg-slate-200/80 text-slate-600'
+                                  }`}>
+                                    {test.duration.includes('60') ? '60s' : test.duration.includes('30') ? '30s' : test.duration}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2107,11 +2219,11 @@ const FitnessTests: React.FC = () => {
                               // Check if all active tests are saved for this student
                               const allSaved = activeTests.every(t => {
                                 const cellKey = `${student.id}_${t.id}`;
-                                return batchSavedStatus[cellKey] || (activeTests.length === 1 ? batchSavedStatus[student.id] : false);
+                                return batchSavedStatus[cellKey] || false;
                               });
                               const hasAnyScore = activeTests.some(t => {
                                 const cellKey = `${student.id}_${t.id}`;
-                                return (batchScores[cellKey] || (activeTests.length === 1 ? batchScores[student.id] : '') || '').trim() !== '';
+                                return (batchScores[cellKey] || '').trim() !== '';
                               });
 
                               return (
@@ -2177,8 +2289,8 @@ const FitnessTests: React.FC = () => {
                                   <div className="space-y-3">
                                     {activeTests.map((test, tIdx) => {
                                       const cellKey = `${student.id}_${test.id}`;
-                                      const currentVal = batchScores[cellKey] ?? (activeTests.length === 1 ? batchScores[student.id] : '') ?? '';
-                                      const isSavedCell = batchSavedStatus[cellKey] ?? (activeTests.length === 1 ? batchSavedStatus[student.id] : false);
+                                      const currentVal = batchScores[cellKey] ?? '';
+                                      const isSavedCell = batchSavedStatus[cellKey] ?? false;
                                       const fieldInfo = getDescriptiveFieldInfo(test, { category: selectedBattery?.category, grade: student.grade, age: student.age });
                                       const isRepetitionTest = test.unit.toLowerCase().includes('count') || test.unit.toLowerCase().includes('reps') || test.name.toLowerCase().includes('push') || test.name.toLowerCase().includes('sit-up') || test.name.toLowerCase().includes('curl');
 
@@ -2226,13 +2338,11 @@ const FitnessTests: React.FC = () => {
                                                   const val = e.target.value;
                                                   setBatchScores(prev => ({
                                                     ...prev,
-                                                    [cellKey]: val,
-                                                    ...(activeTests.length === 1 ? { [student.id]: val } : {})
+                                                    [cellKey]: val
                                                   }));
                                                   setBatchSavedStatus(prev => ({
                                                     ...prev,
-                                                    [cellKey]: false,
-                                                    ...(activeTests.length === 1 ? { [student.id]: false } : {})
+                                                    [cellKey]: false
                                                   }));
                                                 }}
                                               />
@@ -2357,8 +2467,8 @@ const FitnessTests: React.FC = () => {
 
                                           {currentTests.map((test, tIdx) => {
                                             const cellKey = `${student.id}_${test.id}`;
-                                            const currentVal = batchScores[cellKey] ?? (currentTests.length === 1 ? batchScores[student.id] : '') ?? '';
-                                            const isSavedCell = batchSavedStatus[cellKey] ?? (currentTests.length === 1 ? batchSavedStatus[student.id] : false);
+                                            const currentVal = batchScores[cellKey] ?? '';
+                                            const isSavedCell = batchSavedStatus[cellKey] ?? false;
                                             const fieldInfo = getDescriptiveFieldInfo(test, { category: selectedBattery?.category, grade: student.grade, age: student.age });
 
                                             return (
@@ -2384,13 +2494,11 @@ const FitnessTests: React.FC = () => {
                                                       const val = e.target.value;
                                                       setBatchScores(prev => ({
                                                         ...prev,
-                                                        [cellKey]: val,
-                                                        ...(currentTests.length === 1 ? { [student.id]: val } : {})
+                                                        [cellKey]: val
                                                       }));
                                                       setBatchSavedStatus(prev => ({
                                                         ...prev,
-                                                        [cellKey]: false,
-                                                        ...(currentTests.length === 1 ? { [student.id]: false } : {})
+                                                        [cellKey]: false
                                                       }));
                                                     }}
                                                   />

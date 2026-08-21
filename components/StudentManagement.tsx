@@ -29,7 +29,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { jsPDF } from 'jspdf';
 import { fitnessService, Student, SchoolMember, FitnessResult } from '../services/fitnessService.ts';
-import { PracticalAssessment } from '../types.ts';
+import { PracticalAssessment, isBrandSuperAdmin } from '../types.ts';
 import { isGradeMatching } from './PracticalAssessmentHub.tsx';
 import { auth } from '../services/firebase.ts';
 import { toast } from '../services/toast.ts';
@@ -66,7 +66,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
   const [seedingGrade12, setSeedingGrade12] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  const isSuperAdmin = auth.currentUser?.email === 'alsamy36@gmail.com';
+  const isSuperAdmin = isBrandSuperAdmin(auth.currentUser?.email);
   const isAdmin = isSuperAdmin || userProfile?.role === 'admin';
 
   // Close predictive dropdown when clicking outside

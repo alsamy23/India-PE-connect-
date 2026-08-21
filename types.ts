@@ -363,6 +363,28 @@ export interface VivaQuestionPrompt {
   marksWeight: number;
 }
 
+// Brand communication and super-administrator emails
+export const BRAND_EMAILS = {
+  admin: 'admin@smartpeindia.app',
+  contact: 'contact@smartpeindia.app',
+  info: 'info@smartpeindia.app',
+  support: 'contact@smartpeindia.app',
+  privacy: 'admin@smartpeindia.app',
+  feedback: 'info@smartpeindia.app'
+} as const;
+
+export const SUPER_ADMIN_EMAILS = [
+  'admin@smartpeindia.app',
+  'contact@smartpeindia.app',
+  'info@smartpeindia.app'
+];
+
+export const isBrandSuperAdmin = (email?: string | null): boolean => {
+  if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  return SUPER_ADMIN_EMAILS.some(e => e.toLowerCase() === normalized);
+};
+
 declare global {
   interface Window {
     aistudio?: {
