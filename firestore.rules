@@ -99,6 +99,24 @@ service cloud.firestore {
       allow delete: if isAuthenticated();
     }
 
+    match /academic_programs/{programId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    match /academic_athletes/{athleteId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    match /academic_assessments/{assessmentId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
     match /system_logs/{logId} {
       allow create: if true;
       allow read: if isAuthenticated();
@@ -109,6 +127,11 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isAuthenticated();
       allow delete: if isAuthenticated();
+    }
+
+    match /mail_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /sportsDays/{schoolId} {

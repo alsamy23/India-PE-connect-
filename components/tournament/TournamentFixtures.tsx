@@ -12,13 +12,13 @@ export const TournamentFixtures: React.FC = () => {
   const [fixtureMode, setFixtureMode] = useState<FixtureMode>('knockout');
 
   // Shared Tournament State across formats
-  const [tournamentName, setTournamentName] = useState('Chiranjeevulu Memorial Trophy');
-  const [subTitle, setSubTitle] = useState('Inter-School Boys Championship');
-  const [category, setCategory] = useState('U-14');
+  const [tournamentName, setTournamentName] = useState('Football U-11 Championship');
+  const [subTitle, setSubTitle] = useState('Official 16-Team Knockout Fixture');
+  const [category, setCategory] = useState('U - 11');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [numTeams, setNumTeams] = useState<number>(10);
+  const [numTeams, setNumTeams] = useState<number>(16);
   const [teamsList, setTeamsList] = useState<string[]>(() => {
-    return Array.from({ length: 10 }, (_, i) => PRESET_SCHOOLS[i % PRESET_SCHOOLS.length]);
+    return Array.from({ length: 16 }, (_, i) => `Team ${i + 1}`);
   });
 
   return (

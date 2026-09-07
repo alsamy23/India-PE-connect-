@@ -322,7 +322,7 @@ Return exactly a valid JSON object matching this structure (no markdown envelope
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'gemini-3.6-flash',
+          model: 'gemini-3.7-flash',
           contents: prompt
         })
       });

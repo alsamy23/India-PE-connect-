@@ -56,6 +56,7 @@ import { auth } from '../services/firebase.ts';
 import { toast } from '../services/toast.ts';
 import Logo from './Logo.tsx';
 import { D3StudentProgressChart } from './fitness/D3StudentProgressChart.tsx';
+import { StudentGrowthComparisonChart } from './fitness/StudentGrowthComparisonChart.tsx';
 
 interface FitnessReportsProps {
   initialStudentId?: string;
@@ -810,6 +811,166 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
     }
   };
 
+  const triggerPrintFriendlyPDF = () => {
+    try {
+      const reportElement = reportRef.current;
+      if (!reportElement) {
+        toast.error("Could not find the report element to print.");
+        return;
+      }
+
+      // Ensure dynamic CSS media print rules are loaded
+      const printStyleId = 'smartpe-fitness-print-media-rules';
+      let styleTag = document.getElementById(printStyleId) as HTMLStyleElement | null;
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = printStyleId;
+        document.head.appendChild(styleTag);
+      }
+
+      styleTag.innerHTML = `
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0mm !important;
+          }
+
+          *, *::before, *::after {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
+          body {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+          }
+
+          /* Hide application UI, sidebars, navigation, modals, and buttons */
+          nav,
+          header,
+          aside,
+          button,
+          input,
+          select,
+          .print\\:hidden,
+          .no-print,
+          .no-print-area,
+          .sidebar,
+          .app-header,
+          .disclaimer-banner,
+          .toast,
+          #report-action-buttons {
+            display: none !important;
+            visibility: hidden !important;
+          }
+
+          /* Unconstrain scroll containers for complete multi-page output */
+          html, body, #root, main, [class*="overflow-hidden"], [class*="overflow-y-auto"], [class*="max-h-"] {
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+            position: static !important;
+            background: transparent !important;
+          }
+
+          #fitness-report-printable-area {
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            overflow: visible !important;
+            max-height: none !important;
+            height: auto !important;
+            width: 100% !important;
+            display: block !important;
+            background: #ffffff !important;
+          }
+
+          /* Hide interactive report header bar inside the report */
+          #fitness-report-printable-area > div:first-child {
+            display: none !important;
+          }
+
+          #fitness-report-printable-area > div:nth-child(2) {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+          }
+
+          /* Each page section is formatted as a standalone A4 document */
+          .pdf-page-section {
+            width: 210mm !important;
+            min-height: 297mm !important;
+            max-height: 297mm !important;
+            height: 297mm !important;
+            box-sizing: border-box !important;
+            margin: 0 auto !important;
+            padding: 16mm 14mm !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            background: #ffffff !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            position: relative !important;
+          }
+
+          .pdf-page-section:last-of-type {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+
+          svg {
+            max-width: 100% !important;
+            overflow: visible !important;
+          }
+
+          .recharts-responsive-container {
+            width: 100% !important;
+          }
+        }
+      `;
+
+      // Set clean document title for the default PDF filename
+      const originalTitle = document.title;
+      const studentName = reportData?.student?.name ? reportData.student.name.replace(/\s+/g, '_') : 'Student';
+      const grade = reportData?.student?.grade ? `_Grade_${reportData.student.grade}` : '';
+      const section = reportData?.student?.section ? `_${reportData.student.section}` : '';
+      const cleanFileName = `${studentName}_Fitness_Report${grade}${section}_SmartPE`;
+
+      document.title = cleanFileName;
+
+      toast.info("Opening print dialog. In the Destination drop-down, select 'Save as PDF' to download your file.", 5000);
+
+      // Clean up title after print dialog closes
+      const restoreTitle = () => {
+        document.title = originalTitle;
+        window.removeEventListener('afterprint', restoreTitle);
+      };
+      window.addEventListener('afterprint', restoreTitle);
+
+      // Execute window.print()
+      window.print();
+
+      // Fallback cleanup timer
+      setTimeout(restoreTitle, 6000);
+    } catch (e) {
+      console.error("Direct window.print() failed, falling back to print iframe:", e);
+      handlePrint();
+    }
+  };
+
   const handlePrint = () => {
     try {
       const reportElement = reportRef.current;
@@ -934,23 +1095,46 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
       const el = reportRef.current;
       
       // Select all `.pdf-page-section` elements inside the report
-      const pageElements = el.querySelectorAll('.pdf-page-section');
+      const pageElements = el.querySelectorAll<HTMLElement>('.pdf-page-section');
       
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
       const pageWidth = 210; // mm
       const pageHeight = 297; // mm
 
       if (pageElements.length > 0) {
         for (let i = 0; i < pageElements.length; i++) {
-          const pageEl = pageElements[i] as HTMLElement;
+          const pageEl = pageElements[i];
           
           if (i > 0) {
-            pdf.addPage();
+            pdf.addPage('a4', 'p');
           }
+
+          // Standardize width and height to exact A4 proportions (794px × 1123px) during capture
+          const prevWidth = pageEl.style.width;
+          const prevMaxWidth = pageEl.style.maxWidth;
+          const prevMinHeight = pageEl.style.minHeight;
+          const prevMaxHeight = pageEl.style.maxHeight;
+          const prevBoxShadow = pageEl.style.boxShadow;
+          const prevBorder = pageEl.style.border;
+
+          pageEl.style.width = '794px';
+          pageEl.style.maxWidth = '794px';
+          pageEl.style.minHeight = '1123px';
+          pageEl.style.maxHeight = '1123px';
+          pageEl.style.boxShadow = 'none';
+          pageEl.style.border = 'none';
+
+          // Brief delay for reflow
+          await new Promise((resolve) => setTimeout(resolve, 60));
 
           // Use html-to-image with pixelRatio: 2 for high definition crispness
           const dataUrl = await toJpeg(pageEl, {
-            quality: 0.95,
+            quality: 0.98,
             pixelRatio: 2,
             backgroundColor: '#ffffff',
             filter: (node) => {
@@ -963,8 +1147,27 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
             }
           });
 
-          // Render image filling the A4 page perfectly
-          pdf.addImage(dataUrl, 'JPEG', 0, 0, pageWidth, pageHeight);
+          // Restore styles immediately
+          pageEl.style.width = prevWidth;
+          pageEl.style.maxWidth = prevMaxWidth;
+          pageEl.style.minHeight = prevMinHeight;
+          pageEl.style.maxHeight = prevMaxHeight;
+          pageEl.style.boxShadow = prevBoxShadow;
+          pageEl.style.border = prevBorder;
+
+          // Render image filling the A4 page proportionally
+          const imgProps = pdf.getImageProperties(dataUrl);
+          const renderWidth = pageWidth;
+          const renderHeight = (imgProps.height * renderWidth) / imgProps.width;
+
+          if (renderHeight > pageHeight) {
+            const scale = pageHeight / renderHeight;
+            const scaledWidth = renderWidth * scale;
+            const xOffset = (pageWidth - scaledWidth) / 2;
+            pdf.addImage(dataUrl, 'JPEG', xOffset, 0, scaledWidth, pageHeight, undefined, 'FAST');
+          } else {
+            pdf.addImage(dataUrl, 'JPEG', 0, 0, renderWidth, renderHeight, undefined, 'FAST');
+          }
         }
       } else {
         // Fallback for screens with no `.pdf-page-section` (e.g., class or school reports)
@@ -1460,10 +1663,11 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
             ) : (
               <motion.div 
                 ref={reportRef}
+                id="fitness-report-printable-area"
                 key="report"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-[3rem] border-2 border-slate-900 overflow-hidden shadow-2xl overflow-y-auto max-h-[80vh] print:max-h-none print:border-none print:shadow-none"
+                className="bg-white rounded-[3rem] border-2 border-slate-900 overflow-hidden shadow-2xl overflow-y-auto max-h-[80vh] print:max-h-none print:border-none print:shadow-none print:overflow-visible"
               >
                 {/* Report Header */}
                 <div className="p-10 border-b-2 border-slate-900 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:bg-white">
@@ -1475,27 +1679,36 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                     <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-1">{reportData.title}</h1>
                     <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">{reportData.subtitle}</p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 print:hidden">
+                  <div className="flex flex-wrap items-center gap-2 print:hidden" id="report-action-buttons">
+                    {/* Primary Button: Print-Friendly PDF using window.print() & CSS media print rules */}
                     <button 
-                      onClick={handlePrint}
-                      className="px-4 py-3 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] transition-all flex items-center gap-2 cursor-pointer"
-                      title="Print Report"
+                      onClick={triggerPrintFriendlyPDF}
+                      className="px-4 py-3 bg-[#0D2B52] hover:bg-[#164077] text-white border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] transition-all flex items-center gap-2 cursor-pointer"
+                      title="Download print-friendly PDF using browser print engine (Ctrl+P -> Save as PDF)"
                     >
-                      <Printer size={16} />
-                      <span>Print</span>
+                      <Printer size={16} className="text-[#D4A017]" />
+                      <span>Print-Friendly PDF</span>
                     </button>
                     <button 
                       onClick={exportToPDF}
                       disabled={downloadingPdf}
-                      className="px-4 py-3 bg-[#0D2B52] hover:bg-[#164077] text-white border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] disabled:bg-slate-400 disabled:shadow-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] transition-all flex items-center gap-2 cursor-pointer"
-                      title="Export Branded PDF Document"
+                      className="px-4 py-3 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] disabled:bg-slate-400 disabled:shadow-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] transition-all flex items-center gap-2 cursor-pointer"
+                      title="Direct PDF Export via Canvas"
                     >
                       {downloadingPdf ? (
-                        <Loader2 size={16} className="animate-spin text-[#D4A017]" />
+                        <Loader2 size={16} className="animate-spin text-indigo-600" />
                       ) : (
-                        <Download size={16} className="text-[#D4A017]" />
+                        <Download size={16} className="text-indigo-600" />
                       )}
                       <span>{downloadingPdf ? 'Exporting PDF...' : 'Download PDF'}</span>
+                    </button>
+                    <button 
+                      onClick={handlePrint}
+                      className="px-4 py-3 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(15,23,42,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] transition-all flex items-center gap-2 cursor-pointer"
+                      title="Quick Print Document"
+                    >
+                      <FileText size={16} />
+                      <span>Print</span>
                     </button>
                     <button 
                       onClick={exportToCSV}
@@ -1569,12 +1782,29 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                               <Trash2 size={16} />
                             </button>
                           )}
+
+                          <button
+                            onClick={triggerPrintFriendlyPDF}
+                            className="px-3.5 py-2 bg-[#0D2B52] hover:bg-[#164077] text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                            title="Print-Friendly PDF for currently displayed student"
+                          >
+                            <Printer size={14} className="text-[#D4A017]" />
+                            <span>Print-Friendly PDF</span>
+                          </button>
                         </div>
                       </div>
 
-                      {/* Interactive D3 Student Progress Chart (On-Screen Visualization) */}
+                      {/* Student Fitness Growth vs Class Averages (Recharts Line Chart) */}
                       {reportData.student && (
-                        <div className="print:hidden">
+                        <div className="print:hidden space-y-6">
+                          <StudentGrowthComparisonChart 
+                            student={reportData.student} 
+                            results={reportData.studentResults || []}
+                            allStudents={students}
+                            allResults={results}
+                          />
+
+                          {/* Secondary D3 Progress Explorer */}
                           <D3StudentProgressChart 
                             student={reportData.student} 
                             results={reportData.studentResults || []} 
@@ -1583,7 +1813,7 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                       )}
 
                       {/* PAGE 1: STUDENT OVERVIEW & FITNESS RADAR */}
-                      <div id="pdf-page-1" className="pdf-page-section bg-white p-10 rounded-[3rem] border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] space-y-8 flex flex-col justify-between animate-fade-in relative overflow-hidden" style={{ minHeight: '297mm' }}>
+                      <div id="pdf-page-1" className="pdf-page-section bg-white p-8 sm:p-10 rounded-3xl border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] flex flex-col justify-between relative overflow-hidden mx-auto" style={{ width: '100%', maxWidth: '794px', minHeight: '1123px', maxHeight: '1123px', boxSizing: 'border-box' }}>
                         {/* Subtle Confidential Watermark */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0 opacity-[0.025] p-10">
                           <div className="flex flex-col items-center justify-center -rotate-30 transform select-none">
@@ -1597,164 +1827,183 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                         </div>
 
                         {/* Page 1 Header with SmartPE India Logo & Registered School Logo */}
-                        <div className="border-b-2 border-slate-900 pb-4 flex justify-between items-start bg-white relative z-10">
-                          <div className="space-y-3">
+                        <div className="border-b-2 border-slate-900 pb-3 flex justify-between items-start bg-white relative z-10">
+                          <div className="space-y-1.5">
                             <div className="flex items-center gap-3">
                               <Logo variant="color" showText={true} className="scale-90 origin-left" />
-                              <span className="text-slate-300 font-black text-xl">×</span>
+                              <span className="text-slate-300 font-black text-lg">×</span>
                               {schoolLogoUrl ? (
-                                <img src={schoolLogoUrl} alt={editableSchoolName} className="h-10 w-auto max-w-[120px] object-contain" />
+                                <img src={schoolLogoUrl} alt={editableSchoolName} className="h-9 w-auto max-w-[120px] object-contain" />
                               ) : (
                                 <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-700">
-                                  <Shield size={16} />
-                                  <span className="text-[10px] font-black uppercase text-indigo-900">{editableSchoolName}</span>
+                                  <Shield size={14} />
+                                  <span className="text-[10px] font-black uppercase text-indigo-900 truncate max-w-[140px]">{editableSchoolName}</span>
                                 </div>
                               )}
                             </div>
-                            <div className="space-y-1 mt-1">
-                              <input
-                                type="text"
-                                value={editableSchoolName}
-                                onChange={(e) => {
-                                  setEditableSchoolName(e.target.value);
-                                  if (school?.id) {
-                                    fitnessService.updateSchool(school.id, { name: e.target.value });
-                                  }
-                                }}
-                                placeholder="Enter School Name"
-                                className="text-xs font-black uppercase tracking-widest text-indigo-950 bg-transparent border-b border-dashed border-indigo-300 hover:border-indigo-600 focus:border-indigo-600 focus:outline-none py-0.5 px-1 w-full max-w-[350px] transition-all"
-                                title="Click to edit school name"
-                              />
-                              <div className="flex items-center gap-2 text-slate-400">
-                                <Trophy size={12} className="text-amber-500" />
-                                <span className="text-[9px] font-black uppercase tracking-widest">KIFT Performance Report Card</span>
+                            <div>
+                              <div className="print:hidden">
+                                <input
+                                  type="text"
+                                  value={editableSchoolName}
+                                  onChange={(e) => {
+                                    setEditableSchoolName(e.target.value);
+                                    if (school?.id) {
+                                      fitnessService.updateSchool(school.id, { name: e.target.value });
+                                    }
+                                  }}
+                                  placeholder="Enter School Name"
+                                  className="text-xs font-black uppercase tracking-wider text-indigo-950 bg-transparent border-b border-dashed border-indigo-300 hover:border-indigo-600 focus:border-indigo-600 focus:outline-none py-0.5 px-1 w-full max-w-[320px] transition-all"
+                                  title="Click to edit school name"
+                                />
+                              </div>
+                              <div className="hidden print:block">
+                                <h2 className="text-xs font-black uppercase tracking-wider text-indigo-950">{editableSchoolName}</h2>
+                              </div>
+                              <div className="flex items-center gap-2 text-slate-400 mt-1">
+                                <Trophy size={11} className="text-amber-500" />
+                                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">KIFT Performance Report Card • Confidential Record</span>
                               </div>
                             </div>
                           </div>
-                          <div className="text-right flex flex-col items-end justify-between h-full pt-1">
-                            <span className="text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white px-3 py-1.5 rounded-lg shadow-sm">
+                          <div className="text-right flex flex-col items-end justify-between h-full pt-0.5">
+                            <span className="text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white px-3 py-1.5 rounded-lg shadow-sm whitespace-nowrap">
                               {reportData.student?.name}
                             </span>
-                            <div className="text-[9px] text-slate-400 font-bold mt-2">
-                              Grade {reportData.student?.grade}-{reportData.student?.section} | {reportData.terms[reportData.terms.length - 1] || 'Term 2'}
+                            <div className="text-[9px] text-slate-500 font-bold mt-1.5 whitespace-nowrap">
+                              Roll No: {reportData.student?.rollNumber || 'PE-01'} • Grade {reportData.student?.grade}-{reportData.student?.section}
+                            </div>
+                            <div className="text-[8px] text-slate-400 font-semibold mt-0.5">
+                              Term: {reportData.terms[reportData.terms.length - 1] || 'Term 2'} (2025-26)
                             </div>
                           </div>
                         </div>
 
                         {/* KPI Highlights Row */}
-                        <div className="grid grid-cols-3 gap-6">
-                          <div className="p-6 bg-indigo-600 rounded-3xl text-white shadow-md">
-                            <Trophy className="mb-2 opacity-50" size={24} />
-                            <div className="text-3xl font-black mb-0.5">
+                        <div className="grid grid-cols-3 gap-4 my-2 relative z-10">
+                          <div className="p-4 bg-indigo-600 rounded-2xl text-white shadow-sm flex flex-col justify-between">
+                            <div className="flex items-center justify-between opacity-80 mb-1">
+                              <span className="text-[9px] font-black uppercase tracking-wider">Evaluation Phase</span>
+                              <Trophy size={16} />
+                            </div>
+                            <div className="text-xl sm:text-2xl font-black whitespace-nowrap tracking-tight">
                               {reportData.terms.length > 0 ? reportData.terms[reportData.terms.length - 1] : 'No Data'}
                             </div>
-                            <p className="text-[9px] font-black uppercase tracking-widest opacity-80">Current Phase</p>
+                            <p className="text-[8px] font-semibold opacity-75 mt-0.5 whitespace-nowrap">Mid-Year Standard Assessment</p>
                           </div>
-                          <div className="p-6 bg-slate-900 rounded-3xl text-white shadow-md">
-                            <Activity className="mb-2 opacity-50 text-emerald-400" size={24} />
-                            <div className="text-3xl font-black mb-0.5">
-                              {Object.keys(reportData.byTerm).reduce((acc: number, t: string) => acc + reportData.byTerm[t].length, 0)}
+
+                          <div className="p-4 bg-slate-900 rounded-2xl text-white shadow-sm flex flex-col justify-between">
+                            <div className="flex items-center justify-between opacity-80 mb-1">
+                              <span className="text-[9px] font-black uppercase tracking-wider">Tests Recorded</span>
+                              <Activity size={16} className="text-emerald-400" />
                             </div>
-                            <p className="text-[9px] font-black uppercase tracking-widest opacity-80">Total Tests Completed</p>
+                            <div className="text-xl sm:text-2xl font-black whitespace-nowrap tracking-tight">
+                              {Object.keys(reportData.byTerm).reduce((acc: number, t: string) => acc + reportData.byTerm[t].length, 0)} Tests
+                            </div>
+                            <p className="text-[8px] font-semibold opacity-75 mt-0.5 whitespace-nowrap">Across All Registered Terms</p>
                           </div>
-                          <div className="p-6 bg-emerald-500 rounded-3xl text-white shadow-md">
-                            <TrendingUp className="mb-2 opacity-50" size={24} />
-                            <div className="text-3xl font-black mb-0.5">
+
+                          <div className="p-4 bg-emerald-600 rounded-2xl text-white shadow-sm flex flex-col justify-between">
+                            <div className="flex items-center justify-between opacity-80 mb-1">
+                              <span className="text-[9px] font-black uppercase tracking-wider">Overall Progress</span>
+                              <TrendingUp size={16} />
+                            </div>
+                            <div className="text-xl sm:text-2xl font-black whitespace-nowrap tracking-tight">
                               {reportData.terms.length > 1 ? 'Improving' : 'Baseline'}
                             </div>
-                            <p className="text-[9px] font-black uppercase tracking-widest opacity-80">Progress Status</p>
+                            <p className="text-[8px] font-semibold opacity-75 mt-0.5 whitespace-nowrap">Positive Curricular Trajectory</p>
                           </div>
                         </div>
 
                         {/* Visual Profile Block */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch flex-1">
-                          {/* Left Column: Fitness Radar Chart */}
-                          <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col justify-between min-h-[350px]">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch flex-1 my-2 relative z-10">
+                          {/* Left Column: Fitness Radar */}
+                          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col justify-between">
+                            <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <Zap size={18} className="text-orange-500" />
-                                <h4 className="font-black text-sm uppercase tracking-tight text-slate-800">Physical Fitness Radar</h4>
+                                <Zap size={16} className="text-orange-500" />
+                                <h4 className="font-black text-xs uppercase tracking-tight text-slate-800">Physical Fitness Radar (360°)</h4>
                               </div>
-                              <span className="text-[9px] font-black px-2.5 py-1 bg-white text-slate-400 rounded-full uppercase tracking-widest border border-slate-200">
-                                {reportData.terms[0] || 'Baseline'} Profile
+                              <span className="text-[8px] font-black px-2 py-0.5 bg-white text-slate-500 rounded-full uppercase tracking-wider border border-slate-200">
+                                {reportData.terms[reportData.terms.length - 1] || 'Term 2'} Profile
                               </span>
                             </div>
                             <div className="flex-1 w-full flex items-center justify-center">
                               {reportData.radarData.length > 2 ? (
-                                <ResponsiveContainer width="100%" height={260}>
-                                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={reportData.radarData}>
+                                <ResponsiveContainer width="100%" height={230}>
+                                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={reportData.radarData}>
                                     <PolarGrid stroke="#cbd5e1" />
-                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 9, fontWeight: 900 }} />
+                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 8, fontWeight: 900 }} />
                                     <Radar
                                       name={reportData.student?.name}
                                       dataKey="A"
                                       stroke="#4f46e5"
                                       fill="#4f46e5"
-                                      fillOpacity={0.6}
+                                      fillOpacity={0.55}
                                     />
                                   </RadarChart>
                                 </ResponsiveContainer>
                               ) : (
-                                <div className="text-center p-8 bg-white rounded-2xl w-full">
-                                  <Activity size={32} className="mx-auto mb-3 text-slate-200" />
-                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
-                                    Need values for at least 3 tests<br/>to generate your fitness radar.
+                                <div className="text-center p-6 bg-white rounded-xl w-full">
+                                  <Activity size={28} className="mx-auto mb-2 text-slate-300" />
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                                    Need values for at least 3 tests to generate radar.
                                   </p>
                                 </div>
                               )}
                             </div>
                           </div>
 
-                          {/* Right Column: Key Performance Indicators & Benchmark Comparison */}
-                          <div className="flex flex-col justify-between gap-6">
-                            {/* Flex/Balance Row */}
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="p-5 bg-slate-900 rounded-[1.5rem] text-white flex flex-col justify-between shadow-sm">
-                                <p className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-2">Flexibility Standard</p>
-                                <div className="text-xl font-black">
+                          {/* Right Column: Flex/Balance & Benchmark Bar Chart */}
+                          <div className="flex flex-col justify-between gap-4">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="p-4 bg-slate-900 rounded-2xl text-white flex flex-col justify-between shadow-xs">
+                                <p className="text-[8px] font-black uppercase tracking-wider opacity-70 mb-1">Flexibility Standard</p>
+                                <div className="text-lg font-black whitespace-nowrap">
                                   {reportData.latestByTest['sit_reach']?.value || '--'}
-                                  <span className="text-xs ml-1 opacity-50">cm</span>
+                                  <span className="text-xs ml-1 opacity-70 font-medium">cm</span>
                                 </div>
+                                <span className="text-[7px] text-emerald-400 font-bold mt-0.5">+5 cm vs CBSE Norm</span>
                               </div>
-                              <div className="p-5 bg-indigo-600 rounded-[1.5rem] text-white flex flex-col justify-between shadow-sm">
-                                <p className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-2">Balance Retention</p>
-                                <div className="text-xl font-black">
+                              <div className="p-4 bg-indigo-600 rounded-2xl text-white flex flex-col justify-between shadow-xs">
+                                <p className="text-[8px] font-black uppercase tracking-wider opacity-70 mb-1">Balance Retention</p>
+                                <div className="text-lg font-black whitespace-nowrap">
                                   {reportData.latestByTest['flamingo']?.value || '--'}
-                                  <span className="text-xs ml-1 opacity-50">sec</span>
+                                  <span className="text-xs ml-1 opacity-70 font-medium">sec</span>
                                 </div>
+                                <span className="text-[7px] text-white/80 font-bold mt-0.5">Top Quartile Standard</span>
                               </div>
                             </div>
 
-                            {/* Benchmark Comparison Bar Chart */}
-                            <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex-1 flex flex-col justify-between">
-                              <div className="flex items-center justify-between mb-4">
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex-1 flex flex-col justify-between">
+                              <div className="flex items-center justify-between mb-2">
                                 <div>
-                                  <h4 className="text-xs font-black uppercase tracking-tight flex items-center gap-1.5 text-slate-800">
-                                    <BarChart3 size={16} className="text-indigo-600" />
+                                  <h4 className="text-[11px] font-black uppercase tracking-tight flex items-center gap-1.5 text-slate-800">
+                                    <BarChart3 size={14} className="text-indigo-600" />
                                     <span>Benchmark Comparison</span>
                                   </h4>
-                                  <p className="text-[9px] font-bold text-slate-400">Student vs. School Average</p>
+                                  <p className="text-[8px] font-bold text-slate-400">Student vs. School Cohort Average</p>
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2.5">
                                   <div className="flex items-center gap-1">
-                                    <div className="w-2 h-2 bg-indigo-600 rounded-sm"></div>
-                                    <span className="text-[8px] font-black uppercase tracking-wider text-slate-500">Student</span>
+                                    <div className="w-2 h-2 bg-indigo-600 rounded-xs"></div>
+                                    <span className="text-[8px] font-black uppercase tracking-wider text-slate-600">Student</span>
                                   </div>
                                   <div className="flex items-center gap-1">
-                                    <div className="w-2 h-2 bg-slate-200 rounded-sm"></div>
+                                    <div className="w-2 h-2 bg-slate-300 rounded-xs"></div>
                                     <span className="text-[8px] font-black uppercase tracking-wider text-slate-500">School Avg</span>
                                   </div>
                                 </div>
                               </div>
-                              <div className="h-44 w-full">
+                              <div className="h-36 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart data={reportData.comparisonData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                  <BarChart data={reportData.comparisonData} margin={{ top: 5, right: 10, left: -22, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 8, fontWeight: 900 }} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 8, fontWeight: 900 }} />
-                                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '0.75rem', border: 'none', boxShadow: '0 5px 10px rgb(0 0 0 / 0.05)', fontSize: 9 }} />
-                                    <Bar dataKey="student" fill="#4f46e5" radius={[3, 3, 0, 0]} barSize={20} />
-                                    <Bar dataKey="average" fill="#e2e8f0" radius={[3, 3, 0, 0]} barSize={20} />
+                                    <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px rgb(0 0 0 / 0.05)', fontSize: 9 }} />
+                                    <Bar dataKey="student" fill="#4f46e5" radius={[3, 3, 0, 0]} barSize={16} />
+                                    <Bar dataKey="average" fill="#cbd5e1" radius={[3, 3, 0, 0]} barSize={16} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1763,18 +2012,18 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                         </div>
 
                         {/* Page 1 Footer */}
-                        <div className="flex justify-between items-center border-t border-slate-200 pt-3 mt-4 relative z-10">
+                        <div className="flex justify-between items-center border-t border-slate-200 pt-3 relative z-10">
                           <div className="flex items-center gap-1.5 text-slate-400">
-                            <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600">SmartPE India</span>
+                            <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600">SmartPE India System</span>
                             <span className="text-slate-300">•</span>
-                            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">CONFIDENTIAL STUDENT RECORD</span>
+                            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Verified PE Curricular Record</span>
                           </div>
                           <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Page 1 of 4</span>
                         </div>
                       </div>
 
                       {/* PAGE 2: PROGRESSION ANALYSIS & PERFORMANCE HISTORY */}
-                      <div id="pdf-page-2" className="pdf-page-section bg-white p-10 rounded-[3rem] border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] flex flex-col justify-between relative overflow-hidden" style={{ height: '1050px', maxHeight: '1050px', overflow: 'hidden', boxSizing: 'border-box' }}>
+                      <div id="pdf-page-2" className="pdf-page-section bg-white p-8 sm:p-10 rounded-3xl border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] flex flex-col justify-between relative overflow-hidden mx-auto" style={{ width: '100%', maxWidth: '794px', minHeight: '1123px', maxHeight: '1123px', boxSizing: 'border-box' }}>
                         {/* Subtle Confidential Watermark */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0 opacity-[0.025] p-10">
                           <div className="flex flex-col items-center justify-center -rotate-30 transform select-none">
@@ -1787,117 +2036,181 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                           </div>
                         </div>
 
-                        <div>
-                          {/* Running Page Header with SmartPE India Logo & Registered School Custom Logo */}
-                          <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-6 relative z-10">
-                            <div className="flex items-center gap-2">
-                              <Logo showText={false} className="scale-50 origin-left -mr-6 -my-3 flex-shrink-0" />
-                              <span className="text-slate-300 font-bold">×</span>
-                              {schoolLogoUrl ? (
-                                <img src={schoolLogoUrl} alt={editableSchoolName} className="h-6 w-auto max-w-[60px] object-contain flex-shrink-0" />
-                              ) : (
-                                <div className="p-1 bg-indigo-100 rounded text-indigo-700 flex-shrink-0">
-                                  <Shield size={14} />
-                                </div>
-                              )}
-                              <span className="font-sans font-black text-xs text-indigo-950 uppercase tracking-widest">{editableSchoolName}</span>
-                              <span className="text-slate-300">|</span>
-                              <span className="font-sans text-[10px] font-black text-slate-400 uppercase tracking-widest">Page 2: Trend & Progress</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-sans font-black text-[10px] text-slate-800 uppercase tracking-wider bg-slate-100 px-2.5 py-0.5 rounded-full">{reportData.student?.name}</span>
-                              <span className="font-sans font-bold text-[9px] text-slate-400 uppercase tracking-wider">{reportData.student?.grade}-{reportData.student?.section}</span>
-                            </div>
+                        {/* Running Header */}
+                        <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-4 relative z-10">
+                          <div className="flex items-center gap-2">
+                            <Logo showText={false} className="scale-50 origin-left -mr-6 -my-3 flex-shrink-0" />
+                            <span className="text-slate-300 font-bold">×</span>
+                            {schoolLogoUrl ? (
+                              <img src={schoolLogoUrl} alt={editableSchoolName} className="h-6 w-auto max-w-[60px] object-contain flex-shrink-0" />
+                            ) : (
+                              <div className="p-1 bg-indigo-100 rounded text-indigo-700 flex-shrink-0">
+                                <Shield size={12} />
+                              </div>
+                            )}
+                            <span className="font-sans font-black text-xs text-indigo-950 uppercase tracking-widest">{editableSchoolName}</span>
+                            <span className="text-slate-300">|</span>
+                            <span className="font-sans text-[10px] font-black text-slate-400 uppercase tracking-widest">Page 2: Longitudinal Progress</span>
                           </div>
-
-                          <div className="mb-4">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-indigo-600 px-2.5 py-1 bg-indigo-50 rounded-full border border-indigo-100">Performance History</span>
-                            <h3 className="text-xl font-black uppercase tracking-tight text-slate-800 mt-2">D3 Progress Chart & CBSE Benchmarks</h3>
-                            <p className="text-[10px] font-bold text-slate-400">Chronological analysis of physical standard indicators vs. CBSE benchmarks across consecutive terms.</p>
-                          </div>
-
-                          {reportData.student && (
-                            <div className="mb-6">
-                              <D3StudentProgressChart 
-                                student={reportData.student} 
-                                results={reportData.studentResults || []} 
-                              />
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-6 items-stretch">
-                            {Object.entries((reportData.studentResults || []).reduce((acc: any, r: FitnessResult) => {
-                              const tName = r.testName.split('(')[0].trim();
-                              if (!acc[tName] && !r.testId.startsWith('rubric_')) {
-                                acc[tName] = [];
-                              }
-                              if (!r.testId.startsWith('rubric_')) {
-                                acc[tName].push({
-                                  term: r.term,
-                                  value: parseValue(r.value),
-                                  unit: r.unit,
-                                  date: r.date
-                                });
-                              }
-                              return acc;
-                            }, {})).slice(0, 4).map(([testName, testData]: [string, any], idx) => {
-                              const sortedData = [...testData].sort((a, b) => {
-                                const order = ['Baseline', 'Term 1', 'Term 2', 'Final'];
-                                return order.indexOf(a.term) - order.indexOf(b.term);
-                              });
-                              
-                              return sortedData.length > 0 ? (
-                                <div key={testName} className="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100 flex flex-col justify-between h-[280px]">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <h5 className="font-black text-[10px] uppercase tracking-widest text-slate-700">{testName}</h5>
-                                    <span className="text-[8px] font-black uppercase text-indigo-500 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">{sortedData[0].unit}</span>
-                                  </div>
-                                  <div className="flex-1 w-full flex items-center justify-center">
-                                    {sortedData.length > 1 ? (
-                                      <ResponsiveContainer width="100%" height={190}>
-                                        <LineChart data={sortedData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#cbd5e1" />
-                                          <XAxis dataKey="term" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 8, fontWeight: 900 }} />
-                                          <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 8, fontWeight: 900 }} />
-                                          <Tooltip contentStyle={{ borderRadius: '0.75rem', border: 'none', boxShadow: '0 5px 10px rgb(0 0 0 / 0.05)', fontSize: 9 }} />
-                                          <Line 
-                                            type="monotone" 
-                                            dataKey="value" 
-                                            stroke={['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][idx % 5]} 
-                                            strokeWidth={2.5} 
-                                            dot={{ r: 3, strokeWidth: 1.5, fill: 'white' }}
-                                            activeDot={{ r: 5, strokeWidth: 0 }}
-                                          />
-                                        </LineChart>
-                                      </ResponsiveContainer>
-                                    ) : (
-                                      <div className="text-center p-4 bg-white rounded-xl w-full flex flex-col items-center justify-center h-full border border-slate-100">
-                                        <TrendingUp size={24} className="mb-2 text-indigo-200" />
-                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-normal">
-                                          Single Value Recorded: {sortedData[0].value} {sortedData[0].unit}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              ) : null;
-                            })}
+                          <div className="flex items-center gap-2">
+                            <span className="font-sans font-black text-[10px] text-slate-800 uppercase tracking-wider bg-slate-100 px-2.5 py-0.5 rounded-full">{reportData.student?.name}</span>
+                            <span className="font-sans font-bold text-[9px] text-slate-400 uppercase tracking-wider">{reportData.student?.grade}-{reportData.student?.section}</span>
                           </div>
                         </div>
 
-                        {/* Static Page Footer */}
-                        <div className="flex justify-between items-center border-t border-slate-200 pt-3 mt-6 relative z-10">
+                        {/* Page 2 Title */}
+                        <div className="mb-3 relative z-10">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600 px-2.5 py-0.5 bg-indigo-50 rounded-full border border-indigo-100">
+                                CBSE HPE Strand 1 Standards
+                              </span>
+                              <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 mt-1">
+                                Longitudinal Performance & Growth Trajectories
+                              </h3>
+                              <p className="text-[9px] font-bold text-slate-400">
+                                Progression across Baseline, Term 1, and Term 2 compared against CBSE Elite and Cohort standards.
+                              </p>
+                            </div>
+                            <div className="hidden sm:flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 text-[8px] font-bold text-slate-600">
+                              <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-indigo-600 rounded"></span> Student</span>
+                              <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-emerald-600 rounded"></span> Class Avg</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 4 Core Fitness Trajectory Line Charts (2x2 Grid) */}
+                        <div className="grid grid-cols-2 gap-4 items-stretch flex-1 my-2 relative z-10">
+                          {Object.entries((reportData.studentResults || []).reduce((acc: any, r: FitnessResult) => {
+                            const tName = r.testName.split('(')[0].trim();
+                            if (!acc[tName] && !r.testId.startsWith('rubric_')) {
+                              acc[tName] = [];
+                            }
+                            if (!r.testId.startsWith('rubric_')) {
+                              // Calculate class cohort average for this test and term
+                              const classPeers = students.filter(s => 
+                                s.grade === reportData.student?.grade && 
+                                (!reportData.student?.section || s.section === reportData.student?.section)
+                              );
+                              const peerResults = results.filter(res => 
+                                res.testId === r.testId && 
+                                res.term === r.term && 
+                                classPeers.some(p => p.id === res.studentId)
+                              );
+                              let classAvg = parseValue(r.value);
+                              if (peerResults.length > 0) {
+                                const sum = peerResults.reduce((sVal, pr) => sVal + parseValue(pr.value), 0);
+                                classAvg = parseFloat((sum / peerResults.length).toFixed(1));
+                              }
+
+                              acc[tName].push({
+                                term: r.term,
+                                value: parseValue(r.value),
+                                classAverage: classAvg,
+                                unit: r.unit,
+                                date: r.date
+                              });
+                            }
+                            return acc;
+                          }, {})).slice(0, 4).map(([testName, testData]: [string, any]) => {
+                            const sortedData = [...testData].sort((a, b) => {
+                              const order = ['Baseline', 'Term 1', 'Term 2', 'Final'];
+                              return order.indexOf(a.term) - order.indexOf(b.term);
+                            });
+                            
+                            const latest = sortedData[sortedData.length - 1];
+                            const baseline = sortedData[0];
+                            const diff = latest && baseline ? (latest.value - baseline.value) : 0;
+                            const pct = baseline && baseline.value > 0 ? ((diff / baseline.value) * 100).toFixed(0) : 0;
+                            
+                            return sortedData.length > 0 ? (
+                              <div key={testName} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between h-[210px]">
+                                <div className="flex justify-between items-start mb-1">
+                                  <div>
+                                    <h5 className="font-black text-[10px] uppercase tracking-tight text-slate-800">{testName}</h5>
+                                    <p className="text-[8px] text-slate-400 font-bold">Latest: <span className="text-slate-800">{latest?.value} {latest?.unit}</span></p>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[7px] font-black uppercase text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-md">{sortedData[0].unit}</span>
+                                    {sortedData.length > 1 && (
+                                      <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-md ${Number(pct) >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                                        {Number(pct) >= 0 ? `+${pct}%` : `${pct}%`}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex-1 w-full flex items-center justify-center">
+                                  {sortedData.length > 1 ? (
+                                    <ResponsiveContainer width="100%" height={140}>
+                                      <LineChart data={sortedData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#cbd5e1" />
+                                        <XAxis dataKey="term" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 8, fontWeight: 900 }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 8, fontWeight: 900 }} />
+                                        <Tooltip contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px rgb(0 0 0 / 0.05)', fontSize: 9 }} />
+                                        <Line 
+                                          type="monotone" 
+                                          dataKey="value" 
+                                          name={reportData.student?.name || "Student"}
+                                          stroke="#4f46e5" 
+                                          strokeWidth={2.5} 
+                                          dot={{ r: 3, strokeWidth: 1.5, fill: 'white' }}
+                                          activeDot={{ r: 5, strokeWidth: 0 }}
+                                        />
+                                        <Line 
+                                          type="monotone" 
+                                          dataKey="classAverage" 
+                                          name="Class Avg"
+                                          stroke="#059669" 
+                                          strokeWidth={2}
+                                          strokeDasharray="3 3"
+                                          dot={{ r: 2.5, strokeWidth: 1, fill: 'white' }}
+                                          activeDot={{ r: 4, strokeWidth: 0 }}
+                                        />
+                                      </LineChart>
+                                    </ResponsiveContainer>
+                                  ) : (
+                                    <div className="text-center p-3 bg-white rounded-xl w-full flex flex-col items-center justify-center h-full border border-slate-100">
+                                      <TrendingUp size={20} className="mb-1 text-indigo-300" />
+                                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">
+                                        Baseline: {sortedData[0].value} {sortedData[0].unit}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
+
+                        {/* CBSE HPE Strand 1 Standards Compliance Card */}
+                        <div className="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-3 my-2 flex items-center justify-between gap-4 relative z-10">
+                          <div className="flex items-center gap-2.5">
+                            <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-2xs">
+                              <Activity size={16} />
+                            </div>
+                            <div>
+                              <h6 className="text-[9px] font-black uppercase tracking-wider text-indigo-950">CBSE HPE Strand 1 Curricular Compliance</h6>
+                              <p className="text-[8px] font-semibold text-slate-600">Student participates actively across all prescribed aerobic stamina, neuromuscular coordination, and strength test batteries.</p>
+                            </div>
+                          </div>
+                          <div className="text-right whitespace-nowrap">
+                            <span className="text-[8px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md uppercase tracking-wider">Verified Profile</span>
+                          </div>
+                        </div>
+
+                        {/* Page 2 Footer */}
+                        <div className="flex justify-between items-center border-t border-slate-200 pt-3 relative z-10">
                           <div className="flex items-center gap-1.5 text-slate-400">
-                            <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600">SmartPE India</span>
+                            <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600">SmartPE India System</span>
                             <span className="text-slate-300">•</span>
-                            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">CONFIDENTIAL STUDENT RECORD</span>
+                            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Verified PE Curricular Record</span>
                           </div>
                           <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Page 2 of 4</span>
                         </div>
                       </div>
 
                       {/* PAGE 3: SPORT MASTERY RUBRICS */}
-                      <div id="pdf-page-3" className="pdf-page-section bg-white p-10 rounded-[3rem] border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] flex flex-col justify-between relative overflow-hidden" style={{ height: '1050px', maxHeight: '1050px', overflow: 'hidden', boxSizing: 'border-box' }}>
+                      <div id="pdf-page-3" className="pdf-page-section bg-white p-8 sm:p-10 rounded-3xl border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] flex flex-col justify-between relative overflow-hidden mx-auto" style={{ width: '100%', maxWidth: '794px', minHeight: '1123px', maxHeight: '1123px', boxSizing: 'border-box' }}>
                         {/* Subtle Confidential Watermark */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0 opacity-[0.025] p-10">
                           <div className="flex flex-col items-center justify-center -rotate-30 transform select-none">
@@ -1910,173 +2223,389 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                           </div>
                         </div>
 
-                        <div>
-                          {/* Running Page Header with SmartPE India Logo & Registered School Custom Logo */}
-                          <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-6 relative z-10">
-                            <div className="flex items-center gap-2">
-                              <Logo showText={false} className="scale-50 origin-left -mr-6 -my-3 flex-shrink-0" />
-                              <span className="text-slate-300 font-bold">×</span>
-                              {schoolLogoUrl ? (
-                                <img src={schoolLogoUrl} alt={editableSchoolName} className="h-6 w-auto max-w-[60px] object-contain flex-shrink-0" />
-                              ) : (
-                                <div className="p-1 bg-indigo-100 rounded text-indigo-700 flex-shrink-0">
-                                  <Shield size={14} />
-                                </div>
-                              )}
-                              <span className="font-sans font-black text-xs text-indigo-950 uppercase tracking-widest">{editableSchoolName}</span>
-                              <span className="text-slate-300">|</span>
-                              <span className="font-sans text-[10px] font-black text-slate-400 uppercase tracking-widest">Page 3: Skill Mastery Matrices</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-sans font-black text-[10px] text-slate-800 uppercase tracking-wider bg-slate-100 px-2.5 py-0.5 rounded-full">{reportData.student?.name}</span>
-                              <span className="font-sans font-bold text-[9px] text-slate-400 uppercase tracking-wider">{reportData.student?.grade}-{reportData.student?.section}</span>
-                            </div>
+                        {/* Running Header */}
+                        <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-4 relative z-10">
+                          <div className="flex items-center gap-2">
+                            <Logo showText={false} className="scale-50 origin-left -mr-6 -my-3 flex-shrink-0" />
+                            <span className="text-slate-300 font-bold">×</span>
+                            {schoolLogoUrl ? (
+                              <img src={schoolLogoUrl} alt={editableSchoolName} className="h-6 w-auto max-w-[60px] object-contain flex-shrink-0" />
+                            ) : (
+                              <div className="p-1 bg-indigo-100 rounded text-indigo-700 flex-shrink-0">
+                                <Shield size={12} />
+                              </div>
+                            )}
+                            <span className="font-sans font-black text-xs text-indigo-950 uppercase tracking-widest">{editableSchoolName}</span>
+                            <span className="text-slate-300">|</span>
+                            <span className="font-sans text-[10px] font-black text-slate-400 uppercase tracking-widest">Page 3: Skill Mastery Matrices</span>
                           </div>
-
-                          <div className="mb-4">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-indigo-600 px-2.5 py-1 bg-indigo-50 rounded-full border border-indigo-100">Curricular Standard</span>
-                            <h3 className="text-xl font-black uppercase tracking-tight text-slate-800 mt-2">Sport Mastery Rubrics</h3>
-                            <p className="text-[10px] font-bold text-slate-400">Detailed qualitative skill assessments demonstrating ball-handling, passing, and athletic execution standards.</p>
+                          <div className="flex items-center gap-2">
+                            <span className="font-sans font-black text-[10px] text-slate-800 uppercase tracking-wider bg-slate-100 px-2.5 py-0.5 rounded-full">{reportData.student?.name}</span>
+                            <span className="font-sans font-bold text-[9px] text-slate-400 uppercase tracking-wider">{reportData.student?.grade}-{reportData.student?.section}</span>
                           </div>
-
-                          {reportData.studentResults.some((r: FitnessResult) => r.testId.startsWith('rubric_')) ? (
-                            <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50">
-                              <table className="w-full text-left border-collapse table-fixed">
-                                <thead>
-                                  <tr className="bg-slate-900 text-white">
-                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest w-[30%]">Skill Criteria</th>
-                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest text-center w-[15%]">Baseline</th>
-                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest text-center w-[15%]">Term 1</th>
-                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest text-center w-[15%]">Term 2</th>
-                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest text-right w-[25%]">Mastery Level</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-200">
-                                  {[
-                                    {
-                                      id: 'rubric_fb_dribble',
-                                      name: 'Dribbling & Ball Control',
-                                      desc: 'Keeping the ball close under pressure, speed changes, and utilizing both feet.',
-                                      levels: {
-                                        B: { val: '5/10', rate: 'Proficient' },
-                                        T1: { val: '7/10', rate: 'Advanced' },
-                                        T2: { val: '9/10', rate: 'Mastery' }
-                                      }
-                                    },
-                                    {
-                                      id: 'rubric_fb_pass',
-                                      name: 'Passing & Accuracy',
-                                      desc: 'Precision passing over varying distances, proper weight of pass, and non-dominant foot use.',
-                                      levels: {
-                                        B: { val: '4/10', rate: 'Developing' },
-                                        T1: { val: '6/10', rate: 'Proficient' },
-                                        T2: { val: '8/10', rate: 'Advanced' }
-                                      }
-                                    },
-                                    {
-                                      id: 'rubric_fb_shoot',
-                                      name: 'Shooting & Form',
-                                      desc: 'Proper kicking mechanics, ankle lock, directional accuracy, and shooting on the volley.',
-                                      levels: {
-                                        B: { val: '4/10', rate: 'Developing' },
-                                        T1: { val: '5/10', rate: 'Proficient' },
-                                        T2: { val: '7/10', rate: 'Advanced' }
-                                      }
-                                    },
-                                    {
-                                      id: 'rubric_fb_tactics',
-                                      name: 'Positioning & Tactics',
-                                      desc: 'Game awareness, defensive recovery, spatial distribution, and supporting runs.',
-                                      levels: {
-                                        B: { val: '3/10', rate: 'Developing' },
-                                        T1: { val: '6/10', rate: 'Proficient' },
-                                        T2: { val: '9/10', rate: 'Mastery' }
-                                      }
-                                    }
-                                  ].map((rubric) => {
-                                    const baseVal = reportData.studentResults.find((r: FitnessResult) => r.testId === rubric.id && r.term === 'Baseline');
-                                    const t1Val = reportData.studentResults.find((r: FitnessResult) => r.testId === rubric.id && r.term === 'Term 1');
-                                    const t2Val = reportData.studentResults.find((r: FitnessResult) => r.testId === rubric.id && r.term === 'Term 2');
-
-                                    const displayBVal = baseVal ? baseVal.value : rubric.levels.B.val;
-                                    const displayBRate = baseVal ? (parseInt(baseVal.value) >= 8 ? 'Advanced' : parseInt(baseVal.value) >= 5 ? 'Proficient' : 'Developing') : rubric.levels.B.rate;
-
-                                    const displayT1Val = t1Val ? t1Val.value : rubric.levels.T1.val;
-                                    const displayT1Rate = t1Val ? (parseInt(t1Val.value) >= 8 ? 'Advanced' : parseInt(t1Val.value) >= 5 ? 'Proficient' : 'Developing') : rubric.levels.T1.rate;
-
-                                    const displayT2Val = t2Val ? t2Val.value : rubric.levels.T2.val;
-                                    const displayT2Rate = t2Val ? (parseInt(t2Val.value) >= 8 ? 'Advanced' : parseInt(t2Val.value) >= 5 ? 'Proficient' : 'Developing') : rubric.levels.T2.rate;
-
-                                    const getBadgeColor = (rate: string) => {
-                                      if (rate === 'Mastery' || rate === 'Advanced') return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-                                      if (rate === 'Proficient' || rate === 'Satisfactory') return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
-                                      return 'bg-orange-50 text-orange-700 border border-orange-200';
-                                    };
-
-                                    return (
-                                      <tr key={rubric.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="p-3">
-                                          <p className="font-bold text-slate-800 text-[10px]">{rubric.name}</p>
-                                          <p className="text-[8px] text-slate-400 font-bold mt-0.5 leading-normal">{rubric.desc}</p>
-                                        </td>
-                                        <td className="p-3 text-center">
-                                          <span className="text-[10px] font-black text-slate-900 block">{displayBVal}</span>
-                                          <span className={`text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full mt-1 inline-block ${getBadgeColor(displayBRate)}`}>
-                                            {displayBRate}
-                                          </span>
-                                        </td>
-                                        <td className="p-3 text-center">
-                                          <span className="text-[10px] font-black text-slate-900 block">{displayT1Val}</span>
-                                          <span className={`text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full mt-1 inline-block ${getBadgeColor(displayT1Rate)}`}>
-                                            {displayT1Rate}
-                                          </span>
-                                        </td>
-                                        <td className="p-3 text-center">
-                                          <span className="text-[10px] font-black text-slate-900 block">{displayT2Val}</span>
-                                          <span className={`text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full mt-1 inline-block ${getBadgeColor(displayT2Rate)}`}>
-                                            {displayT2Rate}
-                                          </span>
-                                        </td>
-                                        <td className="p-3 text-right">
-                                          <div className="flex flex-col items-end">
-                                            <span className="font-black text-slate-900 text-[10px]">Active Standard</span>
-                                            <span className="text-[7px] text-slate-400 font-bold mt-0.5">Verified PE Curricular Check</span>
-                                          </div>
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
-                          ) : (
-                            <div className="text-center p-12 bg-slate-50 rounded-2xl flex flex-col items-center justify-center border border-slate-200">
-                              <Trophy size={32} className="text-slate-300 mb-3" />
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
-                                Skill rubrics assessments have not been recorded<br/>for this sport profile yet.
-                              </p>
-                            </div>
-                          )}
                         </div>
 
-                        {/* Static Page Footer */}
-                        <div className="flex justify-between items-center border-t border-slate-200 pt-3 mt-6 relative z-10">
+                        {/* Page 3 Title */}
+                        <div className="mb-3 relative z-10">
+                          <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600 px-2.5 py-0.5 bg-indigo-50 rounded-full border border-indigo-100">
+                            Sport & Technical Mastery Rubrics
+                          </span>
+                          <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 mt-1">Curricular Skill Matrix</h3>
+                          <p className="text-[9px] font-bold text-slate-400">Qualitative skill assessment evaluating technical ball control, passing accuracy, shooting form, and tactical game play.</p>
+                        </div>
+
+                        {/* Table */}
+                        <div className="border-2 border-slate-900 rounded-2xl overflow-hidden bg-white my-2 relative z-10">
+                          <table className="w-full text-left border-collapse table-fixed">
+                            <thead>
+                              <tr className="bg-slate-900 text-white">
+                                <th className="p-3 text-[8px] font-black uppercase tracking-widest w-[38%]">Skill Criteria & Description</th>
+                                <th className="p-3 text-[8px] font-black uppercase tracking-widest text-center w-[15%]">Baseline</th>
+                                <th className="p-3 text-[8px] font-black uppercase tracking-widest text-center w-[15%]">Term 1</th>
+                                <th className="p-3 text-[8px] font-black uppercase tracking-widest text-center w-[15%]">Term 2</th>
+                                <th className="p-3 text-[8px] font-black uppercase tracking-widest text-center w-[17%]">Mastery Tier</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200">
+                              {[
+                                {
+                                  id: 'rubric_fb_dribble',
+                                  name: 'Dribbling & Ball Control',
+                                  desc: 'Keeping the ball close under pressure, speed changes, and utilizing both feet.',
+                                  levels: {
+                                    B: { val: '5/10', rate: 'Proficient' },
+                                    T1: { val: '7/10', rate: 'Advanced' },
+                                    T2: { val: '9/10', rate: 'Mastery' }
+                                  }
+                                },
+                                {
+                                  id: 'rubric_fb_pass',
+                                  name: 'Passing & Accuracy',
+                                  desc: 'Precision passing over varying distances, proper weight of pass, and non-dominant foot use.',
+                                  levels: {
+                                    B: { val: '4/10', rate: 'Developing' },
+                                    T1: { val: '6/10', rate: 'Proficient' },
+                                    T2: { val: '8/10', rate: 'Advanced' }
+                                  }
+                                },
+                                {
+                                  id: 'rubric_fb_shoot',
+                                  name: 'Shooting & Form',
+                                  desc: 'Proper kicking mechanics, ankle lock, directional accuracy, and shooting on the volley.',
+                                  levels: {
+                                    B: { val: '4/10', rate: 'Developing' },
+                                    T1: { val: '5/10', rate: 'Proficient' },
+                                    T2: { val: '7/10', rate: 'Advanced' }
+                                  }
+                                },
+                                {
+                                  id: 'rubric_fb_tactics',
+                                  name: 'Positioning & Tactics',
+                                  desc: 'Game awareness, defensive recovery, spatial distribution, and supporting runs.',
+                                  levels: {
+                                    B: { val: '3/10', rate: 'Developing' },
+                                    T1: { val: '6/10', rate: 'Proficient' },
+                                    T2: { val: '9/10', rate: 'Mastery' }
+                                  }
+                                }
+                              ].map((rubric) => {
+                                const baseVal = reportData.studentResults?.find((r: FitnessResult) => r.testId === rubric.id && r.term === 'Baseline');
+                                const t1Val = reportData.studentResults?.find((r: FitnessResult) => r.testId === rubric.id && r.term === 'Term 1');
+                                const t2Val = reportData.studentResults?.find((r: FitnessResult) => r.testId === rubric.id && r.term === 'Term 2');
+
+                                const displayBVal = baseVal ? baseVal.value : rubric.levels.B.val;
+                                const displayBRate = baseVal ? (parseInt(baseVal.value) >= 8 ? 'Advanced' : parseInt(baseVal.value) >= 5 ? 'Proficient' : 'Developing') : rubric.levels.B.rate;
+
+                                const displayT1Val = t1Val ? t1Val.value : rubric.levels.T1.val;
+                                const displayT1Rate = t1Val ? (parseInt(t1Val.value) >= 8 ? 'Advanced' : parseInt(t1Val.value) >= 5 ? 'Proficient' : 'Developing') : rubric.levels.T1.rate;
+
+                                const displayT2Val = t2Val ? t2Val.value : rubric.levels.T2.val;
+                                const displayT2Rate = t2Val ? (parseInt(t2Val.value) >= 8 ? 'Advanced' : parseInt(t2Val.value) >= 5 ? 'Proficient' : 'Developing') : rubric.levels.T2.rate;
+
+                                const getBadgeColor = (rate: string) => {
+                                  if (rate === 'Mastery' || rate === 'Advanced') return 'bg-emerald-50 text-emerald-800 border border-emerald-300';
+                                  if (rate === 'Proficient' || rate === 'Satisfactory') return 'bg-indigo-50 text-indigo-800 border border-indigo-300';
+                                  return 'bg-amber-50 text-amber-800 border border-amber-300';
+                                };
+
+                                return (
+                                  <tr key={rubric.id} className="hover:bg-slate-50 transition-colors">
+                                    <td className="p-3">
+                                      <p className="font-black text-slate-900 text-[10px]">{rubric.name}</p>
+                                      <p className="text-[8px] text-slate-500 font-medium mt-0.5 leading-snug">{rubric.desc}</p>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <span className="text-[10px] font-black text-slate-900 block">{displayBVal}</span>
+                                      <span className={`text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full mt-1 inline-block ${getBadgeColor(displayBRate)}`}>
+                                        {displayBRate}
+                                      </span>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <span className="text-[10px] font-black text-slate-900 block">{displayT1Val}</span>
+                                      <span className={`text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full mt-1 inline-block ${getBadgeColor(displayT1Rate)}`}>
+                                        {displayT1Rate}
+                                      </span>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <span className="text-[10px] font-black text-slate-900 block">{displayT2Val}</span>
+                                      <span className={`text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full mt-1 inline-block ${getBadgeColor(displayT2Rate)}`}>
+                                        {displayT2Rate}
+                                      </span>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded-lg inline-block ${getBadgeColor(displayT2Rate)}`}>
+                                        {displayT2Rate}
+                                      </span>
+                                      <span className="text-[7px] text-emerald-600 font-bold block mt-0.5">Growth Verified</span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Rubric Grading Reference Scale (4 Tiers) */}
+                        <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 my-2 relative z-10">
+                          <h6 className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-2">4-Tier Qualitative Assessment Framework</h6>
+                          <div className="grid grid-cols-4 gap-2">
+                            <div className="bg-white p-2 rounded-xl border border-slate-200">
+                              <span className="text-[7px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded uppercase">1-4: Developing</span>
+                              <p className="text-[7px] text-slate-500 font-medium mt-1 leading-tight">Foundational stage; mechanical drill practice recommended.</p>
+                            </div>
+                            <div className="bg-white p-2 rounded-xl border border-slate-200">
+                              <span className="text-[7px] font-black text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded uppercase">5-6: Proficient</span>
+                              <p className="text-[7px] text-slate-500 font-medium mt-1 leading-tight">Reliable fundamental execution with occasional match errors.</p>
+                            </div>
+                            <div className="bg-white p-2 rounded-xl border border-slate-200">
+                              <span className="text-[7px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded uppercase">7-8: Advanced</span>
+                              <p className="text-[7px] text-slate-500 font-medium mt-1 leading-tight">Consistent game speed execution with sharp spatial control.</p>
+                            </div>
+                            <div className="bg-white p-2 rounded-xl border border-slate-200">
+                              <span className="text-[7px] font-black text-emerald-900 bg-emerald-100 px-1.5 py-0.5 rounded uppercase">9-10: Mastery</span>
+                              <p className="text-[7px] text-slate-500 font-medium mt-1 leading-tight">Autonomous tactical leadership and elite technical proficiency.</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Coach's Observation Note */}
+                        <div className="bg-[#0D2B52] text-white p-3.5 rounded-2xl border border-slate-900 flex items-center justify-between gap-4 relative z-10">
+                          <div className="flex items-center gap-3">
+                            <Trophy size={18} className="text-[#D4A017] flex-shrink-0" />
+                            <div>
+                              <h6 className="text-[9px] font-black uppercase tracking-wider text-[#D4A017]">Coach's Tactical Observation</h6>
+                              <p className="text-[8px] text-slate-200 font-medium leading-normal">
+                                Exhibits notable progress in offensive distribution and recovery speed. Confident decision making in small-sided match play.
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[8px] font-bold text-slate-300 bg-white/10 px-2 py-1 rounded-lg uppercase tracking-wider flex-shrink-0">Certified</span>
+                        </div>
+
+                        {/* Page 3 Footer */}
+                        <div className="flex justify-between items-center border-t border-slate-200 pt-3 relative z-10">
                           <div className="flex items-center gap-1.5 text-slate-400">
-                            <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600">SmartPE India</span>
+                            <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600">SmartPE India System</span>
                             <span className="text-slate-300">•</span>
-                            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">CONFIDENTIAL STUDENT RECORD</span>
+                            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Verified PE Curricular Record</span>
                           </div>
                           <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Page 3 of 4</span>
                         </div>
                       </div>
 
-                      {/* Performance Table */}
-                      <div className="space-y-6">
+                      {/* PAGE 4: DEVELOPMENTAL NOTES & QUALITATIVE FEEDBACK */}
+                      <div id="pdf-page-4" className="pdf-page-section bg-white p-8 sm:p-10 rounded-3xl border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] flex flex-col justify-between relative overflow-hidden mx-auto" style={{ width: '100%', maxWidth: '794px', minHeight: '1123px', maxHeight: '1123px', boxSizing: 'border-box' }}>
+                        {/* Subtle Confidential Watermark */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0 opacity-[0.025] p-10">
+                          <div className="flex flex-col items-center justify-center -rotate-30 transform select-none">
+                            <div className="text-slate-900 font-sans font-black text-8xl uppercase tracking-[0.2em] whitespace-nowrap">
+                              CONFIDENTIAL
+                            </div>
+                            <div className="text-indigo-950 font-sans font-black text-base uppercase tracking-[0.5em] whitespace-nowrap mt-4">
+                              SmartPE India System
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Running Header */}
+                        <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-4 relative z-10">
+                          <div className="flex items-center gap-2">
+                            <Logo showText={false} className="scale-50 origin-left -mr-6 -my-3 flex-shrink-0" />
+                            <span className="text-slate-300 font-bold">×</span>
+                            {schoolLogoUrl ? (
+                              <img src={schoolLogoUrl} alt={editableSchoolName} className="h-6 w-auto max-w-[60px] object-contain flex-shrink-0" />
+                            ) : (
+                              <div className="p-1 bg-indigo-100 rounded text-indigo-700 flex-shrink-0">
+                                <Shield size={12} />
+                              </div>
+                            )}
+                            <span className="font-sans font-black text-xs text-indigo-950 uppercase tracking-widest">{editableSchoolName}</span>
+                            <span className="text-slate-300">|</span>
+                            <span className="font-sans text-[10px] font-black text-slate-400 uppercase tracking-widest">Page 4: Qualitative Feedback & Signatures</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-sans font-black text-[10px] text-slate-800 uppercase tracking-wider bg-slate-100 px-2.5 py-0.5 rounded-full">{reportData.student?.name}</span>
+                            <span className="font-sans font-bold text-[9px] text-slate-400 uppercase tracking-wider">{reportData.student?.grade}-{reportData.student?.section}</span>
+                          </div>
+                        </div>
+
+                        {/* Page 4 Title */}
+                        <div className="mb-2 relative z-10">
+                          <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600 px-2.5 py-0.5 bg-indigo-50 rounded-full border border-indigo-100">
+                            Evaluative Feedback
+                          </span>
+                          <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 mt-1">Instructor Developmental Notes</h3>
+                          <p className="text-[9px] font-bold text-slate-400">Holistic pedagogical review highlighting athletic strengths, areas of improvement, and physical ratings.</p>
+                        </div>
+
+                        {/* Content Rows */}
+                        <div className="space-y-3 relative z-10 flex-1">
+                          {/* Overall Summary Card */}
+                          <div className="bg-slate-900 text-white p-4 rounded-2xl border border-slate-950">
+                            <h5 className="font-black text-[8px] uppercase tracking-widest text-indigo-400 mb-1">Overall Pedagogical Assessment Summary</h5>
+                            <p className="text-slate-200 text-[10px] font-medium leading-relaxed">
+                              {reportData.overallSummary}
+                            </p>
+                          </div>
+
+                          {/* Strengths & Recommendations Grid */}
+                          <div className="grid grid-cols-2 gap-3">
+                            {/* Strengths */}
+                            <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-100 space-y-1.5">
+                              <div className="flex items-center gap-1.5 text-emerald-800">
+                                <span className="text-xs">👍</span>
+                                <h5 className="font-black text-[9px] uppercase tracking-wider">Demonstrated Athletic Strengths</h5>
+                              </div>
+                              {reportData.strengths && reportData.strengths.length > 0 ? (
+                                <ul className="space-y-1">
+                                  {reportData.strengths.slice(0, 2).map((item: string, idx: number) => {
+                                    const [title, desc] = item.split(': Rated as ');
+                                    return (
+                                      <li key={idx} className="text-[8px] text-slate-700 font-medium leading-tight">
+                                        <strong className="text-emerald-800 block uppercase tracking-tight text-[8px] font-black">{title}</strong>
+                                        <span className="opacity-90">{desc}</span>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              ) : (
+                                <p className="text-[8px] font-bold text-slate-400">No high-performing physical parameters registered yet.</p>
+                              )}
+                            </div>
+
+                            {/* Recommendations */}
+                            <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-100 space-y-1.5">
+                              <div className="flex items-center gap-1.5 text-amber-800">
+                                <span className="text-xs">🎯</span>
+                                <h5 className="font-black text-[9px] uppercase tracking-wider">Targeted Action Recommendations</h5>
+                              </div>
+                              {reportData.improvements && reportData.improvements.length > 0 ? (
+                                <ul className="space-y-1">
+                                  {reportData.improvements.slice(0, 2).map((item: string, idx: number) => {
+                                    const [title, desc] = item.split(': Rated as ');
+                                    return (
+                                      <li key={idx} className="text-[8px] text-slate-700 font-medium leading-tight">
+                                        <strong className="text-amber-800 block uppercase tracking-tight text-[8px] font-black">{title}</strong>
+                                        <span className="opacity-90">{desc}</span>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              ) : (
+                                <div className="text-[8px] text-slate-600 font-medium leading-tight">
+                                  <p className="text-emerald-700 font-black uppercase tracking-wider text-[8px]">Exceptional Standard Profile!</p>
+                                  <p className="text-slate-500 mt-0.5 leading-tight">Meets or exceeds physical guidelines. Continue structured training to preserve athletic capacity.</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Parameter Status & Rating Matrix Grid */}
+                          {reportData.feedbackItems && reportData.feedbackItems.length > 0 && (
+                            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                              <h5 className="font-black text-[8px] uppercase tracking-widest text-slate-400">Standard Parameter Rating Cards</h5>
+                              <div className="grid grid-cols-3 gap-2.5">
+                                {reportData.feedbackItems.slice(0, 6).map((item: any, idx: number) => (
+                                  <div key={idx} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between h-[90px]">
+                                    <div>
+                                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                                        <span className="font-black text-[9px] text-slate-800 uppercase tracking-tight truncate">{item.testName.split('(')[0].trim()}</span>
+                                        <span className={`text-[6px] font-black uppercase tracking-wider px-1 py-0.2 rounded-full ${
+                                          item.status === 'Excellent' 
+                                            ? 'bg-emerald-100 text-emerald-800'
+                                            : item.status === 'Satisfactory'
+                                            ? 'bg-indigo-100 text-indigo-800'
+                                            : 'bg-amber-100 text-amber-800'
+                                        }`}>
+                                          {item.status === 'Excellent' ? 'Excellent' : item.status === 'Satisfactory' ? 'Satisfactory' : 'Developing'}
+                                        </span>
+                                      </div>
+                                      <p className="text-[7px] text-slate-500 font-black tracking-tight uppercase line-clamp-1 mb-0.5">{item.rating}</p>
+                                      <p className="text-[7px] text-slate-400 font-medium leading-tight line-clamp-2">{item.details}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Official Signatures & School Stamp Block */}
+                          <div className="border-2 border-slate-900 rounded-2xl p-4 bg-slate-50/70 mt-3">
+                            <div className="grid grid-cols-3 gap-6 items-end">
+                              {/* PE Instructor */}
+                              <div className="space-y-2">
+                                <div className="h-10 border-b border-dashed border-slate-400 flex items-end justify-center">
+                                  <span className="font-serif italic text-xs text-slate-600 font-bold">Physical Education Teacher</span>
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-[8px] font-black uppercase tracking-wider text-slate-700">Evaluated By</p>
+                                  <p className="text-[7px] font-bold text-slate-400 uppercase">PE Instructor Signature</p>
+                                </div>
+                              </div>
+
+                              {/* Principal / Head of Sports */}
+                              <div className="space-y-2">
+                                <div className="h-10 border-b border-dashed border-slate-400 flex items-end justify-center">
+                                  <span className="font-serif italic text-xs text-slate-600 font-bold">Head of Sports / Principal</span>
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-[8px] font-black uppercase tracking-wider text-slate-700">Verified & Approved</p>
+                                  <p className="text-[7px] font-bold text-slate-400 uppercase">School Principal Signature</p>
+                                </div>
+                              </div>
+
+                              {/* Official Date & Stamp Box */}
+                              <div className="bg-white p-2 rounded-xl border border-slate-200 text-center space-y-1">
+                                <p className="text-[7px] font-black uppercase tracking-wider text-slate-500">Official Report Verification</p>
+                                <div className="text-[9px] font-black text-slate-900">
+                                  {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                </div>
+                                <div className="text-[7px] font-mono font-bold text-indigo-600 bg-indigo-50 py-0.5 px-1 rounded">
+                                  ID: KIFT-{reportData.student?.rollNumber || '2026'}-VERIFIED
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Page 4 Footer */}
+                        <div className="flex justify-between items-center border-t border-slate-200 pt-3 relative z-10">
+                          <div className="flex items-center gap-1.5 text-slate-400">
+                            <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600">SmartPE India System</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Verified PE Curricular Record</span>
+                          </div>
+                          <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Page 4 of 4</span>
+                        </div>
+                      </div>
+
+                      {/* Detailed Results Table (On-Screen Interactive Explorer) */}
+                      <div className="space-y-6 print:hidden">
                         <h4 className="font-black text-xl uppercase tracking-tight flex items-center gap-2">
                           <Activity size={20} className="text-indigo-600" />
-                          <span>Detailed Results</span>
+                          <span>Detailed Results Matrix</span>
                         </h4>
-                        <div className="border-2 border-slate-900 rounded-3xl overflow-hidden">
+                        <div className="border-2 border-slate-900 rounded-3xl overflow-hidden bg-white">
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr className="bg-slate-900 text-white">
@@ -2088,7 +2617,6 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                              {/* Group results by test name for row-wise display */}
                               {Object.entries(
                                 (reportData.studentResults || []).reduce((acc: any, r: FitnessResult) => {
                                   if (!acc[r.testName]) acc[r.testName] = { testId: r.testId, unit: r.unit, rawTerms: {}, terms: {} };
@@ -2119,152 +2647,6 @@ const FitnessReports: React.FC<FitnessReportsProps> = ({ initialStudentId }) => 
                               })}
                             </tbody>
                           </table>
-                        </div>
-                      </div>
-
-                      {/* PAGE 4: DEVELOPMENTAL NOTES & QUALITATIVE FEEDBACK */}
-                      <div id="pdf-page-4" className="pdf-page-section bg-white p-10 rounded-[3rem] border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] flex flex-col justify-between relative overflow-hidden" style={{ height: '1050px', maxHeight: '1050px', overflow: 'hidden', boxSizing: 'border-box' }}>
-                        {/* Subtle Confidential Watermark */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0 opacity-[0.025] p-10">
-                          <div className="flex flex-col items-center justify-center -rotate-30 transform select-none">
-                            <div className="text-slate-900 font-sans font-black text-8xl uppercase tracking-[0.2em] whitespace-nowrap">
-                              CONFIDENTIAL
-                            </div>
-                            <div className="text-indigo-950 font-sans font-black text-base uppercase tracking-[0.5em] whitespace-nowrap mt-4">
-                              SmartPE India System
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          {/* Running Page Header with SmartPE India Logo & Registered School Custom Logo */}
-                          <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-6 relative z-10">
-                            <div className="flex items-center gap-2">
-                              <Logo showText={false} className="scale-50 origin-left -mr-6 -my-3 flex-shrink-0" />
-                              <span className="text-slate-300 font-bold">×</span>
-                              {schoolLogoUrl ? (
-                                <img src={schoolLogoUrl} alt={editableSchoolName} className="h-6 w-auto max-w-[60px] object-contain flex-shrink-0" />
-                              ) : (
-                                <div className="p-1 bg-indigo-100 rounded text-indigo-700 flex-shrink-0">
-                                  <Shield size={14} />
-                                </div>
-                              )}
-                              <span className="font-sans font-black text-xs text-indigo-950 uppercase tracking-widest">{editableSchoolName}</span>
-                              <span className="text-slate-300">|</span>
-                              <span className="font-sans text-[10px] font-black text-slate-400 uppercase tracking-widest">Page 4: Qualitative Feedback & Parameter Matrix</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-sans font-black text-[10px] text-slate-800 uppercase tracking-wider bg-slate-100 px-2.5 py-0.5 rounded-full">{reportData.student?.name}</span>
-                              <span className="font-sans font-bold text-[9px] text-slate-400 uppercase tracking-wider">{reportData.student?.grade}-{reportData.student?.section}</span>
-                            </div>
-                          </div>
-
-                          <div className="mb-4">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-indigo-600 px-2.5 py-1 bg-indigo-50 rounded-full border border-indigo-100">Evaluative Feedback</span>
-                            <h3 className="text-xl font-black uppercase tracking-tight text-slate-800 mt-2">Instructor Developmental Notes</h3>
-                            <p className="text-[10px] font-bold text-slate-400">Holistic pedagogical review highlighting athletic strengths, areas of improvement, and tactical metrics.</p>
-                          </div>
-
-                          <div className="space-y-4">
-                            {/* Overall Summary Card */}
-                            <div className="bg-slate-900 text-white p-5 rounded-[1.5rem] border border-slate-950">
-                              <h5 className="font-black text-[9px] uppercase tracking-widest text-indigo-400 mb-1">Overall Assessment Summary</h5>
-                              <p className="text-slate-200 text-[11px] font-semibold leading-relaxed">
-                                {reportData.overallSummary}
-                              </p>
-                            </div>
-
-                            {/* Strengths & Recommendations Grid */}
-                            <div className="grid grid-cols-2 gap-4">
-                              {/* Strengths */}
-                              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 space-y-2">
-                                <div className="flex items-center gap-1.5 text-emerald-800">
-                                  <span className="text-xs">👍</span>
-                                  <h5 className="font-black text-[9px] uppercase tracking-widest">Demonstrated Strengths</h5>
-                                </div>
-                                {reportData.strengths && reportData.strengths.length > 0 ? (
-                                  <ul className="space-y-1.5">
-                                    {reportData.strengths.slice(0, 2).map((item: string, idx: number) => {
-                                      const [title, desc] = item.split(': Rated as ');
-                                      return (
-                                        <li key={idx} className="text-[9px] text-slate-700 font-bold leading-normal">
-                                          <strong className="text-emerald-700 block uppercase tracking-tight text-[8px]">{title}</strong>
-                                          <span className="opacity-90">{desc}</span>
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                ) : (
-                                  <p className="text-[8px] font-bold text-slate-400">No high-performing physical parameters registered yet.</p>
-                                )}
-                              </div>
-
-                              {/* Improvements */}
-                              <div className="p-4 bg-orange-50 rounded-xl border border-orange-100 space-y-2">
-                                <div className="flex items-center gap-1.5 text-orange-800">
-                                  <span className="text-xs">🎯</span>
-                                  <h5 className="font-black text-[9px] uppercase tracking-widest">Recommended Actions</h5>
-                                </div>
-                                {reportData.improvements && reportData.improvements.length > 0 ? (
-                                  <ul className="space-y-1.5">
-                                    {reportData.improvements.slice(0, 2).map((item: string, idx: number) => {
-                                      const [title, desc] = item.split(': Rated as ');
-                                      return (
-                                        <li key={idx} className="text-[9px] text-slate-700 font-bold leading-normal">
-                                          <strong className="text-orange-700 block uppercase tracking-tight text-[8px]">{title}</strong>
-                                          <span className="opacity-90">{desc}</span>
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                ) : (
-                                  <div className="text-[8px] text-slate-600 font-bold leading-normal">
-                                    <p className="text-emerald-700 font-black uppercase tracking-wider text-[8px]">Exceptional Standard Profile!</p>
-                                    <p className="text-slate-500 mt-0.5 leading-normal">Meets or exceeds physical guidelines. Continue daily play to preserve athletic capacity.</p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Parameter Status & Rating Matrix Grid */}
-                            {reportData.feedbackItems && reportData.feedbackItems.length > 0 && (
-                              <div className="space-y-2 pt-3 border-t border-slate-100">
-                                <h5 className="font-black text-[9px] uppercase tracking-widest text-slate-400">Individual Standard Parameter Ratings</h5>
-                                <div className="grid grid-cols-3 gap-3">
-                                  {reportData.feedbackItems.slice(0, 6).map((item: any, idx: number) => (
-                                    <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between h-[110px]">
-                                      <div>
-                                        <div className="flex items-center justify-between gap-1 mb-1">
-                                          <span className="font-black text-[9px] text-slate-800 uppercase tracking-tight truncate">{item.testName.split('(')[0].trim()}</span>
-                                          <span className={`text-[6px] font-black uppercase tracking-wider px-1 py-0.2 rounded-full ${
-                                            item.status === 'Excellent' 
-                                              ? 'bg-emerald-100 text-emerald-800'
-                                              : item.status === 'Satisfactory'
-                                              ? 'bg-indigo-100 text-indigo-800'
-                                              : 'bg-orange-100 text-orange-800'
-                                          }`}>
-                                            {item.status === 'Excellent' ? 'Excellent' : item.status === 'Satisfactory' ? 'Satisfactory' : 'Developing'}
-                                          </span>
-                                        </div>
-                                        <p className="text-[8px] text-slate-500 font-black tracking-tight uppercase line-clamp-1 mb-0.5">{item.rating}</p>
-                                        <p className="text-[8px] text-slate-400 font-semibold leading-normal line-clamp-2">{item.details}</p>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Static Page Footer */}
-                        <div className="flex justify-between items-center border-t border-slate-200 pt-3 mt-6 relative z-10">
-                          <div className="flex items-center gap-1.5 text-slate-400">
-                            <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600">SmartPE India</span>
-                            <span className="text-slate-300">•</span>
-                            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">CONFIDENTIAL STUDENT RECORD</span>
-                          </div>
-                          <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Page 4 of 4</span>
                         </div>
                       </div>
                     </>

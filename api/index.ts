@@ -10,6 +10,9 @@ import {
   getEmailConfig, 
   buildCorporateWelcomeEmail, 
   buildCorporateFeatureEmail, 
+  buildLessonPlannerNurtureEmail,
+  buildFitnessTestsNurtureEmail,
+  getNurtureEmailTemplate,
   dispatchEmail 
 } from "./email.js";
 
@@ -95,24 +98,192 @@ apiRouter.get("/email/status", (req, res) => {
 // Automated Corporate Welcome Email endpoint
 apiRouter.post("/email/welcome", async (req, res) => {
   try {
-    const { toEmail, recipientName, schoolName } = req.body;
+    const { toEmail, email, recipientName, displayName, name, schoolName, uid } = req.body;
+    const targetEmail = toEmail || email;
+    const targetName = recipientName || displayName || name || "";
 
-    if (!toEmail || typeof toEmail !== "string" || !toEmail.includes("@")) {
+    if (!targetEmail || typeof targetEmail !== "string" || !targetEmail.includes("@")) {
       return res.status(400).json({ success: false, error: "Valid recipient email address is required" });
     }
 
-    const { subject, html, text } = buildCorporateWelcomeEmail(recipientName, schoolName);
-    const result = await dispatchEmail(toEmail, subject, html, text);
+    const { subject, html, text } = buildCorporateWelcomeEmail(targetName, schoolName);
+    const result = await dispatchEmail(targetEmail, subject, html, text);
 
     res.json({
       success: result.success,
       message: result.message,
       provider: result.provider,
-      recipient: toEmail
+      recipient: targetEmail,
+      uid: uid || null
     });
   } catch (error: any) {
     console.error("Welcome email error:", error);
     res.status(500).json({ success: false, error: error.message || "Failed to dispatch welcome email" });
+  }
+});
+
+// Trigger a specific step of the 3-part nurture sequence (Step 1, 2, or 3)
+apiRouter.post("/email/nurture/trigger", async (req, res) => {
+  try {
+    const { toEmail, email, step = 1, recipientName, displayName, name, schoolName } = req.body;
+    const targetEmail = toEmail || email;
+    const targetName = recipientName || displayName || name || "Physical Education Educator";
+    const stepNum = Number(step) as (1 | 2 | 3);
+
+    if (!targetEmail || typeof targetEmail !== "string" || !targetEmail.includes("@")) {
+      return res.status(400).json({ success: false, error: "Valid recipient email address is required" });
+    }
+
+    if (![1, 2, 3].includes(stepNum)) {
+      return res.status(400).json({ success: false, error: "Step must be 1 (Welcome), 2 (Lesson Planner), or 3 (Fitness Tests)" });
+    }
+
+    const template = getNurtureEmailTemplate(stepNum, targetName, schoolName);
+    const result = await dispatchEmail(targetEmail, template.subject, template.html, template.text);
+
+    res.json({
+      success: result.success,
+      message: `Nurture Part ${stepNum} (${template.stepName}) sent: ${result.message}`,
+      step: stepNum,
+      stepName: template.stepName,
+      triggerDay: template.triggerDay,
+      provider: result.provider,
+      recipient: targetEmail
+    });
+  } catch (error: any) {
+    console.error("Nurture trigger error:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to trigger nurture email" });
+  }
+});
+
+// Automated Registration Date Evaluator: Checks user registration date and sends next due nurture email
+apiRouter.post("/email/nurture/evaluate", async (req, res) => {
+  try {
+    const { 
+      toEmail, 
+      email, 
+      recipientName, 
+      displayName, 
+      name, 
+      schoolName, 
+      createdAt, 
+      step1SentAt, 
+      step2SentAt, 
+      step3SentAt 
+    } = req.body;
+
+    const targetEmail = toEmail || email;
+    const targetName = recipientName || displayName || name || "Physical Education Educator";
+
+    if (!targetEmail || typeof targetEmail !== "string" || !targetEmail.includes("@")) {
+      return res.status(400).json({ success: false, error: "Valid email address is required" });
+    }
+
+    const now = new Date();
+    const regDate = createdAt ? new Date(createdAt) : new Date();
+    const daysSinceRegistration = Math.max(0, Math.floor((now.getTime() - regDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+    let dueStep: 1 | 2 | 3 | null = null;
+
+    if (!step1SentAt) {
+      dueStep = 1; // Day 0 - Welcome & Pass
+    } else if (daysSinceRegistration >= 2 && !step2SentAt) {
+      dueStep = 2; // Day 2+ - Lesson Planner
+    } else if (daysSinceRegistration >= 5 && !step3SentAt) {
+      dueStep = 3; // Day 5+ - Khelo India & Fitness Tests
+    }
+
+    if (!dueStep) {
+      const isComplete = Boolean(step1SentAt && step2SentAt && step3SentAt);
+      return res.json({
+        success: true,
+        actionTaken: "none_due",
+        message: isComplete 
+          ? "All 3 nurture sequence emails have been completed." 
+          : `No pending nurture email due today (Days registered: ${daysSinceRegistration}).`,
+        daysSinceRegistration,
+        isComplete,
+        currentStatus: {
+          step1SentAt: step1SentAt || null,
+          step2SentAt: step2SentAt || null,
+          step3SentAt: step3SentAt || null
+        }
+      });
+    }
+
+    const template = getNurtureEmailTemplate(dueStep, targetName, schoolName);
+    const result = await dispatchEmail(targetEmail, template.subject, template.html, template.text);
+
+    const nowIso = new Date().toISOString();
+    const updatedStatus = {
+      step1SentAt: dueStep === 1 ? nowIso : (step1SentAt || null),
+      step2SentAt: dueStep === 2 ? nowIso : (step2SentAt || null),
+      step3SentAt: dueStep === 3 ? nowIso : (step3SentAt || null),
+      lastEvaluatedAt: nowIso
+    };
+
+    res.json({
+      success: result.success,
+      actionTaken: `sent_step_${dueStep}`,
+      dispatchedStep: dueStep,
+      stepName: template.stepName,
+      triggerDay: template.triggerDay,
+      daysSinceRegistration,
+      provider: result.provider,
+      recipient: targetEmail,
+      message: `Triggered Part ${dueStep} (${template.stepName}) based on registration date.`,
+      updatedStatus
+    });
+  } catch (error: any) {
+    console.error("Nurture evaluation error:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to evaluate nurture sequence" });
+  }
+});
+
+// Preview HTML for any nurture step
+apiRouter.get("/email/nurture/preview", (req, res) => {
+  try {
+    const step = Number(req.query.step || 1) as (1 | 2 | 3);
+    const name = String(req.query.name || "Physical Education Educator");
+    const school = String(req.query.school || "Smart PE Partner School");
+
+    const template = getNurtureEmailTemplate([1, 2, 3].includes(step) ? step : 1, name, school);
+    res.json({
+      step,
+      stepName: template.stepName,
+      triggerDay: template.triggerDay,
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Dedicated Auth User Created Webhook (for external triggers or Cloud Functions)
+apiRouter.post("/webhooks/auth-user-created", async (req, res) => {
+  try {
+    const { email, toEmail, displayName, recipientName, uid, schoolName } = req.body;
+    const targetEmail = email || toEmail;
+    const targetName = displayName || recipientName || "";
+
+    if (!targetEmail) {
+      return res.status(400).json({ success: false, error: "User email is required" });
+    }
+
+    const { subject, html, text } = buildCorporateWelcomeEmail(targetName, schoolName);
+    const result = await dispatchEmail(targetEmail, subject, html, text);
+
+    res.json({
+      success: result.success,
+      message: `Auth user creation welcome email handled: ${result.message}`,
+      provider: result.provider,
+      uid
+    });
+  } catch (error: any) {
+    console.error("Auth webhook error:", error);
+    res.status(500).json({ success: false, error: error.message || "Webhook processing failed" });
   }
 });
 
@@ -218,7 +389,7 @@ apiRouter.post("/ai/generate", async (req, res) => {
     if (geminiKeys.length === 0 && !groqKey) {
       return res.status(500).json({ 
         error: "No AI API keys configured.",
-        message: "Please add a Gemini key via the 'Renew / Upgrade' button OR add GROQ_API_KEY to the Environment Variables tab in the AI Studio sidebar."
+        message: "Please configure a valid GEMINI_API_KEY in the Environment Variables."
       });
     }
 
@@ -232,9 +403,9 @@ apiRouter.post("/ai/generate", async (req, res) => {
       const modelsToTry = [
         resolvedModel,
         "gemini-3.7-flash",
-        "gemini-2.5-flash",
+        "gemini-flash-latest",
         "gemini-3.1-flash-lite",
-        "gemini-flash-latest"
+        "gemini-2.5-flash"
       ];
       
       // Filter out duplicates but keep order
@@ -284,7 +455,7 @@ apiRouter.post("/ai/generate", async (req, res) => {
             });
           } catch (error: any) {
             lastError = error;
-            const errorMsg = (error.message || "").toLowerCase();
+            const errorMsg = (error.message || JSON.stringify(error) || "").toLowerCase();
             
             // Log the specific error for debugging
             console.warn(`Gemini error with model ${currentModel}:`, errorMsg);
@@ -300,10 +471,11 @@ apiRouter.post("/ai/generate", async (req, res) => {
                                       errorMsg.includes("renew") ||
                                       errorMsg.includes("api key not valid") ||
                                       errorMsg.includes("api_key_invalid") ||
-                                      (error.status === 401);
+                                      (error.status === 401) ||
+                                      (error.status === 400 && errorMsg.includes("key"));
 
             if (isDefinitiveBadKey) {
-              console.error(`Definitive bad key detected (${key}). Trying next key.`);
+              console.error(`Definitive bad key detected. Trying next key.`);
               break; // Break inner loop to try next key
             }
 
@@ -314,7 +486,7 @@ apiRouter.post("/ai/generate", async (req, res) => {
               break; // Break inner loop to try next key
             }
 
-            // For other errors (like 400 Bad Request if config is invalid), try next model on same key
+            // For other errors, try next model on same key
             continue;
           }
         }
@@ -397,25 +569,29 @@ apiRouter.post("/ai/generate", async (req, res) => {
     let errorMessage = "AI generation failed after trying all available providers.";
     let statusCode = 500;
 
-    const isInvalidKey = lastError?.message?.toLowerCase().includes("expired") || 
-                        lastError?.message?.toLowerCase().includes("renew") ||
-                        lastError?.message?.toLowerCase().includes("api key not valid") ||
-                        lastError?.message?.toLowerCase().includes("api_key_invalid") ||
-                        lastError?.message?.toLowerCase().includes("invalid_argument");
+    const errorStr = (lastError?.message || JSON.stringify(lastError || "")).toLowerCase();
+    const isInvalidKey = errorStr.includes("expired") || 
+                        errorStr.includes("renew") ||
+                        errorStr.includes("api key not valid") ||
+                        errorStr.includes("api_key_invalid") ||
+                        errorStr.includes("api key") ||
+                        (lastError?.status === 401) ||
+                        (lastError?.status === 400 && errorStr.includes("key"));
 
     if (isInvalidKey) {
       statusCode = 401;
-      errorMessage = "Your Gemini API key is invalid or has expired. To fix this, click the 'Renew / Upgrade' button in the dashboard and select a key from a PAID project, or add a GROQ_API_KEY in the Environment Variables sidebar.";
-    } else if (lastError?.message?.toLowerCase().includes("quota") || lastError?.message?.toLowerCase().includes("429")) {
-      errorMessage = "Gemini quota exceeded. To continue without interruption, please add a GROQ_API_KEY to the Environment Variables tab in the AI Studio sidebar (left).";
+      errorMessage = "Gemini API key is invalid or not configured. Please ensure a valid GEMINI_API_KEY is set in Settings > Secrets or Environment Variables.";
+    } else if (errorStr.includes("quota") || errorStr.includes("429") || errorStr.includes("resource_exhausted")) {
+      statusCode = 429;
+      errorMessage = "Gemini AI quota exceeded. Please try again in a few moments, or configure a fallback GROQ_API_KEY in Environment Variables.";
     } else if (!groqKey && geminiKeys.length > 0) {
-      errorMessage = "Gemini failed and no Groq fallback was found. Please add a GROQ_API_KEY to the Environment Variables tab in the AI Studio sidebar (left) for a reliable free fallback.";
+      errorMessage = "AI generation failed. Please check your Gemini API key or network connection.";
     }
 
     res.status(statusCode).json({ 
       error: errorMessage,
       message: errorMessage,
-      originalError: lastError?.message,
+      originalError: lastError?.message || errorStr,
       details: lastError?.stack
     });
   } catch (globalError: any) {

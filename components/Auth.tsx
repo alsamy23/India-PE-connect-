@@ -79,6 +79,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
 
         const finalSchoolName = customSchoolName || schoolName.trim() || (user.displayName ? `${user.displayName} Academy` : 'PE Partner School');
         
+        const nowIso = new Date().toISOString();
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
           email: user.email,
@@ -87,7 +88,9 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           schoolLogo: customSchoolLogo,
           schoolId,
           role,
-          createdAt: new Date().toISOString()
+          createdAt: nowIso,
+          registrationDate: nowIso,
+          nurtureStep1SentAt: nowIso
         });
 
         await setDoc(doc(db, 'schoolMembers', user.uid), {
@@ -178,6 +181,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         const finalSchoolName = customSchoolName || schoolName.trim() || (displayName ? `${displayName}'s School` : 'SmartPE Member School');
 
         // Create user document in Firestore
+        const nowIso = new Date().toISOString();
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
           email: user.email,
@@ -186,7 +190,9 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           schoolLogo: customSchoolLogo,
           schoolId,
           role,
-          createdAt: new Date().toISOString()
+          createdAt: nowIso,
+          registrationDate: nowIso,
+          nurtureStep1SentAt: nowIso
         });
 
         // Add as proper school member

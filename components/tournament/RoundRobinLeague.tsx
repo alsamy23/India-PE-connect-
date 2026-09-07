@@ -93,7 +93,7 @@ export const RoundRobinLeague: React.FC<RoundRobinLeagueProps> = ({
       const currentList = [...prev];
       if (n > currentList.length) {
         for (let i = currentList.length; i < n; i++) {
-          currentList.push(PRESET_SCHOOLS[i % PRESET_SCHOOLS.length]);
+          currentList.push(`Team ${i + 1}`);
         }
       } else {
         currentList.length = n;

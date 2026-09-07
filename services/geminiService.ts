@@ -58,23 +58,13 @@ const callAIBase = async (payload: any, retries = 2) => {
         throw new Error("AI Quota Exceeded: You've reached the daily limit for the free version of Gemini. Please try again in a few hours or use a different API key with a paid project.");
       }
 
-      const isInvalidKeyError = response.status === 401 || response.status === 400 || 
+      const isInvalidKeyError = response.status === 401 || 
                                errorMessage.includes("API_KEY_INVALID") || 
-                               errorMessage.includes("API key not valid") ||
-                               errorMessage.toLowerCase().includes("expired") ||
-                               errorMessage.toLowerCase().includes("invalid_argument");
+                               errorMessage.includes("api key not valid") ||
+                               errorMessage.toLowerCase().includes("invalid_argument") ||
+                               errorMessage.toLowerCase().includes("expired");
       if (isInvalidKeyError) {
-        if (window.aistudio) {
-          console.warn("AI Key expired or invalid. Prompting for key selection.");
-          try {
-            await window.aistudio.openSelectKey();
-            // Await the retry so that if it fails, it rejects HERE rather than floating
-            return await callAIBase(payload, 0);
-          } catch (keySelectError: any) {
-            console.error("Key selection failed or was cancelled:", keySelectError);
-            throw new Error("API key selection was cancelled or failed. Please provide a valid key to continue.");
-          }
-        }
+        throw new Error("Gemini API key is invalid or not configured. Please ensure your GEMINI_API_KEY is configured in Settings > Secrets.");
       }
 
       const error: any = new Error(errorMessage);
@@ -238,7 +228,7 @@ export const generateLessonPlan = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `Detailed PE Lesson Plan. Board: ${board}, Grade: ${grade}, Sport: ${sport}, Topic: ${topic}, Lang: ${language}, Duration: ${duration}, Available Equipment: ${equipment || 'Standard PE equipment'}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -331,7 +321,7 @@ export const generateYearlyPlan = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `Yearly Physical Education Curriculum Plan. 
     Grade: ${grade}, Board: ${board}, Language: ${language}. 
     Cycle: Indian Academic Session (April to March).
@@ -413,7 +403,7 @@ export const generateMindMap = async (grade: string, chapter: string, board: Boa
   };
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `Generate a comprehensive mind map structure for CBSE Class ${grade} Physical Education Chapter: ${chapter}. 
     Include ALL major topics and sub-topics from the latest 2025-2026 CBSE curriculum and NCERT textbook.
     Provide exactly 6 to 8 main branches with clear, academic titles and brief descriptions.
@@ -464,7 +454,7 @@ export const generateTheoryContent = async (grade: string, topic: string, board:
   const contextUrl = "https://www.failures.in/p/physical-education-class-12-notes-pdf.html";
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `PE Theory Content. Grade ${grade} ${board}. Topic: ${topic}. Type: ${contentType}. Language: ${language}.${isCBSE12 ? ` Use context from ${contextUrl}` : ''}`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -536,7 +526,7 @@ Include the following additional assessment components with standard nominal mar
 Provide a structured output matching the schema:`;
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -565,7 +555,7 @@ export const generateAIToolContent = async (toolId: string, params: any) => {
   };
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `PE Tool ${toolId}. Parameters: ${JSON.stringify(params)}.`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -614,7 +604,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
   };
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `Skill progression: ${sport} - ${skill}`,
     config: { 
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -628,7 +618,7 @@ export const generateSkillProgression = async (sport: string, skill: string) => 
 
 export const getStateRegulationInsights = async (state: string, board: BoardType) => {
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `PE regulations for ${state} ${board}. Marks, Hours, Curriculum.`,
     config: { thinkingConfig: { thinkingLevel: "LOW" } }
   });
@@ -668,7 +658,7 @@ export const evaluateFitnessTests = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `Assess fitness test result. 
     Category: ${category}.
     Test: ${testName}.
@@ -727,7 +717,7 @@ export const evaluateKheloIndiaScores = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `Assess fitness based on Khelo India Norms. 
     Student: Age ${age}, ${gender}.
     Tests Provided: ${JSON.stringify(tests)}.`,
@@ -848,7 +838,7 @@ export const generateTestPaper = async (
   const isCBSE12 = (grade === '12' || grade === 'Class 12') && (topic.toLowerCase().includes('cbse') || true); // Assuming CBSE if 70 marks or grade 12 for this context
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `Generate a Physical Education Question Paper (CBSE). 
     Grade: ${grade}, Topic: ${topic}, 
     Type: ${testType}, Time: ${timeAllowed}, Marks: ${maxMarks}, 
@@ -921,7 +911,7 @@ export const explainBiomechanics = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `Explain biomechanics concept '${concept}' in '${sport}'. Language: ${language}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -935,7 +925,7 @@ export const explainBiomechanics = async (
 
 export const getSportsRule = async (sport: string, query: string, language: Language) => {
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `Rule Check: ${sport}. Question: ${query}. Language: ${language}`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },
@@ -953,7 +943,7 @@ export const generateParentLetter = async (
   language: Language
 ): Promise<string> => {
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `Generate a professional parent letter. 
     Student: ${studentName}, Teacher: ${teacherName}, 
     Purpose: ${purpose}, Details: ${details}, 
@@ -1032,7 +1022,7 @@ export const generateWeeklyAcademicPlan = async (
   };
 
   const response = await callAIBase({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.7-flash',
     contents: `Generate a Weekly Academic Planner for class ${classLabel}, section ${section}, week number ${weekNo}, week range ${weekOf} on the topic of "${topic}". Split the physical education or sport skill of "${topic}" into 3 to 4 sequential weekly sessions or sub-concepts. Language: ${language}.`,
     config: {
       thinkingConfig: { thinkingLevel: "LOW" },

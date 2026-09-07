@@ -61,6 +61,8 @@ import { TestGuideModal } from './fitness/TestGuideModal.tsx';
 import { TestVideoModal } from './fitness/TestVideoModal.tsx';
 import { BMISpectrumGauge } from './fitness/BMISpectrumGauge.tsx';
 import { TestFieldTooltip } from './fitness/TestFieldTooltip.tsx';
+import { IndividualStudentProfileModal } from './fitness/IndividualStudentProfileModal.tsx';
+import { D3StudentProgressChart } from './fitness/D3StudentProgressChart.tsx';
 
 const ADMIN_EMAILS = ['admin@smartpeindia.app', 'contact@smartpeindia.app', 'info@smartpeindia.app'];
 const isAdminUser = (email?: string | null) => {
@@ -73,7 +75,7 @@ const FitnessTests: React.FC = () => {
   const [selectedBattery, setSelectedBattery] = useState<KIFTBattery | null>(null);
 
   const [selectedTest, setSelectedTest] = useState<KIFTTest | null>(null);
-  const [testSelectionFilter, setTestSelectionFilter] = useState<string>('single'); // 'single', 'custom', 'all', or a specific test.id
+  const [testSelectionFilter, setTestSelectionFilter] = useState<string>('all'); // 'all', 'custom', or specific test id
   const [customSelectedTestIds, setCustomSelectedTestIds] = useState<string[]>([]);
   const [viewLayoutMode, setViewLayoutMode] = useState<'cards' | 'table'>('cards');
   const [activeGuideTest, setActiveGuideTest] = useState<KIFTTest | null>(null);
@@ -99,6 +101,7 @@ const FitnessTests: React.FC = () => {
   const [studentResults, setStudentResults] = useState<FitnessResult[]>([]);
   const [allResults, setAllResults] = useState<FitnessResult[]>([]);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [profileModalStudent, setProfileModalStudent] = useState<Student | null>(null);
   const [sequentialMode, setSequentialMode] = useState<boolean>(true);
   const [activeFocusCoord, setActiveFocusCoord] = useState<{ sIdx: number; tIdx: number } | null>(null);
 
@@ -277,15 +280,20 @@ const FitnessTests: React.FC = () => {
     if (selectedGradeFilter && selectedGradeFilter !== 'ALL') {
       const matchingBattery = fitnessService.getBatteryForGrade(selectedGradeFilter);
       if (matchingBattery) {
-        if (!selectedBattery || !selectedBattery.grades.includes(selectedGradeFilter)) {
+        if (!selectedBattery || selectedBattery.category !== matchingBattery.category) {
           setSelectedBattery(matchingBattery);
           const isCurrentTestValid = selectedTest && matchingBattery.tests.some(t => t.id === selectedTest.id);
           const defaultTest = isCurrentTestValid 
             ? selectedTest 
             : (matchingBattery.tests.find(t => t.id === 'pushups') || matchingBattery.tests[0]);
           setSelectedTest(defaultTest);
-          setTestSelectionFilter(defaultTest.id);
-          setCustomSelectedTestIds([defaultTest.id]);
+          if (testSelectionFilter !== 'all' && testSelectionFilter !== 'custom') {
+            setTestSelectionFilter(defaultTest.id);
+          }
+          setCustomSelectedTestIds(prev => {
+            const valid = prev.filter(id => matchingBattery.tests.some(t => t.id === id));
+            return valid.length > 0 ? valid : [matchingBattery.tests[0].id, matchingBattery.tests[1]?.id || matchingBattery.tests[0].id];
+          });
         }
       }
     }
@@ -707,10 +715,10 @@ const FitnessTests: React.FC = () => {
       ? (battery.tests.find(t => t.id === 'pushups') || battery.tests[0])
       : battery.tests[0];
     setSelectedTest(defaultTest);
-    setTestSelectionFilter(defaultTest ? defaultTest.id : 'single');
-    setCustomSelectedTestIds(defaultTest ? [defaultTest.id] : []);
+    setTestSelectionFilter('all');
+    setCustomSelectedTestIds(battery.tests.map(t => t.id));
     setResult(null);
-    if (selectedGradeFilter !== 'ALL' && !battery.grades.includes(selectedGradeFilter)) {
+    if (selectedGradeFilter !== 'ALL' && !battery.grades.some(g => fitnessService.isGradeMatching(selectedGradeFilter, g))) {
       setSelectedGradeFilter(battery.grades[0]);
     }
   };
@@ -726,18 +734,18 @@ const FitnessTests: React.FC = () => {
           ? selectedTest 
           : (matchingBattery.tests.find(t => t.id === 'pushups') || matchingBattery.tests[0]);
         setSelectedTest(defaultTest);
-        setTestSelectionFilter(defaultTest.id);
-        setCustomSelectedTestIds([defaultTest.id]);
+        setCustomSelectedTestIds(prev => {
+          const valid = prev.filter(id => matchingBattery.tests.some(t => t.id === id));
+          return valid.length > 0 ? valid : matchingBattery.tests.map(t => t.id);
+        });
       }
     }
   };
 
   const handleTestClick = (test: KIFTTest) => {
     setSelectedTest(test);
-    setTestSelectionFilter(test.id);
-    if (!customSelectedTestIds.includes(test.id)) {
-      setCustomSelectedTestIds(prev => [...prev, test.id]);
-    }
+    setTestSelectionFilter('custom');
+    setCustomSelectedTestIds([test.id]);
     setResult(null);
     setTestValue('');
   };
@@ -755,18 +763,12 @@ const FitnessTests: React.FC = () => {
     if (testSelectionFilter === 'all') {
       return selectedBattery.tests;
     }
-    if (testSelectionFilter === 'custom') {
-      const filtered = selectedBattery.tests.filter(t => customSelectedTestIds.includes(t.id));
-      if (filtered.length > 0) return filtered;
-      if (selectedTest && selectedBattery.tests.some(t => t.id === selectedTest.id)) {
-        return [selectedTest];
-      }
-      return [selectedBattery.tests[0]];
-    }
-    if (testSelectionFilter && testSelectionFilter !== 'single') {
+    if (testSelectionFilter && testSelectionFilter !== 'custom' && testSelectionFilter !== 'single') {
       const matched = selectedBattery.tests.find(t => t.id === testSelectionFilter);
       if (matched) return [matched];
     }
+    const filtered = selectedBattery.tests.filter(t => customSelectedTestIds.includes(t.id));
+    if (filtered.length > 0) return filtered;
     if (selectedTest && selectedBattery.tests.some(t => t.id === selectedTest.id)) {
       return [selectedTest];
     }
@@ -1280,7 +1282,7 @@ const FitnessTests: React.FC = () => {
 
   // Filter students based on grade, section, and roll number or name search
   const filteredStudentsForSelect = students.filter(s => {
-    const matchesGrade = !selectedGradeFilter || selectedGradeFilter === 'ALL' || s.grade === selectedGradeFilter;
+    const matchesGrade = !selectedGradeFilter || selectedGradeFilter === 'ALL' || fitnessService.isGradeMatching(s.grade, selectedGradeFilter);
     const matchesSection = !selectedSectionFilter || selectedSectionFilter === 'ALL' || s.section === selectedSectionFilter;
     const queryLower = studentSearchQuery.toLowerCase().trim();
     const matchesSearch = !queryLower || 
@@ -1320,7 +1322,7 @@ const FitnessTests: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in pb-20">
+    <div className="space-y-8 animate-in fade-in pb-32 sm:pb-36">
       {/* Top Level Nav toggle */}
       <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit mb-8 shadow-inner border border-slate-200/60">
         <button 
@@ -1389,64 +1391,64 @@ const FitnessTests: React.FC = () => {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-1">
               <button
                 onClick={() => handleGradeFilterChange('1')}
-                className="p-3 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl text-left transition-all group cursor-pointer"
+                className="p-3.5 min-h-[56px] bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-2xl text-left transition-all group cursor-pointer active:scale-98"
               >
-                <div className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 1–3</div>
-                <div className="text-xs font-black text-slate-800 group-hover:text-indigo-900">Primary Battery</div>
+                <div className="text-[10.5px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 1–3</div>
+                <div className="text-xs sm:text-sm font-black text-slate-800 group-hover:text-indigo-900">Primary Battery</div>
               </button>
 
               <button
                 onClick={() => handleGradeFilterChange('4')}
-                className="p-3 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl text-left transition-all group cursor-pointer"
+                className="p-3.5 min-h-[56px] bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-2xl text-left transition-all group cursor-pointer active:scale-98"
               >
-                <div className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 4–5</div>
-                <div className="text-xs font-black text-slate-800 group-hover:text-indigo-900">Upper Primary</div>
+                <div className="text-[10.5px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 4–5</div>
+                <div className="text-xs sm:text-sm font-black text-slate-800 group-hover:text-indigo-900">Upper Primary</div>
               </button>
 
               <button
                 onClick={() => handleGradeFilterChange('6')}
-                className="p-3 bg-indigo-50/80 hover:bg-indigo-100 border-2 border-indigo-300 rounded-xl text-left transition-all group cursor-pointer shadow-sm"
+                className="p-3.5 min-h-[56px] bg-indigo-50/90 hover:bg-indigo-100 border-2 border-indigo-300 rounded-2xl text-left transition-all group cursor-pointer shadow-sm active:scale-98"
               >
-                <div className="text-[10px] font-black text-indigo-700 uppercase tracking-widest flex items-center gap-1">
+                <div className="text-[10.5px] font-black text-indigo-700 uppercase tracking-widest flex items-center gap-1">
                   <span>Classes 6–8</span>
-                  <span className="bg-indigo-600 text-white text-[8px] px-1 rounded">POPULAR</span>
+                  <span className="bg-indigo-600 text-white text-[8.5px] px-1.5 py-0.5 rounded font-black">POPULAR</span>
                 </div>
-                <div className="text-xs font-black text-indigo-950">Middle School (Push-Ups)</div>
+                <div className="text-xs sm:text-sm font-black text-indigo-950">Middle School (Push-Ups)</div>
               </button>
 
               <button
                 onClick={() => handleGradeFilterChange('9')}
-                className="p-3 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl text-left transition-all group cursor-pointer"
+                className="p-3.5 min-h-[56px] bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-2xl text-left transition-all group cursor-pointer active:scale-98"
               >
-                <div className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 9–10</div>
-                <div className="text-xs font-black text-slate-800 group-hover:text-indigo-900">Secondary Battery</div>
+                <div className="text-[10.5px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 9–10</div>
+                <div className="text-xs sm:text-sm font-black text-slate-800 group-hover:text-indigo-900">Secondary Battery</div>
               </button>
 
               <button
                 onClick={() => handleGradeFilterChange('11')}
-                className="p-3 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl text-left transition-all group cursor-pointer"
+                className="p-3.5 min-h-[56px] bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-2xl text-left transition-all group cursor-pointer active:scale-98"
               >
-                <div className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 11–12</div>
-                <div className="text-xs font-black text-slate-800 group-hover:text-indigo-900">Senior Secondary</div>
+                <div className="text-[10.5px] font-black text-slate-400 group-hover:text-indigo-600 uppercase tracking-widest">Classes 11–12</div>
+                <div className="text-xs sm:text-sm font-black text-slate-800 group-hover:text-indigo-900">Senior Secondary</div>
               </button>
             </div>
 
             {/* Quick numeric buttons */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Quick Grade:</span>
+            <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+              <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mr-1">Quick Grade:</span>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(gr => {
                 const isMiddle = gr >= 6 && gr <= 8;
                 return (
                   <button
                     key={gr}
                     onClick={() => handleGradeFilterChange(gr.toString())}
-                    className={`px-3 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                    className={`min-w-[44px] min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center active:scale-95 ${
                       isMiddle 
-                        ? 'bg-indigo-100 text-indigo-900 hover:bg-indigo-200 border border-indigo-300' 
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        ? 'bg-indigo-100 text-indigo-900 hover:bg-indigo-200 border-2 border-indigo-300 shadow-xs' 
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
                     }`}
                     title={isMiddle ? `Class ${gr} (Middle School - Modified Push-Ups)` : `Class ${gr}`}
                   >
@@ -1490,9 +1492,9 @@ const FitnessTests: React.FC = () => {
             <span>Back to Batteries</span>
           </button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Sidebar: Tests in Battery */}
-            <div className="lg:col-span-4 space-y-4">
+            <div className="order-2 lg:order-1 lg:col-span-4 space-y-4">
               <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
                 <div className="flex items-center space-x-3 mb-6">
                   <div className="p-2 bg-indigo-50 rounded-xl">
@@ -1601,7 +1603,7 @@ const FitnessTests: React.FC = () => {
             </div>
 
             {/* Main Content: Input & Results */}
-            <div className="lg:col-span-8">
+            <div className="order-1 lg:order-2 lg:col-span-8 space-y-6">
               {!selectedTest ? (
                 <div className="bg-white border-4 border-dashed border-slate-100 rounded-[2.5rem] h-full flex flex-col items-center justify-center p-12 text-center text-slate-400 min-h-[400px]">
                   <Activity size={48} className="mb-4 text-slate-200" />
@@ -1610,37 +1612,37 @@ const FitnessTests: React.FC = () => {
               ) : (
                 <div className="space-y-6">
                   {/* Mode Switcher Tabs */}
-                  <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+                  <div className="flex bg-slate-100 p-2 rounded-2xl border border-slate-200 gap-1.5">
                     <button 
                       onClick={() => setEntryMode('batch')}
-                      className={`flex-1 py-3 px-4 rounded-xl font-black uppercase text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`flex-1 min-h-[48px] py-3.5 px-4 rounded-xl font-black uppercase text-xs sm:text-sm tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
                         entryMode === 'batch' 
                           ? 'bg-[#0D2B52] text-white shadow-md' 
-                          : 'text-slate-600 hover:text-slate-900'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                       }`}
                     >
-                      <Users size={16} className="text-[#D4A017]" />
-                      <span>Class Roster Batch Entry ({filteredStudentsForSelect.length})</span>
+                      <Users size={18} className="text-[#D4A017] shrink-0" />
+                      <span className="truncate">Class Roster Batch Entry ({filteredStudentsForSelect.length})</span>
                     </button>
                     <button 
                       onClick={() => setEntryMode('single')}
-                      className={`flex-1 py-3 px-4 rounded-xl font-black uppercase text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`flex-1 min-h-[48px] py-3.5 px-4 rounded-xl font-black uppercase text-xs sm:text-sm tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
                         entryMode === 'single' 
                           ? 'bg-[#0D2B52] text-white shadow-md' 
-                          : 'text-slate-600 hover:text-slate-900'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                       }`}
                     >
-                      <User size={16} className="text-[#D4A017]" />
-                      <span>Single Student Search</span>
+                      <User size={18} className="text-[#D4A017] shrink-0" />
+                      <span className="truncate">Single Student Search</span>
                     </button>
                   </div>
 
                   {/* Top Class & Test Filter Toolbar */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 bg-slate-50 p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">1. Class / Grade</label>
+                      <label className="text-[10.5px] font-black text-slate-600 uppercase tracking-widest mb-1.5 block">1. Class / Grade</label>
                       <select 
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800"
+                        className="w-full min-h-[46px] p-3 bg-white border border-slate-300 rounded-xl font-bold text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800 cursor-pointer shadow-2xs"
                         value={selectedGradeFilter}
                         onChange={e => handleGradeFilterChange(e.target.value)}
                       >
@@ -1678,9 +1680,9 @@ const FitnessTests: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">2. Section</label>
+                      <label className="text-[10.5px] font-black text-slate-600 uppercase tracking-widest mb-1.5 block">2. Section</label>
                       <select 
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800"
+                        className="w-full min-h-[46px] p-3 bg-white border border-slate-300 rounded-xl font-bold text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800 cursor-pointer shadow-2xs"
                         value={selectedSectionFilter}
                         onChange={e => setSelectedSectionFilter(e.target.value)}
                       >
@@ -1693,27 +1695,45 @@ const FitnessTests: React.FC = () => {
 
                     {/* Test Selection Dropdown (Filtered automatically by grade/battery) */}
                     <div>
-                      <label className="text-[10px] font-black text-indigo-700 uppercase tracking-widest mb-1 flex items-center gap-1">
-                        <SlidersHorizontal size={11} className="text-indigo-600" />
+                      <label className="text-[10.5px] font-black text-indigo-800 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                        <SlidersHorizontal size={12} className="text-indigo-600" />
                         <span>3. Today's Test(s)</span>
                       </label>
                       <select 
-                        className="w-full p-2.5 bg-indigo-50/70 border-2 border-indigo-200 rounded-xl font-black text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-indigo-950"
-                        value={testSelectionFilter}
+                        className="w-full min-h-[46px] p-3 bg-indigo-50/80 border-2 border-indigo-200 rounded-xl font-black text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-indigo-950 cursor-pointer shadow-2xs"
+                        value={
+                          testSelectionFilter === 'all'
+                            ? 'all'
+                            : testSelectionFilter === 'custom' || customSelectedTestIds.length > 1
+                              ? 'custom'
+                              : (customSelectedTestIds[0] || selectedTest?.id || selectedBattery?.tests[0]?.id || '')
+                        }
                         onChange={e => {
                           const val = e.target.value;
                           setTestSelectionFilter(val);
-                          if (val === 'custom') {
-                            if (customSelectedTestIds.length === 0 && selectedBattery?.tests.length) {
-                              setCustomSelectedTestIds([selectedBattery.tests[0].id, selectedBattery.tests[1]?.id || selectedBattery.tests[0].id]);
+                          if (val === 'all') {
+                            if (selectedBattery) {
+                              setCustomSelectedTestIds(selectedBattery.tests.map(t => t.id));
                             }
-                          } else if (val !== 'all' && selectedBattery) {
+                          } else if (val === 'custom') {
+                            if (selectedBattery) {
+                              if (customSelectedTestIds.length <= 1) {
+                                setCustomSelectedTestIds([
+                                  selectedBattery.tests[0].id, 
+                                  selectedBattery.tests[1]?.id || selectedBattery.tests[0].id
+                                ]);
+                              }
+                            }
+                          } else if (selectedBattery) {
                             const found = selectedBattery.tests.find(t => t.id === val);
-                            if (found) setSelectedTest(found);
+                            if (found) {
+                              setSelectedTest(found);
+                              setCustomSelectedTestIds([found.id]);
+                            }
                           }
                         }}
                       >
-                        <optgroup label={`${selectedBattery?.category || 'Active'} Individual Tests`}>
+                        <optgroup label={`${selectedBattery?.category || 'Active'} Individual Tests (Single Test)`}>
                           {selectedBattery?.tests.map(t => (
                             <option key={t.id} value={t.id}>
                               {t.id === 'pushups' ? '⭐ 🎯 ' : '🎯 '}{t.name} {t.duration ? `(${t.duration})` : `(${t.unit})`}
@@ -1721,16 +1741,18 @@ const FitnessTests: React.FC = () => {
                           ))}
                         </optgroup>
                         <optgroup label="Multi-Test Options">
-                          <option value="custom">✨ Multi-Select (Pick 1, 2, or 3 Tests)</option>
+                          <option value="custom">
+                            ✨ Multi-Select ({customSelectedTestIds.length > 1 && customSelectedTestIds.length < (selectedBattery?.tests.length || 8) ? `${customSelectedTestIds.length} Tests Selected` : 'Pick 1, 2, or 3 Tests'})
+                          </option>
                           <option value="all">📊 All Tests ({selectedBattery?.tests.length || 8} Tests Full Battery)</option>
                         </optgroup>
                       </select>
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">4. Term / Phase</label>
+                      <label className="text-[10.5px] font-black text-slate-600 uppercase tracking-widest mb-1.5 block">4. Term / Phase</label>
                       <select 
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800"
+                        className="w-full min-h-[46px] p-3 bg-white border border-slate-300 rounded-xl font-bold text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800 cursor-pointer shadow-2xs"
                         value={selectedTerm}
                         onChange={e => setSelectedTerm(e.target.value)}
                       >
@@ -1742,19 +1764,24 @@ const FitnessTests: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">5. Student Search</label>
+                      <label className="text-[10.5px] font-black text-slate-600 uppercase tracking-widest mb-1.5 block">5. Student Search</label>
                       <div className="relative">
                         <input 
                           type="text"
                           placeholder="Search roll / name..."
-                          className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800"
+                          className="w-full min-h-[46px] p-3 pl-9 pr-8 bg-white border border-slate-300 rounded-xl font-bold text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800 shadow-2xs"
                           value={studentSearchQuery}
                           onChange={e => setStudentSearchQuery(e.target.value)}
                         />
-                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         {studentSearchQuery && (
-                          <button onClick={() => setStudentSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                            <X size={12} />
+                          <button 
+                            type="button"
+                            onClick={() => setStudentSearchQuery('')} 
+                            className="w-8 h-8 rounded-full flex items-center justify-center absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                            title="Clear search"
+                          >
+                            <X size={14} />
                           </button>
                         )}
                       </div>
@@ -1763,38 +1790,44 @@ const FitnessTests: React.FC = () => {
 
                   {/* Interactive Quick-Test Switcher & Multi-Test Selector */}
                   {selectedBattery && (
-                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-100">
-                        <div className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-xs">
-                            <Activity size={14} />
+                    <div id="test-selection-chips" className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4 scroll-mt-20">
+                      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-sm shrink-0 border border-indigo-100">
+                            <Activity size={18} />
                           </span>
                           <div>
-                            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide">
-                              Test Scope &bull; {selectedBattery.category} ({selectedBattery.tests.length} Tests)
-                            </h4>
-                            <p className="text-[10.5px] text-slate-500 font-medium">
-                              {testSelectionFilter === 'all' 
-                                ? 'Displaying full 8-test spreadsheet grid' 
-                                : testSelectionFilter === 'custom' 
-                                  ? `Displaying ${getActiveTests().length} selected tests together` 
-                                  : `Focused on single test: ${selectedTest?.name || selectedBattery.tests[0].name}`}
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                                Test Selection &bull; {selectedBattery.category}
+                              </h4>
+                              <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-900 font-black text-[11px] rounded-full">
+                                {getActiveTests().length} of {selectedBattery.tests.length} Active
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 font-medium">
+                              {getActiveTests().length === selectedBattery.tests.length
+                                ? 'Displaying all battery tests across the roster'
+                                : getActiveTests().length === 1
+                                  ? `Focused on single test: ${getActiveTests()[0]?.name}`
+                                  : `Displaying ${getActiveTests().length} selected tests: ${getActiveTests().map(t => t.name).join(', ')}`}
                             </p>
                           </div>
                         </div>
 
                         {/* 3-Way Mode Segmented Switch */}
-                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
                           <button
                             type="button"
                             onClick={() => {
                               const target = selectedTest?.id || selectedBattery.tests[0].id;
-                              setTestSelectionFilter(target);
+                              setTestSelectionFilter('custom');
                               const t = selectedBattery.tests.find(item => item.id === target) || selectedBattery.tests[0];
                               setSelectedTest(t);
+                              setCustomSelectedTestIds([target]);
                             }}
-                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 ${
-                              testSelectionFilter !== 'custom' && testSelectionFilter !== 'all'
+                            className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                              getActiveTests().length === 1
                                 ? 'bg-white text-indigo-700 shadow-sm font-black'
                                 : 'text-slate-600 hover:text-slate-900'
                             }`}
@@ -1805,144 +1838,155 @@ const FitnessTests: React.FC = () => {
                             type="button"
                             onClick={() => {
                               setTestSelectionFilter('custom');
-                              if (customSelectedTestIds.length === 0) {
+                              if (customSelectedTestIds.length <= 1 || customSelectedTestIds.length === selectedBattery.tests.length) {
                                 setCustomSelectedTestIds([
                                   selectedBattery.tests[0].id, 
                                   selectedBattery.tests[1]?.id || selectedBattery.tests[0].id
                                 ]);
                               }
                             }}
-                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 ${
-                              testSelectionFilter === 'custom'
+                            className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                              getActiveTests().length > 1 && getActiveTests().length < selectedBattery.tests.length
                                 ? 'bg-white text-indigo-700 shadow-sm font-black'
                                 : 'text-slate-600 hover:text-slate-900'
                             }`}
                           >
                             <span>📑 Pick 1-3 Tests</span>
-                            {customSelectedTestIds.length > 0 && testSelectionFilter === 'custom' && (
-                              <span className="px-1.5 py-0.2 bg-indigo-600 text-white rounded text-[9px] font-black">
-                                {customSelectedTestIds.length}
+                            {getActiveTests().length > 1 && getActiveTests().length < selectedBattery.tests.length && (
+                              <span className="px-2 py-0.5 bg-indigo-600 text-white rounded-md text-[10px] font-black">
+                                {getActiveTests().length}
                               </span>
                             )}
                           </button>
                           <button
                             type="button"
-                            onClick={() => setTestSelectionFilter('all')}
-                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 ${
-                              testSelectionFilter === 'all'
+                            onClick={() => {
+                              setTestSelectionFilter('all');
+                              setCustomSelectedTestIds(selectedBattery.tests.map(t => t.id));
+                            }}
+                            className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                              getActiveTests().length === selectedBattery.tests.length
                                 ? 'bg-white text-indigo-700 shadow-sm font-black'
                                 : 'text-slate-600 hover:text-slate-900'
                             }`}
                           >
-                            <span>📊 All Tests</span>
+                            <span>📊 All Tests ({selectedBattery.tests.length})</span>
                           </button>
                         </div>
                       </div>
 
-                      {/* Test Chips Grid */}
-                      <div className="space-y-2">
-                        {testSelectionFilter === 'custom' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] bg-indigo-50/60 p-2.5 rounded-xl border border-indigo-100">
-                            <span className="font-bold text-indigo-900">
-                              👉 Click test chips below to toggle them ON or OFF:
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (selectedBattery.tests.length >= 2) {
-                                    setCustomSelectedTestIds([selectedBattery.tests[0].id, selectedBattery.tests[1].id]);
-                                  }
-                                }}
-                                className="px-2 py-0.5 bg-white hover:bg-indigo-100 text-indigo-700 rounded-md font-bold text-[10px] border border-indigo-200 cursor-pointer"
-                              >
-                                Pick First 2
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (selectedBattery.tests.length >= 3) {
-                                    setCustomSelectedTestIds([selectedBattery.tests[0].id, selectedBattery.tests[1].id, selectedBattery.tests[2].id]);
-                                  }
-                                }}
-                                className="px-2 py-0.5 bg-white hover:bg-indigo-100 text-indigo-700 rounded-md font-bold text-[10px] border border-indigo-200 cursor-pointer"
-                              >
-                                Pick First 3
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setCustomSelectedTestIds(selectedBattery.tests.map(t => t.id))}
-                                className="px-2 py-0.5 bg-white hover:bg-indigo-100 text-indigo-700 rounded-md font-bold text-[10px] border border-indigo-200 cursor-pointer"
-                              >
-                                Select All
-                              </button>
-                            </div>
+                      {/* Test Chips Grid with direct touch toggling */}
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs bg-indigo-50/70 p-3 rounded-2xl border border-indigo-100">
+                          <span className="font-bold text-indigo-950 flex items-center gap-1.5">
+                            <span>👉 Tap any test chip below to toggle it ON or OFF:</span>
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (selectedBattery.tests.length >= 2) {
+                                  setTestSelectionFilter('custom');
+                                  setCustomSelectedTestIds([selectedBattery.tests[0].id, selectedBattery.tests[1].id]);
+                                }
+                              }}
+                              className="min-h-[38px] px-3 py-1.5 bg-white hover:bg-indigo-100 text-indigo-700 rounded-xl font-black text-xs border border-indigo-200 shadow-2xs cursor-pointer active:scale-95 transition-all"
+                            >
+                              Pick First 2
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (selectedBattery.tests.length >= 3) {
+                                  setTestSelectionFilter('custom');
+                                  setCustomSelectedTestIds([selectedBattery.tests[0].id, selectedBattery.tests[1].id, selectedBattery.tests[2].id]);
+                                }
+                              }}
+                              className="min-h-[38px] px-3 py-1.5 bg-white hover:bg-indigo-100 text-indigo-700 rounded-xl font-black text-xs border border-indigo-200 shadow-2xs cursor-pointer active:scale-95 transition-all"
+                            >
+                              Pick First 3
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTestSelectionFilter('all');
+                                setCustomSelectedTestIds(selectedBattery.tests.map(t => t.id));
+                              }}
+                              className="min-h-[38px] px-3 py-1.5 bg-white hover:bg-indigo-100 text-indigo-700 rounded-xl font-black text-xs border border-indigo-200 shadow-2xs cursor-pointer active:scale-95 transition-all"
+                            >
+                              Select All
+                            </button>
                           </div>
-                        )}
+                        </div>
 
-                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <div className="flex flex-wrap items-center gap-2.5 pt-1">
                           {selectedBattery.tests.map(test => {
-                            const isSingleMode = testSelectionFilter !== 'custom' && testSelectionFilter !== 'all';
-                            const isSingleSelected = isSingleMode && (testSelectionFilter === test.id || selectedTest?.id === test.id);
-                            const isCustomSelected = testSelectionFilter === 'custom' && customSelectedTestIds.includes(test.id);
-                            const isAllMode = testSelectionFilter === 'all';
-                            const isSelected = isSingleSelected || isCustomSelected;
+                            const activeList = getActiveTests();
+                            const isTestActive = activeList.some(t => t.id === test.id);
 
                             return (
-                              <button
+                              <div
                                 key={test.id}
-                                type="button"
-                                onClick={() => {
-                                  if (testSelectionFilter === 'custom') {
-                                    if (customSelectedTestIds.includes(test.id)) {
-                                      if (customSelectedTestIds.length > 1) {
-                                        setCustomSelectedTestIds(prev => prev.filter(id => id !== test.id));
+                                className={`min-h-[48px] rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center border shadow-2xs ${
+                                  isTestActive
+                                    ? 'bg-[#0D2B52] text-white border-slate-900 shadow-md ring-2 ring-[#D4A017]'
+                                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200 opacity-85 hover:opacity-100'
+                                }`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (isTestActive) {
+                                      if (activeList.length > 1) {
+                                        const nextIds = activeList.filter(t => t.id !== test.id).map(t => t.id);
+                                        setTestSelectionFilter('custom');
+                                        setCustomSelectedTestIds(nextIds);
                                       } else {
                                         toast.error("Please keep at least 1 test selected.");
                                       }
                                     } else {
-                                      setCustomSelectedTestIds(prev => [...prev, test.id]);
+                                      const nextIds = [...activeList.map(t => t.id), test.id];
+                                      setTestSelectionFilter('custom');
+                                      setCustomSelectedTestIds(nextIds);
+                                      setSelectedTest(test);
                                     }
-                                  } else if (testSelectionFilter === 'all') {
-                                    // In all mode, clicking switches to focused single test
-                                    setTestSelectionFilter(test.id);
-                                    setSelectedTest(test);
-                                  } else {
-                                    // Single mode
-                                    setTestSelectionFilter(test.id);
-                                    setSelectedTest(test);
-                                  }
-                                }}
-                                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer select-none border ${
-                                  testSelectionFilter === 'custom'
-                                    ? isCustomSelected
-                                      ? 'bg-[#0D2B52] text-white border-slate-900 shadow-md ring-2 ring-[#D4A017]'
-                                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200 opacity-75'
-                                    : isSingleSelected
-                                      ? 'bg-[#0D2B52] text-white border-slate-900 shadow-md ring-2 ring-[#D4A017]'
-                                      : isAllMode
-                                        ? 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'
-                                        : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200'
-                                }`}
-                              >
-                                {testSelectionFilter === 'custom' && (
-                                  <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] font-black transition-all ${
-                                    isCustomSelected ? 'bg-[#D4A017] text-slate-950 shadow-xs' : 'bg-slate-200 text-transparent border border-slate-300'
+                                  }}
+                                  className="flex-1 py-3 pl-3.5 pr-1.5 flex items-center gap-2.5 cursor-pointer select-none active:scale-98"
+                                >
+                                  <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-xs font-black transition-all shrink-0 ${
+                                    isTestActive ? 'bg-[#D4A017] text-slate-950 shadow-xs' : 'bg-slate-200 text-transparent border border-slate-300'
                                   }`}>
                                     ✓
                                   </span>
-                                )}
-                                <span>{test.name}</span>
-                                {test.duration && (
-                                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${
-                                    isSelected && testSelectionFilter !== 'all' 
-                                      ? 'bg-white/20 text-[#D4A017]' 
-                                      : 'bg-slate-200/80 text-slate-600'
-                                  }`}>
-                                    {test.duration.includes('60') ? '60s' : test.duration.includes('30') ? '30s' : test.duration}
-                                  </span>
-                                )}
-                              </button>
+                                  <span className="truncate">{test.name}</span>
+                                  {test.duration && (
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-md font-black shrink-0 ${
+                                      isTestActive
+                                        ? 'bg-white/20 text-[#D4A017]' 
+                                        : 'bg-slate-200 text-slate-700'
+                                    }`}>
+                                      {test.duration.includes('60') ? '60s' : test.duration.includes('30') ? '30s' : test.duration}
+                                    </span>
+                                  )}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveGuideTest(test);
+                                  }}
+                                  className={`w-8 h-8 mr-2 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                                    isTestActive
+                                      ? 'bg-white/15 hover:bg-[#D4A017] hover:text-slate-950 text-slate-200'
+                                      : 'hover:bg-indigo-600 hover:text-white text-indigo-700 bg-indigo-50 border border-indigo-100'
+                                  }`}
+                                  title={`Tap for ${test.name} purpose and execution method`}
+                                  aria-label={`Tap for ${test.name} purpose and execution method`}
+                                >
+                                  <Info size={14} />
+                                </button>
+                              </div>
                             );
                           })}
                         </div>
@@ -1952,9 +1996,9 @@ const FitnessTests: React.FC = () => {
 
                   {/* Middle School Battery & Test Filter Banner */}
                   {(selectedBattery?.category === 'Middle School' || ['6', '7', '8'].includes(selectedGradeFilter)) && (
-                    <div className="bg-indigo-50/90 border-2 border-indigo-200/80 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                    <div className="bg-indigo-50/90 border-2 border-indigo-200/80 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
                       <div className="flex items-center gap-2.5 text-xs text-indigo-950">
-                        <span className="px-2 py-0.5 bg-indigo-600 text-white rounded-md text-[10px] font-black uppercase tracking-wider shrink-0">
+                        <span className="px-2.5 py-1 bg-indigo-600 text-white rounded-lg text-[10.5px] font-black uppercase tracking-wider shrink-0">
                           Middle School (Grades 6, 7, 8)
                         </span>
                         <span className="font-semibold">
@@ -1970,7 +2014,7 @@ const FitnessTests: React.FC = () => {
                               setTestSelectionFilter('pushups');
                             }
                           }}
-                          className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                          className="min-h-[42px] px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
                         >
                           <span>Focus Push-Ups</span>
                         </button>
@@ -1982,7 +2026,7 @@ const FitnessTests: React.FC = () => {
                               setTestSelectionFilter('curl_ups');
                             }
                           }}
-                          className="px-3 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                          className="min-h-[42px] px-3.5 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border border-indigo-200 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
                         >
                           <span>Focus Curl-Ups</span>
                         </button>
@@ -1992,9 +2036,9 @@ const FitnessTests: React.FC = () => {
 
                   {/* Secondary School Battery & Test Filter Banner (Grades 9 & 10) */}
                   {(selectedBattery?.category === 'Secondary' || ['9', '10'].includes(selectedGradeFilter)) && (
-                    <div className="bg-emerald-50/90 border-2 border-emerald-200/80 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                    <div className="bg-emerald-50/90 border-2 border-emerald-200/80 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
                       <div className="flex items-center gap-2.5 text-xs text-emerald-950">
-                        <span className="px-2 py-0.5 bg-emerald-700 text-white rounded-md text-[10px] font-black uppercase tracking-wider shrink-0">
+                        <span className="px-2.5 py-1 bg-emerald-700 text-white rounded-lg text-[10.5px] font-black uppercase tracking-wider shrink-0">
                           Secondary School (Grades 9 & 10)
                         </span>
                         <span className="font-semibold">
@@ -2010,7 +2054,7 @@ const FitnessTests: React.FC = () => {
                               setTestSelectionFilter('pushups');
                             }
                           }}
-                          className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                          className="min-h-[42px] px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
                         >
                           <span>Focus Push-Ups</span>
                         </button>
@@ -2022,7 +2066,7 @@ const FitnessTests: React.FC = () => {
                               setTestSelectionFilter('curl_ups');
                             }
                           }}
-                          className="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                          className="min-h-[42px] px-3.5 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
                         >
                           <span>Focus Partial Curl-Ups</span>
                         </button>
@@ -2032,9 +2076,9 @@ const FitnessTests: React.FC = () => {
 
                   {/* Senior Secondary School Battery & Test Filter Banner (Grades 11 & 12) */}
                   {(selectedBattery?.category === 'Senior Secondary' || ['11', '12'].includes(selectedGradeFilter)) && (
-                    <div className="bg-amber-50/90 border-2 border-amber-200/80 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                    <div className="bg-amber-50/90 border-2 border-amber-200/80 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
                       <div className="flex items-center gap-2.5 text-xs text-amber-950">
-                        <span className="px-2 py-0.5 bg-amber-600 text-white rounded-md text-[10px] font-black uppercase tracking-wider shrink-0">
+                        <span className="px-2.5 py-1 bg-amber-600 text-white rounded-lg text-[10.5px] font-black uppercase tracking-wider shrink-0">
                           Senior Secondary (Grades 11 & 12)
                         </span>
                         <span className="font-semibold">
@@ -2050,7 +2094,7 @@ const FitnessTests: React.FC = () => {
                               setTestSelectionFilter('pushups');
                             }
                           }}
-                          className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                          className="min-h-[42px] px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
                         >
                           <span>Focus Push-Ups</span>
                         </button>
@@ -2062,7 +2106,7 @@ const FitnessTests: React.FC = () => {
                               setTestSelectionFilter('curl_ups');
                             }
                           }}
-                          className="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-xl text-[11px] font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1 shrink-0"
+                          className="min-h-[42px] px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-200 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer shadow-xs transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
                         >
                           <span>Focus Partial Curl-Ups</span>
                         </button>
@@ -2109,16 +2153,16 @@ const FitnessTests: React.FC = () => {
                                 return nextVal;
                               });
                             }}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all border cursor-pointer ${
+                            className={`min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all border cursor-pointer active:scale-95 ${
                               sequentialMode
                                 ? 'bg-amber-400 hover:bg-amber-500 text-slate-950 border-amber-500 shadow-sm'
-                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                             }`}
                             title="Sequential Data Entry: Automatically jumps focus to next student's test score on Enter/Next"
                           >
-                            <Zap size={13} className={sequentialMode ? 'fill-slate-950 text-slate-950 animate-pulse' : 'text-slate-500'} />
+                            <Zap size={14} className={sequentialMode ? 'fill-slate-950 text-slate-950 animate-pulse' : 'text-slate-500'} />
                             <span className="hidden sm:inline">Sequential Mode</span>
-                            <span className={`px-1.5 py-0.2 text-[9px] rounded font-black ${sequentialMode ? 'bg-slate-950 text-amber-400' : 'bg-slate-200 text-slate-700'}`}>
+                            <span className={`px-2 py-0.5 text-[10px] rounded-md font-black ${sequentialMode ? 'bg-slate-950 text-amber-400' : 'bg-slate-200 text-slate-700'}`}>
                               {sequentialMode ? 'ON' : 'OFF'}
                             </span>
                           </button>
@@ -2127,27 +2171,27 @@ const FitnessTests: React.FC = () => {
                           <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
                             <button
                               onClick={() => setViewLayoutMode('cards')}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer ${
+                              className={`min-h-[40px] px-3.5 py-2 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
                                 viewLayoutMode === 'cards'
                                   ? 'bg-white text-indigo-700 shadow-sm'
-                                  : 'text-slate-500 hover:text-slate-800'
+                                  : 'text-slate-600 hover:text-slate-900'
                               }`}
                               title="Mobile-Friendly Touch Cards with Steppers"
                             >
-                              <Smartphone size={13} />
+                              <Smartphone size={14} />
                               <span className="hidden sm:inline">Field Cards</span>
                               <span className="sm:hidden">Cards</span>
                             </button>
                             <button
                               onClick={() => setViewLayoutMode('table')}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer ${
+                              className={`min-h-[40px] px-3.5 py-2 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
                                 viewLayoutMode === 'table'
                                   ? 'bg-white text-indigo-700 shadow-sm'
-                                  : 'text-slate-500 hover:text-slate-800'
+                                  : 'text-slate-600 hover:text-slate-900'
                               }`}
                               title="Compact Spreadsheet Table Grid"
                             >
-                              <Table size={13} />
+                              <Table size={14} />
                               <span className="hidden sm:inline">Table Grid</span>
                               <span className="sm:hidden">Table</span>
                             </button>
@@ -2156,10 +2200,10 @@ const FitnessTests: React.FC = () => {
                           {selectedTest && (
                             <button
                               onClick={() => setActiveVideoTest(selectedTest)}
-                              className="px-3 py-1.5 bg-[#D4A017] hover:bg-amber-400 text-slate-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm border border-amber-500"
+                              className="min-h-[42px] px-3.5 py-2 bg-[#D4A017] hover:bg-amber-400 text-slate-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm border border-amber-500 active:scale-95"
                               title="Watch official demonstration video for current test"
                             >
-                              <Play size={12} className="fill-slate-950" />
+                              <Play size={13} className="fill-slate-950" />
                               <span className="hidden sm:inline">Video Demo</span>
                               <span className="sm:hidden">Video</span>
                             </button>
@@ -2167,15 +2211,15 @@ const FitnessTests: React.FC = () => {
 
                           <button
                             onClick={handleExportCsvTemplate}
-                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
+                            className="min-h-[42px] px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border border-slate-200"
                             title="Export Class Fitness Spreadsheet as CSV"
                           >
-                            <FileSpreadsheet size={13} className="text-emerald-600" />
+                            <FileSpreadsheet size={14} className="text-emerald-600" />
                             <span className="hidden md:inline">Export CSV</span>
                           </button>
 
-                          <label className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer">
-                            <Upload size={13} className="text-indigo-600" />
+                          <label className="min-h-[42px] px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border border-slate-200">
+                            <Upload size={14} className="text-indigo-600" />
                             <span className="hidden md:inline">Import CSV</span>
                             <input 
                               type="file" 
@@ -2188,14 +2232,14 @@ const FitnessTests: React.FC = () => {
                           <button
                             onClick={handleBatchSave}
                             disabled={batchSaving || filteredStudentsForSelect.length === 0}
-                            className="px-4 py-2 bg-[#0D2B52] hover:bg-[#164077] text-white border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer"
+                            className="min-h-[42px] px-4 py-2 bg-[#0D2B52] hover:bg-[#164077] text-white border-2 border-slate-900 rounded-xl font-black text-xs uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
                           >
                             {batchSaving ? (
-                              <Loader2 size={15} className="animate-spin text-[#D4A017]" />
+                              <Loader2 size={16} className="animate-spin text-[#D4A017]" />
                             ) : isSaved ? (
-                              <CheckCircle2 size={15} className="text-emerald-400" />
+                              <CheckCircle2 size={16} className="text-emerald-400" />
                             ) : (
-                              <Save size={15} className="text-[#D4A017]" />
+                              <Save size={16} className="text-[#D4A017]" />
                             )}
                             <span>{batchSaving ? 'Saving...' : isSaved ? 'Saved!' : `Save All (${unsavedBatchCount})`}</span>
                           </button>
@@ -2212,7 +2256,7 @@ const FitnessTests: React.FC = () => {
                       ) : viewLayoutMode === 'cards' ? (
                         /* MOBILE-FIRST FIELD CARDS MODE */
                         <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                             {filteredStudentsForSelect.map((student, sIdx) => {
                               const activeTests = getActiveTests();
                               const isCardActive = activeFocusCoord?.sIdx === sIdx;
@@ -2229,9 +2273,9 @@ const FitnessTests: React.FC = () => {
                               return (
                                 <div 
                                   key={student.id}
-                                  className={`p-4 rounded-2xl border-2 transition-all relative ${
+                                  className={`p-4 sm:p-5 rounded-3xl border-2 transition-all relative ${
                                     isCardActive
-                                      ? 'ring-2 ring-indigo-500 border-indigo-500 shadow-md bg-indigo-50/30'
+                                      ? 'ring-2 ring-indigo-500 border-indigo-500 shadow-md bg-indigo-50/40'
                                       : allSaved && hasAnyScore
                                         ? 'bg-emerald-50/40 border-emerald-300/80 shadow-sm'
                                         : hasAnyScore
@@ -2240,53 +2284,54 @@ const FitnessTests: React.FC = () => {
                                   }`}
                                 >
                                   {/* Student Header */}
-                                  <div className="flex items-start justify-between gap-2 mb-3 pb-2 border-b border-slate-200/80">
-                                    <div className="flex items-center gap-2.5">
-                                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shadow-sm ${
+                                  <div className="flex items-start justify-between gap-2 mb-3.5 pb-2.5 border-b border-slate-200/80">
+                                    <div className="flex items-center gap-3">
+                                      <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shadow-xs ${
                                         isCardActive ? 'bg-indigo-600 text-white animate-pulse' : 'bg-[#0D2B52] text-[#D4A017]'
                                       }`}>
                                         #{student.rollNumber || (sIdx + 1)}
                                       </span>
                                       <div>
-                                        <div className="flex items-center gap-1.5">
-                                          <h4 className="font-extrabold text-sm text-slate-900 leading-tight truncate max-w-[150px]" title={student.name}>
+                                        <div className="flex items-center gap-2">
+                                          <h4 className="font-extrabold text-sm sm:text-base text-slate-900 leading-tight truncate max-w-[160px]" title={student.name}>
                                             {student.name}
                                           </h4>
                                           {isCardActive && (
-                                            <span className="px-1.5 py-0.2 bg-indigo-600 text-white text-[9px] font-black rounded uppercase tracking-wider">
+                                            <span className="px-2 py-0.5 bg-indigo-600 text-white text-[9.5px] font-black rounded-md uppercase tracking-wider">
                                               Active
                                             </span>
                                           )}
                                         </div>
-                                        <p className="text-[10.5px] text-slate-500 font-medium">
+                                        <p className="text-xs text-slate-500 font-medium">
                                           Gr {student.grade}-{student.section} &bull; {student.gender}, {student.age} yrs
                                         </p>
                                       </div>
                                     </div>
 
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-2">
                                       {allSaved && hasAnyScore ? (
-                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-black text-[10px] flex items-center gap-1">
-                                          <Check size={11} /> Saved
+                                        <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full font-black text-[11px] flex items-center gap-1">
+                                          <Check size={12} /> Saved
                                         </span>
                                       ) : hasAnyScore ? (
-                                        <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-bold text-[10px]">
+                                        <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full font-black text-[11px]">
                                           Unsaved
                                         </span>
                                       ) : null}
 
                                       <button
                                         onClick={() => handleSingleRowSave(student)}
-                                        className="p-1.5 bg-white hover:bg-[#0D2B52] hover:text-white text-slate-700 rounded-lg border border-slate-200 text-xs transition-colors cursor-pointer"
+                                        className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-white hover:bg-[#0D2B52] hover:text-white text-slate-700 rounded-xl border border-slate-200 text-xs transition-colors cursor-pointer active:scale-95 shadow-2xs"
                                         title="Save this student's scores"
+                                        aria-label="Save this student's scores"
                                       >
-                                        <Save size={14} />
+                                        <Save size={16} />
                                       </button>
                                     </div>
                                   </div>
 
                                   {/* Test Inputs */}
-                                  <div className="space-y-3">
+                                  <div className="space-y-3.5">
                                     {activeTests.map((test, tIdx) => {
                                       const cellKey = `${student.id}_${test.id}`;
                                       const currentVal = batchScores[cellKey] ?? '';
@@ -2295,14 +2340,14 @@ const FitnessTests: React.FC = () => {
                                       const isRepetitionTest = test.unit.toLowerCase().includes('count') || test.unit.toLowerCase().includes('reps') || test.name.toLowerCase().includes('push') || test.name.toLowerCase().includes('sit-up') || test.name.toLowerCase().includes('curl');
 
                                       return (
-                                        <div key={test.id} className="bg-white p-3 rounded-xl border border-slate-200 space-y-2 shadow-xs">
+                                        <div key={test.id} className="bg-white p-3.5 rounded-2xl border border-slate-200 space-y-2.5 shadow-2xs">
                                           <div className="flex items-center justify-between gap-1 text-xs">
-                                            <span className="font-extrabold text-slate-800 truncate" title={test.name}>
+                                            <span className="font-extrabold text-slate-900 truncate text-xs sm:text-sm" title={test.name}>
                                               {test.name}
                                             </span>
-                                            <div className="flex items-center gap-1 shrink-0">
+                                            <div className="flex items-center gap-1.5 shrink-0">
                                               {test.duration && (
-                                                <span className="text-[9.5px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                                                <span className="text-[10px] font-black text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60">
                                                   ⏱️ {test.duration}
                                                 </span>
                                               )}
@@ -2317,7 +2362,7 @@ const FitnessTests: React.FC = () => {
                                             </div>
                                           </div>
 
-                                          <div className="flex items-center gap-1.5">
+                                          <div className="flex items-center gap-2">
                                             <div className="relative flex-1">
                                               <input
                                                 id={`grid-input-${sIdx}-${tIdx}`}
@@ -2326,7 +2371,7 @@ const FitnessTests: React.FC = () => {
                                                 placeholder={fieldInfo.placeholder}
                                                 onFocus={() => setActiveFocusCoord({ sIdx, tIdx })}
                                                 onKeyDown={e => handleGridKeyDown(e, sIdx, tIdx, filteredStudentsForSelect.length, activeTests.length)}
-                                                className={`w-full p-2.5 font-black text-sm rounded-xl border-2 outline-none transition-all ${
+                                                className={`w-full min-h-[46px] p-3 font-black text-sm sm:text-base rounded-xl border-2 outline-none transition-all ${
                                                   isSavedCell 
                                                     ? 'bg-emerald-50/80 border-emerald-400 text-emerald-950 focus:ring-2 focus:ring-emerald-500' 
                                                     : currentVal 
@@ -2346,35 +2391,38 @@ const FitnessTests: React.FC = () => {
                                                   }));
                                                 }}
                                               />
-                                              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none">
+                                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
                                                 {test.unit}
                                               </span>
                                             </div>
 
-                                            {/* Quick Stepper Buttons for Repetitions / Count */}
+                                            {/* Quick Stepper Buttons for Repetitions / Count with 44px+ hit targets */}
                                             {isRepetitionTest && (
-                                              <div className="flex items-center gap-1">
+                                              <div className="flex items-center gap-1.5 shrink-0">
                                                 <button
                                                   type="button"
                                                   onClick={() => handleQuickAdjustScore(student.id, test, -1)}
-                                                  className="w-8 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm flex items-center justify-center transition-colors cursor-pointer"
+                                                  className="min-w-[44px] min-h-[46px] rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-sm flex items-center justify-center transition-colors cursor-pointer active:scale-95 border border-slate-200"
                                                   title="Subtract 1"
+                                                  aria-label="Subtract 1"
                                                 >
                                                   -1
                                                 </button>
                                                 <button
                                                   type="button"
                                                   onClick={() => handleQuickAdjustScore(student.id, test, 1)}
-                                                  className="w-8 h-9 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-sm flex items-center justify-center transition-colors cursor-pointer"
+                                                  className="min-w-[44px] min-h-[46px] rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-sm flex items-center justify-center transition-colors cursor-pointer active:scale-95 border border-indigo-200"
                                                   title="Add 1"
+                                                  aria-label="Add 1"
                                                 >
                                                   +1
                                                 </button>
                                                 <button
                                                   type="button"
                                                   onClick={() => handleQuickAdjustScore(student.id, test, 5)}
-                                                  className="px-2 h-9 rounded-lg bg-[#0D2B52] hover:bg-[#164077] text-white font-black text-xs flex items-center justify-center transition-colors cursor-pointer"
+                                                  className="min-w-[44px] min-h-[46px] px-2.5 rounded-xl bg-[#0D2B52] hover:bg-[#164077] text-white font-black text-xs flex items-center justify-center transition-colors cursor-pointer active:scale-95"
                                                   title="Add 5"
+                                                  aria-label="Add 5"
                                                 >
                                                   +5
                                                 </button>
@@ -2385,11 +2433,12 @@ const FitnessTests: React.FC = () => {
                                             <button
                                               type="button"
                                               onClick={() => focusNextStudent(sIdx, tIdx, filteredStudentsForSelect.length, activeTests.length, 'next')}
-                                              className="px-2.5 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs flex items-center justify-center gap-0.5 transition-colors shadow-xs cursor-pointer"
+                                              className="min-w-[44px] min-h-[46px] px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs flex items-center justify-center gap-1 transition-colors shadow-xs cursor-pointer active:scale-95 shrink-0"
                                               title="Advance to next student (Enter ➔)"
+                                              aria-label="Advance to next student"
                                             >
                                               <span className="hidden sm:inline">Next</span>
-                                              <ArrowDown size={14} />
+                                              <ArrowDown size={16} />
                                             </button>
                                           </div>
                                         </div>
@@ -2541,7 +2590,7 @@ const FitnessTests: React.FC = () => {
 
                       {/* Mobile Floating Quick Sequential Navigation Dock */}
                       {sequentialMode && filteredStudentsForSelect.length > 0 && activeFocusCoord && (
-                        <div className="sticky bottom-3 z-30 w-full max-w-md mx-auto bg-[#0D2B52] text-white p-3 rounded-2xl shadow-2xl border-2 border-[#D4A017] flex items-center justify-between gap-2 backdrop-blur-md">
+                        <div className="sticky bottom-20 sm:bottom-24 z-30 w-full max-w-md mx-auto bg-[#0D2B52] text-white p-3 rounded-2xl shadow-2xl border-2 border-[#D4A017] flex items-center justify-between gap-2 backdrop-blur-md">
                           <div className="min-w-0 flex-1 pl-1">
                             <div className="flex items-center gap-1.5 text-[10px] text-[#D4A017] font-black uppercase tracking-wider">
                               <Zap size={11} className="fill-[#D4A017] animate-pulse" />
@@ -2635,10 +2684,24 @@ const FitnessTests: React.FC = () => {
 
                         <div className="flex flex-wrap items-center justify-between mt-3 gap-2">
                           {selectedStudentId ? (
-                            <p className="text-[10px] font-bold text-indigo-500 flex items-center gap-1">
-                              <CheckCircle2 size={12} />
-                              <span>Linked to {students.find(s => s.id === selectedStudentId)?.name}</span>
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-[10px] font-bold text-indigo-700 flex items-center gap-1">
+                                <CheckCircle2 size={12} className="text-emerald-600" />
+                                <span>Linked: <strong>{students.find(s => s.id === selectedStudentId)?.name}</strong></span>
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const std = students.find(s => s.id === selectedStudentId);
+                                  if (std) setProfileModalStudent(std);
+                                }}
+                                className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors border border-indigo-200"
+                                title="View D3 Progress Curve & Athletic Profile for this student"
+                              >
+                                <Activity size={12} className="text-indigo-600" />
+                                <span>View Progress Curve</span>
+                              </button>
+                            </div>
                           ) : <div />}
                           <button
                             onClick={() => generateStudentCbsePdfReportCard()}
@@ -3037,6 +3100,230 @@ const FitnessTests: React.FC = () => {
         onClose={() => setActiveVideoTest(null)}
         onSelectTest={(t) => {
           setSelectedTest(t);
+        }}
+      />
+    )}
+
+    {/* Persistent Fixed Footer Bar with Real-Time 'Selected Tests' Counter & Actions */}
+    {(selectedBattery || selectedTest) && (
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#0D2B52]/95 text-white backdrop-blur-md border-t-2 border-[#D4A017] px-3 sm:px-6 py-3 shadow-[0_-6px_25px_rgba(0,0,0,0.25)] transition-all">
+        {(() => {
+          const activeTests = getActiveTests();
+          const totalBatteryTests = selectedBattery?.tests.length || (activeTests.length > 0 ? activeTests.length : 8);
+          const isAllSelected = selectedBattery ? activeTests.length === selectedBattery.tests.length : false;
+          const isSingleSelected = activeTests.length === 1;
+
+          return (
+            <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+              {/* Left Section: Selected Tests Counter Badge & Active Test Chips */}
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                {/* Real-time Persistent Counter Badge */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="min-h-[42px] px-3.5 py-2 bg-[#D4A017] text-slate-950 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-md">
+                    <CheckCheck size={17} className="text-slate-950 shrink-0" />
+                    <span>
+                      {isAllSelected 
+                        ? `All ${activeTests.length} Tests Active` 
+                        : isSingleSelected 
+                          ? `1 Test Active (${activeTests[0]?.name?.split(' ')[0] || ''})` 
+                          : `${activeTests.length} of ${totalBatteryTests} Tests Active`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Horizontal Scrollable Active Test Chips */}
+                <div className="hidden md:flex items-center gap-2 overflow-x-auto custom-scrollbar max-w-md lg:max-w-xl py-1">
+                  {activeTests.map(t => (
+                    <span 
+                      key={t.id}
+                      className="min-h-[34px] inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-white/10 border border-white/20 hover:bg-white/20 text-white rounded-xl text-xs font-bold shrink-0 transition-colors"
+                      title={t.name}
+                    >
+                      <span className="truncate max-w-[120px]">{t.name}</span>
+                      
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveGuideTest(t);
+                        }}
+                        className="w-5 h-5 rounded-full hover:bg-indigo-500 text-[#D4A017] hover:text-white flex items-center justify-center text-xs cursor-pointer transition-colors"
+                        title={`View ${t.name} purpose & execution method`}
+                        aria-label={`View ${t.name} purpose & execution method`}
+                      >
+                        <Info size={12} />
+                      </button>
+
+                      {activeTests.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextIds = activeTests.filter(item => item.id !== t.id).map(item => item.id);
+                            setTestSelectionFilter('custom');
+                            setCustomSelectedTestIds(nextIds);
+                          }}
+                          className="w-5 h-5 rounded-full hover:bg-red-500 text-white/80 hover:text-white flex items-center justify-center text-xs cursor-pointer transition-colors"
+                          title={`Remove ${t.name}`}
+                          aria-label={`Remove ${t.name}`}
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('test-selection-chips');
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
+                    }}
+                    className="min-h-[34px] text-xs font-bold text-[#D4A017] hover:underline px-2.5 py-1 shrink-0 flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>+ Edit Pick</span>
+                  </button>
+                </div>
+
+                {/* Mobile Active Test Name Preview */}
+                <div className="md:hidden truncate text-xs text-slate-300 font-medium">
+                  {activeTests.map(t => t.name).join(', ')}
+                </div>
+              </div>
+
+              {/* Middle Section: Quick Preset Toggles */}
+              {selectedBattery && (
+                <div className="hidden sm:flex items-center gap-1 bg-white/10 p-1.5 rounded-2xl border border-white/10 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = selectedTest?.id || selectedBattery.tests[0].id;
+                      setTestSelectionFilter('custom');
+                      const t = selectedBattery.tests.find(item => item.id === target) || selectedBattery.tests[0];
+                      setSelectedTest(t);
+                      setCustomSelectedTestIds([target]);
+                    }}
+                    className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+                      activeTests.length === 1 ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-200 hover:text-white'
+                    }`}
+                  >
+                    1 Test
+                  </button>
+                  {selectedBattery.tests.length >= 2 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTestSelectionFilter('custom');
+                        setCustomSelectedTestIds([selectedBattery.tests[0].id, selectedBattery.tests[1].id]);
+                      }}
+                      className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+                        activeTests.length === 2 ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-200 hover:text-white'
+                      }`}
+                    >
+                      Pick 2
+                    </button>
+                  )}
+                  {selectedBattery.tests.length >= 3 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTestSelectionFilter('custom');
+                        setCustomSelectedTestIds([selectedBattery.tests[0].id, selectedBattery.tests[1].id, selectedBattery.tests[2].id]);
+                      }}
+                      className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+                        activeTests.length === 3 ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-200 hover:text-white'
+                      }`}
+                    >
+                      Pick 3
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTestSelectionFilter('all');
+                      setCustomSelectedTestIds(selectedBattery.tests.map(t => t.id));
+                    }}
+                    className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+                      isAllSelected ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-200 hover:text-white'
+                    }`}
+                  >
+                    All ({totalBatteryTests})
+                  </button>
+                </div>
+              )}
+
+              {/* Right Section: Layout Toggle & Batch Save / Student Counts */}
+              <div className="flex items-center gap-2.5 shrink-0">
+                {entryMode === 'batch' && filteredStudentsForSelect.length > 0 && (
+                  <>
+                    <div className="flex bg-white/10 p-1 rounded-xl border border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => setViewLayoutMode('cards')}
+                        className={`min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 ${
+                          viewLayoutMode === 'cards' ? 'bg-[#D4A017] text-slate-950 shadow-xs' : 'text-slate-300 hover:text-white'
+                        }`}
+                        title="Mobile Cards View"
+                      >
+                        <Smartphone size={14} />
+                        <span className="hidden sm:inline">Cards</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setViewLayoutMode('table')}
+                        className={`min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 ${
+                          viewLayoutMode === 'table' ? 'bg-[#D4A017] text-slate-950 shadow-xs' : 'text-slate-300 hover:text-white'
+                        }`}
+                        title="Spreadsheet Table Grid"
+                      >
+                        <Table size={14} />
+                        <span className="hidden sm:inline">Table</span>
+                      </button>
+                    </div>
+
+                    <div className="hidden lg:block text-xs font-bold text-slate-300">
+                      <span>{filteredStudentsForSelect.length} stds</span>
+                      {unsavedBatchCount > 0 && (
+                        <span className="ml-1 text-amber-300 font-black">({unsavedBatchCount} unsaved)</span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleBatchSave}
+                      disabled={batchSaving || filteredStudentsForSelect.length === 0}
+                      className="min-h-[44px] px-4 py-2 bg-[#D4A017] hover:bg-[#c49312] text-slate-950 border border-amber-300 rounded-xl font-black text-xs uppercase tracking-wider shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer active:scale-95 transition-all"
+                    >
+                      {batchSaving ? (
+                        <Loader2 size={15} className="animate-spin text-slate-950" />
+                      ) : isSaved ? (
+                        <CheckCircle2 size={15} className="text-emerald-950" />
+                      ) : (
+                        <Save size={15} className="text-slate-950" />
+                      )}
+                      <span>{batchSaving ? 'Saving...' : isSaved ? 'Saved!' : `Save All (${unsavedBatchCount})`}</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+    )}
+
+    {/* Individual Student Profile & D3 Progress Modal */}
+    {profileModalStudent && (
+      <IndividualStudentProfileModal
+        student={profileModalStudent}
+        isOpen={Boolean(profileModalStudent)}
+        onClose={() => setProfileModalStudent(null)}
+        onNavigateToFitness={(studentId) => {
+          setSelectedStudentId(studentId);
+          setEntryMode('single');
+        }}
+        onNavigateToReportCard={(studentId) => {
+          generateStudentCbsePdfReportCard(studentId);
         }}
       />
     )}

@@ -136,20 +136,89 @@
     margin: 0 !important;
     width: 100% !important;
   }
+
+  /* ============================================================
+     FITNESS REPORTS A4 PRINT & PDF RULES (window.print())
+     ============================================================ */
+  #fitness-report-printable-area {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    width: 100% !important;
+    display: block !important;
+    background: #ffffff !important;
+  }
+
+  /* Hide the top interactive controls header in print */
+  #fitness-report-printable-area > div:first-child {
+    display: none !important;
+  }
+
+  #fitness-report-printable-area > div:nth-child(2) {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Each report page is an exact A4 page (210mm x 297mm) */
+  .pdf-page-section {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    height: 297mm !important;
+    box-sizing: border-box !important;
+    margin: 0 auto !important;
+    padding: 16mm 14mm !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    background: #ffffff !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    position: relative !important;
+  }
+
+  .pdf-page-section:last-of-type {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  /* Crisp vectors and charts */
+  .pdf-page-section svg {
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .pdf-page-section .recharts-responsive-container {
+    width: 100% !important;
+  }
 }
 
 /* Specific Page & Zoom Adjustments based on Printer Orientation */
-@media print and (orientation: portrait) {
+@media print {
   @page {
     size: A4 portrait;
-    margin: 0.8cm !important;
+    margin: 0mm !important;
   }
-  
+}
+
+@media print and (orientation: portrait) {
   /* Scale down the entire bracket wrapper to fit perfectly onto A4 Portrait layout */
   .print-bracket-canvas {
     transform: scale(0.68) !important;
     transform-origin: top center !important;
-    margin: 0 auto !important;
+    margin: 0.8cm auto !important;
     /* Negative margin to pull upcoming documents upward because of scale container collapse */
     margin-bottom: -15% !important;
   }

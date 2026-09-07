@@ -484,7 +484,7 @@ const SchoolAdmin: React.FC = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'gemini-3.6-flash',
+          model: 'gemini-3.7-flash',
           contents: [
             {
               role: 'user',

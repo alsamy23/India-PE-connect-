@@ -24,7 +24,10 @@ import {
   Activity,
   ClipboardCheck,
   Award,
-  Zap
+  Zap,
+  UserCheck,
+  TrendingUp,
+  LineChart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { jsPDF } from 'jspdf';
@@ -34,6 +37,7 @@ import { isGradeMatching } from './PracticalAssessmentHub.tsx';
 import { auth } from '../services/firebase.ts';
 import { toast } from '../services/toast.ts';
 import { calculateExactBMI } from '../utils/bmiUtils.ts';
+import { IndividualStudentProfileModal } from './fitness/IndividualStudentProfileModal.tsx';
 
 interface StudentManagementProps {
   onNavigate?: (tab: any) => void;
@@ -59,6 +63,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
   const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
   const [confirmDeleteText, setConfirmDeleteText] = useState('');
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [selectedProfileStudent, setSelectedProfileStudent] = useState<Student | null>(null);
   const [studentToPurge, setStudentToPurge] = useState<Student | null>(null);
   const [isDeletingBulk, setIsDeletingBulk] = useState(false);
   const [isBulkPurgeModalOpen, setIsBulkPurgeModalOpen] = useState(false);
@@ -1260,19 +1265,28 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                       </button>
                     </td>
                     <td className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${
+                      <div 
+                        onClick={() => setSelectedProfileStudent(student)}
+                        className="flex items-center gap-4 cursor-pointer group/student hover:opacity-90 transition-opacity"
+                        title="Click to view full student profile & D3 fitness growth progress"
+                      >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs transition-transform group-hover/student:scale-105 ${
                           selectedStudentIds.has(student.id) || highlightStudentId === student.id 
                             ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
-                            : 'bg-indigo-50 text-indigo-600'
+                            : 'bg-indigo-50 text-indigo-600 group-hover/student:bg-indigo-600 group-hover/student:text-white'
                         }`}>
                           {student.name.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <span className="font-black text-slate-900 uppercase tracking-tight block">
+                          <span className="font-black text-slate-900 group-hover/student:text-indigo-600 uppercase tracking-tight block transition-colors">
                             {highlightMatch(student.name, searchTerm)}
                           </span>
-                          <span className="text-[10px] font-bold text-slate-400">ID: {student.id.slice(-6)}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-slate-400">ID: {student.id.slice(-6)}</span>
+                            <span className="text-[9px] font-black uppercase text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded group-hover/student:bg-indigo-100">
+                              View Profile →
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -1325,6 +1339,15 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
                     </td>
                     <td className="p-6 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button 
+                          onClick={() => setSelectedProfileStudent(student)}
+                          className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all flex items-center gap-1 text-[10px] font-black uppercase tracking-wider shadow-2xs cursor-pointer"
+                          title="View Individual Student Profile & D3 Progress Over Time"
+                        >
+                          <TrendingUp size={13} className="text-[#D4A017]" />
+                          <span className="hidden xl:inline">Growth Curve</span>
+                        </button>
+
                         <button 
                           onClick={() => {
                             if (onNavigate) {
@@ -1971,6 +1994,31 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onNavigate, onSel
             </div>
           </motion.div>
         </div>
+      )}
+
+      {/* Individual Student Profile & D3 Progress Modal */}
+      {selectedProfileStudent && (
+        <IndividualStudentProfileModal
+          student={selectedProfileStudent}
+          isOpen={Boolean(selectedProfileStudent)}
+          onClose={() => setSelectedProfileStudent(null)}
+          onNavigateToFitness={(studentId) => {
+            if (onNavigate) {
+              onNavigate('fitness');
+            }
+          }}
+          onNavigateToReportCard={(studentId) => {
+            if (onSelectStudent) {
+              onSelectStudent(studentId);
+            }
+          }}
+          onNavigateToPractical={(studentId) => {
+            if (onNavigate) {
+              onNavigate('cbse-practical');
+            }
+          }}
+          practicalAssessment={practicalMap[selectedProfileStudent.id] || null}
+        />
       )}
     </div>
   );

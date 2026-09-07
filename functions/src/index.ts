@@ -1,97 +1,55 @@
-// Client-side service to trigger corporate transactional emails via the Smart PE backend API
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
 
-export interface SendEmailPayload {
-  toEmail: string;
-  recipientName?: string;
-  schoolName?: string;
-  subject?: string;
-  type?: 'welcome' | 'feature_update' | 'custom';
-  customMessage?: string;
-  featureTitle?: string;
-}
+// Initialize Firebase Admin SDK
+admin.initializeApp();
 
-export interface EmailServiceStatus {
-  configured: boolean;
-  provider: string; // 'smtp' | 'resend' | 'brevo' | 'sendgrid' | 'simulated'
+/**
+ * Configuration interface for Transactional Email Providers
+ */
+interface EmailConfig {
+  resendApiKey?: string;
+  brevoApiKey?: string;
   fromEmail: string;
+  appName: string;
+  appUrl: string;
+  webhookUrl?: string;
 }
 
-export async function sendAutomatedWelcomeEmail(
-  toEmail: string,
-  recipientName?: string,
-  schoolName?: string
-): Promise<{ success: boolean; message: string; previewUrl?: string }> {
-  try {
-    const res = await fetch('/api/email/welcome', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        toEmail,
-        recipientName: recipientName || 'Physical Education Educator',
-        schoolName: schoolName || 'Smart PE Partner School'
-      })
-    });
-
-    const data = await res.json();
-    return data;
-  } catch (err: any) {
-    console.error('Error sending automated welcome email:', err);
-    return { success: false, message: err.message || 'Failed to dispatch email' };
-  }
+/**
+ * Retrieve active email configuration from environment or secrets
+ */
+function getEmailConfig(): EmailConfig {
+  return {
+    resendApiKey: process.env.RESEND_API_KEY,
+    brevoApiKey: process.env.BREVO_API_KEY,
+    fromEmail: process.env.FROM_EMAIL || "Smart PE India <welcome@smartpeindia.app>",
+    appName: process.env.APP_NAME || "Smart PE India",
+    appUrl: process.env.APP_URL || "https://smartpeindia.app",
+    webhookUrl: process.env.WELCOME_API_WEBHOOK_URL
+  };
 }
 
-export async function sendFeatureAnnouncementEmail(
-  toEmails: string[],
-  featureTitle: string,
-  featureDescription: string,
-  actionUrl?: string
-): Promise<{ success: boolean; sentCount: number; message: string }> {
-  try {
-    const res = await fetch('/api/email/announcement', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        toEmails,
-        featureTitle,
-        featureDescription,
-        actionUrl: actionUrl || 'https://smartpeindia.app'
-      })
-    });
-
-    const data = await res.json();
-    return data;
-  } catch (err: any) {
-    console.error('Error sending feature announcement email:', err);
-    return { success: false, sentCount: 0, message: err.message || 'Failed to dispatch announcement' };
-  }
-}
-
-export function generateWelcomeEmailHtml(recipientName?: string, schoolName?: string): { subject: string; html: string; text: string } {
-  const safeName = recipientName && recipientName.trim() ? recipientName.trim() : "Physical Education Educator";
-  const safeSchool = schoolName && schoolName.trim() ? schoolName.trim() : "your school";
+/**
+ * Generate high-converting, responsive HTML email template for newly registered educators
+ */
+function buildPersonalizedWelcomeEmail(
+  name: string,
+  email: string,
+  appName: string,
+  appUrl: string
+): { subject: string; html: string; text: string } {
+  const safeName = name && name.trim() ? name.trim() : (email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "Physical Education Educator");
   const subject = `Welcome to Smart PE India, ${safeName} — Your 1-Year Free Founding Educator Pass is Active! 🏆`;
 
-  const html = `<!DOCTYPE html>
+  const html = `
+<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>${subject}</title>
-  <!--[if mso]>
-  <style>
-    table {border-collapse:collapse;border-spacing:0;margin:0;}
-    div, td {padding:0;}
-    div {margin:0 !important;}
-  </style>
-  <noscript>
-    <xml>
-      <o:OfficeDocumentSettings>
-        <o:PixelsPerInch>96</o:PixelsPerInch>
-      </o:OfficeDocumentSettings>
-    </xml>
-  </noscript>
-  <![endif]-->
   <style>
     body {
       margin: 0;
@@ -156,7 +114,7 @@ export function generateWelcomeEmailHtml(recipientName?: string, schoolName?: st
               <p class="greeting">Dear ${safeName},</p>
               
               <p class="intro-p">
-                Welcome to <strong>Smart PE India</strong>! We are thrilled to partner with you and <strong>${safeSchool}</strong> in modernizing physical education across India.
+                Welcome to <strong>Smart PE India</strong>! We are thrilled to partner with you in modernizing physical education across India.
               </p>
 
               <!-- Highlight Pass Activation Card -->
@@ -265,12 +223,12 @@ export function generateWelcomeEmailHtml(recipientName?: string, schoolName?: st
                 <div class="checklist-title">🚀 3 Quick Steps to Get Started:</div>
                 <div class="checklist-item"><strong>1.</strong> Click the button below to launch your digital PE portal.</div>
                 <div class="checklist-item"><strong>2.</strong> Generate your first AI Lesson Plan or calculate a student's Khelo India test score.</div>
-                <div class="checklist-item"><strong>3.</strong> Bookmark <a href="https://smartpeindia.app" style="color: #15803d; font-weight: bold;">smartpeindia.app</a> on your phone or laptop for daily PE class planning.</div>
+                <div class="checklist-item"><strong>3.</strong> Bookmark <a href="${appUrl}" style="color: #15803d; font-weight: bold;">${appUrl.replace(/^https?:\/\//, "")}</a> on your phone or laptop for daily PE class planning.</div>
               </div>
 
               <!-- Primary CTA -->
               <div class="cta-container">
-                <a href="https://smartpeindia.app" class="cta-btn">Launch Your PE Portal Now →</a>
+                <a href="${appUrl}" class="cta-btn">Launch Your PE Portal Now →</a>
               </div>
 
               <!-- Founder Signature Note -->
@@ -282,25 +240,25 @@ export function generateWelcomeEmailHtml(recipientName?: string, schoolName?: st
                   Feel free to reply directly to this email or reach out to us at <a href="mailto:contact@smartpeindia.app" style="color: #0D2B52; font-weight: bold;">contact@smartpeindia.app</a>. We are dedicated to supporting every Physical Education teacher across India.
                 </p>
                 <p class="founder-name">Lurtha Samy (L. Samy)</p>
-                <p class="founder-title">Founder & Physical Education Educator • Smart PE India</p>
+                <p class="founder-title">Founder & Physical Education Educator • ${appName}</p>
               </div>
             </div>
 
             <!-- Footer -->
             <div class="footer">
-              <p style="margin: 0 0 6px 0; font-weight: 800; color: #ffffff; font-size: 14px;">Smart PE India</p>
+              <p style="margin: 0 0 6px 0; font-weight: 800; color: #ffffff; font-size: 14px;">${appName}</p>
               <p style="margin: 0 0 10px 0; color: #94a3b8;">
                 Empowering Physical Educators across India with AI Curriculum, Khelo India Assessments & Sports Analytics.
               </p>
               <div class="footer-links">
-                <a href="https://smartpeindia.app">Portal Home</a> •
-                <a href="https://smartpeindia.app/#curriculum">Curriculum</a> •
-                <a href="https://smartpeindia.app/#khelo-india">Khelo India</a> •
-                <a href="https://smartpeindia.app/#privacy">Privacy Policy</a> •
+                <a href="${appUrl}">Portal Home</a> •
+                <a href="${appUrl}/#curriculum">Curriculum</a> •
+                <a href="${appUrl}/#khelo-india">Khelo India</a> •
+                <a href="${appUrl}/#privacy">Privacy Policy</a> •
                 <a href="mailto:contact@smartpeindia.app">Contact Support</a>
               </div>
               <p style="margin: 0; font-size: 11px; color: #64748b;">
-                © 2026 Smart PE India. All rights reserved. You are receiving this because your account was registered on smartpeindia.app.
+                © 2026 ${appName}. All rights reserved. You are receiving this because your account was registered on ${appUrl.replace(/^https?:\/\//, "")}.
               </p>
             </div>
           </div>
@@ -309,12 +267,13 @@ export function generateWelcomeEmailHtml(recipientName?: string, schoolName?: st
     </table>
   </div>
 </body>
-</html>`;
+</html>
+  `;
 
   const text = `
 Dear ${safeName},
 
-Welcome to Smart PE India! Your 1-Year Free Founding Educator Pass has been activated for ${safeSchool}.
+Welcome to ${appName}! Your 1-Year Free Founding Educator Pass has been activated for ${email}.
 
 🌟 Key Benefits of Your Smart PE India Portal:
 1. ⚡ AI PE Lesson Planner & Drill Generator — Generate CBSE/ICSE/State aligned lesson plans in under 60 seconds with diagrams and safety cues.
@@ -324,134 +283,235 @@ Welcome to Smart PE India! Your 1-Year Free Founding Educator Pass has been acti
 5. 🏅 Tournament & Sports Day Manager — Knockout brackets with bye calculations and round-robin league schedules.
 6. 🏃 AI Sports Biomechanics Lab — Movement analysis and coaching cues for athletics, football, and cricket.
 
-Launch your PE portal anytime at: https://smartpeindia.app
+Launch your PE portal anytime at: ${appUrl}
 
 Need help or custom school onboarding? Contact Founder L. Samy directly at contact@smartpeindia.app.
 
 Best regards,
 Lurtha Samy (L. Samy)
-Founder & Physical Education Educator
-Smart PE India (https://smartpeindia.app)
+Founder & PE Educator
+${appName} (${appUrl})
   `;
 
   return { subject, html, text };
 }
 
-export async function triggerNurtureStep(
+/**
+ * Dispatch email via Resend REST API (https://api.resend.com/emails)
+ */
+async function sendViaResend(
+  apiKey: string,
+  fromEmail: string,
   toEmail: string,
-  step: 1 | 2 | 3,
-  recipientName?: string,
-  schoolName?: string
-): Promise<{ success: boolean; message: string; step: number; stepName: string; triggerDay: string; provider: string }> {
+  subject: string,
+  html: string,
+  text: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const res = await fetch('/api/email/nurture/trigger', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`
+      },
       body: JSON.stringify({
-        toEmail,
-        step,
-        recipientName: recipientName || 'Physical Education Educator',
-        schoolName: schoolName || 'Smart PE Partner School'
+        from: fromEmail,
+        to: [toEmail],
+        subject,
+        html,
+        text
       })
     });
 
-    const data = await res.json();
-    return data;
+    const result = await response.json();
+    if (response.ok) {
+      return { success: true, data: result };
+    }
+    return { success: false, error: result?.message || JSON.stringify(result) };
   } catch (err: any) {
-    console.error(`Error triggering nurture step ${step}:`, err);
-    return { 
-      success: false, 
-      message: err.message || `Failed to trigger nurture step ${step}`,
-      step,
-      stepName: `Step ${step}`,
-      triggerDay: `Day ${step === 1 ? 0 : step === 2 ? 2 : 5}`,
-      provider: 'none'
-    };
+    return { success: false, error: err.message || "Failed to reach Resend API" };
   }
 }
 
-export interface NurtureEvaluationResult {
-  success: boolean;
-  actionTaken: string;
-  message: string;
-  dispatchedStep?: 1 | 2 | 3;
-  stepName?: string;
-  triggerDay?: string;
-  daysSinceRegistration?: number;
-  isComplete?: boolean;
-  provider?: string;
-  updatedStatus?: {
-    step1SentAt: string | null;
-    step2SentAt: string | null;
-    step3SentAt: string | null;
-    lastEvaluatedAt: string;
-  };
-}
-
-export async function evaluateNurtureSequence(payload: {
-  toEmail: string;
-  recipientName?: string;
-  schoolName?: string;
-  createdAt?: string;
-  step1SentAt?: string | null;
-  step2SentAt?: string | null;
-  step3SentAt?: string | null;
-}): Promise<NurtureEvaluationResult> {
+/**
+ * Dispatch email via Brevo REST API (https://api.brevo.com/v3/smtp/email)
+ */
+async function sendViaBrevo(
+  apiKey: string,
+  fromEmail: string,
+  toEmail: string,
+  subject: string,
+  html: string,
+  text: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const res = await fetch('/api/email/nurture/evaluate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    const senderEmail = fromEmail.match(/<([^>]+)>/)?.[1] || fromEmail;
+    const senderName = fromEmail.replace(/<[^>]+>/, "").trim() || "Smart PE India";
+
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": apiKey
+      },
+      body: JSON.stringify({
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email: toEmail }],
+        subject,
+        htmlContent: html,
+        textContent: text
+      })
     });
 
-    const data = await res.json();
-    return data;
+    const result = await response.json();
+    if (response.ok) {
+      return { success: true, data: result };
+    }
+    return { success: false, error: result?.message || JSON.stringify(result) };
   } catch (err: any) {
-    console.error('Error evaluating nurture sequence:', err);
-    return {
-      success: false,
-      actionTaken: 'error',
-      message: err.message || 'Failed to evaluate nurture sequence'
-    };
+    return { success: false, error: err.message || "Failed to reach Brevo API" };
   }
 }
 
-export async function fetchNurturePreview(
-  step: 1 | 2 | 3,
-  name?: string,
-  school?: string
-): Promise<{ step: number; stepName: string; triggerDay: string; subject: string; html: string; text: string }> {
+/**
+ * Dispatch email via Custom App Webhook REST API
+ */
+async function sendViaWebhook(
+  webhookUrl: string,
+  toEmail: string,
+  recipientName: string,
+  uid: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const params = new URLSearchParams({
-      step: String(step),
-      name: name || 'Physical Education Educator',
-      school: school || 'Smart PE Partner School'
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        toEmail,
+        recipientName,
+        uid,
+        source: "firebase-cloud-function-auth-trigger"
+      })
     });
-    const res = await fetch(`/api/email/nurture/preview?${params.toString()}`);
-    const data = await res.json();
-    return data;
-  } catch {
-    return {
-      step,
-      stepName: `Part ${step}`,
-      triggerDay: step === 1 ? 'Day 0' : step === 2 ? 'Day 2' : 'Day 5',
-      subject: `Smart PE India • Nurture Series Part ${step}`,
-      html: `<p>Nurture Part ${step}</p>`,
-      text: `Nurture Part ${step}`
-    };
+
+    const result = await response.json();
+    if (response.ok) {
+      return { success: true, data: result };
+    }
+    return { success: false, error: result?.error || "Webhook failed" };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to reach Webhook URL" };
   }
 }
 
-export async function getEmailConfigStatus(): Promise<EmailServiceStatus> {
-  try {
-    const res = await fetch('/api/email/status');
-    const data = await res.json();
-    return data;
-  } catch {
-    return {
-      configured: false,
-      provider: 'simulated',
-      fromEmail: 'welcome@smartpeindia.app'
-    };
-  }
-}
+/**
+ * AUTOMATED TRIGGER FUNCTION: sendPersonalizedWelcomeEmail
+ * Listens to the Firebase Auth User Creation event (auth.user().onCreate)
+ * and invokes Resend / Brevo / Webhook REST API to deliver the welcome message.
+ */
+export const sendPersonalizedWelcomeEmail = functions.auth
+  .user()
+  .onCreate(async (user: admin.auth.UserRecord) => {
+    const { uid, email, displayName } = user;
+
+    if (!email) {
+      functions.logger.warn(`[Auth Trigger] User ${uid} has no email address. Skipping welcome email.`);
+      return;
+    }
+
+    functions.logger.info(`[Auth Trigger] Processing new user registration for ${email} (UID: ${uid})`);
+
+    const config = getEmailConfig();
+    const recipientName = displayName || email.split("@")[0];
+    const { subject, html, text } = buildPersonalizedWelcomeEmail(
+      recipientName,
+      email,
+      config.appName,
+      config.appUrl
+    );
+
+    const db = admin.firestore();
+    const mailLogRef = db.collection("mail_logs").doc(`welcome_${uid}`);
+
+    // Check if welcome email was already dispatched to prevent duplicate sends
+    const existingLog = await mailLogRef.get();
+    if (existingLog.exists && existingLog.data()?.status === "sent") {
+      functions.logger.info(`[Auth Trigger] Welcome email already sent to ${email}. Skipping.`);
+      return;
+    }
+
+    let dispatchResult: { success: boolean; provider: string; data?: any; error?: string };
+
+    // 1. Try Resend REST API if configured
+    if (config.resendApiKey) {
+      functions.logger.info(`[Auth Trigger] Dispatching via Resend REST API for ${email}...`);
+      const resendRes = await sendViaResend(
+        config.resendApiKey,
+        config.fromEmail,
+        email,
+        subject,
+        html,
+        text
+      );
+      dispatchResult = { ...resendRes, provider: "resend" };
+    }
+    // 2. Try Brevo REST API if configured
+    else if (config.brevoApiKey) {
+      functions.logger.info(`[Auth Trigger] Dispatching via Brevo REST API for ${email}...`);
+      const brevoRes = await sendViaBrevo(
+        config.brevoApiKey,
+        config.fromEmail,
+        email,
+        subject,
+        html,
+        text
+      );
+      dispatchResult = { ...brevoRes, provider: "brevo" };
+    }
+    // 3. Try App REST Webhook URL if configured
+    else if (config.webhookUrl) {
+      functions.logger.info(`[Auth Trigger] Dispatching via App Webhook REST API for ${email}...`);
+      const webhookRes = await sendViaWebhook(
+        config.webhookUrl,
+        email,
+        recipientName,
+        uid
+      );
+      dispatchResult = { ...webhookRes, provider: "webhook" };
+    }
+    // 4. Simulated Fallback (Logs payload for development environment)
+    else {
+      functions.logger.warn(
+        `[Auth Trigger] No RESEND_API_KEY, BREVO_API_KEY, or WELCOME_API_WEBHOOK_URL found in environment. Email simulated for ${email}.`
+      );
+      dispatchResult = {
+        success: true,
+        provider: "simulated",
+        data: { message: "Simulated dispatch - configure RESEND_API_KEY or BREVO_API_KEY in functions config" }
+      };
+    }
+
+    // Save audit log to Firestore for traceability
+    try {
+      await mailLogRef.set({
+        uid,
+        email,
+        recipientName,
+        subject,
+        provider: dispatchResult.provider,
+        status: dispatchResult.success ? "sent" : "failed",
+        error: dispatchResult.error || null,
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        triggeredBy: "auth.user().onCreate"
+      });
+      functions.logger.info(`[Auth Trigger] Audit log recorded for UID ${uid} in collection 'mail_logs'.`);
+    } catch (logErr) {
+      functions.logger.error("[Auth Trigger] Failed to write Firestore mail log:", logErr);
+    }
+
+    if (dispatchResult.success) {
+      functions.logger.info(`[Auth Trigger] Welcome email successfully sent to ${email} via ${dispatchResult.provider}`);
+    } else {
+      functions.logger.error(`[Auth Trigger] Failed to send welcome email to ${email}:`, dispatchResult.error);
+    }
+  });

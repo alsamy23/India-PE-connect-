@@ -72,6 +72,7 @@ import BrandWelcomeHub from './components/BrandWelcomeHub.tsx';
 import PricingAndPlans from './components/PricingAndPlans.tsx';
 import WelcomeOnboardingModal from './components/WelcomeOnboardingModal.tsx';
 import PracticalAssessmentHub from './components/PracticalAssessmentHub.tsx';
+import SportsCoachingAssessment from './components/SportsCoachingAssessment.tsx';
 import { GlobalSearch } from './components/GlobalSearch.tsx';
 import { logError } from './services/logService.ts';
 import { fitnessService } from './services/fitnessService.ts';
@@ -80,7 +81,7 @@ import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth
 import { trackEvent } from './services/analytics.ts';
 import { toast, SHOW_TOAST_EVENT, SHOW_CONFIRM_EVENT, ToastConfig, ConfirmConfig } from './services/toast.ts';
 
-type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'cbse-practical' | 'testpaper' | 'tournament-fixtures' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact' | 'principal-dashboard' | 'department-office' | 'brand-welcome' | 'subscription-plans';
+type Tab = 'dashboard' | 'planner' | 'yearly' | 'weekly-planner' | 'skillmastery' | 'workload-planner' | 'compliance' | 'tools' | 'theory' | 'khelo' | 'rules' | 'fitness' | 'cbse-practical' | 'coaching-assessment' | 'testpaper' | 'tournament-fixtures' | 'parentletters' | 'widgets' | 'school-results' | 'school-students' | 'school-teams' | 'school-overview' | 'school-admin' | 'skill-analysis' | 'logs' | 'fitness-reports' | 'about' | 'contact' | 'principal-dashboard' | 'department-office' | 'brand-welcome' | 'subscription-plans';
 
 import { BoardType, Language } from './types.ts';
 
@@ -103,6 +104,7 @@ const navigation = [
   { 
     section: 'Assess',
     items: [
+      { id: 'coaching-assessment', name: 'Sports Academy & Coaching', icon: Trophy, isNew: true, subtitle: 'Academic registration with 5-day cloud pass for coaches & teacher groups.' },
       { id: 'cbse-practical', name: 'CBSE Practical (30M)', icon: ClipboardCheck, subtitle: 'Class 11 & 12 30-mark practical scoring & award sheet.' },
       { id: 'fitness', name: 'Fitness Tests', icon: Activity, subtitle: 'All Khelo India Fitness tests pre-loaded.' },
       { id: 'khelo', name: 'Khelo India Battery', icon: Trophy, subtitle: 'Official battery tests and student profiles.' },
@@ -153,7 +155,7 @@ const navigation = [
 const isProtectedTab = (tabId: string) => {
   for (const item of navigation) {
     if ('section' in item && item.items) {
-      if (item.items.some(i => i.id === tabId && i.protected)) return true;
+      if (item.items.some((i: any) => i.id === tabId && i.protected)) return true;
     } else if ('id' in item && (item as any).id === tabId && (item as any).protected) {
       return true;
     }
@@ -839,6 +841,7 @@ const App: React.FC = () => {
       case 'rules': return <RulesBot />;
       case 'fitness': return <FitnessTests />;
       case 'cbse-practical': return <PracticalAssessmentHub />;
+      case 'coaching-assessment': return <SportsCoachingAssessment />;
       case 'school-results': return <FitnessDashboard onNavigate={handleTabChange} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} />;
       case 'school-students': return <StudentManagement onNavigate={handleTabChange} onSelectStudent={(id) => { setSelectedReportStudentId(id); setActiveTab('fitness-reports'); }} highlightStudentId={highlightStudentId} />;
       case 'school-teams': return <TeamManagement />;

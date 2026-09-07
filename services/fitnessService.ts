@@ -1088,16 +1088,53 @@ export const fitnessService = {
     });
   },
 
+  // Helper to match grade variations (e.g., '12', 'Grade 12', 'Class 12', 'XII', '12th')
+  isGradeMatching: (studentGrade: string | number | undefined, targetGrade: string): boolean => {
+    if (!studentGrade) return false;
+    if (targetGrade === 'ALL' || targetGrade === 'all') return true;
+    const sGrade = studentGrade.toString().trim().toUpperCase();
+    const tGrade = targetGrade.toString().trim().toUpperCase();
+    if (sGrade === tGrade) return true;
+
+    const cleanS = sGrade.replace(/[^0-9]/g, '');
+    const cleanT = tGrade.replace(/[^0-9]/g, '');
+    if (cleanS && cleanT && cleanS === cleanT) return true;
+
+    const romanMap: Record<string, string> = {
+      'I': '1', 'II': '2', 'III': '3', 'IV': '4', 'V': '5',
+      'VI': '6', 'VII': '7', 'VIII': '8', 'IX': '9', 'X': '10',
+      'XI': '11', 'XII': '12', '11TH': '11', '12TH': '12'
+    };
+    const normS = romanMap[sGrade] || cleanS || sGrade;
+    const normT = romanMap[tGrade] || cleanT || tGrade;
+    return normS === normT;
+  },
+
   // Helper to get battery by grade
   getBatteryForGrade: (grade: string | number): KIFTBattery | undefined => {
     if (grade === undefined || grade === null) return undefined;
-    const strGrade = grade.toString().trim();
+    const strGrade = grade.toString().trim().toUpperCase();
     const cleanNum = strGrade.replace(/[^0-9]/g, '');
-    return KIFT_BATTERIES.find(b => 
+
+    // Exact grade array match or clean numeric grade match
+    const matched = KIFT_BATTERIES.find(b => 
       b.grades.includes(strGrade) || 
-      (cleanNum && b.grades.includes(cleanNum)) ||
-      b.grades.some(g => strGrade.toLowerCase().includes(g.toLowerCase()))
+      (cleanNum !== '' && b.grades.includes(cleanNum))
     );
+    if (matched) return matched;
+
+    // Roman numeral mapping for classes (e.g., 'XII' -> '12', 'XI' -> '11')
+    const romanMap: Record<string, string> = {
+      'I': '1', 'II': '2', 'III': '3', 'IV': '4', 'V': '5',
+      'VI': '6', 'VII': '7', 'VIII': '8', 'IX': '9', 'X': '10',
+      'XI': '11', 'XII': '12', '11TH': '11', '12TH': '12'
+    };
+    const mapped = romanMap[strGrade];
+    if (mapped) {
+      return KIFT_BATTERIES.find(b => b.grades.includes(mapped));
+    }
+
+    return undefined;
   },
 
   // CBSE Practical Assessments (30 Marks System)
